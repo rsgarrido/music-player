@@ -3,11 +3,15 @@ package com.example.cdplaya
 import android.Manifest
 import android.os.Bundle
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -17,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
@@ -37,6 +42,20 @@ class MainActivity : ComponentActivity() {
     private lateinit var musicPlayer: MusicPlayer
     private var currentSong by mutableStateOf<Song?>(null)
     private var isPlaying by mutableStateOf(false)
+    private var currentPosition by mutableStateOf(0)
+    private var duration by mutableStateOf(0)
+
+    private val progressHandler = Handler(Looper.getMainLooper())
+
+    private val progressRunnable = object : Runnable {
+        override fun run() {
+            if (currentSong != null) {
+                currentPosition = musicPlayer.getCurrentPosition()
+                duration = musicPlayer.getDuration()
+                progressHandler.postDelayed(this, 500)
+            }
+        }
+    }
 
     private val audioPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -70,11 +89,11 @@ class MainActivity : ComponentActivity() {
                         permissionGranted = permissionGranted,
                         currentSong = currentSong,
                         isPlaying = isPlaying,
+                        currentPosition = currentPosition,
+                        duration = duration,
                         modifier = Modifier.padding(innerPadding),
                         onSongClick = { song ->
-                            musicPlayer.playSong(song)
-                            currentSong = song
-                            isPlaying = true
+                            playSelectedSong(song)
                         },
                         onPlayPauseClick = {
                             if (musicPlayer.isPlaying()) {
@@ -83,6 +102,7 @@ class MainActivity : ComponentActivity() {
                             } else {
                                 musicPlayer.resume()
                                 isPlaying = true
+                                startProgressUpdates()
                             }
                         },
                         onPreviousClick = {
@@ -90,6 +110,10 @@ class MainActivity : ComponentActivity() {
                         },
                         onNextClick = {
                             playNextSong()
+                        },
+                        onSeekChange = { position ->
+                            musicPlayer.seekTo(position)
+                            currentPosition = position
                         }
                     )
                 }
@@ -115,6 +139,9 @@ class MainActivity : ComponentActivity() {
         musicPlayer.playSong(song)
         currentSong = song
         isPlaying = true
+        currentPosition = 0
+        duration = musicPlayer.getDuration()
+        startProgressUpdates()
     }
 
     private fun playNextSong() {
@@ -149,10 +176,19 @@ class MainActivity : ComponentActivity() {
         playSelectedSong(songs[previousIndex])
     }
 
+    private fun startProgressUpdates() {
+        progressHandler.removeCallbacks(progressRunnable)
+        progressHandler.post(progressRunnable)
+    }
+
+
     override fun onDestroy() {
         super.onDestroy()
+        progressHandler.removeCallbacks(progressRunnable)
         musicPlayer.stop()
     }
+
+
 }
 
 @Composable
@@ -161,11 +197,14 @@ fun MusicScreen(
     permissionGranted: Boolean,
     currentSong: Song?,
     isPlaying: Boolean,
+    currentPosition: Int,
+    duration: Int,
     modifier: Modifier = Modifier,
     onSongClick: (Song) -> Unit,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
-    onNextClick: () -> Unit
+    onNextClick: () -> Unit,
+    onSeekChange: (Int) -> Unit
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         Text(
@@ -178,6 +217,27 @@ fun MusicScreen(
                 text = "Now playing: ${currentSong.title}",
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
+
+            Slider(
+                value = currentPosition.toFloat(),
+                onValueChange = { newPosition ->
+                    onSeekChange(newPosition.toInt())
+                },
+                valueRange = 0f..duration.coerceAtLeast(1).toFloat(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = formatDuration(currentPosition))
+                Text(text = formatDuration(duration))
+            }
 
             Row(
                 modifier = Modifier.padding(16.dp)
@@ -232,4 +292,12 @@ fun MusicScreen(
             }
         }
     }
+}
+
+fun formatDuration(milliseconds: Int): String {
+    val totalSeconds = milliseconds / 1000
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+
+    return "%d:%02d".format(minutes, seconds)
 }
