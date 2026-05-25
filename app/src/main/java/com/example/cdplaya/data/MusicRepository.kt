@@ -2,12 +2,15 @@ package com.example.cdplaya.data
 
 import android.content.ContentUris
 import android.content.Context
+import android.net.Uri
 import android.provider.MediaStore
+import java.io.File
 
 class MusicRepository(private val context: Context) {
 
     fun getSongs(): List<Song> {
         val songs = mutableListOf<Song>()
+        val albumArtByFolder = getAlbumArtByFolder()
 
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 
@@ -49,17 +52,23 @@ class MusicRepository(private val context: Context) {
                     continue
                 }
 
+                val folderPath = File(filePath).parent ?: ""
+
                 val uri = ContentUris.withAppendedId(
                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                     id
                 )
+
+                val albumArtUri = albumArtByFolder[folderPath]
 
                 val song = Song(
                     id = id,
                     title = title,
                     artist = artist,
                     duration = duration,
-                    uri = uri
+                    uri = uri,
+                    folderPath = folderPath,
+                    albumArtUri = albumArtUri
                 )
 
                 songs.add(song)
@@ -67,5 +76,76 @@ class MusicRepository(private val context: Context) {
         }
 
         return songs
+    }
+
+    private fun getAlbumArtByFolder(): Map<String, Uri> {
+        val albumArtByFolder = mutableMapOf<String, Uri>()
+
+        val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+
+        val projection = arrayOf(
+            MediaStore.Images.Media._ID,
+            MediaStore.Images.Media.DATA,
+            MediaStore.Images.Media.DISPLAY_NAME
+        )
+
+        val sortOrder = "${MediaStore.Images.Media.DISPLAY_NAME} ASC"
+
+        val query = context.contentResolver.query(
+            collection,
+            projection,
+            null,
+            null,
+            sortOrder
+        )
+
+        query?.use { cursor ->
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
+            val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+            val displayNameColumn =
+                cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
+
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idColumn)
+                val imagePath = cursor.getString(dataColumn) ?: ""
+                val displayName = cursor.getString(displayNameColumn) ?: ""
+
+                if (!imagePath.contains("/Music/", ignoreCase = true)) {
+                    continue
+                }
+
+                if (!isLikelyAlbumCover(displayName)) {
+                    continue
+                }
+
+                val folderPath = File(imagePath).parent ?: ""
+
+                if (albumArtByFolder.containsKey(folderPath)) {
+                    continue
+                }
+
+                val imageUri = ContentUris.withAppendedId(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    id
+                )
+
+                albumArtByFolder[folderPath] = imageUri
+            }
+        }
+
+        return albumArtByFolder
+    }
+
+    private fun isLikelyAlbumCover(fileName: String): Boolean {
+        val normalizedName = fileName.lowercase()
+
+        return normalizedName == "cover.jpg" ||
+                normalizedName == "cover.png" ||
+                normalizedName == "folder.jpg" ||
+                normalizedName == "folder.png" ||
+                normalizedName == "front.jpg" ||
+                normalizedName == "front.png" ||
+                normalizedName == "album.jpg" ||
+                normalizedName == "album.png"
     }
 }

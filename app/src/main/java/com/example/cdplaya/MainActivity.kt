@@ -10,14 +10,22 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -28,8 +36,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.example.cdplaya.data.MusicRepository
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.MusicPlayer
@@ -57,12 +69,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private val audioPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        permissionGranted = isGranted
+    private val mediaPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val audioGranted = permissions[Manifest.permission.READ_MEDIA_AUDIO] == true
+        val imagesGranted = permissions[Manifest.permission.READ_MEDIA_IMAGES] == true
 
-        if (isGranted) {
+        permissionGranted = audioGranted && imagesGranted
+
+        if (permissionGranted) {
             loadSongs()
         }
     }
@@ -123,7 +138,12 @@ class MainActivity : ComponentActivity() {
 
     private fun requestAudioPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            audioPermissionLauncher.launch(Manifest.permission.READ_MEDIA_AUDIO)
+            mediaPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.READ_MEDIA_AUDIO,
+                    Manifest.permission.READ_MEDIA_IMAGES
+                )
+            )
         } else {
             permissionGranted = true
             loadSongs()
@@ -213,6 +233,18 @@ fun MusicScreen(
             modifier = Modifier.padding(16.dp)
         )
         if (currentSong != null) {
+            AsyncImage(
+                model = currentSong.albumArtUri,
+                contentDescription = "Album art for ${currentSong.title}",
+                modifier = Modifier
+                    .padding(16.dp)
+                    .size(180.dp)
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Crop,
+                error = painterResource(android.R.drawable.ic_media_play),
+                placeholder = painterResource(android.R.drawable.ic_media_play)
+            )
+
             Text(
                 text = "Now playing: ${currentSong.title}",
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -278,6 +310,18 @@ fun MusicScreen(
             LazyColumn {
                 items(songs) { song ->
                     ListItem(
+                        leadingContent = {
+                            AsyncImage(
+                                model = song.albumArtUri,
+                                contentDescription = "Album art for ${song.title}",
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(RoundedCornerShape(8.dp)),
+                                contentScale = ContentScale.Crop,
+                                error = painterResource(android.R.drawable.ic_media_play),
+                                placeholder = painterResource(android.R.drawable.ic_media_play)
+                            )
+                        },
                         headlineContent = {
                             Text(text = song.title)
                         },
