@@ -9,10 +9,17 @@ class MusicPlayer(private val context: Context) {
     private var mediaPlayer: MediaPlayer? = null
     private var currentSong: Song? = null
 
+    var onSongCompleted: (() -> Unit)? = null
+
     fun playSong(song: Song) {
         mediaPlayer?.release()
 
         mediaPlayer = MediaPlayer.create(context, song.uri)
+
+        mediaPlayer?.setOnCompletionListener {
+            onSongCompleted?.invoke()
+        }
+
         mediaPlayer?.start()
 
         currentSong = song
