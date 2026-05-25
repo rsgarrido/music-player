@@ -47,4 +47,16 @@ class MusicPlayer(private val context: Context) {
     fun getCurrentSong(): Song? {
         return currentSong
     }
+
+    fun getCurrentPosition(): Int {
+        return mediaPlayer?.currentPosition ?: 0
+    }
+
+    fun getDuration(): Int {
+        return mediaPlayer?.duration ?: 0
+    }
+
+    fun seekTo(position: Int) {
+        mediaPlayer?.seekTo(position)
+    }
 }
