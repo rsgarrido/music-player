@@ -25,12 +25,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.MusicRepository
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.player.MusicPlayer
 import com.example.cdplaya.ui.theme.CdplayaTheme
 
 class MainActivity : ComponentActivity() {
 
     private var songs by mutableStateOf<List<Song>>(emptyList())
     private var permissionGranted by mutableStateOf(false)
+    private lateinit var musicPlayer: MusicPlayer
+    private var currentSong by mutableStateOf<Song?>(null)
+    private var isPlaying by mutableStateOf(false)
 
     private val audioPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -46,6 +50,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        musicPlayer = MusicPlayer(this)
+
         requestAudioPermission()
 
         setContent {
@@ -54,9 +60,22 @@ class MainActivity : ComponentActivity() {
                     MusicScreen(
                         songs = songs,
                         permissionGranted = permissionGranted,
+                        currentSong = currentSong,
+                        isPlaying = isPlaying,
                         modifier = Modifier.padding(innerPadding),
                         onSongClick = { song ->
-                            println("Clicked song: ${song.title}")
+                            musicPlayer.playSong(song)
+                            currentSong = song
+                            isPlaying = true
+                        },
+                        onPlayPauseClick = {
+                            if (musicPlayer.isPlaying()) {
+                                musicPlayer.pause()
+                                isPlaying = false
+                            } else {
+                                musicPlayer.resume()
+                                isPlaying = true
+                            }
                         }
                     )
                 }
@@ -77,14 +96,22 @@ class MainActivity : ComponentActivity() {
         val repository = MusicRepository(this)
         songs = repository.getSongs()
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        musicPlayer.stop()
+    }
 }
 
 @Composable
 fun MusicScreen(
     songs: List<Song>,
     permissionGranted: Boolean,
+    currentSong: Song?,
+    isPlaying: Boolean,
     modifier: Modifier = Modifier,
-    onSongClick: (Song) -> Unit
+    onSongClick: (Song) -> Unit,
+    onPlayPauseClick: () -> Unit
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         Text(
@@ -92,6 +119,21 @@ fun MusicScreen(
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(16.dp)
         )
+        if (currentSong != null) {
+            Text(
+                text = "Now playing: ${currentSong.title}",
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+
+            Text(
+                text = if (isPlaying) "Pause" else "Play",
+                modifier = Modifier
+                    .padding(16.dp)
+                    .clickable {
+                        onPlayPauseClick()
+                    }
+            )
+        }
 
         if (!permissionGranted) {
             Text(
