@@ -18,10 +18,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -190,27 +194,39 @@ fun NowPlayingSection(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(onClick = onPreviousClick) {
-                    Text(text = "Previous")
+                IconButton(onClick = onPreviousClick) {
+                    Icon(
+                        imageVector = Icons.Filled.SkipPrevious,
+                        contentDescription = "Previous song"
+                    )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                Button(onClick = onPlayPauseClick) {
-                    Text(text = if (isPlaying) "Pause" else "Play")
+                IconButton(onClick = onPlayPauseClick) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play"
+                    )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                Button(onClick = onNextClick) {
-                    Text(text = "Next")
+                IconButton(onClick = onNextClick) {
+                    Icon(
+                        imageVector = Icons.Filled.SkipNext,
+                        contentDescription = "Next song"
+                    )
                 }
 
-            }
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-            Button(onClick = onCollapseClick) {
-                Text(text = "Collapse")
+                IconButton(onClick = onCollapseClick) {
+                    Icon(
+                        imageVector = Icons.Filled.ExpandLess,
+                        contentDescription = "Collapse player"
+                    )
+                }
             }
         }
     }
@@ -274,20 +290,32 @@ fun MiniPlayerSection(
                 )
             }
 
-            Button(onClick = onPreviousClick) {
-                Text(text = "Prev")
+            IconButton(onClick = onPreviousClick) {
+                Icon(
+                    imageVector = Icons.Filled.SkipPrevious,
+                    contentDescription = "Previous song"
+                )
             }
 
-            Spacer(modifier = Modifier.width(6.dp))
-
-            Button(onClick = onPlayPauseClick) {
-                Text(text = if (isPlaying) "Pause" else "Play")
+            IconButton(onClick = onPlayPauseClick) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play"
+                )
             }
 
-            Spacer(modifier = Modifier.width(6.dp))
+            IconButton(onClick = onNextClick) {
+                Icon(
+                    imageVector = Icons.Filled.SkipNext,
+                    contentDescription = "Next song"
+                )
+            }
 
-            Button(onClick = onNextClick) {
-                Text(text = "Next")
+            IconButton(onClick = onExpandClick) {
+                Icon(
+                    imageVector = Icons.Filled.ExpandMore,
+                    contentDescription = "Expand player"
+                )
             }
         }
     }
