@@ -1,5 +1,9 @@
 package com.example.cdplaya.ui
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +38,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.composed
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,9 +49,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntOffset
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import kotlin.math.abs
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun MusicScreen(
@@ -63,7 +74,11 @@ fun MusicScreen(
 
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .animateContentSize()
+    ) {
         Text(
             text = "CDPlaya",
             style = MaterialTheme.typography.headlineMedium,
@@ -397,38 +412,85 @@ fun Modifier.playerSwipeGestures(
     onSwipeDown: (() -> Unit)? = null,
     onSwipeLeft: (() -> Unit)? = null,
     onSwipeRight: (() -> Unit)? = null
-): Modifier {
-    return this.pointerInput(Unit) {
-        var totalDragX = 0f
-        var totalDragY = 0f
+): Modifier = composed {
+    val scope = rememberCoroutineScope()
+    val offsetX = remember { Animatable(0f) }
+    val offsetY = remember { Animatable(0f) }
 
-        detectDragGestures(
-            onDragStart = {
-                totalDragX = 0f
-                totalDragY = 0f
-            },
-            onDrag = { change, dragAmount ->
-                change.consume()
-                totalDragX += dragAmount.x
-                totalDragY += dragAmount.y
-            },
-            onDragEnd = {
-                val swipeThreshold = 120f
+    this
+        .offset {
+            IntOffset(
+                x = offsetX.value.roundToInt(),
+                y = offsetY.value.roundToInt()
+            )
+        }
+        .pointerInput(Unit) {
+            var totalDragX = 0f
+            var totalDragY = 0f
 
-                if (abs(totalDragX) > abs(totalDragY)) {
-                    if (totalDragX > swipeThreshold) {
-                        onSwipeRight?.invoke()
-                    } else if (totalDragX < -swipeThreshold) {
-                        onSwipeLeft?.invoke()
+            detectDragGestures(
+                onDragStart = {
+                    totalDragX = 0f
+                    totalDragY = 0f
+
+                    scope.launch {
+                        offsetX.stop()
+                        offsetY.stop()
                     }
-                } else {
-                    if (totalDragY > swipeThreshold) {
-                        onSwipeDown?.invoke()
-                    } else if (totalDragY < -swipeThreshold) {
-                        onSwipeUp?.invoke()
+                },
+                onDrag = { change, dragAmount ->
+                    change.consume()
+
+                    totalDragX += dragAmount.x
+                    totalDragY += dragAmount.y
+
+                    val horizontalDragIsStronger = abs(totalDragX) > abs(totalDragY)
+
+                    scope.launch {
+                        if (horizontalDragIsStronger) {
+                            offsetX.snapTo(totalDragX.coerceIn(-160f, 160f))
+                            offsetY.snapTo(0f)
+                        } else {
+                            offsetY.snapTo(totalDragY.coerceIn(-160f, 160f))
+                            offsetX.snapTo(0f)
+                        }
+                    }
+                },
+                onDragEnd = {
+                    val swipeThreshold = 120f
+
+                    if (abs(totalDragX) > abs(totalDragY)) {
+                        if (totalDragX > swipeThreshold) {
+                            onSwipeRight?.invoke()
+                        } else if (totalDragX < -swipeThreshold) {
+                            onSwipeLeft?.invoke()
+                        }
+                    } else {
+                        if (totalDragY > swipeThreshold) {
+                            onSwipeDown?.invoke()
+                        } else if (totalDragY < -swipeThreshold) {
+                            onSwipeUp?.invoke()
+                        }
+                    }
+
+                    scope.launch {
+                        offsetX.animateTo(
+                            targetValue = 0f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        )
+
+                        offsetY.animateTo(
+                            targetValue = 0f,
+                            animationSpec = spring(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+                        )
                     }
                 }
-            }
-        )
-    }
+            )
+        }
 }
