@@ -11,7 +11,7 @@ class MusicPlayer(private val context: Context) {
 
     var onSongCompleted: (() -> Unit)? = null
 
-    fun playSong(song: Song) {
+    fun playSong(song: Song, shouldStart: Boolean = true) {
         mediaPlayer?.release()
 
         mediaPlayer = MediaPlayer.create(context, song.uri)
@@ -20,7 +20,9 @@ class MusicPlayer(private val context: Context) {
             onSongCompleted?.invoke()
         }
 
-        mediaPlayer?.start()
+        if (shouldStart) {
+            mediaPlayer?.start()
+        }
 
         currentSong = song
     }
