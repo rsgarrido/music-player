@@ -59,6 +59,8 @@ class MainActivity : ComponentActivity() {
     private var isPlaying by mutableStateOf(false)
     private var isShuffleEnabled by mutableStateOf(false)
     private var repeatMode by mutableStateOf(RepeatMode.OFF)
+    private val previousSongHistory = mutableListOf<Song>()
+    private val nextSongHistory = mutableListOf<Song>()
     private var currentPosition by mutableStateOf(0)
     private var duration by mutableStateOf(0)
 
@@ -167,7 +169,21 @@ class MainActivity : ComponentActivity() {
         songs = repository.getSongs()
     }
 
-    private fun playSelectedSong(song: Song) {
+    private fun playSelectedSong(
+        song: Song,
+        addCurrentToHistory: Boolean = true,
+        clearForwardHistory: Boolean = true
+    ) {
+        val previousSong = currentSong
+
+        if (addCurrentToHistory && previousSong != null && previousSong.id != song.id) {
+            previousSongHistory.add(previousSong)
+        }
+
+        if (clearForwardHistory) {
+            nextSongHistory.clear()
+        }
+
         musicPlayer.playSong(song)
         currentSong = song
         isPlaying = true
@@ -183,13 +199,21 @@ class MainActivity : ComponentActivity() {
 
         if (repeatMode == RepeatMode.ONE) {
             currentSong?.let { song ->
-                playSelectedSong(song)
+                playSelectedSong(
+                    song = song,
+                    addCurrentToHistory = false,
+                    clearForwardHistory = false
+                )
             }
             return
         }
 
-        val nextSong = if (isShuffleEnabled && songs.size > 1) {
-            getRandomSongExceptCurrent()
+        val nextSong = if (isShuffleEnabled) {
+            if (nextSongHistory.isNotEmpty()) {
+                nextSongHistory.removeAt(nextSongHistory.lastIndex)
+            } else {
+                getRandomSongExceptCurrent()
+            }
         } else {
             val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
 
@@ -210,15 +234,29 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+        val previousSong = if (isShuffleEnabled && previousSongHistory.isNotEmpty()) {
+            currentSong?.let { song ->
+                nextSongHistory.add(song)
+            }
 
-        val previousIndex = if (currentIndex <= 0) {
-            songs.lastIndex
+            previousSongHistory.removeAt(previousSongHistory.lastIndex)
         } else {
-            currentIndex - 1
+            val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+
+            val previousIndex = if (currentIndex <= 0) {
+                songs.lastIndex
+            } else {
+                currentIndex - 1
+            }
+
+            songs[previousIndex]
         }
 
-        playSelectedSong(songs[previousIndex])
+        playSelectedSong(
+            song = previousSong,
+            addCurrentToHistory = false,
+            clearForwardHistory = false
+        )
     }
 
     private fun startProgressUpdates() {
@@ -230,7 +268,11 @@ class MainActivity : ComponentActivity() {
         when (repeatMode) {
             RepeatMode.ONE -> {
                 currentSong?.let { song ->
-                    playSelectedSong(song)
+                    playSelectedSong(
+                        song = song,
+                        addCurrentToHistory = false,
+                        clearForwardHistory = false
+                    )
                 }
             }
 
@@ -239,6 +281,11 @@ class MainActivity : ComponentActivity() {
             }
 
             RepeatMode.OFF -> {
+                if (isShuffleEnabled) {
+                    playNextSong()
+                    return
+                }
+
                 val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
 
                 if (currentIndex == songs.lastIndex) {
@@ -263,6 +310,8 @@ class MainActivity : ComponentActivity() {
 
     private fun toggleShuffle() {
         isShuffleEnabled = !isShuffleEnabled
+        previousSongHistory.clear()
+        nextSongHistory.clear()
     }
 
     private fun cycleRepeatMode() {
