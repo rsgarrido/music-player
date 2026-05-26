@@ -1,9 +1,15 @@
 package com.example.cdplaya.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -96,32 +102,23 @@ fun MusicScreen(
                 modifier = Modifier.padding(16.dp)
             )
         } else {
-            if (isPlayerExpanded) {
-                NowPlayingSection(
-                    currentSong = currentSong,
-                    isPlaying = isPlaying,
-                    currentPosition = currentPosition,
-                    duration = duration,
-                    onPlayPauseClick = onPlayPauseClick,
-                    onPreviousClick = onPreviousClick,
-                    onNextClick = onNextClick,
-                    onSeekChange = onSeekChange,
-                    onCollapseClick = {
-                        isPlayerExpanded = false
-                    }
-                )
-            } else {
-                MiniPlayerSection(
-                    currentSong = currentSong,
-                    isPlaying = isPlaying,
-                    onPlayPauseClick = onPlayPauseClick,
-                    onPreviousClick = onPreviousClick,
-                    onNextClick = onNextClick,
-                    onExpandClick = {
-                        isPlayerExpanded = true
-                    }
-                )
-            }
+            PlayerCard(
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                isExpanded = isPlayerExpanded,
+                currentPosition = currentPosition,
+                duration = duration,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onSeekChange = onSeekChange,
+                onExpandClick = {
+                    isPlayerExpanded = true
+                },
+                onCollapseClick = {
+                    isPlayerExpanded = false
+                }
+            )
 
             SongList(
                 songs = songs,
@@ -133,10 +130,374 @@ fun MusicScreen(
     }
 }
 
+//@Composable
+//fun NowPlayingSection(
+//    currentSong: Song?,
+//    isPlaying: Boolean,
+//    currentPosition: Int,
+//    duration: Int,
+//    onPlayPauseClick: () -> Unit,
+//    onPreviousClick: () -> Unit,
+//    onNextClick: () -> Unit,
+//    onSeekChange: (Int) -> Unit,
+//    onCollapseClick: () -> Unit
+//) {
+//    if (currentSong == null) {
+//        return
+//    }
+//
+//    Card(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .padding(16.dp)
+//            .playerSwipeGestures(
+//                onSwipeUp = onCollapseClick,
+//                onSwipeLeft = onNextClick,
+//                onSwipeRight = onPreviousClick
+//            )
+//    ) {
+//        Column(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .padding(20.dp),
+//            horizontalAlignment = Alignment.CenterHorizontally
+//        ) {
+//            AsyncImage(
+//                model = currentSong.albumArtUri,
+//                contentDescription = "Album art for ${currentSong.title}",
+//                modifier = Modifier
+//                    .size(220.dp)
+//                    .clip(RoundedCornerShape(18.dp)),
+//                contentScale = ContentScale.Crop,
+//                error = painterResource(android.R.drawable.ic_media_play),
+//                placeholder = painterResource(android.R.drawable.ic_media_play)
+//            )
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            Text(
+//                text = currentSong.title,
+//                style = MaterialTheme.typography.titleLarge,
+//                modifier = Modifier.fillMaxWidth()
+//            )
+//
+//            Spacer(modifier = Modifier.height(4.dp))
+//
+//            Text(
+//                text = currentSong.artist,
+//                style = MaterialTheme.typography.bodyMedium,
+//                modifier = Modifier.fillMaxWidth()
+//            )
+//
+//            Spacer(modifier = Modifier.height(12.dp))
+//
+//            Slider(
+//                value = currentPosition.toFloat(),
+//                onValueChange = { newPosition ->
+//                    onSeekChange(newPosition.toInt())
+//                },
+//                valueRange = 0f..duration.coerceAtLeast(1).toFloat(),
+//                modifier = Modifier.fillMaxWidth()
+//            )
+//
+//            Row(
+//                modifier = Modifier.fillMaxWidth(),
+//                horizontalArrangement = Arrangement.SpaceBetween
+//            ) {
+//                Text(text = formatDuration(currentPosition))
+//                Text(text = formatDuration(duration))
+//            }
+//
+//            Spacer(modifier = Modifier.height(12.dp))
+//
+//            Row(
+//                verticalAlignment = Alignment.CenterVertically,
+//                horizontalArrangement = Arrangement.Center,
+//                modifier = Modifier.fillMaxWidth()
+//            ) {
+//                IconButton(onClick = onPreviousClick) {
+//                    Icon(
+//                        imageVector = Icons.Filled.SkipPrevious,
+//                        contentDescription = "Previous song"
+//                    )
+//                }
+//
+//                Spacer(modifier = Modifier.width(12.dp))
+//
+//                IconButton(onClick = onPlayPauseClick) {
+//                    Icon(
+//                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+//                        contentDescription = if (isPlaying) "Pause" else "Play"
+//                    )
+//                }
+//
+//                Spacer(modifier = Modifier.width(12.dp))
+//
+//                IconButton(onClick = onNextClick) {
+//                    Icon(
+//                        imageVector = Icons.Filled.SkipNext,
+//                        contentDescription = "Next song"
+//                    )
+//                }
+//
+//                Spacer(modifier = Modifier.width(12.dp))
+//
+//                IconButton(onClick = onCollapseClick) {
+//                    Icon(
+//                        imageVector = Icons.Filled.ExpandLess,
+//                        contentDescription = "Collapse player"
+//                    )
+//                }
+//            }
+//        }
+//    }
+//}
+
+//@Composable
+//fun MiniPlayerSection(
+//    currentSong: Song?,
+//    isPlaying: Boolean,
+//    onPlayPauseClick: () -> Unit,
+//    onPreviousClick: () -> Unit,
+//    onNextClick: () -> Unit,
+//    onExpandClick: () -> Unit
+//) {
+//    if (currentSong == null) {
+//        return
+//    }
+//
+//    Card(
+//        modifier = Modifier
+//            .fillMaxWidth()
+//            .padding(horizontal = 16.dp, vertical = 8.dp)
+//            .playerSwipeGestures(
+//                onSwipeDown = onExpandClick,
+//                onSwipeLeft = onNextClick,
+//                onSwipeRight = onPreviousClick
+//            )
+//    ) {
+//        Row(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .clickable {
+//                    onExpandClick()
+//                }
+//                .padding(12.dp),
+//            verticalAlignment = Alignment.CenterVertically
+//        ) {
+//            AsyncImage(
+//                model = currentSong.albumArtUri,
+//                contentDescription = "Album art for ${currentSong.title}",
+//                modifier = Modifier
+//                    .size(56.dp)
+//                    .clip(RoundedCornerShape(10.dp)),
+//                contentScale = ContentScale.Crop,
+//                error = painterResource(android.R.drawable.ic_media_play),
+//                placeholder = painterResource(android.R.drawable.ic_media_play)
+//            )
+//
+//            Spacer(modifier = Modifier.width(12.dp))
+//
+//            Column(
+//                modifier = Modifier.weight(1f)
+//            ) {
+//                Text(
+//                    text = currentSong.title,
+//                    style = MaterialTheme.typography.titleMedium,
+//                    maxLines = 1
+//                )
+//
+//                Text(
+//                    text = currentSong.artist,
+//                    style = MaterialTheme.typography.bodySmall,
+//                    maxLines = 1
+//                )
+//            }
+//
+//            IconButton(onClick = onPreviousClick) {
+//                Icon(
+//                    imageVector = Icons.Filled.SkipPrevious,
+//                    contentDescription = "Previous song"
+//                )
+//            }
+//
+//            IconButton(onClick = onPlayPauseClick) {
+//                Icon(
+//                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+//                    contentDescription = if (isPlaying) "Pause" else "Play"
+//                )
+//            }
+//
+//            IconButton(onClick = onNextClick) {
+//                Icon(
+//                    imageVector = Icons.Filled.SkipNext,
+//                    contentDescription = "Next song"
+//                )
+//            }
+//
+//            IconButton(onClick = onExpandClick) {
+//                Icon(
+//                    imageVector = Icons.Filled.ExpandMore,
+//                    contentDescription = "Expand player"
+//                )
+//            }
+//        }
+//    }
+//}
+
 @Composable
-fun NowPlayingSection(
+fun PlayerCard(
     currentSong: Song?,
     isPlaying: Boolean,
+    isExpanded: Boolean,
+    currentPosition: Int,
+    duration: Int,
+    onPlayPauseClick: () -> Unit,
+    onPreviousClick: () -> Unit,
+    onNextClick: () -> Unit,
+    onSeekChange: (Int) -> Unit,
+    onExpandClick: () -> Unit,
+    onCollapseClick: () -> Unit
+) {
+    if (currentSong == null) {
+        return
+    }
+
+    val albumArtSize by animateDpAsState(
+        targetValue = if (isExpanded) 180.dp else 56.dp,
+        animationSpec = tween(durationMillis = 300),
+        label = "albumArtSize"
+    )
+
+    val cardCornerSize by animateDpAsState(
+        targetValue = if (isExpanded) 24.dp else 16.dp,
+        animationSpec = tween(durationMillis = 300),
+        label = "cardCornerSize"
+    )
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .animateContentSize(
+                animationSpec = tween(durationMillis = 300)
+            )
+            .playerSwipeGestures(
+                onSwipeDown = onExpandClick,
+                onSwipeUp = onCollapseClick,
+                onSwipeLeft = onNextClick,
+                onSwipeRight = onPreviousClick
+            ),
+        shape = RoundedCornerShape(cardCornerSize),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        if (isExpanded) {
+            ExpandedPlayerContent(
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                albumArtSize = albumArtSize,
+                currentPosition = currentPosition,
+                duration = duration,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onSeekChange = onSeekChange,
+                onCollapseClick = onCollapseClick
+            )
+        } else {
+            MiniPlayerContent(
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                albumArtSize = albumArtSize,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onExpandClick = onExpandClick
+            )
+        }
+    }
+}
+
+@Composable
+fun MiniPlayerContent(
+    currentSong: Song,
+    isPlaying: Boolean,
+    albumArtSize: androidx.compose.ui.unit.Dp,
+    onPlayPauseClick: () -> Unit,
+    onPreviousClick: () -> Unit,
+    onNextClick: () -> Unit,
+    onExpandClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = currentSong.albumArtUri,
+            contentDescription = "Album art for ${currentSong.title}",
+            modifier = Modifier
+                .size(albumArtSize)
+                .clip(RoundedCornerShape(10.dp)),
+            contentScale = ContentScale.Crop,
+            error = painterResource(android.R.drawable.ic_media_play),
+            placeholder = painterResource(android.R.drawable.ic_media_play)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = currentSong.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1
+            )
+
+            Text(
+                text = currentSong.artist,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1
+            )
+        }
+
+        IconButton(onClick = onPreviousClick) {
+            Icon(
+                imageVector = Icons.Filled.SkipPrevious,
+                contentDescription = "Previous song"
+            )
+        }
+
+        IconButton(onClick = onPlayPauseClick) {
+            Icon(
+                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                contentDescription = if (isPlaying) "Pause" else "Play"
+            )
+        }
+
+        IconButton(onClick = onNextClick) {
+            Icon(
+                imageVector = Icons.Filled.SkipNext,
+                contentDescription = "Next song"
+            )
+        }
+
+        IconButton(onClick = onExpandClick) {
+            Icon(
+                imageVector = Icons.Filled.ExpandMore,
+                contentDescription = "Expand player"
+            )
+        }
+    }
+}
+
+@Composable
+fun ExpandedPlayerContent(
+    currentSong: Song,
+    isPlaying: Boolean,
+    albumArtSize: androidx.compose.ui.unit.Dp,
     currentPosition: Int,
     duration: Int,
     onPlayPauseClick: () -> Unit,
@@ -145,184 +506,75 @@ fun NowPlayingSection(
     onSeekChange: (Int) -> Unit,
     onCollapseClick: () -> Unit
 ) {
-    if (currentSong == null) {
-        return
-    }
-
-    Card(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .playerSwipeGestures(
-                onSwipeUp = onCollapseClick,
-                onSwipeLeft = onNextClick,
-                onSwipeRight = onPreviousClick
-            )
+            .padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Column(
+        AsyncImage(
+            model = currentSong.albumArtUri,
+            contentDescription = "Album art for ${currentSong.title}",
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AsyncImage(
-                model = currentSong.albumArtUri,
-                contentDescription = "Album art for ${currentSong.title}",
-                modifier = Modifier
-                    .size(220.dp)
-                    .clip(RoundedCornerShape(18.dp)),
-                contentScale = ContentScale.Crop,
-                error = painterResource(android.R.drawable.ic_media_play),
-                placeholder = painterResource(android.R.drawable.ic_media_play)
-            )
+                .size(albumArtSize)
+                .clip(RoundedCornerShape(18.dp)),
+            contentScale = ContentScale.Crop,
+            error = painterResource(android.R.drawable.ic_media_play),
+            placeholder = painterResource(android.R.drawable.ic_media_play)
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = currentSong.title,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.fillMaxWidth()
-            )
+        Text(
+            text = currentSong.title,
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 1
+        )
 
-            Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
-            Text(
-                text = currentSong.artist,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.fillMaxWidth()
-            )
+        Text(
+            text = currentSong.artist,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 1
+        )
 
-            Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-            Slider(
-                value = currentPosition.toFloat(),
-                onValueChange = { newPosition ->
-                    onSeekChange(newPosition.toInt())
-                },
-                valueRange = 0f..duration.coerceAtLeast(1).toFloat(),
-                modifier = Modifier.fillMaxWidth()
-            )
+        Slider(
+            value = currentPosition.toFloat(),
+            onValueChange = { newPosition ->
+                onSeekChange(newPosition.toInt())
+            },
+            valueRange = 0f..duration.coerceAtLeast(1).toFloat(),
+            modifier = Modifier.fillMaxWidth()
+        )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(text = formatDuration(currentPosition))
-                Text(text = formatDuration(duration))
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                IconButton(onClick = onPreviousClick) {
-                    Icon(
-                        imageVector = Icons.Filled.SkipPrevious,
-                        contentDescription = "Previous song"
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                IconButton(onClick = onPlayPauseClick) {
-                    Icon(
-                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (isPlaying) "Pause" else "Play"
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                IconButton(onClick = onNextClick) {
-                    Icon(
-                        imageVector = Icons.Filled.SkipNext,
-                        contentDescription = "Next song"
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                IconButton(onClick = onCollapseClick) {
-                    Icon(
-                        imageVector = Icons.Filled.ExpandLess,
-                        contentDescription = "Collapse player"
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun MiniPlayerSection(
-    currentSong: Song?,
-    isPlaying: Boolean,
-    onPlayPauseClick: () -> Unit,
-    onPreviousClick: () -> Unit,
-    onNextClick: () -> Unit,
-    onExpandClick: () -> Unit
-) {
-    if (currentSong == null) {
-        return
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .playerSwipeGestures(
-                onSwipeDown = onExpandClick,
-                onSwipeLeft = onNextClick,
-                onSwipeRight = onPreviousClick
-            )
-    ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable {
-                    onExpandClick()
-                }
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            AsyncImage(
-                model = currentSong.albumArtUri,
-                contentDescription = "Album art for ${currentSong.title}",
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(10.dp)),
-                contentScale = ContentScale.Crop,
-                error = painterResource(android.R.drawable.ic_media_play),
-                placeholder = painterResource(android.R.drawable.ic_media_play)
-            )
+            Text(text = formatDuration(currentPosition))
+            Text(text = formatDuration(duration))
+        }
 
-            Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = currentSong.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1
-                )
-
-                Text(
-                    text = currentSong.artist,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1
-                )
-            }
-
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             IconButton(onClick = onPreviousClick) {
                 Icon(
                     imageVector = Icons.Filled.SkipPrevious,
                     contentDescription = "Previous song"
                 )
             }
+
+            Spacer(modifier = Modifier.width(12.dp))
 
             IconButton(onClick = onPlayPauseClick) {
                 Icon(
@@ -331,6 +583,8 @@ fun MiniPlayerSection(
                 )
             }
 
+            Spacer(modifier = Modifier.width(12.dp))
+
             IconButton(onClick = onNextClick) {
                 Icon(
                     imageVector = Icons.Filled.SkipNext,
@@ -338,16 +592,17 @@ fun MiniPlayerSection(
                 )
             }
 
-            IconButton(onClick = onExpandClick) {
+            Spacer(modifier = Modifier.width(12.dp))
+
+            IconButton(onClick = onCollapseClick) {
                 Icon(
-                    imageVector = Icons.Filled.ExpandMore,
-                    contentDescription = "Expand player"
+                    imageVector = Icons.Filled.ExpandLess,
+                    contentDescription = "Collapse player"
                 )
             }
         }
     }
 }
-
 
 @Composable
 fun SongList(
@@ -412,85 +667,38 @@ fun Modifier.playerSwipeGestures(
     onSwipeDown: (() -> Unit)? = null,
     onSwipeLeft: (() -> Unit)? = null,
     onSwipeRight: (() -> Unit)? = null
-): Modifier = composed {
-    val scope = rememberCoroutineScope()
-    val offsetX = remember { Animatable(0f) }
-    val offsetY = remember { Animatable(0f) }
+): Modifier {
+    return this.pointerInput(Unit) {
+        var totalDragX = 0f
+        var totalDragY = 0f
 
-    this
-        .offset {
-            IntOffset(
-                x = offsetX.value.roundToInt(),
-                y = offsetY.value.roundToInt()
-            )
-        }
-        .pointerInput(Unit) {
-            var totalDragX = 0f
-            var totalDragY = 0f
+        detectDragGestures(
+            onDragStart = {
+                totalDragX = 0f
+                totalDragY = 0f
+            },
+            onDrag = { change, dragAmount ->
+                change.consume()
+                totalDragX += dragAmount.x
+                totalDragY += dragAmount.y
+            },
+            onDragEnd = {
+                val swipeThreshold = 120f
 
-            detectDragGestures(
-                onDragStart = {
-                    totalDragX = 0f
-                    totalDragY = 0f
-
-                    scope.launch {
-                        offsetX.stop()
-                        offsetY.stop()
+                if (abs(totalDragX) > abs(totalDragY)) {
+                    if (totalDragX > swipeThreshold) {
+                        onSwipeRight?.invoke()
+                    } else if (totalDragX < -swipeThreshold) {
+                        onSwipeLeft?.invoke()
                     }
-                },
-                onDrag = { change, dragAmount ->
-                    change.consume()
-
-                    totalDragX += dragAmount.x
-                    totalDragY += dragAmount.y
-
-                    val horizontalDragIsStronger = abs(totalDragX) > abs(totalDragY)
-
-                    scope.launch {
-                        if (horizontalDragIsStronger) {
-                            offsetX.snapTo(totalDragX.coerceIn(-160f, 160f))
-                            offsetY.snapTo(0f)
-                        } else {
-                            offsetY.snapTo(totalDragY.coerceIn(-160f, 160f))
-                            offsetX.snapTo(0f)
-                        }
-                    }
-                },
-                onDragEnd = {
-                    val swipeThreshold = 120f
-
-                    if (abs(totalDragX) > abs(totalDragY)) {
-                        if (totalDragX > swipeThreshold) {
-                            onSwipeRight?.invoke()
-                        } else if (totalDragX < -swipeThreshold) {
-                            onSwipeLeft?.invoke()
-                        }
-                    } else {
-                        if (totalDragY > swipeThreshold) {
-                            onSwipeDown?.invoke()
-                        } else if (totalDragY < -swipeThreshold) {
-                            onSwipeUp?.invoke()
-                        }
-                    }
-
-                    scope.launch {
-                        offsetX.animateTo(
-                            targetValue = 0f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            )
-                        )
-
-                        offsetY.animateTo(
-                            targetValue = 0f,
-                            animationSpec = spring(
-                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                stiffness = Spring.StiffnessMedium
-                            )
-                        )
+                } else {
+                    if (totalDragY > swipeThreshold) {
+                        onSwipeDown?.invoke()
+                    } else if (totalDragY < -swipeThreshold) {
+                        onSwipeUp?.invoke()
                     }
                 }
-            )
-        }
+            }
+        )
+    }
 }
