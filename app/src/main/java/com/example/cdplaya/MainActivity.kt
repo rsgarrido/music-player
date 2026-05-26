@@ -45,8 +45,10 @@ import coil.compose.AsyncImage
 import com.example.cdplaya.data.MusicRepository
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.MusicPlayer
+import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.theme.CdplayaTheme
 import com.example.cdplaya.ui.MusicScreen
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
 
@@ -55,6 +57,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var musicPlayer: MusicPlayer
     private var currentSong by mutableStateOf<Song?>(null)
     private var isPlaying by mutableStateOf(false)
+    private var isShuffleEnabled by mutableStateOf(false)
+    private var repeatMode by mutableStateOf(RepeatMode.OFF)
+    private val previousSongHistory = mutableListOf<Song>()
+    private val nextSongHistory = mutableListOf<Song>()
     private var currentPosition by mutableStateOf(0)
     private var duration by mutableStateOf(0)
 
@@ -91,7 +97,7 @@ class MainActivity : ComponentActivity() {
 
         musicPlayer.onSongCompleted = {
             runOnUiThread {
-                playNextSong()
+                handleSongCompleted()
             }
         }
 
@@ -105,6 +111,8 @@ class MainActivity : ComponentActivity() {
                         permissionGranted = permissionGranted,
                         currentSong = currentSong,
                         isPlaying = isPlaying,
+                        isShuffleEnabled = isShuffleEnabled,
+                        repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
                         modifier = Modifier.padding(innerPadding),
@@ -118,7 +126,6 @@ class MainActivity : ComponentActivity() {
                             } else {
                                 musicPlayer.resume()
                                 isPlaying = true
-                                startProgressUpdates()
                             }
                         },
                         onPreviousClick = {
@@ -130,6 +137,12 @@ class MainActivity : ComponentActivity() {
                         onSeekChange = { position ->
                             musicPlayer.seekTo(position)
                             currentPosition = position
+                        },
+                        onShuffleClick = {
+                            toggleShuffle()
+                        },
+                        onRepeatClick = {
+                            cycleRepeatMode()
                         }
                     )
                 }
@@ -156,7 +169,21 @@ class MainActivity : ComponentActivity() {
         songs = repository.getSongs()
     }
 
-    private fun playSelectedSong(song: Song) {
+    private fun playSelectedSong(
+        song: Song,
+        addCurrentToHistory: Boolean = true,
+        clearForwardHistory: Boolean = true
+    ) {
+        val previousSong = currentSong
+
+        if (addCurrentToHistory && previousSong != null && previousSong.id != song.id) {
+            previousSongHistory.add(previousSong)
+        }
+
+        if (clearForwardHistory) {
+            nextSongHistory.clear()
+        }
+
         musicPlayer.playSong(song)
         currentSong = song
         isPlaying = true
@@ -170,15 +197,36 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
-
-        val nextIndex = if (currentIndex == -1 || currentIndex == songs.lastIndex) {
-            0
-        } else {
-            currentIndex + 1
+        if (repeatMode == RepeatMode.ONE) {
+            currentSong?.let { song ->
+                playSelectedSong(
+                    song = song,
+                    addCurrentToHistory = false,
+                    clearForwardHistory = false
+                )
+            }
+            return
         }
 
-        playSelectedSong(songs[nextIndex])
+        val nextSong = if (isShuffleEnabled) {
+            if (nextSongHistory.isNotEmpty()) {
+                nextSongHistory.removeAt(nextSongHistory.lastIndex)
+            } else {
+                getRandomSongExceptCurrent()
+            }
+        } else {
+            val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+
+            val nextIndex = if (currentIndex == -1 || currentIndex == songs.lastIndex) {
+                0
+            } else {
+                currentIndex + 1
+            }
+
+            songs[nextIndex]
+        }
+
+        playSelectedSong(nextSong)
     }
 
     private fun playPreviousSong() {
@@ -186,15 +234,29 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+        val previousSong = if (isShuffleEnabled && previousSongHistory.isNotEmpty()) {
+            currentSong?.let { song ->
+                nextSongHistory.add(song)
+            }
 
-        val previousIndex = if (currentIndex <= 0) {
-            songs.lastIndex
+            previousSongHistory.removeAt(previousSongHistory.lastIndex)
         } else {
-            currentIndex - 1
+            val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+
+            val previousIndex = if (currentIndex <= 0) {
+                songs.lastIndex
+            } else {
+                currentIndex - 1
+            }
+
+            songs[previousIndex]
         }
 
-        playSelectedSong(songs[previousIndex])
+        playSelectedSong(
+            song = previousSong,
+            addCurrentToHistory = false,
+            clearForwardHistory = false
+        )
     }
 
     private fun startProgressUpdates() {
@@ -202,6 +264,63 @@ class MainActivity : ComponentActivity() {
         progressHandler.post(progressRunnable)
     }
 
+    private fun handleSongCompleted() {
+        when (repeatMode) {
+            RepeatMode.ONE -> {
+                currentSong?.let { song ->
+                    playSelectedSong(
+                        song = song,
+                        addCurrentToHistory = false,
+                        clearForwardHistory = false
+                    )
+                }
+            }
+
+            RepeatMode.ALL -> {
+                playNextSong()
+            }
+
+            RepeatMode.OFF -> {
+                if (isShuffleEnabled) {
+                    playNextSong()
+                    return
+                }
+
+                val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+
+                if (currentIndex == songs.lastIndex) {
+                    isPlaying = false
+                    currentPosition = duration
+                } else {
+                    playNextSong()
+                }
+            }
+        }
+    }
+
+    private fun getRandomSongExceptCurrent(): Song {
+        val availableSongs = songs.filter { it.id != currentSong?.id }
+
+        return if (availableSongs.isNotEmpty()) {
+            availableSongs[Random.nextInt(availableSongs.size)]
+        } else {
+            songs.first()
+        }
+    }
+
+    private fun toggleShuffle() {
+        isShuffleEnabled = !isShuffleEnabled
+        previousSongHistory.clear()
+        nextSongHistory.clear()
+    }
+
+    private fun cycleRepeatMode() {
+        repeatMode = when (repeatMode) {
+            RepeatMode.OFF -> RepeatMode.ALL
+            RepeatMode.ALL -> RepeatMode.ONE
+            RepeatMode.ONE -> RepeatMode.OFF
+        }
+    }
 
     override fun onDestroy() {
         super.onDestroy()
