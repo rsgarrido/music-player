@@ -18,11 +18,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,6 +55,9 @@ fun MusicScreen(
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit
 ) {
+
+    var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxSize()) {
         Text(
             text = "CDPlaya",
@@ -65,20 +76,37 @@ fun MusicScreen(
                 modifier = Modifier.padding(16.dp)
             )
         } else {
-            NowPlayingSection(
-                currentSong = currentSong,
-                isPlaying = isPlaying,
-                currentPosition = currentPosition,
-                duration = duration,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange
-            )
+            if (isPlayerExpanded) {
+                NowPlayingSection(
+                    currentSong = currentSong,
+                    isPlaying = isPlaying,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    onPlayPauseClick = onPlayPauseClick,
+                    onPreviousClick = onPreviousClick,
+                    onNextClick = onNextClick,
+                    onSeekChange = onSeekChange,
+                    onCollapseClick = {
+                        isPlayerExpanded = false
+                    }
+                )
+            } else {
+                MiniPlayerSection(
+                    currentSong = currentSong,
+                    isPlaying = isPlaying,
+                    onPlayPauseClick = onPlayPauseClick,
+                    onPreviousClick = onPreviousClick,
+                    onNextClick = onNextClick,
+                    onExpandClick = {
+                        isPlayerExpanded = true
+                    }
+                )
+            }
 
             SongList(
                 songs = songs,
-                onSongClick = onSongClick
+                onSongClick = onSongClick,
+                modifier = Modifier.weight(1f)
             )
         }
     }
@@ -93,7 +121,8 @@ fun NowPlayingSection(
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
-    onSeekChange: (Int) -> Unit
+    onSeekChange: (Int) -> Unit,
+    onCollapseClick: () -> Unit
 ) {
     if (currentSong == null) {
         return
@@ -165,20 +194,38 @@ fun NowPlayingSection(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Button(onClick = onPreviousClick) {
-                    Text(text = "Previous")
+                IconButton(onClick = onPreviousClick) {
+                    Icon(
+                        imageVector = Icons.Filled.SkipPrevious,
+                        contentDescription = "Previous song"
+                    )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                Button(onClick = onPlayPauseClick) {
-                    Text(text = if (isPlaying) "Pause" else "Play")
+                IconButton(onClick = onPlayPauseClick) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (isPlaying) "Pause" else "Play"
+                    )
                 }
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(12.dp))
 
-                Button(onClick = onNextClick) {
-                    Text(text = "Next")
+                IconButton(onClick = onNextClick) {
+                    Icon(
+                        imageVector = Icons.Filled.SkipNext,
+                        contentDescription = "Next song"
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                IconButton(onClick = onCollapseClick) {
+                    Icon(
+                        imageVector = Icons.Filled.ExpandLess,
+                        contentDescription = "Collapse player"
+                    )
                 }
             }
         }
@@ -186,11 +233,104 @@ fun NowPlayingSection(
 }
 
 @Composable
+fun MiniPlayerSection(
+    currentSong: Song?,
+    isPlaying: Boolean,
+    onPlayPauseClick: () -> Unit,
+    onPreviousClick: () -> Unit,
+    onNextClick: () -> Unit,
+    onExpandClick: () -> Unit
+) {
+    if (currentSong == null) {
+        return
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable {
+                    onExpandClick()
+                }
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = currentSong.albumArtUri,
+                contentDescription = "Album art for ${currentSong.title}",
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(RoundedCornerShape(10.dp)),
+                contentScale = ContentScale.Crop,
+                error = painterResource(android.R.drawable.ic_media_play),
+                placeholder = painterResource(android.R.drawable.ic_media_play)
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = currentSong.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1
+                )
+
+                Text(
+                    text = currentSong.artist,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1
+                )
+            }
+
+            IconButton(onClick = onPreviousClick) {
+                Icon(
+                    imageVector = Icons.Filled.SkipPrevious,
+                    contentDescription = "Previous song"
+                )
+            }
+
+            IconButton(onClick = onPlayPauseClick) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play"
+                )
+            }
+
+            IconButton(onClick = onNextClick) {
+                Icon(
+                    imageVector = Icons.Filled.SkipNext,
+                    contentDescription = "Next song"
+                )
+            }
+
+            IconButton(onClick = onExpandClick) {
+                Icon(
+                    imageVector = Icons.Filled.ExpandMore,
+                    contentDescription = "Expand player"
+                )
+            }
+        }
+    }
+}
+
+
+@Composable
 fun SongList(
     songs: List<Song>,
-    onSongClick: (Song) -> Unit
+    onSongClick: (Song) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    LazyColumn {
+    LazyColumn(
+        modifier = modifier
+    ) {
         items(songs) { song ->
             ListItem(
                 leadingContent = {
