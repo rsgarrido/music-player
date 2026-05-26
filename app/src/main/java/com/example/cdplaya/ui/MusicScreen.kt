@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,12 +36,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
+import kotlin.math.abs
 
 @Composable
 fun MusicScreen(
@@ -134,9 +137,12 @@ fun NowPlayingSection(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            .padding(16.dp)
+            .playerSwipeGestures(
+                onSwipeUp = onCollapseClick,
+                onSwipeLeft = onNextClick,
+                onSwipeRight = onPreviousClick
+            )
     ) {
         Column(
             modifier = Modifier
@@ -251,9 +257,12 @@ fun MiniPlayerSection(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .playerSwipeGestures(
+                onSwipeDown = onExpandClick,
+                onSwipeLeft = onNextClick,
+                onSwipeRight = onPreviousClick
+            )
     ) {
         Row(
             modifier = Modifier
@@ -381,4 +390,45 @@ fun formatDuration(milliseconds: Int): String {
     val seconds = totalSeconds % 60
 
     return "%d:%02d".format(minutes, seconds)
+}
+
+fun Modifier.playerSwipeGestures(
+    onSwipeUp: (() -> Unit)? = null,
+    onSwipeDown: (() -> Unit)? = null,
+    onSwipeLeft: (() -> Unit)? = null,
+    onSwipeRight: (() -> Unit)? = null
+): Modifier {
+    return this.pointerInput(Unit) {
+        var totalDragX = 0f
+        var totalDragY = 0f
+
+        detectDragGestures(
+            onDragStart = {
+                totalDragX = 0f
+                totalDragY = 0f
+            },
+            onDrag = { change, dragAmount ->
+                change.consume()
+                totalDragX += dragAmount.x
+                totalDragY += dragAmount.y
+            },
+            onDragEnd = {
+                val swipeThreshold = 120f
+
+                if (abs(totalDragX) > abs(totalDragY)) {
+                    if (totalDragX > swipeThreshold) {
+                        onSwipeRight?.invoke()
+                    } else if (totalDragX < -swipeThreshold) {
+                        onSwipeLeft?.invoke()
+                    }
+                } else {
+                    if (totalDragY > swipeThreshold) {
+                        onSwipeDown?.invoke()
+                    } else if (totalDragY < -swipeThreshold) {
+                        onSwipeUp?.invoke()
+                    }
+                }
+            }
+        )
+    }
 }
