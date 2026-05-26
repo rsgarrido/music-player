@@ -21,6 +21,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
@@ -105,6 +107,7 @@ fun MusicScreen(
 
             SongList(
                 songs = songs,
+                currentSongId = currentSong?.id,
                 onSongClick = onSongClick,
                 modifier = Modifier.weight(1f)
             )
@@ -325,6 +328,7 @@ fun MiniPlayerSection(
 @Composable
 fun SongList(
     songs: List<Song>,
+    currentSongId: Long?,
     onSongClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -332,6 +336,8 @@ fun SongList(
         modifier = modifier
     ) {
         items(songs) { song ->
+            val isCurrentSong = song.id == currentSongId
+
             ListItem(
                 leadingContent = {
                     AsyncImage(
@@ -346,11 +352,21 @@ fun SongList(
                     )
                 },
                 headlineContent = {
-                    Text(text = song.title)
+                    Text(
+                        text = song.title,
+                        fontWeight = if (isCurrentSong) FontWeight.Bold else FontWeight.Normal
+                    )
                 },
                 supportingContent = {
                     Text(text = song.artist)
                 },
+                colors = ListItemDefaults.colors(
+                    containerColor = if (isCurrentSong) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    }
+                ),
                 modifier = Modifier.clickable {
                     onSongClick(song)
                 }
