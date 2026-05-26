@@ -2,7 +2,11 @@ package com.example.cdplaya.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,11 +16,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -92,72 +99,88 @@ fun NowPlayingSection(
         return
     }
 
-    AsyncImage(
-        model = currentSong.albumArtUri,
-        contentDescription = "Album art for ${currentSong.title}",
-        modifier = Modifier
-            .padding(16.dp)
-            .size(180.dp)
-            .clip(RoundedCornerShape(12.dp)),
-        contentScale = ContentScale.Crop,
-        error = painterResource(android.R.drawable.ic_media_play),
-        placeholder = painterResource(android.R.drawable.ic_media_play)
-    )
-
-    Text(
-        text = "Now playing: ${currentSong.title}",
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(horizontal = 16.dp)
-    )
-
-    Text(
-        text = currentSong.artist,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(horizontal = 16.dp)
-    )
-
-    Slider(
-        value = currentPosition.toFloat(),
-        onValueChange = { newPosition ->
-            onSeekChange(newPosition.toInt())
-        },
-        valueRange = 0f..duration.coerceAtLeast(1).toFloat(),
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-    )
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+            .padding(16.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        Text(text = formatDuration(currentPosition))
-        Text(text = formatDuration(duration))
-    }
-
-    Row(
-        modifier = Modifier.padding(16.dp)
-    ) {
-        Button(
-            onClick = onPreviousClick,
-            modifier = Modifier.padding(end = 8.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = "Previous")
-        }
+            AsyncImage(
+                model = currentSong.albumArtUri,
+                contentDescription = "Album art for ${currentSong.title}",
+                modifier = Modifier
+                    .size(220.dp)
+                    .clip(RoundedCornerShape(18.dp)),
+                contentScale = ContentScale.Crop,
+                error = painterResource(android.R.drawable.ic_media_play),
+                placeholder = painterResource(android.R.drawable.ic_media_play)
+            )
 
-        Button(
-            onClick = onPlayPauseClick,
-            modifier = Modifier.padding(end = 8.dp)
-        ) {
-            Text(text = if (isPlaying) "Pause" else "Play")
-        }
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = onNextClick
-        ) {
-            Text(text = "Next")
+            Text(
+                text = currentSong.title,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = currentSong.artist,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Slider(
+                value = currentPosition.toFloat(),
+                onValueChange = { newPosition ->
+                    onSeekChange(newPosition.toInt())
+                },
+                valueRange = 0f..duration.coerceAtLeast(1).toFloat(),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = formatDuration(currentPosition))
+                Text(text = formatDuration(duration))
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Button(onClick = onPreviousClick) {
+                    Text(text = "Previous")
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(onClick = onPlayPauseClick) {
+                    Text(text = if (isPlaying) "Pause" else "Play")
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(onClick = onNextClick) {
+                    Text(text = "Next")
+                }
+            }
         }
     }
 }
