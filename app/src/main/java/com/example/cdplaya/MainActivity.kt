@@ -45,8 +45,10 @@ import coil.compose.AsyncImage
 import com.example.cdplaya.data.MusicRepository
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.MusicPlayer
+import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.theme.CdplayaTheme
 import com.example.cdplaya.ui.MusicScreen
+import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
 
@@ -55,6 +57,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var musicPlayer: MusicPlayer
     private var currentSong by mutableStateOf<Song?>(null)
     private var isPlaying by mutableStateOf(false)
+    private var isShuffleEnabled by mutableStateOf(false)
+    private var repeatMode by mutableStateOf(RepeatMode.OFF)
     private var currentPosition by mutableStateOf(0)
     private var duration by mutableStateOf(0)
 
@@ -91,7 +95,7 @@ class MainActivity : ComponentActivity() {
 
         musicPlayer.onSongCompleted = {
             runOnUiThread {
-                playNextSong()
+                handleSongCompleted()
             }
         }
 
@@ -105,6 +109,8 @@ class MainActivity : ComponentActivity() {
                         permissionGranted = permissionGranted,
                         currentSong = currentSong,
                         isPlaying = isPlaying,
+                        isShuffleEnabled = isShuffleEnabled,
+                        repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
                         modifier = Modifier.padding(innerPadding),
@@ -118,7 +124,6 @@ class MainActivity : ComponentActivity() {
                             } else {
                                 musicPlayer.resume()
                                 isPlaying = true
-                                startProgressUpdates()
                             }
                         },
                         onPreviousClick = {
@@ -130,6 +135,12 @@ class MainActivity : ComponentActivity() {
                         onSeekChange = { position ->
                             musicPlayer.seekTo(position)
                             currentPosition = position
+                        },
+                        onShuffleClick = {
+                            toggleShuffle()
+                        },
+                        onRepeatClick = {
+                            cycleRepeatMode()
                         }
                     )
                 }
@@ -170,15 +181,28 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
-
-        val nextIndex = if (currentIndex == -1 || currentIndex == songs.lastIndex) {
-            0
-        } else {
-            currentIndex + 1
+        if (repeatMode == RepeatMode.ONE) {
+            currentSong?.let { song ->
+                playSelectedSong(song)
+            }
+            return
         }
 
-        playSelectedSong(songs[nextIndex])
+        val nextSong = if (isShuffleEnabled && songs.size > 1) {
+            getRandomSongExceptCurrent()
+        } else {
+            val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+
+            val nextIndex = if (currentIndex == -1 || currentIndex == songs.lastIndex) {
+                0
+            } else {
+                currentIndex + 1
+            }
+
+            songs[nextIndex]
+        }
+
+        playSelectedSong(nextSong)
     }
 
     private fun playPreviousSong() {
@@ -202,6 +226,52 @@ class MainActivity : ComponentActivity() {
         progressHandler.post(progressRunnable)
     }
 
+    private fun handleSongCompleted() {
+        when (repeatMode) {
+            RepeatMode.ONE -> {
+                currentSong?.let { song ->
+                    playSelectedSong(song)
+                }
+            }
+
+            RepeatMode.ALL -> {
+                playNextSong()
+            }
+
+            RepeatMode.OFF -> {
+                val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+
+                if (currentIndex == songs.lastIndex) {
+                    isPlaying = false
+                    currentPosition = duration
+                } else {
+                    playNextSong()
+                }
+            }
+        }
+    }
+
+    private fun getRandomSongExceptCurrent(): Song {
+        val availableSongs = songs.filter { it.id != currentSong?.id }
+
+        return if (availableSongs.isNotEmpty()) {
+            availableSongs[Random.nextInt(availableSongs.size)]
+        } else {
+            songs.first()
+        }
+    }
+
+    private fun toggleShuffle() {
+        isShuffleEnabled = !isShuffleEnabled
+    }
+
+    private fun cycleRepeatMode() {
+        repeatMode = when (repeatMode) {
+            RepeatMode.OFF -> RepeatMode.ALL
+            RepeatMode.ALL -> RepeatMode.ONE
+            RepeatMode.ONE -> RepeatMode.OFF
+        }
+    }
 
     override fun onDestroy() {
         super.onDestroy()
