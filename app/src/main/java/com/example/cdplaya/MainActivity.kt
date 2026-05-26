@@ -45,6 +45,7 @@ import coil.compose.AsyncImage
 import com.example.cdplaya.data.MusicRepository
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.MusicPlayer
+import com.example.cdplaya.player.PlayerStateStorage
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.theme.CdplayaTheme
 import com.example.cdplaya.ui.MusicScreen
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
     private var songs by mutableStateOf<List<Song>>(emptyList())
     private var permissionGranted by mutableStateOf(false)
     private lateinit var musicPlayer: MusicPlayer
+    private lateinit var playerStateStorage: PlayerStateStorage
     private var currentSong by mutableStateOf<Song?>(null)
     private var isPlaying by mutableStateOf(false)
     private var isShuffleEnabled by mutableStateOf(false)
@@ -94,6 +96,10 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         musicPlayer = MusicPlayer(this)
+        playerStateStorage = PlayerStateStorage(this)
+
+        isShuffleEnabled = playerStateStorage.isShuffleEnabled()
+        repeatMode = playerStateStorage.getRepeatMode()
 
         musicPlayer.onSongCompleted = {
             runOnUiThread {
@@ -137,6 +143,7 @@ class MainActivity : ComponentActivity() {
                         onSeekChange = { position ->
                             musicPlayer.seekTo(position)
                             currentPosition = position
+                            savePlayerState()
                         },
                         onShuffleClick = {
                             toggleShuffle()
@@ -167,6 +174,59 @@ class MainActivity : ComponentActivity() {
     private fun loadSongs() {
         val repository = MusicRepository(this)
         songs = repository.getSongs()
+
+        restorePlayerState()
+    }
+
+    private fun restorePlayerState() {
+        val savedSongId = playerStateStorage.getCurrentSongId() ?: return
+
+        val restoredSong = songs.firstOrNull { song ->
+            song.id == savedSongId
+        } ?: return
+
+        currentSong = restoredSong
+        currentPosition = playerStateStorage.getCurrentPosition()
+        duration = restoredSong.duration.toInt()
+        isPlaying = false
+
+        isShuffleEnabled = playerStateStorage.isShuffleEnabled()
+        repeatMode = playerStateStorage.getRepeatMode()
+
+        previousSongHistory.clear()
+        previousSongHistory.addAll(
+            playerStateStorage.getPreviousSongIds().mapNotNull { savedId ->
+                songs.firstOrNull { song -> song.id == savedId }
+            }
+        )
+
+        nextSongHistory.clear()
+        nextSongHistory.addAll(
+            playerStateStorage.getNextSongIds().mapNotNull { savedId ->
+                songs.firstOrNull { song -> song.id == savedId }
+            }
+        )
+
+        musicPlayer.playSong(restoredSong, shouldStart = false)
+        musicPlayer.seekTo(currentPosition)
+
+        startProgressUpdates()
+    }
+
+    private fun savePlayerState() {
+        playerStateStorage.saveState(
+            currentSongId = currentSong?.id,
+            currentPosition = musicPlayer.getCurrentPosition(),
+            isShuffleEnabled = isShuffleEnabled,
+            repeatMode = repeatMode,
+            previousSongIds = previousSongHistory.map { song -> song.id },
+            nextSongIds = nextSongHistory.map { song -> song.id }
+        )
+    }
+
+    override fun onPause() {
+        super.onPause()
+        savePlayerState()
     }
 
     private fun playSelectedSong(
@@ -312,6 +372,7 @@ class MainActivity : ComponentActivity() {
         isShuffleEnabled = !isShuffleEnabled
         previousSongHistory.clear()
         nextSongHistory.clear()
+        savePlayerState()
     }
 
     private fun cycleRepeatMode() {
@@ -320,9 +381,11 @@ class MainActivity : ComponentActivity() {
             RepeatMode.ALL -> RepeatMode.ONE
             RepeatMode.ONE -> RepeatMode.OFF
         }
+        savePlayerState()
     }
 
     override fun onDestroy() {
+        savePlayerState()
         super.onDestroy()
         progressHandler.removeCallbacks(progressRunnable)
         musicPlayer.stop()
