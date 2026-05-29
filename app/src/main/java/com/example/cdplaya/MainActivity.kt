@@ -29,13 +29,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -63,6 +68,7 @@ class MainActivity : ComponentActivity() {
     private var repeatMode by mutableStateOf(RepeatMode.OFF)
     private val previousSongHistory = mutableListOf<Song>()
     private val nextSongHistory = mutableListOf<Song>()
+    private val playbackQueue = mutableStateListOf<Song>()
     private var currentPosition by mutableStateOf(0)
     private var duration by mutableStateOf(0)
 
@@ -111,7 +117,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CdplayaTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                val snackbarHostState = remember { SnackbarHostState() }
+                Scaffold(modifier = Modifier.fillMaxSize(),
+                    snackbarHost = {
+                        SnackbarHost(hostState = snackbarHostState)
+                    }) { innerPadding ->
                     MusicScreen(
                         songs = songs,
                         permissionGranted = permissionGranted,
@@ -121,6 +131,8 @@ class MainActivity : ComponentActivity() {
                         repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
+                        queuedSongs = playbackQueue,
+                        snackbarHostState = snackbarHostState,
                         modifier = Modifier.padding(innerPadding),
                         onSongClick = { song ->
                             playSelectedSong(song)
@@ -150,7 +162,23 @@ class MainActivity : ComponentActivity() {
                         },
                         onRepeatClick = {
                             cycleRepeatMode()
+                        },
+                        onAddToQueueClick = { song ->
+                            addSongToQueue(song)
+                        },
+                        onRemoveFromQueueClick = { index ->
+                            removeSongFromQueue(index)
+                        },
+                        onMoveQueueItemUpClick = { index ->
+                            moveQueuedSongUp(index)
+                        },
+                        onMoveQueueItemDownClick = { index ->
+                            moveQueuedSongDown(index)
+                        },
+                        onUndoAddToQueueClick = { song ->
+                            removeLastMatchingSongFromQueue(song)
                         }
+
                     )
                 }
             }
@@ -193,6 +221,13 @@ class MainActivity : ComponentActivity() {
         isShuffleEnabled = playerStateStorage.isShuffleEnabled()
         repeatMode = playerStateStorage.getRepeatMode()
 
+        playbackQueue.clear()
+        playbackQueue.addAll(
+            playerStateStorage.getQueueSongIds().mapNotNull { savedId ->
+                songs.firstOrNull { song -> song.id == savedId }
+            }
+        )
+
         previousSongHistory.clear()
         previousSongHistory.addAll(
             playerStateStorage.getPreviousSongIds().mapNotNull { savedId ->
@@ -220,7 +255,8 @@ class MainActivity : ComponentActivity() {
             isShuffleEnabled = isShuffleEnabled,
             repeatMode = repeatMode,
             previousSongIds = previousSongHistory.map { song -> song.id },
-            nextSongIds = nextSongHistory.map { song -> song.id }
+            nextSongIds = nextSongHistory.map { song -> song.id },
+            queueSongIds = playbackQueue.map { song -> song.id }
         )
     }
 
@@ -265,6 +301,10 @@ class MainActivity : ComponentActivity() {
                     clearForwardHistory = false
                 )
             }
+            return
+        }
+
+        if (playNextQueuedSong()) {
             return
         }
 
@@ -382,6 +422,56 @@ class MainActivity : ComponentActivity() {
             RepeatMode.ONE -> RepeatMode.OFF
         }
         savePlayerState()
+    }
+
+    private fun addSongToQueue(song: Song) {
+        playbackQueue.add(song)
+        savePlayerState()
+    }
+
+    private fun removeSongFromQueue(index: Int) {
+        if (index in playbackQueue.indices) {
+            playbackQueue.removeAt(index)
+            savePlayerState()
+        }
+    }
+
+    private fun moveQueuedSongUp(index: Int) {
+        if (index > 0 && index in playbackQueue.indices) {
+            val song = playbackQueue.removeAt(index)
+            playbackQueue.add(index - 1, song)
+            savePlayerState()
+        }
+    }
+
+    private fun moveQueuedSongDown(index: Int) {
+        if (index >= 0 && index < playbackQueue.lastIndex) {
+            val song = playbackQueue.removeAt(index)
+            playbackQueue.add(index + 1, song)
+            savePlayerState()
+        }
+    }
+
+    private fun playNextQueuedSong(): Boolean {
+        if (playbackQueue.isEmpty()) {
+            return false
+        }
+
+        val nextQueuedSong = playbackQueue.removeAt(0)
+        playSelectedSong(nextQueuedSong)
+        savePlayerState()
+
+        return true
+    }
+
+    private fun removeLastMatchingSongFromQueue(song: Song) {
+        for (index in playbackQueue.lastIndex downTo 0) {
+            if (playbackQueue[index].id == song.id) {
+                playbackQueue.removeAt(index)
+                savePlayerState()
+                return
+            }
+        }
     }
 
     override fun onDestroy() {
