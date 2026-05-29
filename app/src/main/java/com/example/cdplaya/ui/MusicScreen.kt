@@ -37,6 +37,9 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.Composable
@@ -62,6 +65,7 @@ import com.example.cdplaya.player.RepeatMode
 import kotlin.math.abs
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 
 @Composable
 fun MusicScreen(
@@ -73,6 +77,8 @@ fun MusicScreen(
     repeatMode: RepeatMode,
     currentPosition: Int,
     duration: Int,
+    snackbarHostState: SnackbarHostState,
+    onUndoAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
     onSongClick: (Song) -> Unit,
     onPlayPauseClick: () -> Unit,
@@ -80,10 +86,39 @@ fun MusicScreen(
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit,
     onShuffleClick: () -> Unit,
-    onRepeatClick: () -> Unit
+    onRepeatClick: () -> Unit,
+    queuedSongs: List<Song>,
+    onAddToQueueClick: (Song) -> Unit,
+    onRemoveFromQueueClick: (Int) -> Unit,
+    onMoveQueueItemUpClick: (Int) -> Unit,
+    onMoveQueueItemDownClick: (Int) -> Unit
 ) {
 
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
+    var isQueueScreenVisible by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
+
+    val handleAddToQueue: (Song) -> Unit = { song ->
+        onAddToQueueClick(song)
+        recentlyAddedSongIds = recentlyAddedSongIds + song.id
+
+        coroutineScope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = "\"${song.title}\" added to queue",
+                actionLabel = "Undo",
+                withDismissAction = true,
+                duration = SnackbarDuration.Short
+            )
+
+            if (result == SnackbarResult.ActionPerformed) {
+                onUndoAddToQueueClick(song)
+            }
+
+            delay(3000)
+            recentlyAddedSongIds = recentlyAddedSongIds - song.id
+        }
+    }
 
     Column(
         modifier = modifier
@@ -95,8 +130,30 @@ fun MusicScreen(
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(16.dp)
         )
+        IconButton(
+            onClick = {
+                isQueueScreenVisible = true
+            },
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.QueueMusic,
+                contentDescription = "Open queue"
+            )
+        }
 
-        if (!permissionGranted) {
+        if (isQueueScreenVisible) {
+            QueueScreen(
+                queuedSongs = queuedSongs,
+                onBackClick = {
+                    isQueueScreenVisible = false
+                },
+                onRemoveFromQueueClick = onRemoveFromQueueClick,
+                onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+                onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+                modifier = Modifier.weight(1f)
+            )
+        } else if (!permissionGranted) {
             Text(
                 text = "Audio and image permissions are needed to show your music.",
                 modifier = Modifier.padding(16.dp)
@@ -132,12 +189,19 @@ fun MusicScreen(
             SongList(
                 songs = songs,
                 currentSongId = currentSong?.id,
+                recentlyAddedSongIds = recentlyAddedSongIds,
                 onSongClick = onSongClick,
+                onAddToQueueClick = { song ->
+                    handleAddToQueue(song)
+                },
                 modifier = Modifier.weight(1f)
             )
+
         }
     }
 }
+
+
 
 @Composable
 fun PlayerCard(
@@ -451,7 +515,9 @@ fun ExpandedPlayerContent(
 fun SongList(
     songs: List<Song>,
     currentSongId: Long?,
+    recentlyAddedSongIds: Set<Long>,
     onSongClick: (Song) -> Unit,
+    onAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -481,6 +547,33 @@ fun SongList(
                 },
                 supportingContent = {
                     Text(text = song.artist)
+                },
+                trailingContent = {
+                    val wasRecentlyAdded = song.id in recentlyAddedSongIds
+
+                    IconButton(
+                        onClick = {
+                            onAddToQueueClick(song)
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (wasRecentlyAdded) {
+                                Icons.Filled.Check
+                            } else {
+                                Icons.Filled.PlaylistAdd
+                            },
+                            contentDescription = if (wasRecentlyAdded) {
+                                "${song.title} added to queue"
+                            } else {
+                                "Add ${song.title} to queue"
+                            },
+                            tint = if (wasRecentlyAdded) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
+                        )
+                    }
                 },
                 colors = ListItemDefaults.colors(
                     containerColor = if (isCurrentSong) {
@@ -545,3 +638,4 @@ fun Modifier.playerSwipeGestures(
         )
     }
 }
+
