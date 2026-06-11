@@ -54,6 +54,8 @@ import com.example.cdplaya.player.PlayerStateStorage
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.theme.CdplayaTheme
 import com.example.cdplaya.ui.MusicScreen
+import com.example.cdplaya.data.LibraryPreferences
+import com.example.cdplaya.data.LibraryFolder
 import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
@@ -62,6 +64,7 @@ class MainActivity : ComponentActivity() {
     private var permissionGranted by mutableStateOf(false)
     private lateinit var musicPlayer: MusicPlayer
     private lateinit var playerStateStorage: PlayerStateStorage
+    private lateinit var libraryPreferences: LibraryPreferences
     private var currentSong by mutableStateOf<Song?>(null)
     private var isPlaying by mutableStateOf(false)
     private var isShuffleEnabled by mutableStateOf(false)
@@ -71,8 +74,9 @@ class MainActivity : ComponentActivity() {
     private val playbackQueue = mutableStateListOf<Song>()
     private var currentPosition by mutableStateOf(0)
     private var duration by mutableStateOf(0)
-
     private val progressHandler = Handler(Looper.getMainLooper())
+    private val libraryFolders = mutableStateListOf<LibraryFolder>()
+    private var selectedLibraryFolders by mutableStateOf<Set<String>>(emptySet())
 
     private val progressRunnable = object : Runnable {
         override fun run() {
@@ -103,7 +107,7 @@ class MainActivity : ComponentActivity() {
 
         musicPlayer = MusicPlayer(this)
         playerStateStorage = PlayerStateStorage(this)
-
+        libraryPreferences = LibraryPreferences(this)
         isShuffleEnabled = playerStateStorage.isShuffleEnabled()
         repeatMode = playerStateStorage.getRepeatMode()
 
@@ -134,6 +138,8 @@ class MainActivity : ComponentActivity() {
                         queuedSongs = playbackQueue,
                         snackbarHostState = snackbarHostState,
                         modifier = Modifier.padding(innerPadding),
+                        libraryFolders = libraryFolders,
+                        selectedLibraryFolders = selectedLibraryFolders,
                         onSongClick = { song ->
                             playSelectedSong(song)
                         },
@@ -177,6 +183,15 @@ class MainActivity : ComponentActivity() {
                         },
                         onUndoAddToQueueClick = { song ->
                             removeLastMatchingSongFromQueue(song)
+                        },
+                        onLibraryFolderToggle = { folderPath ->
+                            toggleLibraryFolder(folderPath)
+                        },
+                        onSelectAllLibraryFolders = {
+                            selectAllLibraryFolders()
+                        },
+                        onClearSelectedLibraryFolders = {
+                            clearSelectedLibraryFolders()
                         }
 
                     )
@@ -201,7 +216,13 @@ class MainActivity : ComponentActivity() {
 
     private fun loadSongs() {
         val repository = MusicRepository(this)
-        songs = repository.getSongs()
+
+        selectedLibraryFolders = libraryPreferences.getSelectedFolders()
+
+        libraryFolders.clear()
+        libraryFolders.addAll(repository.getLibraryFolders())
+
+        songs = repository.getSongs(selectedLibraryFolders)
 
         restorePlayerState()
     }
@@ -472,6 +493,58 @@ class MainActivity : ComponentActivity() {
                 return
             }
         }
+    }
+
+    private fun toggleLibraryFolder(folderPath: String) {
+        selectedLibraryFolders = if (folderPath in selectedLibraryFolders) {
+            selectedLibraryFolders - folderPath
+        } else {
+            selectedLibraryFolders + folderPath
+        }
+
+        libraryPreferences.saveSelectedFolders(selectedLibraryFolders)
+        reloadSongsAfterFolderChange()
+    }
+
+    private fun selectAllLibraryFolders() {
+        selectedLibraryFolders = libraryFolders.map { folder -> folder.path }.toSet()
+
+        libraryPreferences.saveSelectedFolders(selectedLibraryFolders)
+        reloadSongsAfterFolderChange()
+    }
+
+    private fun clearSelectedLibraryFolders() {
+        selectedLibraryFolders = emptySet()
+
+        libraryPreferences.saveSelectedFolders(selectedLibraryFolders)
+        reloadSongsAfterFolderChange()
+    }
+
+    private fun reloadSongsAfterFolderChange() {
+        val repository = MusicRepository(this)
+        songs = repository.getSongs(selectedLibraryFolders)
+
+        if (currentSong != null && songs.none { song -> song.id == currentSong?.id }) {
+            musicPlayer.stop()
+            currentSong = null
+            isPlaying = false
+            currentPosition = 0
+            duration = 0
+        }
+
+        playbackQueue.removeAll { queuedSong ->
+            songs.none { song -> song.id == queuedSong.id }
+        }
+
+        previousSongHistory.removeAll { historySong ->
+            songs.none { song -> song.id == historySong.id }
+        }
+
+        nextSongHistory.removeAll { historySong ->
+            songs.none { song -> song.id == historySong.id }
+        }
+
+        savePlayerState()
     }
 
     override fun onDestroy() {

@@ -1,32 +1,35 @@
 package com.example.cdplaya.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,20 +39,17 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.composed
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -57,15 +57,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.IntOffset
 import coil.compose.AsyncImage
+import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
-import kotlin.math.abs
-import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 @Composable
 fun MusicScreen(
@@ -91,15 +91,21 @@ fun MusicScreen(
     onAddToQueueClick: (Song) -> Unit,
     onRemoveFromQueueClick: (Int) -> Unit,
     onMoveQueueItemUpClick: (Int) -> Unit,
-    onMoveQueueItemDownClick: (Int) -> Unit
+    onMoveQueueItemDownClick: (Int) -> Unit,
+    libraryFolders: List<LibraryFolder>,
+    selectedLibraryFolders: Set<String>,
+    onLibraryFolderToggle: (String) -> Unit,
+    onSelectAllLibraryFolders: () -> Unit,
+    onClearSelectedLibraryFolders: () -> Unit
 ) {
-
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
-    var isQueueScreenVisible by remember { mutableStateOf(false) }
+    var isQueueScreenVisible by rememberSaveable { mutableStateOf(false) }
+    var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
+
     val coroutineScope = rememberCoroutineScope()
     var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
 
-    val handleAddToQueue: (Song) -> Unit = { song ->
+    fun handleAddToQueue(song: Song) {
         onAddToQueueClick(song)
         recentlyAddedSongIds = recentlyAddedSongIds + song.id
 
@@ -115,7 +121,7 @@ fun MusicScreen(
                 onUndoAddToQueueClick(song)
             }
 
-            delay(3000)
+            delay(300)
             recentlyAddedSongIds = recentlyAddedSongIds - song.id
         }
     }
@@ -130,19 +136,43 @@ fun MusicScreen(
             style = MaterialTheme.typography.headlineMedium,
             modifier = Modifier.padding(16.dp)
         )
-        IconButton(
-            onClick = {
-                isQueueScreenVisible = true
-            },
+
+        Row(
             modifier = Modifier.padding(horizontal = 16.dp)
         ) {
-            Icon(
-                imageVector = Icons.Filled.QueueMusic,
-                contentDescription = "Open queue"
-            )
+            Button(
+                onClick = {
+                    isQueueScreenVisible = true
+                    isFolderScreenVisible = false
+                },
+                modifier = Modifier.padding(end = 8.dp)
+            ) {
+                Text(text = "Queue")
+            }
+
+            Button(
+                onClick = {
+                    isFolderScreenVisible = true
+                    isQueueScreenVisible = false
+                }
+            ) {
+                Text(text = "Folders")
+            }
         }
 
-        if (isQueueScreenVisible) {
+        if (isFolderScreenVisible) {
+            FolderSelectionScreen(
+                libraryFolders = libraryFolders,
+                selectedLibraryFolders = selectedLibraryFolders,
+                onBackClick = {
+                    isFolderScreenVisible = false
+                },
+                onFolderToggle = onLibraryFolderToggle,
+                onSelectAllClick = onSelectAllLibraryFolders,
+                onClearSelectionClick = onClearSelectedLibraryFolders,
+                modifier = Modifier.weight(1f)
+            )
+        } else if (isQueueScreenVisible) {
             QueueScreen(
                 queuedSongs = queuedSongs,
                 onBackClick = {
@@ -196,12 +226,9 @@ fun MusicScreen(
                 },
                 modifier = Modifier.weight(1f)
             )
-
         }
     }
 }
-
-
 
 @Composable
 fun PlayerCard(
@@ -260,15 +287,15 @@ fun PlayerCard(
                 albumArtSize = albumArtSize,
                 currentPosition = currentPosition,
                 duration = duration,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onCollapseClick = onCollapseClick,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onSeekChange = onSeekChange,
+                onCollapseClick = onCollapseClick
             )
         } else {
             MiniPlayerContent(
@@ -278,8 +305,7 @@ fun PlayerCard(
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
-                onExpandClick = onExpandClick,
-
+                onExpandClick = onExpandClick
             )
         }
     }
@@ -289,7 +315,7 @@ fun PlayerCard(
 fun MiniPlayerContent(
     currentSong: Song,
     isPlaying: Boolean,
-    albumArtSize: androidx.compose.ui.unit.Dp,
+    albumArtSize: Dp,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -339,7 +365,11 @@ fun MiniPlayerContent(
 
         IconButton(onClick = onPlayPauseClick) {
             Icon(
-                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                imageVector = if (isPlaying) {
+                    Icons.Filled.Pause
+                } else {
+                    Icons.Filled.PlayArrow
+                },
                 contentDescription = if (isPlaying) "Pause" else "Play"
             )
         }
@@ -364,7 +394,7 @@ fun MiniPlayerContent(
 fun ExpandedPlayerContent(
     currentSong: Song,
     isPlaying: Boolean,
-    albumArtSize: androidx.compose.ui.unit.Dp,
+    albumArtSize: Dp,
     currentPosition: Int,
     duration: Int,
     isShuffleEnabled: Boolean,
@@ -463,7 +493,11 @@ fun ExpandedPlayerContent(
 
             IconButton(onClick = onPlayPauseClick) {
                 Icon(
-                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    imageVector = if (isPlaying) {
+                        Icons.Filled.Pause
+                    } else {
+                        Icons.Filled.PlayArrow
+                    },
                     contentDescription = if (isPlaying) "Pause" else "Play"
                 )
             }
@@ -523,8 +557,12 @@ fun SongList(
     LazyColumn(
         modifier = modifier
     ) {
-        items(songs) { song ->
+        items(
+            items = songs,
+            key = { song -> song.id }
+        ) { song ->
             val isCurrentSong = song.id == currentSongId
+            val wasRecentlyAdded = song.id in recentlyAddedSongIds
 
             ListItem(
                 leadingContent = {
@@ -542,15 +580,17 @@ fun SongList(
                 headlineContent = {
                     Text(
                         text = song.title,
-                        fontWeight = if (isCurrentSong) FontWeight.Bold else FontWeight.Normal
+                        fontWeight = if (isCurrentSong) {
+                            FontWeight.Bold
+                        } else {
+                            FontWeight.Normal
+                        }
                     )
                 },
                 supportingContent = {
                     Text(text = song.artist)
                 },
                 trailingContent = {
-                    val wasRecentlyAdded = song.id in recentlyAddedSongIds
-
                     IconButton(
                         onClick = {
                             onAddToQueueClick(song)
@@ -638,4 +678,3 @@ fun Modifier.playerSwipeGestures(
         )
     }
 }
-
