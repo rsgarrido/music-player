@@ -8,7 +8,41 @@ import java.io.File
 
 class MusicRepository(private val context: Context) {
 
-    fun getSongs(): List<Song> {
+    fun getSongs(selectedFolders: Set<String> = emptySet()): List<Song> {
+        val allSongs = getAllSongs()
+
+        if (selectedFolders.isEmpty()) {
+            return allSongs
+        }
+
+        return allSongs.filter { song ->
+            selectedFolders.contains(song.folderPath)
+        }
+    }
+
+    fun getLibraryFolders(): List<LibraryFolder> {
+        val songs = getAllSongs()
+
+        return songs
+            .groupBy { song -> song.folderPath }
+            .map { entry ->
+                val folderPath = entry.key
+                val folderName = File(folderPath).name.ifBlank {
+                    folderPath
+                }
+
+                LibraryFolder(
+                    path = folderPath,
+                    name = folderName,
+                    songCount = entry.value.size
+                )
+            }
+            .sortedBy { folder ->
+                folder.name.lowercase()
+            }
+    }
+
+    private fun getAllSongs(): List<Song> {
         val songs = mutableListOf<Song>()
         val albumArtByFolder = getAlbumArtByFolder()
 
@@ -18,6 +52,7 @@ class MusicRepository(private val context: Context) {
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST,
+            MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.DATA
         )
@@ -38,6 +73,7 @@ class MusicRepository(private val context: Context) {
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
             val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
             val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+            val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
             val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
 
@@ -45,14 +81,15 @@ class MusicRepository(private val context: Context) {
                 val id = cursor.getLong(idColumn)
                 val title = cursor.getString(titleColumn) ?: "Unknown Title"
                 val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
+                val album = cursor.getString(albumColumn) ?: "Unknown Album"
                 val duration = cursor.getLong(durationColumn)
                 val filePath = cursor.getString(dataColumn) ?: ""
 
-                if (!filePath.contains("/Music/", ignoreCase = true)) {
+                val folderPath = File(filePath).parent ?: ""
+
+                if (folderPath.isBlank()) {
                     continue
                 }
-
-                val folderPath = File(filePath).parent ?: ""
 
                 val uri = ContentUris.withAppendedId(
                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -65,6 +102,7 @@ class MusicRepository(private val context: Context) {
                     id = id,
                     title = title,
                     artist = artist,
+                    album = album,
                     duration = duration,
                     uri = uri,
                     folderPath = folderPath,
@@ -110,15 +148,15 @@ class MusicRepository(private val context: Context) {
                 val imagePath = cursor.getString(dataColumn) ?: ""
                 val displayName = cursor.getString(displayNameColumn) ?: ""
 
-                if (!imagePath.contains("/Music/", ignoreCase = true)) {
-                    continue
-                }
-
                 if (!isLikelyAlbumCover(displayName)) {
                     continue
                 }
 
                 val folderPath = File(imagePath).parent ?: ""
+
+                if (folderPath.isBlank()) {
+                    continue
+                }
 
                 if (albumArtByFolder.containsKey(folderPath)) {
                     continue

@@ -54,6 +54,7 @@ import com.example.cdplaya.player.PlayerStateStorage
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.theme.CdplayaTheme
 import com.example.cdplaya.ui.MusicScreen
+import com.example.cdplaya.data.LibraryPreferences
 import kotlin.random.Random
 
 class MainActivity : ComponentActivity() {
@@ -62,6 +63,7 @@ class MainActivity : ComponentActivity() {
     private var permissionGranted by mutableStateOf(false)
     private lateinit var musicPlayer: MusicPlayer
     private lateinit var playerStateStorage: PlayerStateStorage
+    private lateinit var libraryPreferences: LibraryPreferences
     private var currentSong by mutableStateOf<Song?>(null)
     private var isPlaying by mutableStateOf(false)
     private var isShuffleEnabled by mutableStateOf(false)
@@ -71,7 +73,6 @@ class MainActivity : ComponentActivity() {
     private val playbackQueue = mutableStateListOf<Song>()
     private var currentPosition by mutableStateOf(0)
     private var duration by mutableStateOf(0)
-
     private val progressHandler = Handler(Looper.getMainLooper())
 
     private val progressRunnable = object : Runnable {
@@ -103,7 +104,7 @@ class MainActivity : ComponentActivity() {
 
         musicPlayer = MusicPlayer(this)
         playerStateStorage = PlayerStateStorage(this)
-
+        libraryPreferences = LibraryPreferences(this)
         isShuffleEnabled = playerStateStorage.isShuffleEnabled()
         repeatMode = playerStateStorage.getRepeatMode()
 
@@ -201,7 +202,9 @@ class MainActivity : ComponentActivity() {
 
     private fun loadSongs() {
         val repository = MusicRepository(this)
-        songs = repository.getSongs()
+        val selectedFolders = libraryPreferences.getSelectedFolders()
+
+        songs = repository.getSongs(selectedFolders)
 
         restorePlayerState()
     }
