@@ -15,10 +15,13 @@ class MusicPlayer(private val context: Context) {
 
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
+
     private var currentSong: Song? = null
+    private var currentPlaylist: List<Song> = emptyList()
 
     var onSongCompleted: (() -> Unit)? = null
     var onPlaybackStateChanged: ((Boolean) -> Unit)? = null
+    var onCurrentSongChanged: ((Long?) -> Unit)? = null
 
     fun connect(onConnected: (() -> Unit)? = null) {
         val sessionToken = SessionToken(
@@ -46,6 +49,19 @@ class MusicPlayer(private val context: Context) {
                         override fun onIsPlayingChanged(isPlaying: Boolean) {
                             onPlaybackStateChanged?.invoke(isPlaying)
                         }
+
+                        override fun onMediaItemTransition(
+                            mediaItem: MediaItem?,
+                            reason: Int
+                        ) {
+                            val songId = mediaItem?.mediaId?.toLongOrNull()
+
+                            currentSong = currentPlaylist.firstOrNull { song ->
+                                song.id == songId
+                            }
+
+                            onCurrentSongChanged?.invoke(songId)
+                        }
                     }
                 )
 
@@ -58,20 +74,37 @@ class MusicPlayer(private val context: Context) {
     fun playSong(
         song: Song,
         shouldStart: Boolean = true,
-        startPosition: Int = 0
+        startPosition: Int = 0,
+        playlist: List<Song> = listOf(song)
     ) {
         val playerController = controller ?: return
 
-        currentSong = song
-
-        val mediaItem = song.toMediaItem()
-
-        playerController.setMediaItem(mediaItem)
-        playerController.prepare()
-
-        if (startPosition > 0) {
-            playerController.seekTo(startPosition.toLong())
+        val safePlaylist = if (playlist.isEmpty()) {
+            listOf(song)
+        } else {
+            playlist
         }
+
+        val startIndex = safePlaylist.indexOfFirst { playlistSong ->
+            playlistSong.id == song.id
+        }.let { index ->
+            if (index == -1) 0 else index
+        }
+
+        currentPlaylist = safePlaylist
+        currentSong = safePlaylist[startIndex]
+
+        val mediaItems = safePlaylist.map { playlistSong ->
+            playlistSong.toMediaItem()
+        }
+
+        playerController.setMediaItems(
+            mediaItems,
+            startIndex,
+            startPosition.toLong()
+        )
+
+        playerController.prepare()
 
         if (shouldStart) {
             playerController.play()
@@ -91,6 +124,69 @@ class MusicPlayer(private val context: Context) {
         currentSong = null
     }
 
+    fun skipToNext() {
+        controller?.seekToNextMediaItem()
+    }
+
+    fun skipToPrevious() {
+        val playerController = controller ?: return
+
+        if (playerController.currentPosition > 3_000) {
+            playerController.seekTo(0)
+        } else {
+            playerController.seekToPreviousMediaItem()
+        }
+    }
+
+    fun setShuffleEnabled(enabled: Boolean) {
+        controller?.shuffleModeEnabled = false
+    }
+
+    fun setRepeatMode(repeatMode: RepeatMode) {
+        controller?.repeatMode = when (repeatMode) {
+            RepeatMode.OFF -> Player.REPEAT_MODE_OFF
+            RepeatMode.ALL -> Player.REPEAT_MODE_ALL
+            RepeatMode.ONE -> Player.REPEAT_MODE_ONE
+        }
+    }
+
+    fun updateUpcomingPlaylist(upcomingSongs: List<Song>) {
+        val playerController = controller ?: return
+
+        val currentIndex = playerController.currentMediaItemIndex
+
+        if (currentIndex < 0) {
+            return
+        }
+
+        val songById = currentPlaylist.associateBy { song ->
+            song.id
+        }
+
+        val preservedSongs = (0..currentIndex).mapNotNull { index ->
+            val songId = playerController
+                .getMediaItemAt(index)
+                .mediaId
+                .toLongOrNull()
+
+            songId?.let { id ->
+                songById[id]
+            }
+        }
+
+        val upcomingMediaItems = upcomingSongs.map { song ->
+            song.toMediaItem()
+        }
+
+        currentPlaylist = preservedSongs + upcomingSongs
+
+        playerController.replaceMediaItems(
+            currentIndex + 1,
+            playerController.mediaItemCount,
+            upcomingMediaItems
+        )
+    }
+
     fun isPlaying(): Boolean {
         return controller?.isPlaying == true
     }
@@ -104,12 +200,12 @@ class MusicPlayer(private val context: Context) {
     }
 
     fun getDuration(): Int {
-        val duration = controller?.duration ?: 0L
+        val playerDuration = controller?.duration ?: 0L
 
-        return if (duration > 0) {
-            duration.toInt()
+        return if (playerDuration > 0) {
+            playerDuration.toInt()
         } else {
-            0
+            currentSong?.duration?.toInt() ?: 0
         }
     }
 
@@ -139,5 +235,50 @@ class MusicPlayer(private val context: Context) {
             .setUri(uri)
             .setMediaMetadata(metadata)
             .build()
+    }
+
+    fun updatePlaylistKeepingCurrent(
+        currentSong: Song?,
+        playlist: List<Song>,
+        currentPosition: Int,
+        shouldStart: Boolean
+    ) {
+        val song = currentSong ?: return
+        val playerController = controller ?: return
+
+        val safePlaylist = if (playlist.isEmpty()) {
+            listOf(song)
+        } else {
+            playlist
+        }
+
+        val startIndex = safePlaylist.indexOfFirst { playlistSong ->
+            playlistSong.id == song.id
+        }.let { index ->
+            if (index == -1) 0 else index
+        }
+
+        currentPlaylist = safePlaylist
+        this.currentSong = safePlaylist[startIndex]
+
+        val mediaItems = safePlaylist.map { playlistSong ->
+            playlistSong.toMediaItem()
+        }
+
+        playerController.shuffleModeEnabled = false
+
+        playerController.setMediaItems(
+            mediaItems,
+            startIndex,
+            currentPosition.toLong()
+        )
+
+        playerController.prepare()
+
+        if (shouldStart) {
+            playerController.play()
+        } else {
+            playerController.pause()
+        }
     }
 }
