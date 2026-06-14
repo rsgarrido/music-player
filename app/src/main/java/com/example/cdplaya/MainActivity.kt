@@ -105,15 +105,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        musicPlayer = MusicPlayer(this)
         playerStateStorage = PlayerStateStorage(this)
         libraryPreferences = LibraryPreferences(this)
         isShuffleEnabled = playerStateStorage.isShuffleEnabled()
         repeatMode = playerStateStorage.getRepeatMode()
 
+        musicPlayer = MusicPlayer(this)
+
+        musicPlayer.connect {
+            restorePlayerState()
+        }
+
         musicPlayer.onSongCompleted = {
             runOnUiThread {
                 handleSongCompleted()
+            }
+        }
+
+        musicPlayer.onPlaybackStateChanged = { playerIsPlaying ->
+            runOnUiThread {
+                isPlaying = playerIsPlaying
             }
         }
 
@@ -224,7 +235,6 @@ class MainActivity : ComponentActivity() {
 
         songs = repository.getSongs(selectedLibraryFolders)
 
-        restorePlayerState()
     }
 
     private fun restorePlayerState() {
@@ -263,8 +273,11 @@ class MainActivity : ComponentActivity() {
             }
         )
 
-        musicPlayer.playSong(restoredSong, shouldStart = false)
-        musicPlayer.seekTo(currentPosition)
+        musicPlayer.playSong(
+            song = restoredSong,
+            shouldStart = false,
+            startPosition = currentPosition
+        )
 
         startProgressUpdates()
     }
@@ -305,7 +318,7 @@ class MainActivity : ComponentActivity() {
         currentSong = song
         isPlaying = true
         currentPosition = 0
-        duration = musicPlayer.getDuration()
+        duration = song.duration.toInt()
         startProgressUpdates()
     }
 
@@ -551,7 +564,7 @@ class MainActivity : ComponentActivity() {
         savePlayerState()
         super.onDestroy()
         progressHandler.removeCallbacks(progressRunnable)
-        musicPlayer.stop()
+        musicPlayer.release()
     }
 
 
