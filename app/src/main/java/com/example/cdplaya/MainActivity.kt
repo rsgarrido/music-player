@@ -77,6 +77,7 @@ class MainActivity : ComponentActivity() {
     private val progressHandler = Handler(Looper.getMainLooper())
     private val libraryFolders = mutableStateListOf<LibraryFolder>()
     private var selectedLibraryFolders by mutableStateOf<Set<String>>(emptySet())
+    private var isPlayerConnected = false
 
     private val progressRunnable = object : Runnable {
         override fun run() {
@@ -113,7 +114,13 @@ class MainActivity : ComponentActivity() {
         musicPlayer = MusicPlayer(this)
 
         musicPlayer.connect {
-            restorePlayerState()
+            isPlayerConnected = true
+            musicPlayer.setShuffleEnabled(isShuffleEnabled)
+            musicPlayer.setRepeatMode(repeatMode)
+
+            if (songs.isNotEmpty()) {
+                restorePlayerState()
+            }
         }
 
         musicPlayer.onSongCompleted = {
@@ -125,6 +132,12 @@ class MainActivity : ComponentActivity() {
         musicPlayer.onPlaybackStateChanged = { playerIsPlaying ->
             runOnUiThread {
                 isPlaying = playerIsPlaying
+            }
+        }
+
+        musicPlayer.onCurrentSongChanged = { songId ->
+            runOnUiThread {
+                handleServiceSongChanged(songId)
             }
         }
 
@@ -235,6 +248,9 @@ class MainActivity : ComponentActivity() {
 
         songs = repository.getSongs(selectedLibraryFolders)
 
+        if (isPlayerConnected) {
+            restorePlayerState()
+        }
     }
 
     private fun restorePlayerState() {
@@ -276,8 +292,12 @@ class MainActivity : ComponentActivity() {
         musicPlayer.playSong(
             song = restoredSong,
             shouldStart = false,
-            startPosition = currentPosition
+            startPosition = currentPosition,
+            playlist = buildPlaybackPlaylist(restoredSong)
         )
+
+        musicPlayer.setShuffleEnabled(isShuffleEnabled)
+        musicPlayer.setRepeatMode(repeatMode)
 
         startProgressUpdates()
     }
@@ -314,12 +334,21 @@ class MainActivity : ComponentActivity() {
             nextSongHistory.clear()
         }
 
-        musicPlayer.playSong(song)
+        musicPlayer.playSong(
+            song = song,
+            playlist = buildPlaybackPlaylist(song)
+        )
+
         currentSong = song
         isPlaying = true
         currentPosition = 0
         duration = song.duration.toInt()
+
+        musicPlayer.setShuffleEnabled(isShuffleEnabled)
+        musicPlayer.setRepeatMode(repeatMode)
+
         startProgressUpdates()
+        savePlayerState()
     }
 
     private fun playNextSong() {
@@ -446,6 +475,7 @@ class MainActivity : ComponentActivity() {
         isShuffleEnabled = !isShuffleEnabled
         previousSongHistory.clear()
         nextSongHistory.clear()
+        syncServicePlaylistKeepingCurrent()
         savePlayerState()
     }
 
@@ -455,17 +485,20 @@ class MainActivity : ComponentActivity() {
             RepeatMode.ALL -> RepeatMode.ONE
             RepeatMode.ONE -> RepeatMode.OFF
         }
+        syncServicePlaylistKeepingCurrent()
         savePlayerState()
     }
 
     private fun addSongToQueue(song: Song) {
         playbackQueue.add(song)
+        syncServicePlaylistKeepingCurrent()
         savePlayerState()
     }
 
     private fun removeSongFromQueue(index: Int) {
         if (index in playbackQueue.indices) {
             playbackQueue.removeAt(index)
+            syncServicePlaylistKeepingCurrent()
             savePlayerState()
         }
     }
@@ -474,6 +507,7 @@ class MainActivity : ComponentActivity() {
         if (index > 0 && index in playbackQueue.indices) {
             val song = playbackQueue.removeAt(index)
             playbackQueue.add(index - 1, song)
+            syncServicePlaylistKeepingCurrent()
             savePlayerState()
         }
     }
@@ -482,6 +516,7 @@ class MainActivity : ComponentActivity() {
         if (index >= 0 && index < playbackQueue.lastIndex) {
             val song = playbackQueue.removeAt(index)
             playbackQueue.add(index + 1, song)
+            syncServicePlaylistKeepingCurrent()
             savePlayerState()
         }
     }
@@ -502,6 +537,7 @@ class MainActivity : ComponentActivity() {
         for (index in playbackQueue.lastIndex downTo 0) {
             if (playbackQueue[index].id == song.id) {
                 playbackQueue.removeAt(index)
+                syncServicePlaylistKeepingCurrent()
                 savePlayerState()
                 return
             }
@@ -558,6 +594,69 @@ class MainActivity : ComponentActivity() {
         }
 
         savePlayerState()
+    }
+
+    private fun buildPlaybackPlaylist(startSong: Song): List<Song> {
+        return listOf(startSong) + buildUpcomingPlaylistAfterCurrent(startSong)
+    }
+
+    private fun buildUpcomingPlaylistAfterCurrent(startSong: Song): List<Song> {
+        val queuedSongsAfterCurrent = playbackQueue.filter { queuedSong ->
+            queuedSong.id != startSong.id
+        }
+
+        val excludedSongIds = mutableSetOf<Long>()
+        excludedSongIds.add(startSong.id)
+        excludedSongIds.addAll(queuedSongsAfterCurrent.map { song -> song.id })
+
+        val remainingLibrarySongs = songs.filter { song ->
+            song.id !in excludedSongIds
+        }
+
+        val orderedRemainingSongs = if (isShuffleEnabled) {
+            remainingLibrarySongs.shuffled()
+        } else {
+            remainingLibrarySongs
+        }
+
+        return queuedSongsAfterCurrent + orderedRemainingSongs
+    }
+
+    private fun handleServiceSongChanged(songId: Long?) {
+        val newSong = songs.firstOrNull { song ->
+            song.id == songId
+        } ?: return
+
+        if (currentSong?.id == newSong.id) {
+            musicPlayer.setRepeatMode(repeatMode)
+            musicPlayer.setShuffleEnabled(isShuffleEnabled)
+            return
+        }
+
+        currentSong = newSong
+        currentPosition = musicPlayer.getCurrentPosition()
+        duration = newSong.duration.toInt()
+        isPlaying = musicPlayer.isPlaying()
+
+        if (playbackQueue.firstOrNull()?.id == newSong.id) {
+            playbackQueue.removeAt(0)
+        }
+
+        syncServicePlaylistKeepingCurrent()
+
+        startProgressUpdates()
+        savePlayerState()
+    }
+
+    private fun syncServicePlaylistKeepingCurrent() {
+        val song = currentSong ?: return
+
+        musicPlayer.updateUpcomingPlaylist(
+            upcomingSongs = buildUpcomingPlaylistAfterCurrent(song)
+        )
+
+        musicPlayer.setShuffleEnabled(isShuffleEnabled)
+        musicPlayer.setRepeatMode(repeatMode)
     }
 
     override fun onDestroy() {
