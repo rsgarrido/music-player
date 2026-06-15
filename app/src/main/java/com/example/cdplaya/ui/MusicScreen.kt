@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -103,6 +104,8 @@ fun MusicScreen(
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
     var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
+    var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedAlbumFolderPath by rememberSaveable { mutableStateOf<String?>(null) }
 
     val coroutineScope = rememberCoroutineScope()
     var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
@@ -196,6 +199,8 @@ fun MusicScreen(
                 selectedTab = selectedLibraryTab,
                 onTabSelected = { tab ->
                     selectedLibraryTab = tab
+                    selectedArtistName = null
+                    selectedAlbumFolderPath = null
                 }
             )
 
@@ -226,9 +231,32 @@ fun MusicScreen(
                             text = "No artists found.",
                             modifier = Modifier.padding(16.dp)
                         )
-                    } else {
+                    } else if (selectedArtistName == null) {
                         ArtistListScreen(
                             songs = songs,
+                            onArtistClick = { artistName ->
+                                selectedArtistName = artistName
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        val artistSongs = songs.filter { song ->
+                            song.artist.ifBlank { "Unknown Artist" } == selectedArtistName
+                        }
+
+                        SongGroupDetailScreen(
+                            title = selectedArtistName ?: "Artist",
+                            subtitle = "${artistSongs.size} song(s)",
+                            songs = artistSongs,
+                            currentSongId = currentSong?.id,
+                            recentlyAddedSongIds = recentlyAddedSongIds,
+                            onBackClick = {
+                                selectedArtistName = null
+                            },
+                            onSongClick = onSongClick,
+                            onAddToQueueClick = { song ->
+                                handleAddToQueue(song)
+                            },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -240,9 +268,34 @@ fun MusicScreen(
                             text = "No albums found.",
                             modifier = Modifier.padding(16.dp)
                         )
-                    } else {
+                    } else if (selectedAlbumFolderPath == null) {
                         AlbumListScreen(
                             songs = songs,
+                            onAlbumClick = { albumFolderPath ->
+                                selectedAlbumFolderPath = albumFolderPath
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        val albumSongs = songs.filter { song ->
+                            song.folderPath == selectedAlbumFolderPath
+                        }
+
+                        val firstSong = albumSongs.firstOrNull()
+
+                        SongGroupDetailScreen(
+                            title = firstSong?.album?.ifBlank { "Unknown Album" } ?: "Album",
+                            subtitle = firstSong?.artist ?: "${albumSongs.size} song(s)",
+                            songs = albumSongs,
+                            currentSongId = currentSong?.id,
+                            recentlyAddedSongIds = recentlyAddedSongIds,
+                            onBackClick = {
+                                selectedAlbumFolderPath = null
+                            },
+                            onSongClick = onSongClick,
+                            onAddToQueueClick = { song ->
+                                handleAddToQueue(song)
+                            },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -602,6 +655,62 @@ fun ExpandedPlayerContent(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun SongGroupDetailScreen(
+    title: String,
+    subtitle: String,
+    songs: List<Song>,
+    currentSongId: Long?,
+    recentlyAddedSongIds: Set<Long>,
+    onBackClick: () -> Unit,
+    onSongClick: (Song) -> Unit,
+    onAddToQueueClick: (Song) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+
+            Column(
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1
+                )
+
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1
+                )
+            }
+        }
+
+        SongList(
+            songs = songs,
+            currentSongId = currentSongId,
+            recentlyAddedSongIds = recentlyAddedSongIds,
+            onSongClick = onSongClick,
+            onAddToQueueClick = onAddToQueueClick,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
