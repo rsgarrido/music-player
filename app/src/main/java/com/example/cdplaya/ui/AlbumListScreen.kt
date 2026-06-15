@@ -1,5 +1,6 @@
 package com.example.cdplaya.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +27,7 @@ private data class AlbumGroup(
 @Composable
 fun AlbumListScreen(
     songs: List<Song>,
+    onAlbumClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val albums = songs
@@ -80,9 +82,10 @@ fun AlbumListScreen(
                     Text(text = album.title)
                 },
                 supportingContent = {
-                    Text(
-                        text = "${album.artistText} • ${album.songs.size} song(s)"
-                    )
+                    Text(text = "${album.artistText} • ${album.songs.size} song(s)")
+                },
+                modifier = Modifier.clickable {
+                    onAlbumClick(album.key)
                 }
             )
         }
