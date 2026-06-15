@@ -42,6 +42,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -99,8 +101,8 @@ fun MusicScreen(
     onClearSelectedLibraryFolders: () -> Unit
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
-    var isQueueScreenVisible by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
+    var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
 
     val coroutineScope = rememberCoroutineScope()
     var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
@@ -142,23 +144,13 @@ fun MusicScreen(
         ) {
             Button(
                 onClick = {
-                    isQueueScreenVisible = true
-                    isFolderScreenVisible = false
-                },
-                modifier = Modifier.padding(end = 8.dp)
-            ) {
-                Text(text = "Queue")
-            }
-
-            Button(
-                onClick = {
                     isFolderScreenVisible = true
-                    isQueueScreenVisible = false
                 }
             ) {
                 Text(text = "Folders")
             }
         }
+
 
         if (isFolderScreenVisible) {
             FolderSelectionScreen(
@@ -172,25 +164,9 @@ fun MusicScreen(
                 onClearSelectionClick = onClearSelectedLibraryFolders,
                 modifier = Modifier.weight(1f)
             )
-        } else if (isQueueScreenVisible) {
-            QueueScreen(
-                queuedSongs = queuedSongs,
-                onBackClick = {
-                    isQueueScreenVisible = false
-                },
-                onRemoveFromQueueClick = onRemoveFromQueueClick,
-                onMoveQueueItemUpClick = onMoveQueueItemUpClick,
-                onMoveQueueItemDownClick = onMoveQueueItemDownClick,
-                modifier = Modifier.weight(1f)
-            )
         } else if (!permissionGranted) {
             Text(
                 text = "Audio and image permissions are needed to show your music.",
-                modifier = Modifier.padding(16.dp)
-            )
-        } else if (songs.isEmpty()) {
-            Text(
-                text = "No songs found.",
                 modifier = Modifier.padding(16.dp)
             )
         } else {
@@ -216,15 +192,99 @@ fun MusicScreen(
                 }
             )
 
-            SongList(
-                songs = songs,
-                currentSongId = currentSong?.id,
-                recentlyAddedSongIds = recentlyAddedSongIds,
-                onSongClick = onSongClick,
-                onAddToQueueClick = { song ->
-                    handleAddToQueue(song)
+            LibraryTabs(
+                selectedTab = selectedLibraryTab,
+                onTabSelected = { tab ->
+                    selectedLibraryTab = tab
+                }
+            )
+
+            when (selectedLibraryTab) {
+                LibraryTab.SONGS -> {
+                    if (songs.isEmpty()) {
+                        Text(
+                            text = "No songs found.",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        SongList(
+                            songs = songs,
+                            currentSongId = currentSong?.id,
+                            recentlyAddedSongIds = recentlyAddedSongIds,
+                            onSongClick = onSongClick,
+                            onAddToQueueClick = { song ->
+                                handleAddToQueue(song)
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                LibraryTab.ARTISTS -> {
+                    if (songs.isEmpty()) {
+                        Text(
+                            text = "No artists found.",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        ArtistListScreen(
+                            songs = songs,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                LibraryTab.ALBUMS -> {
+                    if (songs.isEmpty()) {
+                        Text(
+                            text = "No albums found.",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        AlbumListScreen(
+                            songs = songs,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                LibraryTab.QUEUE -> {
+                    QueueScreen(
+                        queuedSongs = queuedSongs,
+                        onBackClick = {
+                            selectedLibraryTab = LibraryTab.SONGS
+                        },
+                        onRemoveFromQueueClick = onRemoveFromQueueClick,
+                        onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+                        onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LibraryTabs(
+    selectedTab: LibraryTab,
+    onTabSelected: (LibraryTab) -> Unit
+) {
+    val tabs = LibraryTab.entries
+
+    TabRow(
+        selectedTabIndex = tabs.indexOf(selectedTab),
+        modifier = Modifier.padding(top = 8.dp)
+    ) {
+        tabs.forEach { tab ->
+            Tab(
+                selected = selectedTab == tab,
+                onClick = {
+                    onTabSelected(tab)
                 },
-                modifier = Modifier.weight(1f)
+                text = {
+                    Text(text = tab.title)
+                }
             )
         }
     }
