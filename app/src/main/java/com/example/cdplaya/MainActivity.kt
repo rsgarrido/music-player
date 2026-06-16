@@ -78,6 +78,7 @@ class MainActivity : ComponentActivity() {
     private val libraryFolders = mutableStateListOf<LibraryFolder>()
     private var selectedLibraryFolders by mutableStateOf<Set<String>>(emptySet())
     private var isPlayerConnected = false
+    private var playbackContextSongs: List<Song> = emptyList()
 
     private val progressRunnable = object : Runnable {
         override fun run() {
@@ -146,10 +147,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             CdplayaTheme {
                 val snackbarHostState = remember { SnackbarHostState() }
-                Scaffold(modifier = Modifier.fillMaxSize(),
-                    snackbarHost = {
-                        SnackbarHost(hostState = snackbarHostState)
-                    }) { innerPadding ->
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+                ) { innerPadding ->
                     MusicScreen(
                         songs = songs,
                         permissionGranted = permissionGranted,
@@ -164,8 +165,8 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding),
                         libraryFolders = libraryFolders,
                         selectedLibraryFolders = selectedLibraryFolders,
-                        onSongClick = { song ->
-                            playSelectedSong(song)
+                        onSongClick = { song, playbackContext ->
+                            playSelectedSong(song = song, playbackContext = playbackContext)
                         },
                         onPlayPauseClick = {
                             if (musicPlayer.isPlaying()) {
@@ -176,48 +177,23 @@ class MainActivity : ComponentActivity() {
                                 isPlaying = true
                             }
                         },
-                        onPreviousClick = {
-                            playPreviousSong()
-                        },
-                        onNextClick = {
-                            playNextSong()
-                        },
+                        onPreviousClick = { playPreviousSong() },
+                        onNextClick = { playNextSong() },
                         onSeekChange = { position ->
                             musicPlayer.seekTo(position)
                             currentPosition = position
                             savePlayerState()
                         },
-                        onShuffleClick = {
-                            toggleShuffle()
-                        },
-                        onRepeatClick = {
-                            cycleRepeatMode()
-                        },
-                        onAddToQueueClick = { song ->
-                            addSongToQueue(song)
-                        },
-                        onRemoveFromQueueClick = { index ->
-                            removeSongFromQueue(index)
-                        },
-                        onMoveQueueItemUpClick = { index ->
-                            moveQueuedSongUp(index)
-                        },
-                        onMoveQueueItemDownClick = { index ->
-                            moveQueuedSongDown(index)
-                        },
-                        onUndoAddToQueueClick = { song ->
-                            removeLastMatchingSongFromQueue(song)
-                        },
-                        onLibraryFolderToggle = { folderPath ->
-                            toggleLibraryFolder(folderPath)
-                        },
-                        onSelectAllLibraryFolders = {
-                            selectAllLibraryFolders()
-                        },
-                        onClearSelectedLibraryFolders = {
-                            clearSelectedLibraryFolders()
-                        }
-
+                        onShuffleClick = { toggleShuffle() },
+                        onRepeatClick = { cycleRepeatMode() },
+                        onAddToQueueClick = { song -> addSongToQueue(song) },
+                        onRemoveFromQueueClick = { index -> removeSongFromQueue(index) },
+                        onMoveQueueItemUpClick = { index -> moveQueuedSongUp(index) },
+                        onMoveQueueItemDownClick = { index -> moveQueuedSongDown(index) },
+                        onUndoAddToQueueClick = { song -> removeLastMatchingSongFromQueue(song) },
+                        onLibraryFolderToggle = { folderPath -> toggleLibraryFolder(folderPath) },
+                        onSelectAllLibraryFolders = { selectAllLibraryFolders() },
+                        onClearSelectedLibraryFolders = { clearSelectedLibraryFolders() }
                     )
                 }
             }
@@ -321,6 +297,7 @@ class MainActivity : ComponentActivity() {
 
     private fun playSelectedSong(
         song: Song,
+        playbackContext: List<Song>? = null,
         addCurrentToHistory: Boolean = true,
         clearForwardHistory: Boolean = true
     ) {
@@ -333,6 +310,8 @@ class MainActivity : ComponentActivity() {
         if (clearForwardHistory) {
             nextSongHistory.clear()
         }
+
+        playbackContextSongs = playbackContext ?: getPlaybackSourceSongs()
 
         musicPlayer.playSong(
             song = song,
@@ -352,7 +331,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun playNextSong() {
-        if (songs.isEmpty()) {
+        val playbackSourceSongs = getPlaybackSourceSongs()
+
+        if (playbackSourceSongs.isEmpty()) {
             return
         }
 
@@ -360,6 +341,7 @@ class MainActivity : ComponentActivity() {
             currentSong?.let { song ->
                 playSelectedSong(
                     song = song,
+                    playbackContext = playbackSourceSongs,
                     addCurrentToHistory = false,
                     clearForwardHistory = false
                 )
@@ -375,25 +357,32 @@ class MainActivity : ComponentActivity() {
             if (nextSongHistory.isNotEmpty()) {
                 nextSongHistory.removeAt(nextSongHistory.lastIndex)
             } else {
-                getRandomSongExceptCurrent()
+                getRandomSongExceptCurrent(playbackSourceSongs)
             }
         } else {
-            val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+            val currentIndex = playbackSourceSongs.indexOfFirst { song ->
+                song.id == currentSong?.id
+            }
 
-            val nextIndex = if (currentIndex == -1 || currentIndex == songs.lastIndex) {
+            val nextIndex = if (currentIndex == -1 || currentIndex == playbackSourceSongs.lastIndex) {
                 0
             } else {
                 currentIndex + 1
             }
 
-            songs[nextIndex]
+            playbackSourceSongs[nextIndex]
         }
 
-        playSelectedSong(nextSong)
+        playSelectedSong(
+            song = nextSong,
+            playbackContext = playbackSourceSongs
+        )
     }
 
     private fun playPreviousSong() {
-        if (songs.isEmpty()) {
+        val playbackSourceSongs = getPlaybackSourceSongs()
+
+        if (playbackSourceSongs.isEmpty()) {
             return
         }
 
@@ -404,19 +393,22 @@ class MainActivity : ComponentActivity() {
 
             previousSongHistory.removeAt(previousSongHistory.lastIndex)
         } else {
-            val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+            val currentIndex = playbackSourceSongs.indexOfFirst { song ->
+                song.id == currentSong?.id
+            }
 
             val previousIndex = if (currentIndex <= 0) {
-                songs.lastIndex
+                playbackSourceSongs.lastIndex
             } else {
                 currentIndex - 1
             }
 
-            songs[previousIndex]
+            playbackSourceSongs[previousIndex]
         }
 
         playSelectedSong(
             song = previousSong,
+            playbackContext = playbackSourceSongs,
             addCurrentToHistory = false,
             clearForwardHistory = false
         )
@@ -428,11 +420,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleSongCompleted() {
+        val playbackSourceSongs = getPlaybackSourceSongs()
+
         when (repeatMode) {
             RepeatMode.ONE -> {
                 currentSong?.let { song ->
                     playSelectedSong(
                         song = song,
+                        playbackContext = playbackSourceSongs,
                         addCurrentToHistory = false,
                         clearForwardHistory = false
                     )
@@ -449,9 +444,11 @@ class MainActivity : ComponentActivity() {
                     return
                 }
 
-                val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+                val currentIndex = playbackSourceSongs.indexOfFirst { song ->
+                    song.id == currentSong?.id
+                }
 
-                if (currentIndex == songs.lastIndex) {
+                if (currentIndex == playbackSourceSongs.lastIndex) {
                     isPlaying = false
                     currentPosition = duration
                 } else {
@@ -461,13 +458,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun getRandomSongExceptCurrent(): Song {
-        val availableSongs = songs.filter { it.id != currentSong?.id }
+    private fun getRandomSongExceptCurrent(playbackSourceSongs: List<Song>): Song {
+        val availableSongs = playbackSourceSongs.filter { song ->
+            song.id != currentSong?.id
+        }
 
         return if (availableSongs.isNotEmpty()) {
             availableSongs[Random.nextInt(availableSongs.size)]
         } else {
-            songs.first()
+            playbackSourceSongs.first()
         }
     }
 
@@ -526,8 +525,14 @@ class MainActivity : ComponentActivity() {
             return false
         }
 
+        val playbackSourceSongs = getPlaybackSourceSongs()
         val nextQueuedSong = playbackQueue.removeAt(0)
-        playSelectedSong(nextQueuedSong)
+
+        playSelectedSong(
+            song = nextQueuedSong,
+            playbackContext = playbackSourceSongs
+        )
+
         savePlayerState()
 
         return true
@@ -609,14 +614,26 @@ class MainActivity : ComponentActivity() {
         excludedSongIds.add(startSong.id)
         excludedSongIds.addAll(queuedSongsAfterCurrent.map { song -> song.id })
 
-        val remainingLibrarySongs = songs.filter { song ->
+        val playbackSourceSongs = getPlaybackSourceSongs()
+
+        val startIndex = playbackSourceSongs.indexOfFirst { song ->
+            song.id == startSong.id
+        }
+
+        val songsAfterCurrent = if (startIndex == -1) {
+            playbackSourceSongs
+        } else {
+            playbackSourceSongs.drop(startIndex + 1) + playbackSourceSongs.take(startIndex)
+        }
+
+        val remainingContextSongs = songsAfterCurrent.filter { song ->
             song.id !in excludedSongIds
         }
 
         val orderedRemainingSongs = if (isShuffleEnabled) {
-            remainingLibrarySongs.shuffled()
+            remainingContextSongs.shuffled()
         } else {
-            remainingLibrarySongs
+            remainingContextSongs
         }
 
         return queuedSongsAfterCurrent + orderedRemainingSongs
@@ -659,12 +676,18 @@ class MainActivity : ComponentActivity() {
         musicPlayer.setRepeatMode(repeatMode)
     }
 
+    private fun getPlaybackSourceSongs(): List<Song> {
+        return if (playbackContextSongs.isNotEmpty()) {
+            playbackContextSongs
+        } else {
+            songs
+        }
+    }
+
     override fun onDestroy() {
         savePlayerState()
         super.onDestroy()
         progressHandler.removeCallbacks(progressRunnable)
         musicPlayer.release()
     }
-
-
 }
