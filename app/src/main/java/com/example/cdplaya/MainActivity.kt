@@ -168,6 +168,12 @@ class MainActivity : ComponentActivity() {
                         onSongClick = { song, playbackContext ->
                             playSelectedSong(song = song, playbackContext = playbackContext)
                         },
+                        onPlaySongsClick = { playbackContext, shuffle ->
+                            playSongsFromContext(
+                                playbackContext = playbackContext,
+                                shuffle = shuffle
+                            )
+                        },
                         onPlayPauseClick = {
                             if (musicPlayer.isPlaying()) {
                                 musicPlayer.pause()
@@ -293,6 +299,30 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         savePlayerState()
+    }
+
+    private fun playSongsFromContext(
+        playbackContext: List<Song>,
+        shuffle: Boolean
+    ) {
+        if (playbackContext.isEmpty()) {
+            return
+        }
+
+        isShuffleEnabled = shuffle
+        previousSongHistory.clear()
+        nextSongHistory.clear()
+
+        val songToPlay = if (shuffle && playbackContext.size > 1) {
+            playbackContext[Random.nextInt(playbackContext.size)]
+        } else {
+            playbackContext.first()
+        }
+
+        playSelectedSong(
+            song = songToPlay,
+            playbackContext = playbackContext
+        )
     }
 
     private fun playSelectedSong(

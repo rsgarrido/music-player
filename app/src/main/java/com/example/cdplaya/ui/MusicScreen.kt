@@ -84,6 +84,7 @@ fun MusicScreen(
     onUndoAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
     onSongClick: (Song, List<Song>) -> Unit,
+    onPlaySongsClick: (List<Song>, Boolean) -> Unit,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -257,11 +258,20 @@ fun MusicScreen(
                         SongGroupDetailScreen(
                             title = selectedArtistName ?: "Artist",
                             subtitle = "${artistSongs.size} song(s)",
+                            artworkUri = artistSongs.firstOrNull()?.albumArtUri,
                             songs = artistSongs,
                             currentSongId = currentSong?.id,
                             recentlyAddedSongIds = recentlyAddedSongIds,
+                            showAlbumName = true,
+                            showTrackNumbers = false,
                             onBackClick = {
                                 selectedArtistName = null
+                            },
+                            onPlayAllClick = {
+                                onPlaySongsClick(artistSongs, false)
+                            },
+                            onShuffleAllClick = {
+                                onPlaySongsClick(artistSongs, true)
                             },
                             onSongClick = onSongClick,
                             onAddToQueueClick = { song ->
@@ -297,12 +307,21 @@ fun MusicScreen(
 
                         SongGroupDetailScreen(
                             title = firstSong?.album?.ifBlank { "Unknown Album" } ?: "Album",
-                            subtitle = firstSong?.artist ?: "${albumSongs.size} song(s)",
+                            subtitle = "${firstSong?.artist ?: "Unknown Artist"} • ${albumSongs.size} song(s)",
+                            artworkUri = firstSong?.albumArtUri,
                             songs = albumSongs,
                             currentSongId = currentSong?.id,
                             recentlyAddedSongIds = recentlyAddedSongIds,
+                            showAlbumName = false,
+                            showTrackNumbers = true,
                             onBackClick = {
                                 selectedAlbumFolderPath = null
+                            },
+                            onPlayAllClick = {
+                                onPlaySongsClick(albumSongs, false)
+                            },
+                            onShuffleAllClick = {
+                                onPlaySongsClick(albumSongs, true)
                             },
                             onSongClick = onSongClick,
                             onAddToQueueClick = { song ->
@@ -674,10 +693,15 @@ fun ExpandedPlayerContent(
 fun SongGroupDetailScreen(
     title: String,
     subtitle: String,
+    artworkUri: android.net.Uri?,
     songs: List<Song>,
     currentSongId: Long?,
     recentlyAddedSongIds: Set<Long>,
+    showAlbumName: Boolean,
+    showTrackNumbers: Boolean,
     onBackClick: () -> Unit,
+    onPlayAllClick: () -> Unit,
+    onShuffleAllClick: () -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier
@@ -688,7 +712,7 @@ fun SongGroupDetailScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
@@ -698,20 +722,80 @@ fun SongGroupDetailScreen(
                 )
             }
 
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                maxLines = 1
+            )
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = artworkUri,
+                contentDescription = "Artwork for $title",
+                modifier = Modifier
+                    .size(104.dp)
+                    .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop,
+                error = painterResource(android.R.drawable.ic_media_play),
+                placeholder = painterResource(android.R.drawable.ic_media_play)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
             Column(
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    maxLines = 1
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2
                 )
+
+                Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Row {
+                    Button(
+                        onClick = onPlayAllClick
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = "Play"
+                        )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Text(text = "Play")
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Button(
+                        onClick = onShuffleAllClick
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Shuffle,
+                            contentDescription = "Shuffle"
+                        )
+
+                        Spacer(modifier = Modifier.width(6.dp))
+
+                        Text(text = "Shuffle")
+                    }
+                }
             }
         }
 
@@ -719,6 +803,8 @@ fun SongGroupDetailScreen(
             songs = songs,
             currentSongId = currentSongId,
             recentlyAddedSongIds = recentlyAddedSongIds,
+            showAlbumName = showAlbumName,
+            showTrackNumbers = showTrackNumbers,
             onSongClick = onSongClick,
             onAddToQueueClick = onAddToQueueClick,
             modifier = Modifier.weight(1f)
@@ -733,7 +819,9 @@ fun SongList(
     recentlyAddedSongIds: Set<Long>,
     onSongClick: (Song, List<Song>) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showAlbumName: Boolean = false,
+    showTrackNumbers: Boolean = false
 ) {
     LazyColumn(
         modifier = modifier
@@ -747,16 +835,24 @@ fun SongList(
 
             ListItem(
                 leadingContent = {
-                    AsyncImage(
-                        model = song.albumArtUri,
-                        contentDescription = "Album art for ${song.title}",
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop,
-                        error = painterResource(android.R.drawable.ic_media_play),
-                        placeholder = painterResource(android.R.drawable.ic_media_play)
-                    )
+                    if (showTrackNumbers) {
+                        Text(
+                            text = getDisplayTrackNumber(song.trackNumber),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.width(56.dp)
+                        )
+                    } else {
+                        AsyncImage(
+                            model = song.albumArtUri,
+                            contentDescription = "Album art for ${song.title}",
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop,
+                            error = painterResource(android.R.drawable.ic_media_play),
+                            placeholder = painterResource(android.R.drawable.ic_media_play)
+                        )
+                    }
                 },
                 headlineContent = {
                     Text(
@@ -819,6 +915,20 @@ fun sortSongsByAlbumOrder(songs: List<Song>): List<Song> {
             song.title.lowercase()
         }
     )
+}
+
+fun getDisplayTrackNumber(trackNumber: Int): String {
+    if (trackNumber <= 0) {
+        return "–"
+    }
+
+    val normalizedTrackNumber = trackNumber % 1000
+
+    return if (normalizedTrackNumber > 0) {
+        normalizedTrackNumber.toString()
+    } else {
+        trackNumber.toString()
+    }
 }
 
 fun formatDuration(milliseconds: Int): String {
