@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -42,6 +43,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -80,7 +83,7 @@ fun MusicScreen(
     snackbarHostState: SnackbarHostState,
     onUndoAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
-    onSongClick: (Song) -> Unit,
+    onSongClick: (Song, List<Song>) -> Unit,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -99,8 +102,10 @@ fun MusicScreen(
     onClearSelectedLibraryFolders: () -> Unit
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
-    var isQueueScreenVisible by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
+    var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
+    var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedAlbumFolderPath by rememberSaveable { mutableStateOf<String?>(null) }
 
     val coroutineScope = rememberCoroutineScope()
     var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
@@ -142,23 +147,13 @@ fun MusicScreen(
         ) {
             Button(
                 onClick = {
-                    isQueueScreenVisible = true
-                    isFolderScreenVisible = false
-                },
-                modifier = Modifier.padding(end = 8.dp)
-            ) {
-                Text(text = "Queue")
-            }
-
-            Button(
-                onClick = {
                     isFolderScreenVisible = true
-                    isQueueScreenVisible = false
                 }
             ) {
                 Text(text = "Folders")
             }
         }
+
 
         if (isFolderScreenVisible) {
             FolderSelectionScreen(
@@ -172,25 +167,9 @@ fun MusicScreen(
                 onClearSelectionClick = onClearSelectedLibraryFolders,
                 modifier = Modifier.weight(1f)
             )
-        } else if (isQueueScreenVisible) {
-            QueueScreen(
-                queuedSongs = queuedSongs,
-                onBackClick = {
-                    isQueueScreenVisible = false
-                },
-                onRemoveFromQueueClick = onRemoveFromQueueClick,
-                onMoveQueueItemUpClick = onMoveQueueItemUpClick,
-                onMoveQueueItemDownClick = onMoveQueueItemDownClick,
-                modifier = Modifier.weight(1f)
-            )
         } else if (!permissionGranted) {
             Text(
                 text = "Audio and image permissions are needed to show your music.",
-                modifier = Modifier.padding(16.dp)
-            )
-        } else if (songs.isEmpty()) {
-            Text(
-                text = "No songs found.",
                 modifier = Modifier.padding(16.dp)
             )
         } else {
@@ -216,15 +195,161 @@ fun MusicScreen(
                 }
             )
 
-            SongList(
-                songs = songs,
-                currentSongId = currentSong?.id,
-                recentlyAddedSongIds = recentlyAddedSongIds,
-                onSongClick = onSongClick,
-                onAddToQueueClick = { song ->
-                    handleAddToQueue(song)
+            LibraryTabs(
+                selectedTab = selectedLibraryTab,
+                onTabSelected = { tab ->
+                    selectedLibraryTab = tab
+                    selectedArtistName = null
+                    selectedAlbumFolderPath = null
+                }
+            )
+
+            when (selectedLibraryTab) {
+                LibraryTab.SONGS -> {
+                    if (songs.isEmpty()) {
+                        Text(
+                            text = "No songs found.",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        SongList(
+                            songs = songs,
+                            currentSongId = currentSong?.id,
+                            recentlyAddedSongIds = recentlyAddedSongIds,
+                            onSongClick = onSongClick,
+                            onAddToQueueClick = { song ->
+                                handleAddToQueue(song)
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                LibraryTab.ARTISTS -> {
+                    if (songs.isEmpty()) {
+                        Text(
+                            text = "No artists found.",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else if (selectedArtistName == null) {
+                        ArtistListScreen(
+                            songs = songs,
+                            onArtistClick = { artistName ->
+                                selectedArtistName = artistName
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        val artistSongs = songs
+                            .filter { song ->
+                                song.artist.ifBlank { "Unknown Artist" } == selectedArtistName
+                            }
+                            .sortedWith(
+                                compareBy<Song> { song ->
+                                    song.album.lowercase()
+                                }.thenBy { song ->
+                                    if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE
+                                }.thenBy { song ->
+                                    song.title.lowercase()
+                                }
+                            )
+
+                        SongGroupDetailScreen(
+                            title = selectedArtistName ?: "Artist",
+                            subtitle = "${artistSongs.size} song(s)",
+                            songs = artistSongs,
+                            currentSongId = currentSong?.id,
+                            recentlyAddedSongIds = recentlyAddedSongIds,
+                            onBackClick = {
+                                selectedArtistName = null
+                            },
+                            onSongClick = onSongClick,
+                            onAddToQueueClick = { song ->
+                                handleAddToQueue(song)
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                LibraryTab.ALBUMS -> {
+                    if (songs.isEmpty()) {
+                        Text(
+                            text = "No albums found.",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else if (selectedAlbumFolderPath == null) {
+                        AlbumListScreen(
+                            songs = songs,
+                            onAlbumClick = { albumFolderPath ->
+                                selectedAlbumFolderPath = albumFolderPath
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        val albumSongs = sortSongsByAlbumOrder(
+                            songs.filter { song ->
+                                song.folderPath == selectedAlbumFolderPath
+                            }
+                        )
+
+                        val firstSong = albumSongs.firstOrNull()
+
+                        SongGroupDetailScreen(
+                            title = firstSong?.album?.ifBlank { "Unknown Album" } ?: "Album",
+                            subtitle = firstSong?.artist ?: "${albumSongs.size} song(s)",
+                            songs = albumSongs,
+                            currentSongId = currentSong?.id,
+                            recentlyAddedSongIds = recentlyAddedSongIds,
+                            onBackClick = {
+                                selectedAlbumFolderPath = null
+                            },
+                            onSongClick = onSongClick,
+                            onAddToQueueClick = { song ->
+                                handleAddToQueue(song)
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                LibraryTab.QUEUE -> {
+                    QueueScreen(
+                        queuedSongs = queuedSongs,
+                        onBackClick = {
+                            selectedLibraryTab = LibraryTab.SONGS
+                        },
+                        onRemoveFromQueueClick = onRemoveFromQueueClick,
+                        onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+                        onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun LibraryTabs(
+    selectedTab: LibraryTab,
+    onTabSelected: (LibraryTab) -> Unit
+) {
+    val tabs = LibraryTab.entries
+
+    TabRow(
+        selectedTabIndex = tabs.indexOf(selectedTab),
+        modifier = Modifier.padding(top = 8.dp)
+    ) {
+        tabs.forEach { tab ->
+            Tab(
+                selected = selectedTab == tab,
+                onClick = {
+                    onTabSelected(tab)
                 },
-                modifier = Modifier.weight(1f)
+                text = {
+                    Text(text = tab.title)
+                }
             )
         }
     }
@@ -546,11 +671,67 @@ fun ExpandedPlayerContent(
 }
 
 @Composable
+fun SongGroupDetailScreen(
+    title: String,
+    subtitle: String,
+    songs: List<Song>,
+    currentSongId: Long?,
+    recentlyAddedSongIds: Set<Long>,
+    onBackClick: () -> Unit,
+    onSongClick: (Song, List<Song>) -> Unit,
+    onAddToQueueClick: (Song) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxSize()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Back"
+                )
+            }
+
+            Column(
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1
+                )
+
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 1
+                )
+            }
+        }
+
+        SongList(
+            songs = songs,
+            currentSongId = currentSongId,
+            recentlyAddedSongIds = recentlyAddedSongIds,
+            onSongClick = onSongClick,
+            onAddToQueueClick = onAddToQueueClick,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
 fun SongList(
     songs: List<Song>,
     currentSongId: Long?,
     recentlyAddedSongIds: Set<Long>,
-    onSongClick: (Song) -> Unit,
+    onSongClick: (Song, List<Song>) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -623,11 +804,21 @@ fun SongList(
                     }
                 ),
                 modifier = Modifier.clickable {
-                    onSongClick(song)
+                    onSongClick(song, songs)
                 }
             )
         }
     }
+}
+
+fun sortSongsByAlbumOrder(songs: List<Song>): List<Song> {
+    return songs.sortedWith(
+        compareBy<Song> { song ->
+            if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE
+        }.thenBy { song ->
+            song.title.lowercase()
+        }
+    )
 }
 
 fun formatDuration(milliseconds: Int): String {
