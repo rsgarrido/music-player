@@ -83,7 +83,7 @@ fun MusicScreen(
     snackbarHostState: SnackbarHostState,
     onUndoAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
-    onSongClick: (Song) -> Unit,
+    onSongClick: (Song, List<Song>) -> Unit,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -240,9 +240,19 @@ fun MusicScreen(
                             modifier = Modifier.weight(1f)
                         )
                     } else {
-                        val artistSongs = songs.filter { song ->
-                            song.artist.ifBlank { "Unknown Artist" } == selectedArtistName
-                        }
+                        val artistSongs = songs
+                            .filter { song ->
+                                song.artist.ifBlank { "Unknown Artist" } == selectedArtistName
+                            }
+                            .sortedWith(
+                                compareBy<Song> { song ->
+                                    song.album.lowercase()
+                                }.thenBy { song ->
+                                    if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE
+                                }.thenBy { song ->
+                                    song.title.lowercase()
+                                }
+                            )
 
                         SongGroupDetailScreen(
                             title = selectedArtistName ?: "Artist",
@@ -277,9 +287,11 @@ fun MusicScreen(
                             modifier = Modifier.weight(1f)
                         )
                     } else {
-                        val albumSongs = songs.filter { song ->
-                            song.folderPath == selectedAlbumFolderPath
-                        }
+                        val albumSongs = sortSongsByAlbumOrder(
+                            songs.filter { song ->
+                                song.folderPath == selectedAlbumFolderPath
+                            }
+                        )
 
                         val firstSong = albumSongs.firstOrNull()
 
@@ -666,7 +678,7 @@ fun SongGroupDetailScreen(
     currentSongId: Long?,
     recentlyAddedSongIds: Set<Long>,
     onBackClick: () -> Unit,
-    onSongClick: (Song) -> Unit,
+    onSongClick: (Song, List<Song>) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -719,7 +731,7 @@ fun SongList(
     songs: List<Song>,
     currentSongId: Long?,
     recentlyAddedSongIds: Set<Long>,
-    onSongClick: (Song) -> Unit,
+    onSongClick: (Song, List<Song>) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -792,11 +804,21 @@ fun SongList(
                     }
                 ),
                 modifier = Modifier.clickable {
-                    onSongClick(song)
+                    onSongClick(song, songs)
                 }
             )
         }
     }
+}
+
+fun sortSongsByAlbumOrder(songs: List<Song>): List<Song> {
+    return songs.sortedWith(
+        compareBy<Song> { song ->
+            if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE
+        }.thenBy { song ->
+            song.title.lowercase()
+        }
+    )
 }
 
 fun formatDuration(milliseconds: Int): String {

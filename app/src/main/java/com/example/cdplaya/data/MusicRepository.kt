@@ -53,6 +53,7 @@ class MusicRepository(private val context: Context) {
             MediaStore.Audio.Media.TITLE,
             MediaStore.Audio.Media.ARTIST,
             MediaStore.Audio.Media.ALBUM,
+            MediaStore.Audio.Media.TRACK,
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.DATA
         )
@@ -74,6 +75,7 @@ class MusicRepository(private val context: Context) {
             val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
             val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
             val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+            val trackColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
             val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
 
@@ -84,6 +86,7 @@ class MusicRepository(private val context: Context) {
                 val album = cursor.getString(albumColumn) ?: "Unknown Album"
                 val duration = cursor.getLong(durationColumn)
                 val filePath = cursor.getString(dataColumn) ?: ""
+                val trackNumber = cursor.getInt(trackColumn)
 
                 val folderPath = File(filePath).parent ?: ""
 
@@ -103,6 +106,7 @@ class MusicRepository(private val context: Context) {
                     title = title,
                     artist = artist,
                     album = album,
+                    trackNumber = trackNumber,
                     duration = duration,
                     uri = uri,
                     folderPath = folderPath,
