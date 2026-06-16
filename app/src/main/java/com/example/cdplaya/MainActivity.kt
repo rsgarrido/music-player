@@ -331,7 +331,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun playNextSong() {
-        if (songs.isEmpty()) {
+        val playbackSourceSongs = getPlaybackSourceSongs()
+
+        if (playbackSourceSongs.isEmpty()) {
             return
         }
 
@@ -339,6 +341,7 @@ class MainActivity : ComponentActivity() {
             currentSong?.let { song ->
                 playSelectedSong(
                     song = song,
+                    playbackContext = playbackSourceSongs,
                     addCurrentToHistory = false,
                     clearForwardHistory = false
                 )
@@ -354,25 +357,32 @@ class MainActivity : ComponentActivity() {
             if (nextSongHistory.isNotEmpty()) {
                 nextSongHistory.removeAt(nextSongHistory.lastIndex)
             } else {
-                getRandomSongExceptCurrent()
+                getRandomSongExceptCurrent(playbackSourceSongs)
             }
         } else {
-            val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+            val currentIndex = playbackSourceSongs.indexOfFirst { song ->
+                song.id == currentSong?.id
+            }
 
-            val nextIndex = if (currentIndex == -1 || currentIndex == songs.lastIndex) {
+            val nextIndex = if (currentIndex == -1 || currentIndex == playbackSourceSongs.lastIndex) {
                 0
             } else {
                 currentIndex + 1
             }
 
-            songs[nextIndex]
+            playbackSourceSongs[nextIndex]
         }
 
-        playSelectedSong(nextSong)
+        playSelectedSong(
+            song = nextSong,
+            playbackContext = playbackSourceSongs
+        )
     }
 
     private fun playPreviousSong() {
-        if (songs.isEmpty()) {
+        val playbackSourceSongs = getPlaybackSourceSongs()
+
+        if (playbackSourceSongs.isEmpty()) {
             return
         }
 
@@ -383,19 +393,22 @@ class MainActivity : ComponentActivity() {
 
             previousSongHistory.removeAt(previousSongHistory.lastIndex)
         } else {
-            val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+            val currentIndex = playbackSourceSongs.indexOfFirst { song ->
+                song.id == currentSong?.id
+            }
 
             val previousIndex = if (currentIndex <= 0) {
-                songs.lastIndex
+                playbackSourceSongs.lastIndex
             } else {
                 currentIndex - 1
             }
 
-            songs[previousIndex]
+            playbackSourceSongs[previousIndex]
         }
 
         playSelectedSong(
             song = previousSong,
+            playbackContext = playbackSourceSongs,
             addCurrentToHistory = false,
             clearForwardHistory = false
         )
@@ -407,11 +420,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleSongCompleted() {
+        val playbackSourceSongs = getPlaybackSourceSongs()
+
         when (repeatMode) {
             RepeatMode.ONE -> {
                 currentSong?.let { song ->
                     playSelectedSong(
                         song = song,
+                        playbackContext = playbackSourceSongs,
                         addCurrentToHistory = false,
                         clearForwardHistory = false
                     )
@@ -428,9 +444,11 @@ class MainActivity : ComponentActivity() {
                     return
                 }
 
-                val currentIndex = songs.indexOfFirst { it.id == currentSong?.id }
+                val currentIndex = playbackSourceSongs.indexOfFirst { song ->
+                    song.id == currentSong?.id
+                }
 
-                if (currentIndex == songs.lastIndex) {
+                if (currentIndex == playbackSourceSongs.lastIndex) {
                     isPlaying = false
                     currentPosition = duration
                 } else {
@@ -440,13 +458,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun getRandomSongExceptCurrent(): Song {
-        val availableSongs = songs.filter { it.id != currentSong?.id }
+    private fun getRandomSongExceptCurrent(playbackSourceSongs: List<Song>): Song {
+        val availableSongs = playbackSourceSongs.filter { song ->
+            song.id != currentSong?.id
+        }
 
         return if (availableSongs.isNotEmpty()) {
             availableSongs[Random.nextInt(availableSongs.size)]
         } else {
-            songs.first()
+            playbackSourceSongs.first()
         }
     }
 
@@ -505,8 +525,14 @@ class MainActivity : ComponentActivity() {
             return false
         }
 
+        val playbackSourceSongs = getPlaybackSourceSongs()
         val nextQueuedSong = playbackQueue.removeAt(0)
-        playSelectedSong(nextQueuedSong)
+
+        playSelectedSong(
+            song = nextQueuedSong,
+            playbackContext = playbackSourceSongs
+        )
+
         savePlayerState()
 
         return true
@@ -588,14 +614,26 @@ class MainActivity : ComponentActivity() {
         excludedSongIds.add(startSong.id)
         excludedSongIds.addAll(queuedSongsAfterCurrent.map { song -> song.id })
 
-        val remainingLibrarySongs = getPlaybackSourceSongs().filter { song ->
+        val playbackSourceSongs = getPlaybackSourceSongs()
+
+        val startIndex = playbackSourceSongs.indexOfFirst { song ->
+            song.id == startSong.id
+        }
+
+        val songsAfterCurrent = if (startIndex == -1) {
+            playbackSourceSongs
+        } else {
+            playbackSourceSongs.drop(startIndex + 1) + playbackSourceSongs.take(startIndex)
+        }
+
+        val remainingContextSongs = songsAfterCurrent.filter { song ->
             song.id !in excludedSongIds
         }
 
         val orderedRemainingSongs = if (isShuffleEnabled) {
-            remainingLibrarySongs.shuffled()
+            remainingContextSongs.shuffled()
         } else {
-            remainingLibrarySongs
+            remainingContextSongs
         }
 
         return queuedSongsAfterCurrent + orderedRemainingSongs
