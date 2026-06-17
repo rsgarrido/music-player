@@ -875,17 +875,17 @@ fun SongGroupDetailScreen(
 
                 Row {
                     Button(
-                        onClick = onShuffleAllClick,
+                        onClick = onPlayAllClick,
                         enabled = songs.isNotEmpty()
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Shuffle,
-                            contentDescription = "Shuffle"
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = "Play"
                         )
 
                         Spacer(modifier = Modifier.width(6.dp))
 
-                        Text(text = "Shuffle")
+                        Text(text = "Play")
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
