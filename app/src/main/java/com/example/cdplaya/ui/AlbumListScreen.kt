@@ -28,9 +28,10 @@ private data class AlbumGroup(
 fun AlbumListScreen(
     songs: List<Song>,
     onAlbumClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sortOption: LibrarySortOption = LibrarySortOption.TITLE
 ) {
-    val albums = songs
+    val albumGroups = songs
         .groupBy { song -> song.folderPath }
         .map { entry ->
             val albumSongs = entry.value
@@ -52,9 +53,34 @@ fun AlbumListScreen(
                 songs = albumSongs
             )
         }
-        .sortedBy { album ->
-            album.title.lowercase()
+
+    val albums = when (sortOption) {
+        LibrarySortOption.ARTIST -> {
+            albumGroups.sortedWith(
+                compareBy<AlbumGroup> { album ->
+                    album.artistText.lowercase()
+                }.thenBy { album ->
+                    album.title.lowercase()
+                }
+            )
         }
+
+        LibrarySortOption.SONG_COUNT -> {
+            albumGroups.sortedWith(
+                compareByDescending<AlbumGroup> { album ->
+                    album.songs.size
+                }.thenBy { album ->
+                    album.title.lowercase()
+                }
+            )
+        }
+
+        else -> {
+            albumGroups.sortedBy { album ->
+                album.title.lowercase()
+            }
+        }
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize()

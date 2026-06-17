@@ -102,3 +102,53 @@ fun formatDuration(milliseconds: Int): String {
 
     return "%d:%02d".format(minutes, seconds)
 }
+
+fun sortSongsForLibrary(
+    songs: List<Song>,
+    sortOption: LibrarySortOption
+): List<Song> {
+    return when (sortOption) {
+        LibrarySortOption.TITLE,
+        LibrarySortOption.NAME -> {
+            songs.sortedWith(
+                compareBy<Song> { song ->
+                    song.title.lowercase()
+                }.thenBy { song ->
+                    song.artist.lowercase()
+                }.thenBy { song ->
+                    song.album.lowercase()
+                }
+            )
+        }
+
+        LibrarySortOption.ARTIST -> {
+            songs.sortedWith(
+                compareBy<Song> { song ->
+                    song.artist.ifBlank { "Unknown Artist" }.lowercase()
+                }.thenBy { song ->
+                    song.album.ifBlank { "Unknown Album" }.lowercase()
+                }.thenBy { song ->
+                    if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE
+                }.thenBy { song ->
+                    song.title.lowercase()
+                }
+            )
+        }
+
+        LibrarySortOption.ALBUM -> {
+            songs.sortedWith(
+                compareBy<Song> { song ->
+                    song.album.ifBlank { "Unknown Album" }.lowercase()
+                }.thenBy { song ->
+                    if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE
+                }.thenBy { song ->
+                    song.title.lowercase()
+                }
+            )
+        }
+
+        LibrarySortOption.SONG_COUNT -> {
+            songs
+        }
+    }
+}
