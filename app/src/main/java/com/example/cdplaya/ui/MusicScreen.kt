@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -39,6 +41,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -107,6 +110,7 @@ fun MusicScreen(
     var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedAlbumFolderPath by rememberSaveable { mutableStateOf<String?>(null) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
 
     val coroutineScope = rememberCoroutineScope()
     var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
@@ -204,17 +208,35 @@ fun MusicScreen(
                     selectedAlbumFolderPath = null
                 }
             )
+            if (selectedLibraryTab != LibraryTab.QUEUE) {
+                LibrarySearchBar(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { query ->
+                        searchQuery = query
+                    }
+                )
+            }
 
             when (selectedLibraryTab) {
                 LibraryTab.SONGS -> {
+                    val filteredSongs = filterSongsForSearch(
+                        songs = songs,
+                        searchQuery = searchQuery
+                    )
+
                     if (songs.isEmpty()) {
                         Text(
                             text = "No songs found.",
                             modifier = Modifier.padding(16.dp)
                         )
+                    } else if (filteredSongs.isEmpty()) {
+                        Text(
+                            text = "No songs match your search.",
+                            modifier = Modifier.padding(16.dp)
+                        )
                     } else {
                         SongList(
-                            songs = songs,
+                            songs = filteredSongs,
                             currentSongId = currentSong?.id,
                             recentlyAddedSongIds = recentlyAddedSongIds,
                             onSongClick = onSongClick,
@@ -227,19 +249,31 @@ fun MusicScreen(
                 }
 
                 LibraryTab.ARTISTS -> {
+                    val artistSearchSongs = filterSongsByArtistSearch(
+                        songs = songs,
+                        searchQuery = searchQuery
+                    )
+
                     if (songs.isEmpty()) {
                         Text(
                             text = "No artists found.",
                             modifier = Modifier.padding(16.dp)
                         )
                     } else if (selectedArtistName == null) {
-                        ArtistListScreen(
-                            songs = songs,
-                            onArtistClick = { artistName ->
-                                selectedArtistName = artistName
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
+                        if (artistSearchSongs.isEmpty()) {
+                            Text(
+                                text = "No artists match your search.",
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        } else {
+                            ArtistListScreen(
+                                songs = artistSearchSongs,
+                                onArtistClick = { artistName ->
+                                    selectedArtistName = artistName
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     } else {
                         val artistSongs = songs
                             .filter { song ->
@@ -255,11 +289,22 @@ fun MusicScreen(
                                 }
                             )
 
+                        val displayedArtistSongs = filterSongsForSearch(
+                            songs = artistSongs,
+                            searchQuery = searchQuery
+                        )
+
+                        val subtitle = if (searchQuery.isBlank()) {
+                            "${artistSongs.size} song(s)"
+                        } else {
+                            "${displayedArtistSongs.size} of ${artistSongs.size} song(s)"
+                        }
+
                         SongGroupDetailScreen(
                             title = selectedArtistName ?: "Artist",
-                            subtitle = "${artistSongs.size} song(s)",
+                            subtitle = subtitle,
                             artworkUri = artistSongs.firstOrNull()?.albumArtUri,
-                            songs = artistSongs,
+                            songs = displayedArtistSongs,
                             currentSongId = currentSong?.id,
                             recentlyAddedSongIds = recentlyAddedSongIds,
                             showAlbumName = true,
@@ -268,10 +313,10 @@ fun MusicScreen(
                                 selectedArtistName = null
                             },
                             onPlayAllClick = {
-                                onPlaySongsClick(artistSongs, false)
+                                onPlaySongsClick(displayedArtistSongs, false)
                             },
                             onShuffleAllClick = {
-                                onPlaySongsClick(artistSongs, true)
+                                onPlaySongsClick(displayedArtistSongs, true)
                             },
                             onSongClick = onSongClick,
                             onAddToQueueClick = { song ->
@@ -283,19 +328,31 @@ fun MusicScreen(
                 }
 
                 LibraryTab.ALBUMS -> {
+                    val albumSearchSongs = filterSongsByAlbumSearch(
+                        songs = songs,
+                        searchQuery = searchQuery
+                    )
+
                     if (songs.isEmpty()) {
                         Text(
                             text = "No albums found.",
                             modifier = Modifier.padding(16.dp)
                         )
                     } else if (selectedAlbumFolderPath == null) {
-                        AlbumListScreen(
-                            songs = songs,
-                            onAlbumClick = { albumFolderPath ->
-                                selectedAlbumFolderPath = albumFolderPath
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
+                        if (albumSearchSongs.isEmpty()) {
+                            Text(
+                                text = "No albums match your search.",
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        } else {
+                            AlbumListScreen(
+                                songs = albumSearchSongs,
+                                onAlbumClick = { albumFolderPath ->
+                                    selectedAlbumFolderPath = albumFolderPath
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     } else {
                         val albumSongs = sortSongsByAlbumOrder(
                             songs.filter { song ->
@@ -303,13 +360,24 @@ fun MusicScreen(
                             }
                         )
 
+                        val displayedAlbumSongs = filterSongsForSearch(
+                            songs = albumSongs,
+                            searchQuery = searchQuery
+                        )
+
                         val firstSong = albumSongs.firstOrNull()
+
+                        val subtitle = if (searchQuery.isBlank()) {
+                            "${firstSong?.artist ?: "Unknown Artist"} • ${albumSongs.size} song(s)"
+                        } else {
+                            "${firstSong?.artist ?: "Unknown Artist"} • ${displayedAlbumSongs.size} of ${albumSongs.size} song(s)"
+                        }
 
                         SongGroupDetailScreen(
                             title = firstSong?.album?.ifBlank { "Unknown Album" } ?: "Album",
-                            subtitle = "${firstSong?.artist ?: "Unknown Artist"} • ${albumSongs.size} song(s)",
+                            subtitle = subtitle,
                             artworkUri = firstSong?.albumArtUri,
-                            songs = albumSongs,
+                            songs = displayedAlbumSongs,
                             currentSongId = currentSong?.id,
                             recentlyAddedSongIds = recentlyAddedSongIds,
                             showAlbumName = false,
@@ -318,10 +386,10 @@ fun MusicScreen(
                                 selectedAlbumFolderPath = null
                             },
                             onPlayAllClick = {
-                                onPlaySongsClick(albumSongs, false)
+                                onPlaySongsClick(displayedAlbumSongs, false)
                             },
                             onShuffleAllClick = {
-                                onPlaySongsClick(albumSongs, true)
+                                onPlaySongsClick(displayedAlbumSongs, true)
                             },
                             onSongClick = onSongClick,
                             onAddToQueueClick = { song ->
@@ -372,6 +440,44 @@ fun LibraryTabs(
             )
         }
     }
+}
+
+@Composable
+fun LibrarySearchBar(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = searchQuery,
+        onValueChange = onSearchQueryChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        singleLine = true,
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Search,
+                contentDescription = "Search"
+            )
+        },
+        trailingIcon = {
+            if (searchQuery.isNotEmpty()) {
+                IconButton(
+                    onClick = {
+                        onSearchQueryChange("")
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Clear search"
+                    )
+                }
+            }
+        },
+        placeholder = {
+            Text(text = "Search songs, artists, albums")
+        }
+    )
 }
 
 @Composable
@@ -769,16 +875,17 @@ fun SongGroupDetailScreen(
 
                 Row {
                     Button(
-                        onClick = onPlayAllClick
+                        onClick = onShuffleAllClick,
+                        enabled = songs.isNotEmpty()
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Play"
+                            imageVector = Icons.Filled.Shuffle,
+                            contentDescription = "Shuffle"
                         )
 
                         Spacer(modifier = Modifier.width(6.dp))
 
-                        Text(text = "Play")
+                        Text(text = "Shuffle")
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -799,16 +906,23 @@ fun SongGroupDetailScreen(
             }
         }
 
-        SongList(
-            songs = songs,
-            currentSongId = currentSongId,
-            recentlyAddedSongIds = recentlyAddedSongIds,
-            showAlbumName = showAlbumName,
-            showTrackNumbers = showTrackNumbers,
-            onSongClick = onSongClick,
-            onAddToQueueClick = onAddToQueueClick,
-            modifier = Modifier.weight(1f)
-        )
+        if (songs.isEmpty()) {
+            Text(
+                text = "No songs match your search.",
+                modifier = Modifier.padding(16.dp)
+            )
+        } else {
+            SongList(
+                songs = songs,
+                currentSongId = currentSongId,
+                recentlyAddedSongIds = recentlyAddedSongIds,
+                showAlbumName = showAlbumName,
+                showTrackNumbers = showTrackNumbers,
+                onSongClick = onSongClick,
+                onAddToQueueClick = onAddToQueueClick,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 
@@ -904,6 +1018,75 @@ fun SongList(
                 }
             )
         }
+    }
+}
+
+fun filterSongsForSearch(
+    songs: List<Song>,
+    searchQuery: String
+): List<Song> {
+    val query = searchQuery.trim()
+
+    if (query.isBlank()) {
+        return songs
+    }
+
+    return songs.filter { song ->
+        song.title.contains(query, ignoreCase = true) ||
+                song.artist.contains(query, ignoreCase = true) ||
+                song.album.contains(query, ignoreCase = true)
+    }
+}
+
+fun filterSongsByArtistSearch(
+    songs: List<Song>,
+    searchQuery: String
+): List<Song> {
+    val query = searchQuery.trim()
+
+    if (query.isBlank()) {
+        return songs
+    }
+
+    val matchingArtists = songs
+        .filter { song ->
+            song.artist.ifBlank { "Unknown Artist" }
+                .contains(query, ignoreCase = true)
+        }
+        .map { song ->
+            song.artist.ifBlank { "Unknown Artist" }
+        }
+        .toSet()
+
+    return songs.filter { song ->
+        song.artist.ifBlank { "Unknown Artist" } in matchingArtists
+    }
+}
+
+fun filterSongsByAlbumSearch(
+    songs: List<Song>,
+    searchQuery: String
+): List<Song> {
+    val query = searchQuery.trim()
+
+    if (query.isBlank()) {
+        return songs
+    }
+
+    val matchingAlbumFolders = songs
+        .filter { song ->
+            song.album.ifBlank { "Unknown Album" }
+                .contains(query, ignoreCase = true) ||
+                    song.artist.ifBlank { "Unknown Artist" }
+                        .contains(query, ignoreCase = true)
+        }
+        .map { song ->
+            song.folderPath
+        }
+        .toSet()
+
+    return songs.filter { song ->
+        song.folderPath in matchingAlbumFolders
     }
 }
 
