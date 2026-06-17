@@ -64,6 +64,9 @@ fun MusicScreen(
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedAlbumFolderPath by rememberSaveable { mutableStateOf<String?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
+    var selectedSongSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.TITLE) }
+    var selectedArtistSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.NAME) }
+    var selectedAlbumSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.TITLE) }
 
     val coroutineScope = rememberCoroutineScope()
     var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
@@ -170,11 +173,69 @@ fun MusicScreen(
                 )
             }
 
+            val shouldShowSortDropdown =
+                selectedLibraryTab == LibraryTab.SONGS ||
+                        selectedLibraryTab == LibraryTab.ARTISTS && selectedArtistName == null ||
+                        selectedLibraryTab == LibraryTab.ALBUMS && selectedAlbumFolderPath == null
+
+            if (shouldShowSortDropdown) {
+                val selectedSortOption = when (selectedLibraryTab) {
+                    LibraryTab.SONGS -> selectedSongSortOption
+                    LibraryTab.ARTISTS -> selectedArtistSortOption
+                    LibraryTab.ALBUMS -> selectedAlbumSortOption
+                    LibraryTab.QUEUE -> selectedSongSortOption
+                }
+
+                val availableSortOptions = when (selectedLibraryTab) {
+                    LibraryTab.SONGS -> listOf(
+                        LibrarySortOption.TITLE,
+                        LibrarySortOption.ARTIST,
+                        LibrarySortOption.ALBUM
+                    )
+
+                    LibraryTab.ARTISTS -> listOf(
+                        LibrarySortOption.NAME,
+                        LibrarySortOption.SONG_COUNT
+                    )
+
+                    LibraryTab.ALBUMS -> listOf(
+                        LibrarySortOption.TITLE,
+                        LibrarySortOption.ARTIST,
+                        LibrarySortOption.SONG_COUNT
+                    )
+
+                    LibraryTab.QUEUE -> emptyList()
+                }
+
+                LibrarySortDropdown(
+                    selectedOption = selectedSortOption,
+                    options = availableSortOptions,
+                    onOptionSelected = { option ->
+                        when (selectedLibraryTab) {
+                            LibraryTab.SONGS -> {
+                                selectedSongSortOption = option
+                            }
+
+                            LibraryTab.ARTISTS -> {
+                                selectedArtistSortOption = option
+                            }
+
+                            LibraryTab.ALBUMS -> {
+                                selectedAlbumSortOption = option
+                            }
+
+                            LibraryTab.QUEUE -> Unit
+                        }
+                    }
+                )
+            }
+
             when (selectedLibraryTab) {
                 LibraryTab.SONGS -> {
                     SongsTabContent(
                         songs = songs,
                         searchQuery = searchQuery,
+                        sortOption = selectedSongSortOption,
                         currentSong = currentSong,
                         recentlyAddedSongIds = recentlyAddedSongIds,
                         onSongClick = onSongClick,
@@ -190,6 +251,7 @@ fun MusicScreen(
                         songs = songs,
                         searchQuery = searchQuery,
                         selectedArtistName = selectedArtistName,
+                        sortOption = selectedArtistSortOption,
                         currentSong = currentSong,
                         recentlyAddedSongIds = recentlyAddedSongIds,
                         onArtistSelected = { artistName ->
@@ -213,6 +275,7 @@ fun MusicScreen(
                         searchQuery = searchQuery,
                         selectedAlbumFolderPath = selectedAlbumFolderPath,
                         currentSong = currentSong,
+                        sortOption = selectedAlbumSortOption,
                         recentlyAddedSongIds = recentlyAddedSongIds,
                         onAlbumSelected = { albumFolderPath ->
                             selectedAlbumFolderPath = albumFolderPath
@@ -250,6 +313,7 @@ fun MusicScreen(
 private fun SongsTabContent(
     songs: List<Song>,
     searchQuery: String,
+    sortOption: LibrarySortOption,
     currentSong: Song?,
     recentlyAddedSongIds: Set<Long>,
     onSongClick: (Song, List<Song>) -> Unit,
@@ -259,6 +323,11 @@ private fun SongsTabContent(
     val filteredSongs = filterSongsForSearch(
         songs = songs,
         searchQuery = searchQuery
+    )
+
+    val displayedSongs = sortSongsForLibrary(
+        songs = filteredSongs,
+        sortOption = sortOption
     )
 
     if (songs.isEmpty()) {
@@ -273,7 +342,7 @@ private fun SongsTabContent(
         )
     } else {
         SongList(
-            songs = filteredSongs,
+            songs = displayedSongs,
             currentSongId = currentSong?.id,
             recentlyAddedSongIds = recentlyAddedSongIds,
             onSongClick = onSongClick,
@@ -289,6 +358,7 @@ private fun ArtistsTabContent(
     searchQuery: String,
     selectedArtistName: String?,
     currentSong: Song?,
+    sortOption: LibrarySortOption,
     recentlyAddedSongIds: Set<Long>,
     onArtistSelected: (String) -> Unit,
     onBackFromArtist: () -> Unit,
@@ -317,6 +387,7 @@ private fun ArtistsTabContent(
             ArtistListScreen(
                 songs = artistSearchSongs,
                 onArtistClick = onArtistSelected,
+                sortOption = sortOption,
                 modifier = modifier
             )
         }
@@ -375,6 +446,7 @@ private fun AlbumsTabContent(
     searchQuery: String,
     selectedAlbumFolderPath: String?,
     currentSong: Song?,
+    sortOption: LibrarySortOption,
     recentlyAddedSongIds: Set<Long>,
     onAlbumSelected: (String) -> Unit,
     onBackFromAlbum: () -> Unit,
@@ -403,6 +475,7 @@ private fun AlbumsTabContent(
             AlbumListScreen(
                 songs = albumSearchSongs,
                 onAlbumClick = onAlbumSelected,
+                sortOption = sortOption,
                 modifier = modifier
             )
         }
