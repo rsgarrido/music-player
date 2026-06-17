@@ -26,9 +26,10 @@ private data class ArtistGroup(
 fun ArtistListScreen(
     songs: List<Song>,
     onArtistClick: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    sortOption: LibrarySortOption = LibrarySortOption.NAME
 ) {
-    val artists = songs
+    val artistGroups = songs
         .groupBy { song -> song.artist.ifBlank { "Unknown Artist" } }
         .map { entry ->
             ArtistGroup(
@@ -36,9 +37,24 @@ fun ArtistListScreen(
                 songs = entry.value
             )
         }
-        .sortedBy { artist ->
-            artist.name.lowercase()
+
+    val artists = when (sortOption) {
+        LibrarySortOption.SONG_COUNT -> {
+            artistGroups.sortedWith(
+                compareByDescending<ArtistGroup> { artist ->
+                    artist.songs.size
+                }.thenBy { artist ->
+                    artist.name.lowercase()
+                }
+            )
         }
+
+        else -> {
+            artistGroups.sortedBy { artist ->
+                artist.name.lowercase()
+            }
+        }
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize()
