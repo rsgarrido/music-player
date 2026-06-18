@@ -1,11 +1,17 @@
 package com.example.cdplaya.ui
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -18,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.LibraryFolder
@@ -63,6 +70,7 @@ fun MusicScreen(
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
     var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
+    var isSettingsScreenVisible by rememberSaveable { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedAlbumFolderPath by rememberSaveable { mutableStateOf<String?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -99,21 +107,27 @@ fun MusicScreen(
             .fillMaxSize()
             .animateContentSize()
     ) {
-        Text(
-            text = "CDPlaya",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(16.dp)
-        )
-
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Button(
+            Text(
+                text = "CDPlaya",
+                style = MaterialTheme.typography.headlineMedium
+            )
+
+            IconButton(
                 onClick = {
-                    isFolderScreenVisible = true
+                    isSettingsScreenVisible = true
                 }
             ) {
-                Text(text = "Folders")
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Settings"
+                )
             }
         }
 
@@ -123,10 +137,25 @@ fun MusicScreen(
                 selectedLibraryFolders = selectedLibraryFolders,
                 onBackClick = {
                     isFolderScreenVisible = false
+                    isSettingsScreenVisible = true
                 },
                 onFolderToggle = onLibraryFolderToggle,
                 onSelectAllClick = onSelectAllLibraryFolders,
                 onClearSelectionClick = onClearSelectedLibraryFolders,
+                modifier = Modifier.weight(1f)
+            )
+        } else if (isSettingsScreenVisible) {
+            SettingsScreen(
+                totalSongCount = songs.size,
+                availableFolderCount = libraryFolders.size,
+                selectedFolderCount = selectedLibraryFolders.size,
+                onBackClick = {
+                    isSettingsScreenVisible = false
+                },
+                onLibraryFoldersClick = {
+                    isSettingsScreenVisible = false
+                    isFolderScreenVisible = true
+                },
                 modifier = Modifier.weight(1f)
             )
         } else if (!permissionGranted) {
