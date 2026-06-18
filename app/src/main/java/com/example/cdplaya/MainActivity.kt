@@ -72,6 +72,7 @@ class MainActivity : ComponentActivity() {
     private val previousSongHistory = mutableListOf<Song>()
     private val nextSongHistory = mutableListOf<Song>()
     private val playbackQueue = mutableStateListOf<Song>()
+    private var upcomingSongs by mutableStateOf<List<Song>>(emptyList())
     private var currentPosition by mutableStateOf(0)
     private var duration by mutableStateOf(0)
     private val progressHandler = Handler(Looper.getMainLooper())
@@ -161,6 +162,7 @@ class MainActivity : ComponentActivity() {
                         currentPosition = currentPosition,
                         duration = duration,
                         queuedSongs = playbackQueue,
+                        upcomingSongs = getComingUpSongsForDisplay(),
                         snackbarHostState = snackbarHostState,
                         modifier = Modifier.padding(innerPadding),
                         libraryFolders = libraryFolders,
@@ -183,8 +185,12 @@ class MainActivity : ComponentActivity() {
                                 isPlaying = true
                             }
                         },
-                        onPreviousClick = { playPreviousSong() },
-                        onNextClick = { playNextSong() },
+                        onPreviousClick = {
+                            musicPlayer.skipToPrevious()
+                        },
+                        onNextClick = {
+                            musicPlayer.skipToNext()
+                        },
                         onSeekChange = { position ->
                             musicPlayer.seekTo(position)
                             currentPosition = position
@@ -196,6 +202,7 @@ class MainActivity : ComponentActivity() {
                         onRemoveFromQueueClick = { index -> removeSongFromQueue(index) },
                         onMoveQueueItemUpClick = { index -> moveQueuedSongUp(index) },
                         onMoveQueueItemDownClick = { index -> moveQueuedSongDown(index) },
+                        onClearQueueClick = { clearQueue() },
                         onUndoAddToQueueClick = { song -> removeLastMatchingSongFromQueue(song) },
                         onLibraryFolderToggle = { folderPath -> toggleLibraryFolder(folderPath) },
                         onSelectAllLibraryFolders = { selectAllLibraryFolders() },
@@ -568,6 +575,12 @@ class MainActivity : ComponentActivity() {
         return true
     }
 
+    private fun clearQueue() {
+        playbackQueue.clear()
+        syncServicePlaylistKeepingCurrent()
+        savePlayerState()
+    }
+
     private fun removeLastMatchingSongFromQueue(song: Song) {
         for (index in playbackQueue.lastIndex downTo 0) {
             if (playbackQueue[index].id == song.id) {
@@ -632,7 +645,14 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun buildPlaybackPlaylist(startSong: Song): List<Song> {
-        return listOf(startSong) + buildUpcomingPlaylistAfterCurrent(startSong)
+        val refreshedUpcomingSongs = refreshUpcomingSongs(startSong)
+
+        return listOf(startSong) + refreshedUpcomingSongs
+    }
+
+    private fun refreshUpcomingSongs(startSong: Song): List<Song> {
+        upcomingSongs = buildUpcomingPlaylistAfterCurrent(startSong)
+        return upcomingSongs
     }
 
     private fun buildUpcomingPlaylistAfterCurrent(startSong: Song): List<Song> {
@@ -698,8 +718,10 @@ class MainActivity : ComponentActivity() {
     private fun syncServicePlaylistKeepingCurrent() {
         val song = currentSong ?: return
 
+        val refreshedUpcomingSongs = refreshUpcomingSongs(song)
+
         musicPlayer.updateUpcomingPlaylist(
-            upcomingSongs = buildUpcomingPlaylistAfterCurrent(song)
+            upcomingSongs = refreshedUpcomingSongs
         )
 
         musicPlayer.setShuffleEnabled(isShuffleEnabled)
@@ -712,6 +734,14 @@ class MainActivity : ComponentActivity() {
         } else {
             songs
         }
+    }
+
+    private fun getComingUpSongsForDisplay(): List<Song> {
+        val queuedSongCount = playbackQueue.count { queuedSong ->
+            queuedSong.id != currentSong?.id
+        }
+
+        return upcomingSongs.drop(queuedSongCount)
     }
 
     override fun onDestroy() {
