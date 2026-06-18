@@ -48,10 +48,12 @@ fun MusicScreen(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     queuedSongs: List<Song>,
+    upcomingSongs: List<Song>,
     onAddToQueueClick: (Song) -> Unit,
     onRemoveFromQueueClick: (Int) -> Unit,
     onMoveQueueItemUpClick: (Int) -> Unit,
     onMoveQueueItemDownClick: (Int) -> Unit,
+    onClearQueueClick: () -> Unit,
     libraryFolders: List<LibraryFolder>,
     selectedLibraryFolders: Set<String>,
     onLibraryFolderToggle: (String) -> Unit,
@@ -295,12 +297,15 @@ fun MusicScreen(
                 LibraryTab.QUEUE -> {
                     QueueScreen(
                         queuedSongs = queuedSongs,
+                        upcomingSongs = upcomingSongs,
+                        isShuffleEnabled = isShuffleEnabled,
                         onBackClick = {
                             selectedLibraryTab = LibraryTab.SONGS
                         },
                         onRemoveFromQueueClick = onRemoveFromQueueClick,
                         onMoveQueueItemUpClick = onMoveQueueItemUpClick,
                         onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+                        onClearQueueClick = onClearQueueClick,
                         modifier = Modifier.weight(1f)
                     )
                 }
