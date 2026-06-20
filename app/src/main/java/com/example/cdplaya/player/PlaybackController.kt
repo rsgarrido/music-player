@@ -592,7 +592,7 @@ class PlaybackController(
         }
 
         val songsAfterCurrent = if (startIndex == -1) {
-            playbackSourceSongs
+            getRemainingSongsFromExistingUpcoming(startSong)
         } else {
             playbackSourceSongs.drop(startIndex + 1) + playbackSourceSongs.take(startIndex)
         }
@@ -601,13 +601,25 @@ class PlaybackController(
             song.id !in excludedSongIds
         }
 
-        val orderedRemainingSongs = if (isShuffleEnabled) {
+        val orderedRemainingSongs = if (isShuffleEnabled && startIndex != -1) {
             remainingContextSongs.shuffled()
         } else {
             remainingContextSongs
         }
 
         return queuedSongsAfterCurrent + orderedRemainingSongs
+    }
+
+    private fun getRemainingSongsFromExistingUpcoming(startSong: Song): List<Song> {
+        val currentSongIndexInUpcoming = upcomingSongs.indexOfFirst { song ->
+            song.id == startSong.id
+        }
+
+        return if (currentSongIndexInUpcoming == -1) {
+            upcomingSongs
+        } else {
+            upcomingSongs.drop(currentSongIndexInUpcoming + 1)
+        }
     }
 
     private fun syncServicePlaylistKeepingCurrent() {
