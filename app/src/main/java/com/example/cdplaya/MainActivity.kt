@@ -118,6 +118,12 @@ class MainActivity : ComponentActivity() {
                         onAddToQueueClick = { song ->
                             playbackController.addSongToQueue(song)
                         },
+                        onPlayNextClick = { song ->
+                            playbackController.addSongToPlayNext(song)
+                        },
+                        onUndoPlayNextClick = { song ->
+                            playbackController.removeFirstMatchingSongFromQueue(song)
+                        },
                         onRemoveFromQueueClick = { index ->
                             playbackController.removeSongFromQueue(index)
                         },

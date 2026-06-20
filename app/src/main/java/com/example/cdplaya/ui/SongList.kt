@@ -8,7 +8,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -16,6 +19,10 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -31,6 +38,7 @@ fun SongList(
     currentSongId: Long?,
     recentlyAddedSongIds: Set<Long>,
     onSongClick: (Song, List<Song>) -> Unit,
+    onPlayNextClick: (Song) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
     showAlbumName: Boolean = false,
@@ -45,6 +53,7 @@ fun SongList(
         ) { song ->
             val isCurrentSong = song.id == currentSongId
             val wasRecentlyAdded = song.id in recentlyAddedSongIds
+            var isMenuExpanded by remember { mutableStateOf(false) }
 
             ListItem(
                 leadingContent = {
@@ -83,24 +92,47 @@ fun SongList(
                 trailingContent = {
                     IconButton(
                         onClick = {
-                            onAddToQueueClick(song)
+                            isMenuExpanded = true
                         }
                     ) {
                         Icon(
                             imageVector = if (wasRecentlyAdded) {
                                 Icons.Filled.Check
                             } else {
-                                Icons.Filled.PlaylistAdd
+                                Icons.Filled.MoreVert
                             },
-                            contentDescription = if (wasRecentlyAdded) {
-                                "${song.title} added to queue"
-                            } else {
-                                "Add ${song.title} to queue"
-                            },
+                            contentDescription = "Song actions",
                             tint = if (wasRecentlyAdded) {
                                 MaterialTheme.colorScheme.primary
                             } else {
                                 MaterialTheme.colorScheme.onSurface
+                            }
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = isMenuExpanded,
+                        onDismissRequest = {
+                            isMenuExpanded = false
+                        }
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = "Play next")
+                            },
+                            onClick = {
+                                isMenuExpanded = false
+                                onPlayNextClick(song)
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = "Add to queue")
+                            },
+                            onClick = {
+                                isMenuExpanded = false
+                                onAddToQueueClick(song)
                             }
                         )
                     }
