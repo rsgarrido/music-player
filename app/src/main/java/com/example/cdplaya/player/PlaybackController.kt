@@ -243,6 +243,12 @@ class PlaybackController(
         savePlayerState()
     }
 
+    fun addSongToPlayNext(song: Song) {
+        playbackQueue.add(0, song)
+        syncServicePlaylistKeepingCurrent()
+        savePlayerState()
+    }
+
     fun removeSongFromQueue(index: Int) {
         if (index in playbackQueue.indices) {
             playbackQueue.removeAt(index)
@@ -283,6 +289,18 @@ class PlaybackController(
                 savePlayerState()
                 return
             }
+        }
+    }
+
+    fun removeFirstMatchingSongFromQueue(song: Song) {
+        val index = playbackQueue.indexOfFirst { queuedSong ->
+            queuedSong.id == song.id
+        }
+
+        if (index != -1) {
+            playbackQueue.removeAt(index)
+            syncServicePlaylistKeepingCurrent()
+            savePlayerState()
         }
     }
 

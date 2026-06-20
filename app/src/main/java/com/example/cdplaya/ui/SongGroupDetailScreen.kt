@@ -44,6 +44,7 @@ fun SongGroupDetailScreen(
     onPlayAllClick: () -> Unit,
     onShuffleAllClick: () -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
+    onPlayNextClick: (Song) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -154,6 +155,7 @@ fun SongGroupDetailScreen(
                 showAlbumName = showAlbumName,
                 showTrackNumbers = showTrackNumbers,
                 onSongClick = onSongClick,
+                onPlayNextClick = onPlayNextClick,
                 onAddToQueueClick = onAddToQueueClick,
                 modifier = Modifier.weight(1f)
             )
