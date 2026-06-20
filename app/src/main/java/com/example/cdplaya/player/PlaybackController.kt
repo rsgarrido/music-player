@@ -243,6 +243,12 @@ class PlaybackController(
         savePlayerState()
     }
 
+    fun addSongToPlayNext(song: Song) {
+        playbackQueue.add(0, song)
+        syncServicePlaylistKeepingCurrent()
+        savePlayerState()
+    }
+
     fun removeSongFromQueue(index: Int) {
         if (index in playbackQueue.indices) {
             playbackQueue.removeAt(index)
@@ -283,6 +289,18 @@ class PlaybackController(
                 savePlayerState()
                 return
             }
+        }
+    }
+
+    fun removeFirstMatchingSongFromQueue(song: Song) {
+        val index = playbackQueue.indexOfFirst { queuedSong ->
+            queuedSong.id == song.id
+        }
+
+        if (index != -1) {
+            playbackQueue.removeAt(index)
+            syncServicePlaylistKeepingCurrent()
+            savePlayerState()
         }
     }
 
@@ -574,7 +592,7 @@ class PlaybackController(
         }
 
         val songsAfterCurrent = if (startIndex == -1) {
-            playbackSourceSongs
+            getRemainingSongsFromExistingUpcoming(startSong)
         } else {
             playbackSourceSongs.drop(startIndex + 1) + playbackSourceSongs.take(startIndex)
         }
@@ -583,13 +601,25 @@ class PlaybackController(
             song.id !in excludedSongIds
         }
 
-        val orderedRemainingSongs = if (isShuffleEnabled) {
+        val orderedRemainingSongs = if (isShuffleEnabled && startIndex != -1) {
             remainingContextSongs.shuffled()
         } else {
             remainingContextSongs
         }
 
         return queuedSongsAfterCurrent + orderedRemainingSongs
+    }
+
+    private fun getRemainingSongsFromExistingUpcoming(startSong: Song): List<Song> {
+        val currentSongIndexInUpcoming = upcomingSongs.indexOfFirst { song ->
+            song.id == startSong.id
+        }
+
+        return if (currentSongIndexInUpcoming == -1) {
+            upcomingSongs
+        } else {
+            upcomingSongs.drop(currentSongIndexInUpcoming + 1)
+        }
     }
 
     private fun syncServicePlaylistKeepingCurrent() {
