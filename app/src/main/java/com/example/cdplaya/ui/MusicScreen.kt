@@ -57,6 +57,8 @@ fun MusicScreen(
     queuedSongs: List<Song>,
     upcomingSongs: List<Song>,
     onAddToQueueClick: (Song) -> Unit,
+    onPlayNextClick: (Song) -> Unit,
+    onUndoPlayNextClick: (Song) -> Unit,
     onRemoveFromQueueClick: (Int) -> Unit,
     onMoveQueueItemUpClick: (Int) -> Unit,
     onMoveQueueItemDownClick: (Int) -> Unit,
@@ -95,6 +97,27 @@ fun MusicScreen(
 
             if (result == SnackbarResult.ActionPerformed) {
                 onUndoAddToQueueClick(song)
+            }
+
+            delay(300)
+            recentlyAddedSongIds = recentlyAddedSongIds - song.id
+        }
+    }
+
+    fun handlePlayNext(song: Song) {
+        onPlayNextClick(song)
+        recentlyAddedSongIds = recentlyAddedSongIds + song.id
+
+        coroutineScope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = "\"${song.title}\" will play next",
+                actionLabel = "Undo",
+                withDismissAction = true,
+                duration = SnackbarDuration.Short
+            )
+
+            if (result == SnackbarResult.ActionPerformed) {
+                onUndoPlayNextClick(song)
             }
 
             delay(300)
@@ -270,6 +293,9 @@ fun MusicScreen(
                         currentSong = currentSong,
                         recentlyAddedSongIds = recentlyAddedSongIds,
                         onSongClick = onSongClick,
+                        onPlayNextClick = { song ->
+                            handlePlayNext(song)
+                        },
                         onAddToQueueClick = { song ->
                             handleAddToQueue(song)
                         },
@@ -292,6 +318,9 @@ fun MusicScreen(
                             selectedArtistName = null
                         },
                         onPlaySongsClick = onPlaySongsClick,
+                        onPlayNextClick = { song ->
+                            handlePlayNext(song)
+                        },
                         onSongClick = onSongClick,
                         onAddToQueueClick = { song ->
                             handleAddToQueue(song)
@@ -315,6 +344,9 @@ fun MusicScreen(
                             selectedAlbumFolderPath = null
                         },
                         onPlaySongsClick = onPlaySongsClick,
+                        onPlayNextClick = { song ->
+                            handlePlayNext(song)
+                        },
                         onSongClick = onSongClick,
                         onAddToQueueClick = { song ->
                             handleAddToQueue(song)
@@ -351,6 +383,7 @@ private fun SongsTabContent(
     currentSong: Song?,
     recentlyAddedSongIds: Set<Long>,
     onSongClick: (Song, List<Song>) -> Unit,
+    onPlayNextClick: (Song) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -380,6 +413,7 @@ private fun SongsTabContent(
             currentSongId = currentSong?.id,
             recentlyAddedSongIds = recentlyAddedSongIds,
             onSongClick = onSongClick,
+            onPlayNextClick = onPlayNextClick,
             onAddToQueueClick = onAddToQueueClick,
             modifier = modifier
         )
@@ -397,6 +431,7 @@ private fun ArtistsTabContent(
     onArtistSelected: (String) -> Unit,
     onBackFromArtist: () -> Unit,
     onPlaySongsClick: (List<Song>, Boolean) -> Unit,
+    onPlayNextClick: (Song) -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier
@@ -468,6 +503,7 @@ private fun ArtistsTabContent(
                 onPlaySongsClick(displayedArtistSongs, true)
             },
             onSongClick = onSongClick,
+            onPlayNextClick = onPlayNextClick,
             onAddToQueueClick = onAddToQueueClick,
             modifier = modifier
         )
@@ -485,6 +521,7 @@ private fun AlbumsTabContent(
     onAlbumSelected: (String) -> Unit,
     onBackFromAlbum: () -> Unit,
     onPlaySongsClick: (List<Song>, Boolean) -> Unit,
+    onPlayNextClick: (Song) -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier
@@ -550,6 +587,7 @@ private fun AlbumsTabContent(
                 onPlaySongsClick(displayedAlbumSongs, true)
             },
             onSongClick = onSongClick,
+            onPlayNextClick = onPlayNextClick,
             onAddToQueueClick = onAddToQueueClick,
             modifier = modifier
         )
