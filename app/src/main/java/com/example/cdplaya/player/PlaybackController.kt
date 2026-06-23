@@ -281,6 +281,65 @@ class PlaybackController(
         savePlayerState()
     }
 
+    fun addSongsToPlayNext(songs: List<Song>) {
+        if (songs.isEmpty()) {
+            return
+        }
+
+        playbackQueue.addAll(0, songs)
+        syncServicePlaylistKeepingCurrent()
+        savePlayerState()
+    }
+
+    fun addSongsToQueue(songs: List<Song>) {
+        if (songs.isEmpty()) {
+            return
+        }
+
+        playbackQueue.addAll(songs)
+        syncServicePlaylistKeepingCurrent()
+        savePlayerState()
+    }
+
+    fun removeFirstMatchingSongsFromQueue(songs: List<Song>) {
+        var removedAnySong = false
+
+        songs.forEach { song ->
+            val index = playbackQueue.indexOfFirst { queuedSong ->
+                queuedSong.id == song.id
+            }
+
+            if (index != -1) {
+                playbackQueue.removeAt(index)
+                removedAnySong = true
+            }
+        }
+
+        if (removedAnySong) {
+            syncServicePlaylistKeepingCurrent()
+            savePlayerState()
+        }
+    }
+
+    fun removeLastMatchingSongsFromQueue(songs: List<Song>) {
+        var removedAnySong = false
+
+        songs.asReversed().forEach { song ->
+            for (index in playbackQueue.lastIndex downTo 0) {
+                if (playbackQueue[index].id == song.id) {
+                    playbackQueue.removeAt(index)
+                    removedAnySong = true
+                    break
+                }
+            }
+        }
+
+        if (removedAnySong) {
+            syncServicePlaylistKeepingCurrent()
+            savePlayerState()
+        }
+    }
+
     fun removeLastMatchingSongFromQueue(song: Song) {
         for (index in playbackQueue.lastIndex downTo 0) {
             if (playbackQueue[index].id == song.id) {
