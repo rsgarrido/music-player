@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -39,6 +40,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -62,20 +65,21 @@ fun PlayerCard(
     onExpandClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onShuffleClick: () -> Unit,
-    onRepeatClick: () -> Unit
+    onRepeatClick: () -> Unit,
+    onOpenUpNextClick: () -> Unit
 ) {
     if (currentSong == null) {
         return
     }
 
     val albumArtSize by animateDpAsState(
-        targetValue = if (isExpanded) 180.dp else 56.dp,
+        targetValue = if (isExpanded) 260.dp else 56.dp,
         animationSpec = tween(durationMillis = 300),
         label = "albumArtSize"
     )
 
     val cardCornerSize by animateDpAsState(
-        targetValue = if (isExpanded) 24.dp else 16.dp,
+        targetValue = if (isExpanded) 28.dp else 16.dp,
         animationSpec = tween(durationMillis = 300),
         label = "cardCornerSize"
     )
@@ -111,7 +115,8 @@ fun PlayerCard(
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
                 onSeekChange = onSeekChange,
-                onCollapseClick = onCollapseClick
+                onCollapseClick = onCollapseClick,
+                onOpenUpNextClick = onOpenUpNextClick
             )
         } else {
             MiniPlayerContent(
@@ -160,13 +165,13 @@ fun MiniPlayerContent(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = currentSong.title,
+                text = currentSong.title.ifBlank { "Unknown Title" },
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1
             )
 
             Text(
-                text = currentSong.artist,
+                text = currentSong.artist.ifBlank { "Unknown Artist" },
                 style = MaterialTheme.typography.bodySmall,
                 maxLines = 1
             )
@@ -221,7 +226,8 @@ fun ExpandedPlayerContent(
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit,
-    onCollapseClick: () -> Unit
+    onCollapseClick: () -> Unit,
+    onOpenUpNextClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -229,36 +235,71 @@ fun ExpandedPlayerContent(
             .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "Now Playing",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            IconButton(onClick = onCollapseClick) {
+                Icon(
+                    imageVector = Icons.Filled.ExpandLess,
+                    contentDescription = "Collapse player"
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         AsyncImage(
             model = currentSong.albumArtUri,
             contentDescription = "Album art for ${currentSong.title}",
             modifier = Modifier
                 .size(albumArtSize)
-                .clip(RoundedCornerShape(18.dp)),
+                .clip(RoundedCornerShape(24.dp)),
             contentScale = ContentScale.Crop,
             error = painterResource(android.R.drawable.ic_media_play),
             placeholder = painterResource(android.R.drawable.ic_media_play)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = currentSong.title,
-            style = MaterialTheme.typography.titleLarge,
+            text = currentSong.title.ifBlank { "Unknown Title" },
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+            maxLines = 2
+        )
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            text = currentSong.artist.ifBlank { "Unknown Artist" },
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
             maxLines = 1
         )
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp))
 
         Text(
-            text = currentSong.artist,
+            text = currentSong.album.ifBlank { "Unknown Album" },
             style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
             maxLines = 1
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Slider(
             value = currentPosition.toFloat(),
@@ -273,15 +314,22 @@ fun ExpandedPlayerContent(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = formatDuration(currentPosition))
-            Text(text = formatDuration(duration))
+            Text(
+                text = formatDuration(currentPosition),
+                style = MaterialTheme.typography.bodySmall
+            )
+
+            Text(
+                text = formatDuration(duration),
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
+            horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxWidth()
         ) {
             IconButton(onClick = onShuffleClick) {
@@ -291,43 +339,41 @@ fun ExpandedPlayerContent(
                     tint = if (isShuffleEnabled) {
                         MaterialTheme.colorScheme.primary
                     } else {
-                        MaterialTheme.colorScheme.onSurface
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
-
             IconButton(onClick = onPreviousClick) {
                 Icon(
                     imageVector = Icons.Filled.SkipPrevious,
-                    contentDescription = "Previous song"
+                    contentDescription = "Previous song",
+                    modifier = Modifier.size(34.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            IconButton(onClick = onPlayPauseClick) {
+            IconButton(
+                onClick = onPlayPauseClick,
+                modifier = Modifier.size(64.dp)
+            ) {
                 Icon(
                     imageVector = if (isPlaying) {
                         Icons.Filled.Pause
                     } else {
                         Icons.Filled.PlayArrow
                     },
-                    contentDescription = if (isPlaying) "Pause" else "Play"
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    modifier = Modifier.size(44.dp)
                 )
             }
-
-            Spacer(modifier = Modifier.width(8.dp))
 
             IconButton(onClick = onNextClick) {
                 Icon(
                     imageVector = Icons.Filled.SkipNext,
-                    contentDescription = "Next song"
+                    contentDescription = "Next song",
+                    modifier = Modifier.size(34.dp)
                 )
             }
-
-            Spacer(modifier = Modifier.width(8.dp))
 
             IconButton(onClick = onRepeatClick) {
                 Icon(
@@ -342,21 +388,21 @@ fun ExpandedPlayerContent(
                         RepeatMode.ONE -> "Repeat one"
                     },
                     tint = if (repeatMode == RepeatMode.OFF) {
-                        MaterialTheme.colorScheme.onSurface
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     } else {
                         MaterialTheme.colorScheme.primary
                     }
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            IconButton(onClick = onCollapseClick) {
-                Icon(
-                    imageVector = Icons.Filled.ExpandLess,
-                    contentDescription = "Collapse player"
-                )
-            }
+        Button(
+            onClick = onOpenUpNextClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Up Next")
         }
     }
 }
