@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,10 +19,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -244,7 +243,7 @@ private fun ImmersiveExpandedPlayerContent(
     val safeDuration = duration.coerceAtLeast(1)
     val safePosition = currentPosition.coerceIn(0, safeDuration)
 
-    Box(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
@@ -254,6 +253,12 @@ private fun ImmersiveExpandedPlayerContent(
                 onSwipeRight = onPreviousClick
             )
     ) {
+        val foregroundAlbumArtSize = minOf(
+            albumArtSize,
+            maxWidth - 48.dp,
+            maxHeight * 0.34f
+        )
+
         AsyncImage(
             model = currentSong.albumArtUri,
             contentDescription = null,
@@ -290,8 +295,7 @@ private fun ImmersiveExpandedPlayerContent(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 24.dp, vertical = 12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Row(
@@ -315,10 +319,10 @@ private fun ImmersiveExpandedPlayerContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(22.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
             Card(
-                modifier = Modifier.size(albumArtSize),
+                modifier = Modifier.size(foregroundAlbumArtSize),
                 shape = RoundedCornerShape(30.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 18.dp),
                 colors = CardDefaults.cardColors(
@@ -335,7 +339,7 @@ private fun ImmersiveExpandedPlayerContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -349,7 +353,7 @@ private fun ImmersiveExpandedPlayerContent(
                     maxLines = 2
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
                     text = currentSong.artist.ifBlank { "Unknown Artist" },
@@ -358,7 +362,7 @@ private fun ImmersiveExpandedPlayerContent(
                     maxLines = 1
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(3.dp))
 
                 Text(
                     text = currentSong.album.ifBlank { "Unknown Album" },
@@ -368,7 +372,7 @@ private fun ImmersiveExpandedPlayerContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(26.dp))
+            Spacer(modifier = Modifier.weight(1f))
 
             Slider(
                 value = safePosition.toFloat(),
@@ -389,7 +393,7 @@ private fun ImmersiveExpandedPlayerContent(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = formatDuration(currentPosition),
+                    text = formatDuration(safePosition),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.72f)
                 )
@@ -401,7 +405,7 @@ private fun ImmersiveExpandedPlayerContent(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -489,7 +493,7 @@ private fun ImmersiveExpandedPlayerContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(26.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             Button(
                 onClick = onOpenUpNextClick,
