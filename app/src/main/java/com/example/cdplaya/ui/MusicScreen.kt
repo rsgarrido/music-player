@@ -63,6 +63,10 @@ fun MusicScreen(
     onMoveQueueItemUpClick: (Int) -> Unit,
     onMoveQueueItemDownClick: (Int) -> Unit,
     onClearQueueClick: () -> Unit,
+    onPlayNextSongsClick: (List<Song>) -> Unit,
+    onAddSongsToQueueClick: (List<Song>) -> Unit,
+    onUndoPlayNextSongsClick: (List<Song>) -> Unit,
+    onUndoAddSongsToQueueClick: (List<Song>) -> Unit,
     libraryFolders: List<LibraryFolder>,
     selectedLibraryFolders: Set<String>,
     onLibraryFolderToggle: (String) -> Unit,
@@ -122,6 +126,62 @@ fun MusicScreen(
 
             delay(300)
             recentlyAddedSongIds = recentlyAddedSongIds - song.id
+        }
+    }
+
+    fun handlePlayNextSongs(
+        label: String,
+        songsToAdd: List<Song>
+    ) {
+        if (songsToAdd.isEmpty()) {
+            return
+        }
+
+        onPlayNextSongsClick(songsToAdd)
+        recentlyAddedSongIds = recentlyAddedSongIds + songsToAdd.map { song -> song.id }.toSet()
+
+        coroutineScope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = "\"$label\" will play next",
+                actionLabel = "Undo",
+                withDismissAction = true,
+                duration = SnackbarDuration.Short
+            )
+
+            if (result == SnackbarResult.ActionPerformed) {
+                onUndoPlayNextSongsClick(songsToAdd)
+            }
+
+            delay(300)
+            recentlyAddedSongIds = recentlyAddedSongIds - songsToAdd.map { song -> song.id }.toSet()
+        }
+    }
+
+    fun handleAddSongsToQueue(
+        label: String,
+        songsToAdd: List<Song>
+    ) {
+        if (songsToAdd.isEmpty()) {
+            return
+        }
+
+        onAddSongsToQueueClick(songsToAdd)
+        recentlyAddedSongIds = recentlyAddedSongIds + songsToAdd.map { song -> song.id }.toSet()
+
+        coroutineScope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = "\"$label\" added to queue",
+                actionLabel = "Undo",
+                withDismissAction = true,
+                duration = SnackbarDuration.Short
+            )
+
+            if (result == SnackbarResult.ActionPerformed) {
+                onUndoAddSongsToQueueClick(songsToAdd)
+            }
+
+            delay(300)
+            recentlyAddedSongIds = recentlyAddedSongIds - songsToAdd.map { song -> song.id }.toSet()
         }
     }
 
@@ -325,6 +385,12 @@ fun MusicScreen(
                         onAddToQueueClick = { song ->
                             handleAddToQueue(song)
                         },
+                        onPlayNextSongsClick = { label, songs ->
+                            handlePlayNextSongs(label, songs)
+                        },
+                        onAddSongsToQueueClick = { label, songs ->
+                            handleAddSongsToQueue(label, songs)
+                        },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -350,6 +416,12 @@ fun MusicScreen(
                         onSongClick = onSongClick,
                         onAddToQueueClick = { song ->
                             handleAddToQueue(song)
+                        },
+                        onPlayNextSongsClick = { label, songs ->
+                            handlePlayNextSongs(label, songs)
+                        },
+                        onAddSongsToQueueClick = { label, songs ->
+                            handleAddSongsToQueue(label, songs)
                         },
                         modifier = Modifier.weight(1f)
                     )
@@ -434,6 +506,8 @@ private fun ArtistsTabContent(
     onPlayNextClick: (Song) -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
+    onPlayNextSongsClick: (String, List<Song>) -> Unit,
+    onAddSongsToQueueClick: (String, List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val artistSearchSongs = filterSongsByArtistSearch(
@@ -457,14 +531,27 @@ private fun ArtistsTabContent(
                 songs = artistSearchSongs,
                 onArtistClick = onArtistSelected,
                 sortOption = sortOption,
+                onArtistPlayClick = { _, artistSongs ->
+                    onPlaySongsClick(artistSongs, false)
+                },
+                onArtistShuffleClick = { _, artistSongs ->
+                    onPlaySongsClick(artistSongs, true)
+                },
+                onArtistPlayNextClick = { artistName, artistSongs ->
+                    onPlayNextSongsClick(artistName, artistSongs)
+                },
+                onArtistAddToQueueClick = { artistName, artistSongs ->
+                    onAddSongsToQueueClick(artistName, artistSongs)
+                },
                 modifier = modifier
             )
         }
     } else {
-        val artistSongs = songs
-            .filter { song ->
+        val artistSongs = sortSongsForArtistDetail(
+            songs.filter { song ->
                 song.artist.ifBlank { "Unknown Artist" } == selectedArtistName
             }
+        )
             .sortedWith(
                 compareBy<Song> { song ->
                     song.album.lowercase()
@@ -524,6 +611,8 @@ private fun AlbumsTabContent(
     onPlayNextClick: (Song) -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
+    onPlayNextSongsClick: (String, List<Song>) -> Unit,
+    onAddSongsToQueueClick: (String, List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val albumSearchSongs = filterSongsByAlbumSearch(
@@ -547,6 +636,18 @@ private fun AlbumsTabContent(
                 songs = albumSearchSongs,
                 onAlbumClick = onAlbumSelected,
                 sortOption = sortOption,
+                onAlbumPlayClick = { _, albumSongs ->
+                    onPlaySongsClick(albumSongs, false)
+                },
+                onAlbumShuffleClick = { _, albumSongs ->
+                    onPlaySongsClick(albumSongs, true)
+                },
+                onAlbumPlayNextClick = { albumTitle, albumSongs ->
+                    onPlayNextSongsClick(albumTitle, albumSongs)
+                },
+                onAlbumAddToQueueClick = { albumTitle, albumSongs ->
+                    onAddSongsToQueueClick(albumTitle, albumSongs)
+                },
                 modifier = modifier
             )
         }

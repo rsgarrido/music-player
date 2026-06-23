@@ -6,9 +6,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
@@ -26,6 +36,10 @@ private data class ArtistGroup(
 fun ArtistListScreen(
     songs: List<Song>,
     onArtistClick: (String) -> Unit,
+    onArtistPlayClick: (String, List<Song>) -> Unit,
+    onArtistShuffleClick: (String, List<Song>) -> Unit,
+    onArtistPlayNextClick: (String, List<Song>) -> Unit,
+    onArtistAddToQueueClick: (String, List<Song>) -> Unit,
     modifier: Modifier = Modifier,
     sortOption: LibrarySortOption = LibrarySortOption.NAME
 ) {
@@ -34,7 +48,7 @@ fun ArtistListScreen(
         .map { entry ->
             ArtistGroup(
                 name = entry.key,
-                songs = entry.value
+                songs = sortSongsForArtistDetail(entry.value)
             )
         }
 
@@ -84,10 +98,82 @@ fun ArtistListScreen(
                 supportingContent = {
                     Text(text = "${artist.songs.size} song(s)")
                 },
+                trailingContent = {
+                    ArtistActionsMenu(
+                        artistName = artist.name,
+                        artistSongs = artist.songs,
+                        onPlayClick = onArtistPlayClick,
+                        onShuffleClick = onArtistShuffleClick,
+                        onPlayNextClick = onArtistPlayNextClick,
+                        onAddToQueueClick = onArtistAddToQueueClick
+                    )
+                },
                 modifier = Modifier.clickable {
                     onArtistClick(artist.name)
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun ArtistActionsMenu(
+    artistName: String,
+    artistSongs: List<Song>,
+    onPlayClick: (String, List<Song>) -> Unit,
+    onShuffleClick: (String, List<Song>) -> Unit,
+    onPlayNextClick: (String, List<Song>) -> Unit,
+    onAddToQueueClick: (String, List<Song>) -> Unit
+) {
+    var isMenuExpanded by remember { mutableStateOf(false) }
+
+    IconButton(
+        onClick = {
+            isMenuExpanded = true
+        }
+    ) {
+        Icon(
+            imageVector = Icons.Filled.MoreVert,
+            contentDescription = "Artist actions"
+        )
+    }
+
+    DropdownMenu(
+        expanded = isMenuExpanded,
+        onDismissRequest = {
+            isMenuExpanded = false
+        }
+    ) {
+        DropdownMenuItem(
+            text = { Text(text = "Play") },
+            onClick = {
+                isMenuExpanded = false
+                onPlayClick(artistName, artistSongs)
+            }
+        )
+
+        DropdownMenuItem(
+            text = { Text(text = "Shuffle") },
+            onClick = {
+                isMenuExpanded = false
+                onShuffleClick(artistName, artistSongs)
+            }
+        )
+
+        DropdownMenuItem(
+            text = { Text(text = "Play next") },
+            onClick = {
+                isMenuExpanded = false
+                onPlayNextClick(artistName, artistSongs)
+            }
+        )
+
+        DropdownMenuItem(
+            text = { Text(text = "Add to queue") },
+            onClick = {
+                isMenuExpanded = false
+                onAddToQueueClick(artistName, artistSongs)
+            }
+        )
     }
 }
