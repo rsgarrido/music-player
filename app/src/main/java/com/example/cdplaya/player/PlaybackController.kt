@@ -222,7 +222,7 @@ class PlaybackController(
         isShuffleEnabled = !isShuffleEnabled
         previousSongHistory.clear()
         nextSongHistory.clear()
-        syncServicePlaylistKeepingCurrent()
+        syncServicePlaylistKeepingCurrent(preserveExistingShuffleOrder = false)
         savePlayerState()
     }
 
@@ -625,17 +625,30 @@ class PlaybackController(
     }
 
     private fun buildPlaybackPlaylist(startSong: Song): List<Song> {
-        val refreshedUpcomingSongs = refreshUpcomingSongs(startSong)
+        val refreshedUpcomingSongs = refreshUpcomingSongs(
+            startSong = startSong,
+            preserveExistingShuffleOrder = false
+        )
 
         return listOf(startSong) + refreshedUpcomingSongs
     }
 
-    private fun refreshUpcomingSongs(startSong: Song): List<Song> {
-        upcomingSongs = buildUpcomingPlaylistAfterCurrent(startSong)
+    private fun refreshUpcomingSongs(
+        startSong: Song,
+        preserveExistingShuffleOrder: Boolean
+    ): List<Song> {
+        upcomingSongs = buildUpcomingPlaylistAfterCurrent(
+            startSong = startSong,
+            preserveExistingShuffleOrder = preserveExistingShuffleOrder
+        )
+
         return upcomingSongs
     }
 
-    private fun buildUpcomingPlaylistAfterCurrent(startSong: Song): List<Song> {
+    private fun buildUpcomingPlaylistAfterCurrent(
+        startSong: Song,
+        preserveExistingShuffleOrder: Boolean
+    ): List<Song> {
         val queuedSongsAfterCurrent = playbackQueue.filter { queuedSong ->
             queuedSong.id != startSong.id
         }
@@ -650,23 +663,53 @@ class PlaybackController(
             song.id == startSong.id
         }
 
-        val songsAfterCurrent = if (startIndex == -1) {
-            getRemainingSongsFromExistingUpcoming(startSong)
-        } else {
-            playbackSourceSongs.drop(startIndex + 1) + playbackSourceSongs.take(startIndex)
+        val songsAfterCurrent = when {
+            startIndex == -1 -> {
+                getRemainingSongsFromExistingUpcoming(startSong)
+            }
+
+            preserveExistingShuffleOrder && isShuffleEnabled -> {
+                getRemainingSongsFromExistingUpcoming(startSong)
+            }
+
+            else -> {
+                playbackSourceSongs.drop(startIndex + 1) + playbackSourceSongs.take(startIndex)
+            }
         }
 
         val remainingContextSongs = songsAfterCurrent.filter { song ->
             song.id !in excludedSongIds
         }
 
-        val orderedRemainingSongs = if (isShuffleEnabled && startIndex != -1) {
+        val orderedRemainingSongs = if (
+            isShuffleEnabled &&
+            !preserveExistingShuffleOrder &&
+            startIndex != -1
+        ) {
             remainingContextSongs.shuffled()
         } else {
             remainingContextSongs
         }
 
         return queuedSongsAfterCurrent + orderedRemainingSongs
+    }
+
+    private fun syncServicePlaylistKeepingCurrent(
+        preserveExistingShuffleOrder: Boolean = true
+    ) {
+        val song = currentSong ?: return
+
+        val refreshedUpcomingSongs = refreshUpcomingSongs(
+            startSong = song,
+            preserveExistingShuffleOrder = preserveExistingShuffleOrder
+        )
+
+        musicPlayer.updateUpcomingPlaylist(
+            upcomingSongs = refreshedUpcomingSongs
+        )
+
+        musicPlayer.setShuffleEnabled(isShuffleEnabled)
+        musicPlayer.setRepeatMode(repeatMode)
     }
 
     private fun getRemainingSongsFromExistingUpcoming(startSong: Song): List<Song> {
@@ -679,19 +722,6 @@ class PlaybackController(
         } else {
             upcomingSongs.drop(currentSongIndexInUpcoming + 1)
         }
-    }
-
-    private fun syncServicePlaylistKeepingCurrent() {
-        val song = currentSong ?: return
-
-        val refreshedUpcomingSongs = refreshUpcomingSongs(song)
-
-        musicPlayer.updateUpcomingPlaylist(
-            upcomingSongs = refreshedUpcomingSongs
-        )
-
-        musicPlayer.setShuffleEnabled(isShuffleEnabled)
-        musicPlayer.setRepeatMode(repeatMode)
     }
 
     private fun getPlaybackSourceSongs(): List<Song> {
