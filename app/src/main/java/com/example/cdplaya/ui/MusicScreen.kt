@@ -266,6 +266,12 @@ fun MusicScreen(
                 },
                 onCollapseClick = {
                     isPlayerExpanded = false
+                },
+                onOpenUpNextClick = {
+                    selectedLibraryTab = LibraryTab.QUEUE
+                    selectedArtistName = null
+                    selectedAlbumFolderPath = null
+                    isPlayerExpanded = false
                 }
             )
 
