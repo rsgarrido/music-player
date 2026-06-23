@@ -5,15 +5,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -34,6 +36,7 @@ import com.example.cdplaya.player.RepeatMode
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicScreen(
     songs: List<Song>,
@@ -78,6 +81,7 @@ fun MusicScreen(
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
     var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
     var isSettingsScreenVisible by rememberSaveable { mutableStateOf(false) }
+    var isExpandedUpNextSheetVisible by rememberSaveable { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedAlbumFolderPath by rememberSaveable { mutableStateOf<String?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -189,273 +193,282 @@ fun MusicScreen(
     Box(
         modifier = modifier.fillMaxSize()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .animateContentSize()
-        ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                text = "CDPlaya",
-                style = MaterialTheme.typography.headlineMedium
-            )
-
-            IconButton(
-                onClick = {
-                    isSettingsScreenVisible = true
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "Settings"
+        when {
+            isFolderScreenVisible -> {
+                FolderSelectionScreen(
+                    libraryFolders = libraryFolders,
+                    selectedLibraryFolders = selectedLibraryFolders,
+                    onBackClick = {
+                        isFolderScreenVisible = false
+                        isSettingsScreenVisible = true
+                    },
+                    onFolderToggle = onLibraryFolderToggle,
+                    onSelectAllClick = onSelectAllLibraryFolders,
+                    onClearSelectionClick = onClearSelectedLibraryFolders,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
-        }
 
-        if (isFolderScreenVisible) {
-            FolderSelectionScreen(
-                libraryFolders = libraryFolders,
-                selectedLibraryFolders = selectedLibraryFolders,
-                onBackClick = {
-                    isFolderScreenVisible = false
-                    isSettingsScreenVisible = true
-                },
-                onFolderToggle = onLibraryFolderToggle,
-                onSelectAllClick = onSelectAllLibraryFolders,
-                onClearSelectionClick = onClearSelectedLibraryFolders,
-                modifier = Modifier.weight(1f)
-            )
-        } else if (isSettingsScreenVisible) {
-            SettingsScreen(
-                totalSongCount = songs.size,
-                availableFolderCount = libraryFolders.size,
-                selectedFolderCount = selectedLibraryFolders.size,
-                onBackClick = {
-                    isSettingsScreenVisible = false
-                },
-                onLibraryFoldersClick = {
-                    isSettingsScreenVisible = false
-                    isFolderScreenVisible = true
-                },
-                modifier = Modifier.weight(1f)
-            )
-        } else if (!permissionGranted) {
-            Text(
-                text = "Audio and image permissions are needed to show your music.",
-                modifier = Modifier.padding(16.dp)
-            )
-        } else if (!isPlayerExpanded) {
-            PlayerCard(
-                currentSong = currentSong,
-                isPlaying = isPlaying,
-                isExpanded = false,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onExpandClick = {
-                    isPlayerExpanded = true
-                },
-                onCollapseClick = {
-                    isPlayerExpanded = false
-                },
-                onOpenUpNextClick = {
-                    selectedLibraryTab = LibraryTab.QUEUE
-                    selectedArtistName = null
-                    selectedAlbumFolderPath = null
-                    isPlayerExpanded = false
-                }
-            )
-        }
+            isSettingsScreenVisible -> {
+                SettingsScreen(
+                    totalSongCount = songs.size,
+                    availableFolderCount = libraryFolders.size,
+                    selectedFolderCount = selectedLibraryFolders.size,
+                    onBackClick = {
+                        isSettingsScreenVisible = false
+                    },
+                    onLibraryFoldersClick = {
+                        isSettingsScreenVisible = false
+                        isFolderScreenVisible = true
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
-            LibraryTabs(
-                selectedTab = selectedLibraryTab,
-                onTabSelected = { tab ->
-                    selectedLibraryTab = tab
-                    selectedArtistName = null
-                    selectedAlbumFolderPath = null
-                }
-            )
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .animateContentSize()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = "CDPlaya",
+                            style = MaterialTheme.typography.headlineMedium
+                        )
 
-            if (selectedLibraryTab != LibraryTab.QUEUE) {
-                LibrarySearchBar(
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = { query ->
-                        searchQuery = query
+                        IconButton(
+                            onClick = {
+                                isSettingsScreenVisible = true
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Settings,
+                                contentDescription = "Settings"
+                            )
+                        }
                     }
-                )
-            }
 
-            val shouldShowSortDropdown =
-                selectedLibraryTab == LibraryTab.SONGS ||
-                        selectedLibraryTab == LibraryTab.ARTISTS && selectedArtistName == null ||
-                        selectedLibraryTab == LibraryTab.ALBUMS && selectedAlbumFolderPath == null
+                    if (!permissionGranted) {
+                        Text(
+                            text = "Audio and image permissions are needed to show your music.",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        if (!isPlayerExpanded) {
+                            PlayerCard(
+                                currentSong = currentSong,
+                                isPlaying = isPlaying,
+                                isExpanded = false,
+                                isShuffleEnabled = isShuffleEnabled,
+                                repeatMode = repeatMode,
+                                currentPosition = currentPosition,
+                                duration = duration,
+                                onPlayPauseClick = onPlayPauseClick,
+                                onPreviousClick = onPreviousClick,
+                                onNextClick = onNextClick,
+                                onSeekChange = onSeekChange,
+                                onShuffleClick = onShuffleClick,
+                                onRepeatClick = onRepeatClick,
+                                onExpandClick = {
+                                    isPlayerExpanded = true
+                                },
+                                onCollapseClick = {
+                                    isPlayerExpanded = false
+                                },
+                                onOpenUpNextClick = {
+                                    selectedLibraryTab = LibraryTab.QUEUE
+                                    selectedArtistName = null
+                                    selectedAlbumFolderPath = null
+                                }
+                            )
+                        }
 
-            if (shouldShowSortDropdown) {
-                val selectedSortOption = when (selectedLibraryTab) {
-                    LibraryTab.SONGS -> selectedSongSortOption
-                    LibraryTab.ARTISTS -> selectedArtistSortOption
-                    LibraryTab.ALBUMS -> selectedAlbumSortOption
-                    LibraryTab.QUEUE -> selectedSongSortOption
-                }
+                        LibraryTabs(
+                            selectedTab = selectedLibraryTab,
+                            onTabSelected = { tab ->
+                                selectedLibraryTab = tab
+                                selectedArtistName = null
+                                selectedAlbumFolderPath = null
+                            }
+                        )
 
-                val availableSortOptions = when (selectedLibraryTab) {
-                    LibraryTab.SONGS -> listOf(
-                        LibrarySortOption.TITLE,
-                        LibrarySortOption.ARTIST,
-                        LibrarySortOption.ALBUM
-                    )
+                        if (selectedLibraryTab != LibraryTab.QUEUE) {
+                            LibrarySearchBar(
+                                searchQuery = searchQuery,
+                                onSearchQueryChange = { query ->
+                                    searchQuery = query
+                                }
+                            )
+                        }
 
-                    LibraryTab.ARTISTS -> listOf(
-                        LibrarySortOption.NAME,
-                        LibrarySortOption.SONG_COUNT
-                    )
+                        val shouldShowSortDropdown =
+                            selectedLibraryTab == LibraryTab.SONGS ||
+                                    selectedLibraryTab == LibraryTab.ARTISTS && selectedArtistName == null ||
+                                    selectedLibraryTab == LibraryTab.ALBUMS && selectedAlbumFolderPath == null
 
-                    LibraryTab.ALBUMS -> listOf(
-                        LibrarySortOption.TITLE,
-                        LibrarySortOption.ARTIST,
-                        LibrarySortOption.SONG_COUNT
-                    )
+                        if (shouldShowSortDropdown) {
+                            val selectedSortOption = when (selectedLibraryTab) {
+                                LibraryTab.SONGS -> selectedSongSortOption
+                                LibraryTab.ARTISTS -> selectedArtistSortOption
+                                LibraryTab.ALBUMS -> selectedAlbumSortOption
+                                LibraryTab.QUEUE -> selectedSongSortOption
+                            }
 
-                    LibraryTab.QUEUE -> emptyList()
-                }
+                            val availableSortOptions = when (selectedLibraryTab) {
+                                LibraryTab.SONGS -> listOf(
+                                    LibrarySortOption.TITLE,
+                                    LibrarySortOption.ARTIST,
+                                    LibrarySortOption.ALBUM
+                                )
 
-                LibrarySortDropdown(
-                    selectedOption = selectedSortOption,
-                    options = availableSortOptions,
-                    onOptionSelected = { option ->
+                                LibraryTab.ARTISTS -> listOf(
+                                    LibrarySortOption.NAME,
+                                    LibrarySortOption.SONG_COUNT
+                                )
+
+                                LibraryTab.ALBUMS -> listOf(
+                                    LibrarySortOption.TITLE,
+                                    LibrarySortOption.ARTIST,
+                                    LibrarySortOption.SONG_COUNT
+                                )
+
+                                LibraryTab.QUEUE -> emptyList()
+                            }
+
+                            LibrarySortDropdown(
+                                selectedOption = selectedSortOption,
+                                options = availableSortOptions,
+                                onOptionSelected = { option ->
+                                    when (selectedLibraryTab) {
+                                        LibraryTab.SONGS -> {
+                                            selectedSongSortOption = option
+                                        }
+
+                                        LibraryTab.ARTISTS -> {
+                                            selectedArtistSortOption = option
+                                        }
+
+                                        LibraryTab.ALBUMS -> {
+                                            selectedAlbumSortOption = option
+                                        }
+
+                                        LibraryTab.QUEUE -> Unit
+                                    }
+                                }
+                            )
+                        }
+
                         when (selectedLibraryTab) {
                             LibraryTab.SONGS -> {
-                                selectedSongSortOption = option
+                                SongsTabContent(
+                                    songs = songs,
+                                    searchQuery = searchQuery,
+                                    sortOption = selectedSongSortOption,
+                                    currentSong = currentSong,
+                                    recentlyAddedSongIds = recentlyAddedSongIds,
+                                    onSongClick = onSongClick,
+                                    onPlayNextClick = { song ->
+                                        handlePlayNext(song)
+                                    },
+                                    onAddToQueueClick = { song ->
+                                        handleAddToQueue(song)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
 
                             LibraryTab.ARTISTS -> {
-                                selectedArtistSortOption = option
+                                ArtistsTabContent(
+                                    songs = songs,
+                                    searchQuery = searchQuery,
+                                    selectedArtistName = selectedArtistName,
+                                    sortOption = selectedArtistSortOption,
+                                    currentSong = currentSong,
+                                    recentlyAddedSongIds = recentlyAddedSongIds,
+                                    onArtistSelected = { artistName ->
+                                        selectedArtistName = artistName
+                                    },
+                                    onBackFromArtist = {
+                                        selectedArtistName = null
+                                    },
+                                    onPlaySongsClick = onPlaySongsClick,
+                                    onPlayNextClick = { song ->
+                                        handlePlayNext(song)
+                                    },
+                                    onSongClick = onSongClick,
+                                    onAddToQueueClick = { song ->
+                                        handleAddToQueue(song)
+                                    },
+                                    onPlayNextSongsClick = { label, songs ->
+                                        handlePlayNextSongs(label, songs)
+                                    },
+                                    onAddSongsToQueueClick = { label, songs ->
+                                        handleAddSongsToQueue(label, songs)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
 
                             LibraryTab.ALBUMS -> {
-                                selectedAlbumSortOption = option
+                                AlbumsTabContent(
+                                    songs = songs,
+                                    searchQuery = searchQuery,
+                                    selectedAlbumFolderPath = selectedAlbumFolderPath,
+                                    currentSong = currentSong,
+                                    sortOption = selectedAlbumSortOption,
+                                    recentlyAddedSongIds = recentlyAddedSongIds,
+                                    onAlbumSelected = { albumFolderPath ->
+                                        selectedAlbumFolderPath = albumFolderPath
+                                    },
+                                    onBackFromAlbum = {
+                                        selectedAlbumFolderPath = null
+                                    },
+                                    onPlaySongsClick = onPlaySongsClick,
+                                    onPlayNextClick = { song ->
+                                        handlePlayNext(song)
+                                    },
+                                    onSongClick = onSongClick,
+                                    onAddToQueueClick = { song ->
+                                        handleAddToQueue(song)
+                                    },
+                                    onPlayNextSongsClick = { label, songs ->
+                                        handlePlayNextSongs(label, songs)
+                                    },
+                                    onAddSongsToQueueClick = { label, songs ->
+                                        handleAddSongsToQueue(label, songs)
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
 
-                            LibraryTab.QUEUE -> Unit
+                            LibraryTab.QUEUE -> {
+                                QueueScreen(
+                                    queuedSongs = queuedSongs,
+                                    upcomingSongs = upcomingSongs,
+                                    isShuffleEnabled = isShuffleEnabled,
+                                    onBackClick = {
+                                        selectedLibraryTab = LibraryTab.SONGS
+                                    },
+                                    onRemoveFromQueueClick = onRemoveFromQueueClick,
+                                    onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+                                    onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+                                    onClearQueueClick = onClearQueueClick,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
-                )
-            }
-
-            when (selectedLibraryTab) {
-                LibraryTab.SONGS -> {
-                    SongsTabContent(
-                        songs = songs,
-                        searchQuery = searchQuery,
-                        sortOption = selectedSongSortOption,
-                        currentSong = currentSong,
-                        recentlyAddedSongIds = recentlyAddedSongIds,
-                        onSongClick = onSongClick,
-                        onPlayNextClick = { song ->
-                            handlePlayNext(song)
-                        },
-                        onAddToQueueClick = { song ->
-                            handleAddToQueue(song)
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                LibraryTab.ARTISTS -> {
-                    ArtistsTabContent(
-                        songs = songs,
-                        searchQuery = searchQuery,
-                        selectedArtistName = selectedArtistName,
-                        sortOption = selectedArtistSortOption,
-                        currentSong = currentSong,
-                        recentlyAddedSongIds = recentlyAddedSongIds,
-                        onArtistSelected = { artistName ->
-                            selectedArtistName = artistName
-                        },
-                        onBackFromArtist = {
-                            selectedArtistName = null
-                        },
-                        onPlaySongsClick = onPlaySongsClick,
-                        onPlayNextClick = { song ->
-                            handlePlayNext(song)
-                        },
-                        onSongClick = onSongClick,
-                        onAddToQueueClick = { song ->
-                            handleAddToQueue(song)
-                        },
-                        onPlayNextSongsClick = { label, songs ->
-                            handlePlayNextSongs(label, songs)
-                        },
-                        onAddSongsToQueueClick = { label, songs ->
-                            handleAddSongsToQueue(label, songs)
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                LibraryTab.ALBUMS -> {
-                    AlbumsTabContent(
-                        songs = songs,
-                        searchQuery = searchQuery,
-                        selectedAlbumFolderPath = selectedAlbumFolderPath,
-                        currentSong = currentSong,
-                        sortOption = selectedAlbumSortOption,
-                        recentlyAddedSongIds = recentlyAddedSongIds,
-                        onAlbumSelected = { albumFolderPath ->
-                            selectedAlbumFolderPath = albumFolderPath
-                        },
-                        onBackFromAlbum = {
-                            selectedAlbumFolderPath = null
-                        },
-                        onPlaySongsClick = onPlaySongsClick,
-                        onPlayNextClick = { song ->
-                            handlePlayNext(song)
-                        },
-                        onSongClick = onSongClick,
-                        onAddToQueueClick = { song ->
-                            handleAddToQueue(song)
-                        },
-                        onPlayNextSongsClick = { label, songs ->
-                            handlePlayNextSongs(label, songs)
-                        },
-                        onAddSongsToQueueClick = { label, songs ->
-                            handleAddSongsToQueue(label, songs)
-                        },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                LibraryTab.QUEUE -> {
-                    QueueScreen(
-                        queuedSongs = queuedSongs,
-                        upcomingSongs = upcomingSongs,
-                        isShuffleEnabled = isShuffleEnabled,
-                        onBackClick = {
-                            selectedLibraryTab = LibraryTab.SONGS
-                        },
-                        onRemoveFromQueueClick = onRemoveFromQueueClick,
-                        onMoveQueueItemUpClick = onMoveQueueItemUpClick,
-                        onMoveQueueItemDownClick = onMoveQueueItemDownClick,
-                        onClearQueueClick = onClearQueueClick,
-                        modifier = Modifier.weight(1f)
-                    )
                 }
             }
         }
-    }
+
         if (isPlayerExpanded && currentSong != null) {
             PlayerCard(
                 modifier = Modifier.fillMaxSize(),
@@ -479,13 +492,33 @@ fun MusicScreen(
                     isPlayerExpanded = false
                 },
                 onOpenUpNextClick = {
-                    selectedLibraryTab = LibraryTab.QUEUE
-                    selectedArtistName = null
-                    selectedAlbumFolderPath = null
-                    isPlayerExpanded = false
+                    isExpandedUpNextSheetVisible = true
                 }
             )
         }
+
+        if (isExpandedUpNextSheetVisible) {
+            ModalBottomSheet(
+                onDismissRequest = {
+                    isExpandedUpNextSheetVisible = false
+                }
+            ) {
+                QueueScreen(
+                    queuedSongs = queuedSongs,
+                    upcomingSongs = upcomingSongs,
+                    isShuffleEnabled = isShuffleEnabled,
+                    onBackClick = {
+                        isExpandedUpNextSheetVisible = false
+                    },
+                    onRemoveFromQueueClick = onRemoveFromQueueClick,
+                    onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+                    onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+                    onClearQueueClick = onClearQueueClick,
+                    modifier = Modifier.fillMaxHeight(0.86f)
+                )
+            }
+        }
+    }
 }
 
 @Composable
