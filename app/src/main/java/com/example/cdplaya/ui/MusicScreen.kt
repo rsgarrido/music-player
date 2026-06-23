@@ -2,6 +2,7 @@ package com.example.cdplaya.ui
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -185,11 +186,14 @@ fun MusicScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .animateContentSize()
+    Box(
+        modifier = modifier.fillMaxSize()
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .animateContentSize()
+        ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -246,11 +250,11 @@ fun MusicScreen(
                 text = "Audio and image permissions are needed to show your music.",
                 modifier = Modifier.padding(16.dp)
             )
-        } else {
+        } else if (!isPlayerExpanded) {
             PlayerCard(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
-                isExpanded = isPlayerExpanded,
+                isExpanded = false,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
                 currentPosition = currentPosition,
@@ -274,6 +278,7 @@ fun MusicScreen(
                     isPlayerExpanded = false
                 }
             )
+        }
 
             LibraryTabs(
                 selectedTab = selectedLibraryTab,
@@ -451,6 +456,36 @@ fun MusicScreen(
             }
         }
     }
+        if (isPlayerExpanded && currentSong != null) {
+            PlayerCard(
+                modifier = Modifier.fillMaxSize(),
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                isExpanded = true,
+                isShuffleEnabled = isShuffleEnabled,
+                repeatMode = repeatMode,
+                currentPosition = currentPosition,
+                duration = duration,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onSeekChange = onSeekChange,
+                onShuffleClick = onShuffleClick,
+                onRepeatClick = onRepeatClick,
+                onExpandClick = {
+                    isPlayerExpanded = true
+                },
+                onCollapseClick = {
+                    isPlayerExpanded = false
+                },
+                onOpenUpNextClick = {
+                    selectedLibraryTab = LibraryTab.QUEUE
+                    selectedArtistName = null
+                    selectedAlbumFolderPath = null
+                    isPlayerExpanded = false
+                }
+            )
+        }
 }
 
 @Composable
