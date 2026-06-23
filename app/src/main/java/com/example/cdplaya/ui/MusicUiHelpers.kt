@@ -152,3 +152,15 @@ fun sortSongsForLibrary(
         }
     }
 }
+
+fun sortSongsForArtistDetail(songs: List<Song>): List<Song> {
+    return songs.sortedWith(
+        compareBy<Song> { song ->
+            song.album.ifBlank { "Unknown Album" }.lowercase()
+        }.thenBy { song ->
+            if (song.trackNumber > 0) song.trackNumber else Int.MAX_VALUE
+        }.thenBy { song ->
+            song.title.lowercase()
+        }
+    )
+}

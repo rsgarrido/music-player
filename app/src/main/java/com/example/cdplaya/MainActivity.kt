@@ -139,6 +139,18 @@ class MainActivity : ComponentActivity() {
                         onUndoAddToQueueClick = { song ->
                             playbackController.removeLastMatchingSongFromQueue(song)
                         },
+                        onPlayNextSongsClick = { songs ->
+                            playbackController.addSongsToPlayNext(songs)
+                        },
+                        onAddSongsToQueueClick = { songs ->
+                            playbackController.addSongsToQueue(songs)
+                        },
+                        onUndoPlayNextSongsClick = { songs ->
+                            playbackController.removeFirstMatchingSongsFromQueue(songs)
+                        },
+                        onUndoAddSongsToQueueClick = { songs ->
+                            playbackController.removeLastMatchingSongsFromQueue(songs)
+                        },
                         onLibraryFolderToggle = { folderPath ->
                             toggleLibraryFolder(folderPath)
                         },
