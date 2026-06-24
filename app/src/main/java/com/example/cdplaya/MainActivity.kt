@@ -3,6 +3,7 @@ package com.example.cdplaya
 import android.Manifest
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,6 +19,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.example.cdplaya.data.local.AppDatabase
+import com.example.cdplaya.data.local.DatabaseProvider
 import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.LibraryPreferences
 import com.example.cdplaya.data.MusicRepository
@@ -33,7 +36,7 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var playbackController: PlaybackController
     private lateinit var libraryPreferences: LibraryPreferences
-
+    private lateinit var appDatabase: AppDatabase
     private val libraryFolders = mutableStateListOf<LibraryFolder>()
     private var selectedLibraryFolders by mutableStateOf<Set<String>>(emptySet())
 
@@ -53,6 +56,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        appDatabase = DatabaseProvider.getDatabase(this)
+        Log.d("CDPlayaDatabase", "Room database initialized")
 
         libraryPreferences = LibraryPreferences(this)
         playbackController = PlaybackController(this)
