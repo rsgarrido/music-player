@@ -9,7 +9,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -31,15 +30,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.favoriteKey
 
 @Composable
 fun SongList(
     songs: List<Song>,
     currentSongId: Long?,
     recentlyAddedSongIds: Set<Long>,
+    favoriteSongKeys: Set<String>,
     onSongClick: (Song, List<Song>) -> Unit,
     onPlayNextClick: (Song) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
+    onToggleFavoriteClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
     showAlbumName: Boolean = false,
     showTrackNumbers: Boolean = false
@@ -53,6 +55,7 @@ fun SongList(
         ) { song ->
             val isCurrentSong = song.id == currentSongId
             val wasRecentlyAdded = song.id in recentlyAddedSongIds
+            val isFavorite = song.favoriteKey() in favoriteSongKeys
             var isMenuExpanded by remember { mutableStateOf(false) }
 
             ListItem(
@@ -78,7 +81,7 @@ fun SongList(
                 },
                 headlineContent = {
                     Text(
-                        text = song.title,
+                        text = song.title.ifBlank { "Unknown Title" },
                         fontWeight = if (isCurrentSong) {
                             FontWeight.Bold
                         } else {
@@ -87,7 +90,13 @@ fun SongList(
                     )
                 },
                 supportingContent = {
-                    Text(text = song.artist)
+                    Text(
+                        text = if (showAlbumName) {
+                            song.album.ifBlank { "Unknown Album" }
+                        } else {
+                            song.artist.ifBlank { "Unknown Artist" }
+                        }
+                    )
                 },
                 trailingContent = {
                     IconButton(
@@ -133,6 +142,22 @@ fun SongList(
                             onClick = {
                                 isMenuExpanded = false
                                 onAddToQueueClick(song)
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = if (isFavorite) {
+                                        "Remove from favorites"
+                                    } else {
+                                        "Add to favorites"
+                                    }
+                                )
+                            },
+                            onClick = {
+                                isMenuExpanded = false
+                                onToggleFavoriteClick(song)
                             }
                         )
                     }
