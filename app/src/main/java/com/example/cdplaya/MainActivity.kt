@@ -19,8 +19,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.lifecycleScope
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
+import com.example.cdplaya.data.FavoritesRepository
+import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.LibraryPreferences
 import com.example.cdplaya.data.MusicRepository
@@ -28,6 +31,7 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.ui.MusicScreen
 import com.example.cdplaya.ui.theme.CdplayaTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -37,6 +41,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var playbackController: PlaybackController
     private lateinit var libraryPreferences: LibraryPreferences
     private lateinit var appDatabase: AppDatabase
+    private lateinit var favoritesRepository: FavoritesRepository
+    private var favoriteSongKeys by mutableStateOf<Set<String>>(emptySet())
     private val libraryFolders = mutableStateListOf<LibraryFolder>()
     private var selectedLibraryFolders by mutableStateOf<Set<String>>(emptySet())
 
@@ -59,6 +65,9 @@ class MainActivity : ComponentActivity() {
 
         appDatabase = DatabaseProvider.getDatabase(this)
         Log.d("CDPlayaDatabase", "Room database initialized")
+
+        favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
+        loadFavoriteSongKeys()
 
         libraryPreferences = LibraryPreferences(this)
         playbackController = PlaybackController(this)
@@ -165,6 +174,10 @@ class MainActivity : ComponentActivity() {
                         },
                         onClearSelectedLibraryFolders = {
                             clearSelectedLibraryFolders()
+                        },
+                        favoriteSongKeys = favoriteSongKeys,
+                        onToggleFavoriteClick = { song ->
+                            toggleFavorite(song)
                         }
                     )
                 }
@@ -235,6 +248,31 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         playbackController.savePlayerState()
+    }
+
+    private fun loadFavoriteSongKeys() {
+        lifecycleScope.launch {
+            favoriteSongKeys = favoritesRepository.getFavoriteSongKeys()
+        }
+    }
+
+    private fun toggleFavorite(song: Song) {
+        val songKey = song.favoriteKey()
+        val shouldFavorite = songKey !in favoriteSongKeys
+
+        favoriteSongKeys = if (shouldFavorite) {
+            favoriteSongKeys + songKey
+        } else {
+            favoriteSongKeys - songKey
+        }
+
+        lifecycleScope.launch {
+            if (shouldFavorite) {
+                favoritesRepository.addFavorite(song)
+            } else {
+                favoritesRepository.removeFavorite(song)
+            }
+        }
     }
 
     override fun onDestroy() {
