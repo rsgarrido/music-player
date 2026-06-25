@@ -1,5 +1,6 @@
 package com.example.cdplaya.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -95,6 +96,47 @@ fun MusicScreen(
 
     val coroutineScope = rememberCoroutineScope()
     var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
+
+    BackHandler(
+        enabled = isExpandedUpNextSheetVisible ||
+                isPlayerExpanded ||
+                isFolderScreenVisible ||
+                isSettingsScreenVisible ||
+                selectedArtistName != null ||
+                selectedAlbumFolderPath != null ||
+                selectedLibraryTab == LibraryTab.QUEUE
+    ) {
+        when {
+            isExpandedUpNextSheetVisible -> {
+                isExpandedUpNextSheetVisible = false
+            }
+
+            isPlayerExpanded -> {
+                isPlayerExpanded = false
+            }
+
+            isFolderScreenVisible -> {
+                isFolderScreenVisible = false
+                isSettingsScreenVisible = true
+            }
+
+            isSettingsScreenVisible -> {
+                isSettingsScreenVisible = false
+            }
+
+            selectedArtistName != null -> {
+                selectedArtistName = null
+            }
+
+            selectedAlbumFolderPath != null -> {
+                selectedAlbumFolderPath = null
+            }
+
+            selectedLibraryTab == LibraryTab.QUEUE -> {
+                selectedLibraryTab = LibraryTab.SONGS
+            }
+        }
+    }
 
     fun handleAddToQueue(song: Song) {
         onAddToQueueClick(song)
