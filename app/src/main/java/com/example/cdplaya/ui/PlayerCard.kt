@@ -23,6 +23,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -79,7 +81,9 @@ fun PlayerCard(
     onCollapseClick: () -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
-    onOpenUpNextClick: () -> Unit = {}
+    onOpenUpNextClick: () -> Unit = {},
+    isCurrentSongFavorite: Boolean = false,
+    onToggleFavoriteClick: (Song) -> Unit = {},
 ) {
     if (currentSong == null) {
         return
@@ -108,6 +112,8 @@ fun PlayerCard(
             onSeekChange = onSeekChange,
             onCollapseClick = onCollapseClick,
             onOpenUpNextClick = onOpenUpNextClick,
+            isCurrentSongFavorite = isCurrentSongFavorite,
+            onToggleFavoriteClick = onToggleFavoriteClick,
             modifier = modifier
         )
     } else {
@@ -238,6 +244,8 @@ private fun ImmersiveExpandedPlayerContent(
     onSeekChange: (Int) -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
+    isCurrentSongFavorite: Boolean,
+    onToggleFavoriteClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val safeDuration = duration.coerceAtLeast(1)
@@ -316,6 +324,30 @@ private fun ImmersiveExpandedPlayerContent(
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
                     modifier = Modifier.weight(1f)
+                )
+            }
+
+            IconButton(
+                onClick = {
+                    onToggleFavoriteClick(currentSong)
+                }
+            ) {
+                Icon(
+                    imageVector = if (isCurrentSongFavorite) {
+                        Icons.Filled.Favorite
+                    } else {
+                        Icons.Filled.FavoriteBorder
+                    },
+                    contentDescription = if (isCurrentSongFavorite) {
+                        "Remove from favorites"
+                    } else {
+                        "Add to favorites"
+                    },
+                    tint = if (isCurrentSongFavorite) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        Color.White
+                    }
                 )
             }
 

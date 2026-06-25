@@ -20,7 +20,8 @@ class PlayerStateStorage(context: Context) {
         repeatMode: RepeatMode,
         previousSongIds: List<Long>,
         nextSongIds: List<Long>,
-        queueSongIds: List<Long>
+        queueSongIds: List<Long>,
+        playbackContextSongIds: List<Long>
     ) {
         preferences.edit()
             .putLong(KEY_CURRENT_SONG_ID, currentSongId ?: NO_SONG_ID)
@@ -30,6 +31,7 @@ class PlayerStateStorage(context: Context) {
             .putString(KEY_PREVIOUS_HISTORY, previousSongIds.joinToString(","))
             .putString(KEY_NEXT_HISTORY, nextSongIds.joinToString(","))
             .putString(KEY_QUEUE, queueSongIds.joinToString(","))
+            .putString(KEY_PLAYBACK_CONTEXT, playbackContextSongIds.joinToString(","))
             .apply()
     }
 
@@ -77,6 +79,10 @@ class PlayerStateStorage(context: Context) {
             }
     }
 
+    fun getPlaybackContextSongIds(): List<Long> {
+        return getSongIds(KEY_PLAYBACK_CONTEXT)
+    }
+
     companion object {
         private const val KEY_CURRENT_SONG_ID = "current_song_id"
         private const val KEY_CURRENT_POSITION = "current_position"
@@ -86,5 +92,6 @@ class PlayerStateStorage(context: Context) {
         private const val KEY_NEXT_HISTORY = "next_history"
         private const val KEY_QUEUE = "queue"
         private const val NO_SONG_ID = -1L
+        private const val KEY_PLAYBACK_CONTEXT = "playback_context"
     }
 }

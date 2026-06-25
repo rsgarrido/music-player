@@ -1,5 +1,6 @@
 package com.example.cdplaya.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
@@ -75,7 +77,9 @@ fun MusicScreen(
     selectedLibraryFolders: Set<String>,
     onLibraryFolderToggle: (String) -> Unit,
     onSelectAllLibraryFolders: () -> Unit,
-    onClearSelectedLibraryFolders: () -> Unit
+    onClearSelectedLibraryFolders: () -> Unit,
+    favoriteSongKeys: Set<String>,
+    onToggleFavoriteClick: (Song) -> Unit
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
@@ -88,9 +92,51 @@ fun MusicScreen(
     var selectedSongSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.TITLE) }
     var selectedArtistSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.NAME) }
     var selectedAlbumSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.TITLE) }
+    var selectedFavoriteSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.TITLE) }
 
     val coroutineScope = rememberCoroutineScope()
     var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
+
+    BackHandler(
+        enabled = isExpandedUpNextSheetVisible ||
+                isPlayerExpanded ||
+                isFolderScreenVisible ||
+                isSettingsScreenVisible ||
+                selectedArtistName != null ||
+                selectedAlbumFolderPath != null ||
+                selectedLibraryTab == LibraryTab.QUEUE
+    ) {
+        when {
+            isExpandedUpNextSheetVisible -> {
+                isExpandedUpNextSheetVisible = false
+            }
+
+            isPlayerExpanded -> {
+                isPlayerExpanded = false
+            }
+
+            isFolderScreenVisible -> {
+                isFolderScreenVisible = false
+                isSettingsScreenVisible = true
+            }
+
+            isSettingsScreenVisible -> {
+                isSettingsScreenVisible = false
+            }
+
+            selectedArtistName != null -> {
+                selectedArtistName = null
+            }
+
+            selectedAlbumFolderPath != null -> {
+                selectedAlbumFolderPath = null
+            }
+
+            selectedLibraryTab == LibraryTab.QUEUE -> {
+                selectedLibraryTab = LibraryTab.SONGS
+            }
+        }
+    }
 
     fun handleAddToQueue(song: Song) {
         onAddToQueueClick(song)
@@ -286,7 +332,11 @@ fun MusicScreen(
                                     selectedLibraryTab = LibraryTab.QUEUE
                                     selectedArtistName = null
                                     selectedAlbumFolderPath = null
-                                }
+                                },
+                                isCurrentSongFavorite = currentSong?.let { song ->
+                                    song.favoriteKey() in favoriteSongKeys
+                                } == true,
+                                onToggleFavoriteClick = onToggleFavoriteClick
                             )
                         }
 
@@ -310,19 +360,22 @@ fun MusicScreen(
 
                         val shouldShowSortDropdown =
                             selectedLibraryTab == LibraryTab.SONGS ||
+                                    selectedLibraryTab == LibraryTab.FAVORITES ||
                                     selectedLibraryTab == LibraryTab.ARTISTS && selectedArtistName == null ||
                                     selectedLibraryTab == LibraryTab.ALBUMS && selectedAlbumFolderPath == null
 
                         if (shouldShowSortDropdown) {
                             val selectedSortOption = when (selectedLibraryTab) {
                                 LibraryTab.SONGS -> selectedSongSortOption
+                                LibraryTab.FAVORITES -> selectedFavoriteSortOption
                                 LibraryTab.ARTISTS -> selectedArtistSortOption
                                 LibraryTab.ALBUMS -> selectedAlbumSortOption
                                 LibraryTab.QUEUE -> selectedSongSortOption
                             }
 
                             val availableSortOptions = when (selectedLibraryTab) {
-                                LibraryTab.SONGS -> listOf(
+                                LibraryTab.SONGS,
+                                LibraryTab.FAVORITES -> listOf(
                                     LibrarySortOption.TITLE,
                                     LibrarySortOption.ARTIST,
                                     LibrarySortOption.ALBUM
@@ -349,6 +402,10 @@ fun MusicScreen(
                                     when (selectedLibraryTab) {
                                         LibraryTab.SONGS -> {
                                             selectedSongSortOption = option
+                                        }
+
+                                        LibraryTab.FAVORITES -> {
+                                            selectedFavoriteSortOption = option
                                         }
 
                                         LibraryTab.ARTISTS -> {
@@ -380,6 +437,8 @@ fun MusicScreen(
                                     onAddToQueueClick = { song ->
                                         handleAddToQueue(song)
                                     },
+                                    favoriteSongKeys = favoriteSongKeys,
+                                    onToggleFavoriteClick = onToggleFavoriteClick,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -412,6 +471,8 @@ fun MusicScreen(
                                     onAddSongsToQueueClick = { label, songs ->
                                         handleAddSongsToQueue(label, songs)
                                     },
+                                    favoriteSongKeys = favoriteSongKeys,
+                                    onToggleFavoriteClick = onToggleFavoriteClick,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -444,6 +505,28 @@ fun MusicScreen(
                                     onAddSongsToQueueClick = { label, songs ->
                                         handleAddSongsToQueue(label, songs)
                                     },
+                                    favoriteSongKeys = favoriteSongKeys,
+                                    onToggleFavoriteClick = onToggleFavoriteClick,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            LibraryTab.FAVORITES -> {
+                                FavoritesTabContent(
+                                    songs = songs,
+                                    favoriteSongKeys = favoriteSongKeys,
+                                    searchQuery = searchQuery,
+                                    sortOption = selectedFavoriteSortOption,
+                                    currentSong = currentSong,
+                                    recentlyAddedSongIds = recentlyAddedSongIds,
+                                    onSongClick = onSongClick,
+                                    onPlayNextClick = { song ->
+                                        handlePlayNext(song)
+                                    },
+                                    onAddToQueueClick = { song ->
+                                        handleAddToQueue(song)
+                                    },
+                                    onToggleFavoriteClick = onToggleFavoriteClick,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -493,7 +576,11 @@ fun MusicScreen(
                 },
                 onOpenUpNextClick = {
                     isExpandedUpNextSheetVisible = true
-                }
+                },
+                isCurrentSongFavorite = currentSong?.let { song ->
+                    song.favoriteKey() in favoriteSongKeys
+                } == true,
+                onToggleFavoriteClick = onToggleFavoriteClick
             )
         }
 
@@ -531,6 +618,8 @@ private fun SongsTabContent(
     onSongClick: (Song, List<Song>) -> Unit,
     onPlayNextClick: (Song) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
+    favoriteSongKeys: Set<String>,
+    onToggleFavoriteClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val filteredSongs = filterSongsForSearch(
@@ -561,11 +650,65 @@ private fun SongsTabContent(
             onSongClick = onSongClick,
             onPlayNextClick = onPlayNextClick,
             onAddToQueueClick = onAddToQueueClick,
+            onToggleFavoriteClick = onToggleFavoriteClick,
+            favoriteSongKeys = favoriteSongKeys,
             modifier = modifier
         )
     }
 }
 
+@Composable
+private fun FavoritesTabContent(
+    songs: List<Song>,
+    favoriteSongKeys: Set<String>,
+    searchQuery: String,
+    sortOption: LibrarySortOption,
+    currentSong: Song?,
+    recentlyAddedSongIds: Set<Long>,
+    onSongClick: (Song, List<Song>) -> Unit,
+    onPlayNextClick: (Song) -> Unit,
+    onAddToQueueClick: (Song) -> Unit,
+    onToggleFavoriteClick: (Song) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val favoriteSongs = songs.filter { song ->
+        song.favoriteKey() in favoriteSongKeys
+    }
+
+    val filteredSongs = filterSongsForSearch(
+        songs = favoriteSongs,
+        searchQuery = searchQuery
+    )
+
+    val displayedSongs = sortSongsForLibrary(
+        songs = filteredSongs,
+        sortOption = sortOption
+    )
+
+    if (favoriteSongs.isEmpty()) {
+        Text(
+            text = "No favorite songs yet.",
+            modifier = Modifier.padding(16.dp)
+        )
+    } else if (filteredSongs.isEmpty()) {
+        Text(
+            text = "No favorite songs match your search.",
+            modifier = Modifier.padding(16.dp)
+        )
+    } else {
+        SongList(
+            songs = displayedSongs,
+            currentSongId = currentSong?.id,
+            recentlyAddedSongIds = recentlyAddedSongIds,
+            favoriteSongKeys = favoriteSongKeys,
+            onSongClick = onSongClick,
+            onPlayNextClick = onPlayNextClick,
+            onAddToQueueClick = onAddToQueueClick,
+            onToggleFavoriteClick = onToggleFavoriteClick,
+            modifier = modifier
+        )
+    }
+}
 @Composable
 private fun ArtistsTabContent(
     songs: List<Song>,
@@ -582,6 +725,8 @@ private fun ArtistsTabContent(
     onAddToQueueClick: (Song) -> Unit,
     onPlayNextSongsClick: (String, List<Song>) -> Unit,
     onAddSongsToQueueClick: (String, List<Song>) -> Unit,
+    favoriteSongKeys: Set<String>,
+    onToggleFavoriteClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val artistSearchSongs = filterSongsByArtistSearch(
@@ -666,6 +811,8 @@ private fun ArtistsTabContent(
             onSongClick = onSongClick,
             onPlayNextClick = onPlayNextClick,
             onAddToQueueClick = onAddToQueueClick,
+            favoriteSongKeys = favoriteSongKeys,
+            onToggleFavoriteClick = onToggleFavoriteClick,
             modifier = modifier
         )
     }
@@ -687,6 +834,8 @@ private fun AlbumsTabContent(
     onAddToQueueClick: (Song) -> Unit,
     onPlayNextSongsClick: (String, List<Song>) -> Unit,
     onAddSongsToQueueClick: (String, List<Song>) -> Unit,
+    favoriteSongKeys: Set<String>,
+    onToggleFavoriteClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val albumSearchSongs = filterSongsByAlbumSearch(
@@ -764,6 +913,8 @@ private fun AlbumsTabContent(
             onSongClick = onSongClick,
             onPlayNextClick = onPlayNextClick,
             onAddToQueueClick = onAddToQueueClick,
+            favoriteSongKeys = favoriteSongKeys,
+            onToggleFavoriteClick = onToggleFavoriteClick,
             modifier = modifier
         )
     }
