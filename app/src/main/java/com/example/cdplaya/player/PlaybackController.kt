@@ -379,7 +379,8 @@ class PlaybackController(
             repeatMode = repeatMode,
             previousSongIds = previousSongHistory.map { song -> song.id },
             nextSongIds = nextSongHistory.map { song -> song.id },
-            queueSongIds = playbackQueue.map { song -> song.id }
+            queueSongIds = playbackQueue.map { song -> song.id },
+            playbackContextSongIds = playbackContextSongs.map { song -> song.id }
         )
     }
 
@@ -404,7 +405,17 @@ class PlaybackController(
         isShuffleEnabled = playerStateStorage.isShuffleEnabled()
         repeatMode = playerStateStorage.getRepeatMode()
 
-        playbackContextSongs = librarySongs
+        val restoredPlaybackContextSongs = playerStateStorage
+            .getPlaybackContextSongIds()
+            .mapNotNull { savedId ->
+                librarySongs.firstOrNull { song -> song.id == savedId }
+            }
+
+        playbackContextSongs = if (restoredPlaybackContextSongs.isNotEmpty()) {
+            restoredPlaybackContextSongs
+        } else {
+            librarySongs
+        }
 
         playbackQueue.clear()
         playbackQueue.addAll(
@@ -669,7 +680,19 @@ class PlaybackController(
             }
 
             preserveExistingShuffleOrder && isShuffleEnabled -> {
-                getRemainingSongsFromExistingUpcoming(startSong)
+                val remainingExistingUpcomingSongs = getRemainingSongsFromExistingUpcoming(startSong)
+
+                if (
+                    remainingExistingUpcomingSongs.isEmpty() &&
+                    repeatMode == RepeatMode.ALL &&
+                    playbackSourceSongs.size > 1
+                ) {
+                    playbackSourceSongs.filter { song ->
+                        song.id != startSong.id
+                    }
+                } else {
+                    remainingExistingUpcomingSongs
+                }
             }
 
             else -> {
@@ -681,11 +704,15 @@ class PlaybackController(
             song.id !in excludedSongIds
         }
 
-        val orderedRemainingSongs = if (
+        val shouldCreateNewShuffleOrder =
             isShuffleEnabled &&
-            !preserveExistingShuffleOrder &&
-            startIndex != -1
-        ) {
+                    startIndex != -1 &&
+                    (
+                            !preserveExistingShuffleOrder ||
+                                    upcomingSongs.isEmpty() && repeatMode == RepeatMode.ALL
+                            )
+
+        val orderedRemainingSongs = if (shouldCreateNewShuffleOrder) {
             remainingContextSongs.shuffled()
         } else {
             remainingContextSongs
