@@ -28,6 +28,10 @@ import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.LibraryPreferences
 import com.example.cdplaya.data.MusicRepository
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.Playlist
+import com.example.cdplaya.data.PlaylistSong
+import com.example.cdplaya.data.PlaylistsRepository
+import com.example.cdplaya.data.stableKey
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.ui.MusicScreen
 import com.example.cdplaya.ui.theme.CdplayaTheme
@@ -45,6 +49,11 @@ class MainActivity : ComponentActivity() {
     private var favoriteSongKeys by mutableStateOf<Set<String>>(emptySet())
     private val libraryFolders = mutableStateListOf<LibraryFolder>()
     private var selectedLibraryFolders by mutableStateOf<Set<String>>(emptySet())
+
+    private lateinit var playlistsRepository: PlaylistsRepository
+    private var playlists by mutableStateOf<List<Playlist>>(emptyList())
+    private var selectedPlaylistName by mutableStateOf("Playlist")
+    private var selectedPlaylistSongs by mutableStateOf<List<PlaylistSong>>(emptyList())
 
     private val mediaPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -68,6 +77,9 @@ class MainActivity : ComponentActivity() {
 
         favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
         loadFavoriteSongKeys()
+
+        playlistsRepository = PlaylistsRepository(appDatabase.playlistDao())
+        loadPlaylists()
 
         libraryPreferences = LibraryPreferences(this)
         playbackController = PlaybackController(this)
@@ -100,6 +112,9 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding),
                         libraryFolders = libraryFolders,
                         selectedLibraryFolders = selectedLibraryFolders,
+                        playlists = playlists,
+                        selectedPlaylistName = selectedPlaylistName,
+                        selectedPlaylistSongs = selectedPlaylistSongs,
                         onSongClick = { song, playbackContext ->
                             playbackController.playSelectedSong(
                                 song = song,
@@ -178,6 +193,21 @@ class MainActivity : ComponentActivity() {
                         favoriteSongKeys = favoriteSongKeys,
                         onToggleFavoriteClick = { song ->
                             toggleFavorite(song)
+                        },
+                        onCreatePlaylistClick = { playlistName ->
+                            createPlaylist(playlistName)
+                        },
+                        onDeletePlaylistClick = { playlist ->
+                            deletePlaylist(playlist)
+                        },
+                        onPlaylistSelected = { playlist ->
+                            loadSelectedPlaylist(playlist)
+                        },
+                        onAddSongToPlaylistClick = { playlist, song ->
+                            addSongToPlaylist(playlist, song)
+                        },
+                        onRemovePlaylistSongClick = { playlistSong ->
+                            removePlaylistSong(playlistSong)
                         }
                     )
                 }
@@ -272,6 +302,65 @@ class MainActivity : ComponentActivity() {
             } else {
                 favoritesRepository.removeFavorite(song)
             }
+        }
+    }
+
+    private fun loadPlaylists() {
+        lifecycleScope.launch {
+            playlists = playlistsRepository.getPlaylists()
+        }
+    }
+
+    private fun createPlaylist(playlistName: String) {
+        lifecycleScope.launch {
+            playlistsRepository.createPlaylist(playlistName)
+            loadPlaylists()
+        }
+    }
+
+    private fun deletePlaylist(playlist: Playlist) {
+        lifecycleScope.launch {
+            playlistsRepository.deletePlaylist(playlist.playlistId)
+            loadPlaylists()
+
+            if (selectedPlaylistName == playlist.name) {
+                selectedPlaylistName = "Playlist"
+                selectedPlaylistSongs = emptyList()
+            }
+        }
+    }
+
+    private fun loadSelectedPlaylist(playlist: Playlist) {
+        lifecycleScope.launch {
+            selectedPlaylistName = playlist.name
+            selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(playlist.playlistId)
+        }
+    }
+
+    private fun addSongToPlaylist(
+        playlist: Playlist,
+        song: Song
+    ) {
+        lifecycleScope.launch {
+            playlistsRepository.addSongToPlaylist(
+                playlistId = playlist.playlistId,
+                song = song
+            )
+
+            loadPlaylists()
+            selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(playlist.playlistId)
+        }
+    }
+
+    private fun removePlaylistSong(playlistSong: PlaylistSong) {
+        lifecycleScope.launch {
+            playlistsRepository.removePlaylistSong(
+                playlistId = playlistSong.playlistId,
+                playlistSongId = playlistSong.playlistSongId
+            )
+
+            loadPlaylists()
+            selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(playlistSong.playlistId)
         }
     }
 

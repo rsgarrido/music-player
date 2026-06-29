@@ -1,10 +1,9 @@
 package com.example.cdplaya.ui
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -29,12 +28,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 
 @Composable
-fun SongList(
-    songs: List<Song>,
+fun PlaylistSongList(
+    playlistSongs: List<Song>,
+    playlistSongRows: List<PlaylistSong>,
     currentSongId: Long?,
     recentlyAddedSongIds: Set<Long>,
     favoriteSongKeys: Set<String>,
@@ -42,18 +43,17 @@ fun SongList(
     onPlayNextClick: (Song) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
-    onAddToPlaylistClick: (Song) -> Unit,
-    modifier: Modifier = Modifier,
-    showAlbumName: Boolean = false,
-    showTrackNumbers: Boolean = false
+    onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     LazyColumn(
         modifier = modifier
     ) {
-        items(
-            items = songs,
-            key = { song -> song.id }
-        ) { song ->
+        itemsIndexed(
+            items = playlistSongs,
+            key = { index, song -> "${song.id}-$index" }
+        ) { index, song ->
+            val playlistSong = playlistSongRows.getOrNull(index)
             val isCurrentSong = song.id == currentSongId
             val wasRecentlyAdded = song.id in recentlyAddedSongIds
             val isFavorite = song.favoriteKey() in favoriteSongKeys
@@ -61,24 +61,16 @@ fun SongList(
 
             ListItem(
                 leadingContent = {
-                    if (showTrackNumbers) {
-                        Text(
-                            text = getDisplayTrackNumber(song.trackNumber),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.width(56.dp)
-                        )
-                    } else {
-                        AsyncImage(
-                            model = song.albumArtUri,
-                            contentDescription = "Album art for ${song.title}",
-                            modifier = Modifier
-                                .size(56.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                            contentScale = ContentScale.Crop,
-                            error = painterResource(android.R.drawable.ic_media_play),
-                            placeholder = painterResource(android.R.drawable.ic_media_play)
-                        )
-                    }
+                    AsyncImage(
+                        model = song.albumArtUri,
+                        contentDescription = "Album art for ${song.title}",
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(android.R.drawable.ic_media_play),
+                        placeholder = painterResource(android.R.drawable.ic_media_play)
+                    )
                 },
                 headlineContent = {
                     Text(
@@ -91,13 +83,7 @@ fun SongList(
                     )
                 },
                 supportingContent = {
-                    Text(
-                        text = if (showAlbumName) {
-                            song.album.ifBlank { "Unknown Album" }
-                        } else {
-                            song.artist.ifBlank { "Unknown Artist" }
-                        }
-                    )
+                    Text(text = song.artist.ifBlank { "Unknown Artist" })
                 },
                 trailingContent = {
                     IconButton(
@@ -162,15 +148,17 @@ fun SongList(
                             }
                         )
 
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = "Add to playlist")
-                            },
-                            onClick = {
-                                isMenuExpanded = false
-                                onAddToPlaylistClick(song)
-                            }
-                        )
+                        if (playlistSong != null) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(text = "Remove from playlist")
+                                },
+                                onClick = {
+                                    isMenuExpanded = false
+                                    onRemovePlaylistSongClick(playlistSong)
+                                }
+                            )
+                        }
                     }
                 },
                 colors = ListItemDefaults.colors(
@@ -181,7 +169,7 @@ fun SongList(
                     }
                 ),
                 modifier = Modifier.clickable {
-                    onSongClick(song, songs)
+                    onSongClick(song, playlistSongs)
                 }
             )
         }

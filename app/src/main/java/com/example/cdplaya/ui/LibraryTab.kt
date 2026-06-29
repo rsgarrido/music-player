@@ -5,5 +5,6 @@ enum class LibraryTab(val title: String) {
     ARTISTS("Artists"),
     ALBUMS("Albums"),
     FAVORITES("Favorites"),
+    PLAYLISTS("Playlists"),
     QUEUE("Up Next")
 }
