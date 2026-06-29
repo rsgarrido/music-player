@@ -6,11 +6,14 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [
         DatabaseMarkerEntity::class,
-        FavoriteSongEntity::class
+        FavoriteSongEntity::class,
+        PlaylistEntity::class,
+        PlaylistSongEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun favoriteSongDao(): FavoriteSongDao
+    abstract fun playlistDao(): PlaylistDao
 }

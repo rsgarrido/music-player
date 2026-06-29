@@ -2,18 +2,22 @@ package com.example.cdplaya.data
 
 import java.security.MessageDigest
 
-fun Song.favoriteKey(): String {
+fun Song.stableKey(): String {
     val rawKey = listOf(
-        title.normalizedForFavoriteKey(),
-        artist.normalizedForFavoriteKey(),
-        album.normalizedForFavoriteKey(),
+        title.normalizedForStableKey(),
+        artist.normalizedForStableKey(),
+        album.normalizedForStableKey(),
         duration.toString()
     ).joinToString("|")
 
     return rawKey.sha256()
 }
 
-private fun String.normalizedForFavoriteKey(): String {
+fun Song.favoriteKey(): String {
+    return stableKey()
+}
+
+private fun String.normalizedForStableKey(): String {
     return trim()
         .lowercase()
         .replace(Regex("\\s+"), " ")
