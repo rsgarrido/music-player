@@ -107,8 +107,19 @@ fun MusicScreen(
     var isCreatePlaylistDialogVisible by rememberSaveable { mutableStateOf(false) }
     var songPendingPlaylistAdd by remember { mutableStateOf<Song?>(null) }
 
-    val coroutineScope = rememberCoroutineScope()
-    var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
+    val queueSnackbarActions = rememberQueueSnackbarActions(
+        snackbarHostState = snackbarHostState,
+        onAddToQueueClick = onAddToQueueClick,
+        onUndoAddToQueueClick = onUndoAddToQueueClick,
+        onPlayNextClick = onPlayNextClick,
+        onUndoPlayNextClick = onUndoPlayNextClick,
+        onPlayNextSongsClick = onPlayNextSongsClick,
+        onUndoPlayNextSongsClick = onUndoPlayNextSongsClick,
+        onAddSongsToQueueClick = onAddSongsToQueueClick,
+        onUndoAddSongsToQueueClick = onUndoAddSongsToQueueClick
+    )
+
+    val recentlyAddedSongIds = queueSnackbarActions.recentlyAddedSongIds
 
     BackHandler(
         enabled = isExpandedUpNextSheetVisible ||
@@ -153,104 +164,6 @@ fun MusicScreen(
             selectedLibraryTab == LibraryTab.QUEUE -> {
                 selectedLibraryTab = LibraryTab.SONGS
             }
-        }
-    }
-
-    fun handleAddToQueue(song: Song) {
-        onAddToQueueClick(song)
-        recentlyAddedSongIds = recentlyAddedSongIds + song.id
-
-        coroutineScope.launch {
-            val result = snackbarHostState.showSnackbar(
-                message = "\"${song.title}\" added to queue",
-                actionLabel = "Undo",
-                withDismissAction = true,
-                duration = SnackbarDuration.Short
-            )
-
-            if (result == SnackbarResult.ActionPerformed) {
-                onUndoAddToQueueClick(song)
-            }
-
-            delay(300)
-            recentlyAddedSongIds = recentlyAddedSongIds - song.id
-        }
-    }
-
-    fun handlePlayNext(song: Song) {
-        onPlayNextClick(song)
-        recentlyAddedSongIds = recentlyAddedSongIds + song.id
-
-        coroutineScope.launch {
-            val result = snackbarHostState.showSnackbar(
-                message = "\"${song.title}\" will play next",
-                actionLabel = "Undo",
-                withDismissAction = true,
-                duration = SnackbarDuration.Short
-            )
-
-            if (result == SnackbarResult.ActionPerformed) {
-                onUndoPlayNextClick(song)
-            }
-
-            delay(300)
-            recentlyAddedSongIds = recentlyAddedSongIds - song.id
-        }
-    }
-
-    fun handlePlayNextSongs(
-        label: String,
-        songsToAdd: List<Song>
-    ) {
-        if (songsToAdd.isEmpty()) {
-            return
-        }
-
-        onPlayNextSongsClick(songsToAdd)
-        recentlyAddedSongIds = recentlyAddedSongIds + songsToAdd.map { song -> song.id }.toSet()
-
-        coroutineScope.launch {
-            val result = snackbarHostState.showSnackbar(
-                message = "\"$label\" will play next",
-                actionLabel = "Undo",
-                withDismissAction = true,
-                duration = SnackbarDuration.Short
-            )
-
-            if (result == SnackbarResult.ActionPerformed) {
-                onUndoPlayNextSongsClick(songsToAdd)
-            }
-
-            delay(300)
-            recentlyAddedSongIds = recentlyAddedSongIds - songsToAdd.map { song -> song.id }.toSet()
-        }
-    }
-
-    fun handleAddSongsToQueue(
-        label: String,
-        songsToAdd: List<Song>
-    ) {
-        if (songsToAdd.isEmpty()) {
-            return
-        }
-
-        onAddSongsToQueueClick(songsToAdd)
-        recentlyAddedSongIds = recentlyAddedSongIds + songsToAdd.map { song -> song.id }.toSet()
-
-        coroutineScope.launch {
-            val result = snackbarHostState.showSnackbar(
-                message = "\"$label\" added to queue",
-                actionLabel = "Undo",
-                withDismissAction = true,
-                duration = SnackbarDuration.Short
-            )
-
-            if (result == SnackbarResult.ActionPerformed) {
-                onUndoAddSongsToQueueClick(songsToAdd)
-            }
-
-            delay(300)
-            recentlyAddedSongIds = recentlyAddedSongIds - songsToAdd.map { song -> song.id }.toSet()
         }
     }
 
@@ -454,10 +367,10 @@ fun MusicScreen(
                                     recentlyAddedSongIds = recentlyAddedSongIds,
                                     onSongClick = onSongClick,
                                     onPlayNextClick = { song ->
-                                        handlePlayNext(song)
+                                        queueSnackbarActions.playNext(song)
                                     },
                                     onAddToQueueClick = { song ->
-                                        handleAddToQueue(song)
+                                        queueSnackbarActions.addToQueue(song)
                                     },
                                     favoriteSongKeys = favoriteSongKeys,
                                     onToggleFavoriteClick = onToggleFavoriteClick,
@@ -484,17 +397,17 @@ fun MusicScreen(
                                     },
                                     onPlaySongsClick = onPlaySongsClick,
                                     onPlayNextClick = { song ->
-                                        handlePlayNext(song)
+                                        queueSnackbarActions.playNext(song)
                                     },
                                     onSongClick = onSongClick,
                                     onAddToQueueClick = { song ->
-                                        handleAddToQueue(song)
+                                        queueSnackbarActions.addToQueue(song)
                                     },
                                     onPlayNextSongsClick = { label, songs ->
-                                        handlePlayNextSongs(label, songs)
+                                        queueSnackbarActions.playNextSongs(label, songs)
                                     },
                                     onAddSongsToQueueClick = { label, songs ->
-                                        handleAddSongsToQueue(label, songs)
+                                        queueSnackbarActions.addSongsToQueue(label, songs)
                                     },
                                     favoriteSongKeys = favoriteSongKeys,
                                     onToggleFavoriteClick = onToggleFavoriteClick,
@@ -521,17 +434,17 @@ fun MusicScreen(
                                     },
                                     onPlaySongsClick = onPlaySongsClick,
                                     onPlayNextClick = { song ->
-                                        handlePlayNext(song)
+                                        queueSnackbarActions.playNext(song)
                                     },
                                     onSongClick = onSongClick,
                                     onAddToQueueClick = { song ->
-                                        handleAddToQueue(song)
+                                        queueSnackbarActions.addToQueue(song)
                                     },
                                     onPlayNextSongsClick = { label, songs ->
-                                        handlePlayNextSongs(label, songs)
+                                        queueSnackbarActions.playNextSongs(label, songs)
                                     },
                                     onAddSongsToQueueClick = { label, songs ->
-                                        handleAddSongsToQueue(label, songs)
+                                        queueSnackbarActions.addSongsToQueue(label, songs)
                                     },
                                     favoriteSongKeys = favoriteSongKeys,
                                     onToggleFavoriteClick = onToggleFavoriteClick,
@@ -552,10 +465,10 @@ fun MusicScreen(
                                     recentlyAddedSongIds = recentlyAddedSongIds,
                                     onSongClick = onSongClick,
                                     onPlayNextClick = { song ->
-                                        handlePlayNext(song)
+                                        queueSnackbarActions.playNext(song)
                                     },
                                     onAddToQueueClick = { song ->
-                                        handleAddToQueue(song)
+                                        queueSnackbarActions.addToQueue(song)
                                     },
                                     onToggleFavoriteClick = onToggleFavoriteClick,
                                     onAddToPlaylistClick = { song ->
@@ -605,10 +518,10 @@ fun MusicScreen(
                                     onPlaySongsClick = onPlaySongsClick,
                                     onSongClick = onSongClick,
                                     onPlayNextClick = { song ->
-                                        handlePlayNext(song)
+                                        queueSnackbarActions.playNext(song)
                                     },
                                     onAddToQueueClick = { song ->
-                                        handleAddToQueue(song)
+                                        queueSnackbarActions.addToQueue(song)
                                     },
                                     onToggleFavoriteClick = onToggleFavoriteClick,
                                     onRemovePlaylistSongClick = onRemovePlaylistSongClick,
