@@ -1,0 +1,194 @@
+package com.example.cdplaya.controller
+
+import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.example.cdplaya.data.FavoritesRepository
+import com.example.cdplaya.data.LibraryFolder
+import com.example.cdplaya.data.LibraryPreferences
+import com.example.cdplaya.data.MusicRepository
+import com.example.cdplaya.data.Playlist
+import com.example.cdplaya.data.PlaylistSong
+import com.example.cdplaya.data.PlaylistsRepository
+import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.local.AppDatabase
+import com.example.cdplaya.player.PlaybackController
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+
+class LibraryController(
+    context: Context,
+    appDatabase: AppDatabase,
+    private val playbackController: PlaybackController,
+    private val coroutineScope: CoroutineScope
+) {
+    private val applicationContext = context.applicationContext
+
+    private val libraryPreferences = LibraryPreferences(applicationContext)
+    private val favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
+    private val playlistsRepository = PlaylistsRepository(appDatabase.playlistDao())
+
+    var songs by mutableStateOf<List<Song>>(emptyList())
+        private set
+
+    val libraryFolders = mutableStateListOf<LibraryFolder>()
+
+    var selectedLibraryFolders by mutableStateOf<Set<String>>(emptySet())
+        private set
+
+    var favoriteSongKeys by mutableStateOf<Set<String>>(emptySet())
+        private set
+
+    var playlists by mutableStateOf<List<Playlist>>(emptyList())
+        private set
+
+    var selectedPlaylistName by mutableStateOf("Playlist")
+        private set
+
+    var selectedPlaylistSongs by mutableStateOf<List<PlaylistSong>>(emptyList())
+        private set
+
+    fun loadSavedUserData() {
+        loadFavoriteSongKeys()
+        loadPlaylists()
+    }
+
+    fun loadSongs() {
+        val repository = MusicRepository(applicationContext)
+
+        selectedLibraryFolders = libraryPreferences.getSelectedFolders()
+
+        libraryFolders.clear()
+        libraryFolders.addAll(repository.getLibraryFolders())
+
+        songs = repository.getSongs(selectedLibraryFolders)
+        playbackController.setLibrarySongs(songs)
+    }
+
+    fun toggleLibraryFolder(folderPath: String) {
+        selectedLibraryFolders = if (folderPath in selectedLibraryFolders) {
+            selectedLibraryFolders - folderPath
+        } else {
+            selectedLibraryFolders + folderPath
+        }
+
+        libraryPreferences.saveSelectedFolders(selectedLibraryFolders)
+        reloadSongsAfterFolderChange()
+    }
+
+    fun selectAllLibraryFolders() {
+        selectedLibraryFolders = libraryFolders.map { folder ->
+            folder.path
+        }.toSet()
+
+        libraryPreferences.saveSelectedFolders(selectedLibraryFolders)
+        reloadSongsAfterFolderChange()
+    }
+
+    fun clearSelectedLibraryFolders() {
+        selectedLibraryFolders = emptySet()
+
+        libraryPreferences.saveSelectedFolders(selectedLibraryFolders)
+        reloadSongsAfterFolderChange()
+    }
+
+    fun toggleFavorite(song: Song) {
+        val songKey = song.favoriteKey()
+        val shouldFavorite = songKey !in favoriteSongKeys
+
+        favoriteSongKeys = if (shouldFavorite) {
+            favoriteSongKeys + songKey
+        } else {
+            favoriteSongKeys - songKey
+        }
+
+        coroutineScope.launch {
+            if (shouldFavorite) {
+                favoritesRepository.addFavorite(song)
+            } else {
+                favoritesRepository.removeFavorite(song)
+            }
+        }
+    }
+
+    fun createPlaylist(playlistName: String) {
+        coroutineScope.launch {
+            playlistsRepository.createPlaylist(playlistName)
+            loadPlaylists()
+        }
+    }
+
+    fun deletePlaylist(playlist: Playlist) {
+        coroutineScope.launch {
+            playlistsRepository.deletePlaylist(playlist.playlistId)
+            loadPlaylists()
+
+            val deletedPlaylistWasSelected =
+                selectedPlaylistName == playlist.name ||
+                        selectedPlaylistSongs.any { playlistSong ->
+                            playlistSong.playlistId == playlist.playlistId
+                        }
+
+            if (deletedPlaylistWasSelected) {
+                selectedPlaylistName = "Playlist"
+                selectedPlaylistSongs = emptyList()
+            }
+        }
+    }
+
+    fun loadSelectedPlaylist(playlist: Playlist) {
+        coroutineScope.launch {
+            selectedPlaylistName = playlist.name
+            selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(playlist.playlistId)
+        }
+    }
+
+    fun addSongToPlaylist(
+        playlist: Playlist,
+        song: Song
+    ) {
+        coroutineScope.launch {
+            playlistsRepository.addSongToPlaylist(
+                playlistId = playlist.playlistId,
+                song = song
+            )
+
+            loadPlaylists()
+            selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(playlist.playlistId)
+        }
+    }
+
+    fun removePlaylistSong(playlistSong: PlaylistSong) {
+        coroutineScope.launch {
+            playlistsRepository.removePlaylistSong(
+                playlistId = playlistSong.playlistId,
+                playlistSongId = playlistSong.playlistSongId
+            )
+
+            loadPlaylists()
+            selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(playlistSong.playlistId)
+        }
+    }
+
+    private fun reloadSongsAfterFolderChange() {
+        val repository = MusicRepository(applicationContext)
+
+        songs = repository.getSongs(selectedLibraryFolders)
+        playbackController.handleLibrarySongsChanged(songs)
+    }
+
+    private fun loadFavoriteSongKeys() {
+        coroutineScope.launch {
+            favoriteSongKeys = favoritesRepository.getFavoriteSongKeys()
+        }
+    }
+
+    private fun loadPlaylists() {
+        coroutineScope.launch {
+            playlists = playlistsRepository.getPlaylists()
+        }
+    }
+}
