@@ -1,0 +1,173 @@
+package com.example.cdplaya.ui
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.example.cdplaya.data.Playlist
+import com.example.cdplaya.data.PlaylistSong
+import com.example.cdplaya.data.Song
+
+@Composable
+fun MusicLibraryContent(
+    selectedLibraryTab: LibraryTab,
+    songs: List<Song>,
+    searchQuery: String,
+    selectedSongSortOption: LibrarySortOption,
+    selectedArtistSortOption: LibrarySortOption,
+    selectedAlbumSortOption: LibrarySortOption,
+    selectedFavoriteSortOption: LibrarySortOption,
+    selectedArtistName: String?,
+    selectedAlbumFolderPath: String?,
+    selectedPlaylistId: Long?,
+    playlists: List<Playlist>,
+    selectedPlaylistName: String,
+    selectedPlaylistSongs: List<PlaylistSong>,
+    currentSong: Song?,
+    recentlyAddedSongIds: Set<Long>,
+    favoriteSongKeys: Set<String>,
+    queuedSongs: List<Song>,
+    upcomingSongs: List<Song>,
+    isShuffleEnabled: Boolean,
+    onSongClick: (Song, List<Song>) -> Unit,
+    onPlaySongsClick: (List<Song>, Boolean) -> Unit,
+    onPlayNextClick: (Song) -> Unit,
+    onAddToQueueClick: (Song) -> Unit,
+    onPlayNextSongsClick: (String, List<Song>) -> Unit,
+    onAddSongsToQueueClick: (String, List<Song>) -> Unit,
+    onToggleFavoriteClick: (Song) -> Unit,
+    onAddToPlaylistClick: (Song) -> Unit,
+    onArtistSelected: (String) -> Unit,
+    onBackFromArtist: () -> Unit,
+    onAlbumSelected: (String) -> Unit,
+    onBackFromAlbum: () -> Unit,
+    onBackFromQueue: () -> Unit,
+    onRemoveFromQueueClick: (Int) -> Unit,
+    onMoveQueueItemUpClick: (Int) -> Unit,
+    onMoveQueueItemDownClick: (Int) -> Unit,
+    onClearQueueClick: () -> Unit,
+    onCreatePlaylistClick: () -> Unit,
+    onPlaylistClick: (Playlist) -> Unit,
+    onDeletePlaylistClick: (Playlist) -> Unit,
+    onBackFromPlaylist: () -> Unit,
+    onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    when (selectedLibraryTab) {
+        LibraryTab.SONGS -> {
+            SongsTabContent(
+                songs = songs,
+                searchQuery = searchQuery,
+                sortOption = selectedSongSortOption,
+                currentSong = currentSong,
+                recentlyAddedSongIds = recentlyAddedSongIds,
+                onSongClick = onSongClick,
+                onPlayNextClick = onPlayNextClick,
+                onAddToQueueClick = onAddToQueueClick,
+                favoriteSongKeys = favoriteSongKeys,
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                onAddToPlaylistClick = onAddToPlaylistClick,
+                modifier = modifier
+            )
+        }
+
+        LibraryTab.ARTISTS -> {
+            ArtistsTabContent(
+                songs = songs,
+                searchQuery = searchQuery,
+                selectedArtistName = selectedArtistName,
+                sortOption = selectedArtistSortOption,
+                currentSong = currentSong,
+                recentlyAddedSongIds = recentlyAddedSongIds,
+                onArtistSelected = onArtistSelected,
+                onBackFromArtist = onBackFromArtist,
+                onPlaySongsClick = onPlaySongsClick,
+                onPlayNextClick = onPlayNextClick,
+                onSongClick = onSongClick,
+                onAddToQueueClick = onAddToQueueClick,
+                onPlayNextSongsClick = onPlayNextSongsClick,
+                onAddSongsToQueueClick = onAddSongsToQueueClick,
+                favoriteSongKeys = favoriteSongKeys,
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                onAddToPlaylistClick = onAddToPlaylistClick,
+                modifier = modifier
+            )
+        }
+
+        LibraryTab.ALBUMS -> {
+            AlbumsTabContent(
+                songs = songs,
+                searchQuery = searchQuery,
+                selectedAlbumFolderPath = selectedAlbumFolderPath,
+                currentSong = currentSong,
+                sortOption = selectedAlbumSortOption,
+                recentlyAddedSongIds = recentlyAddedSongIds,
+                onAlbumSelected = onAlbumSelected,
+                onBackFromAlbum = onBackFromAlbum,
+                onPlaySongsClick = onPlaySongsClick,
+                onPlayNextClick = onPlayNextClick,
+                onSongClick = onSongClick,
+                onAddToQueueClick = onAddToQueueClick,
+                onPlayNextSongsClick = onPlayNextSongsClick,
+                onAddSongsToQueueClick = onAddSongsToQueueClick,
+                favoriteSongKeys = favoriteSongKeys,
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                onAddToPlaylistClick = onAddToPlaylistClick,
+                modifier = modifier
+            )
+        }
+
+        LibraryTab.FAVORITES -> {
+            FavoritesTabContent(
+                songs = songs,
+                favoriteSongKeys = favoriteSongKeys,
+                searchQuery = searchQuery,
+                sortOption = selectedFavoriteSortOption,
+                currentSong = currentSong,
+                recentlyAddedSongIds = recentlyAddedSongIds,
+                onSongClick = onSongClick,
+                onPlayNextClick = onPlayNextClick,
+                onAddToQueueClick = onAddToQueueClick,
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                onAddToPlaylistClick = onAddToPlaylistClick,
+                modifier = modifier
+            )
+        }
+
+        LibraryTab.QUEUE -> {
+            QueueScreen(
+                queuedSongs = queuedSongs,
+                upcomingSongs = upcomingSongs,
+                isShuffleEnabled = isShuffleEnabled,
+                onBackClick = onBackFromQueue,
+                onRemoveFromQueueClick = onRemoveFromQueueClick,
+                onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+                onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+                onClearQueueClick = onClearQueueClick,
+                modifier = modifier
+            )
+        }
+
+        LibraryTab.PLAYLISTS -> {
+            PlaylistsTabContent(
+                songs = songs,
+                playlists = playlists,
+                selectedPlaylistId = selectedPlaylistId,
+                selectedPlaylistName = selectedPlaylistName,
+                selectedPlaylistSongs = selectedPlaylistSongs,
+                currentSong = currentSong,
+                recentlyAddedSongIds = recentlyAddedSongIds,
+                favoriteSongKeys = favoriteSongKeys,
+                onCreatePlaylistClick = onCreatePlaylistClick,
+                onPlaylistClick = onPlaylistClick,
+                onDeletePlaylistClick = onDeletePlaylistClick,
+                onBackFromPlaylist = onBackFromPlaylist,
+                onPlaySongsClick = onPlaySongsClick,
+                onSongClick = onSongClick,
+                onPlayNextClick = onPlayNextClick,
+                onAddToQueueClick = onAddToQueueClick,
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+                modifier = modifier
+            )
+        }
+    }
+}
