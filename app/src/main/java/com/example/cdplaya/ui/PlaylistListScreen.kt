@@ -7,15 +7,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,9 +32,18 @@ fun PlaylistListScreen(
     playlists: List<Playlist>,
     onCreatePlaylistClick: () -> Unit,
     onPlaylistClick: (Playlist) -> Unit,
+    onRenamePlaylistClick: (Playlist, String) -> Unit,
     onDeletePlaylistClick: (Playlist) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var playlistPendingRename by remember {
+        mutableStateOf<Playlist?>(null)
+    }
+
+    var playlistPendingDelete by remember {
+        mutableStateOf<Playlist?>(null)
+    }
+
     Column(
         modifier = modifier
     ) {
@@ -60,6 +75,10 @@ fun PlaylistListScreen(
                     items = playlists,
                     key = { playlist -> playlist.playlistId }
                 ) { playlist ->
+                    var isMenuExpanded by remember {
+                        mutableStateOf(false)
+                    }
+
                     ListItem(
                         headlineContent = {
                             Text(
@@ -76,12 +95,39 @@ fun PlaylistListScreen(
                         trailingContent = {
                             IconButton(
                                 onClick = {
-                                    onDeletePlaylistClick(playlist)
+                                    isMenuExpanded = true
                                 }
                             ) {
                                 Icon(
-                                    imageVector = Icons.Filled.Delete,
-                                    contentDescription = "Delete playlist"
+                                    imageVector = Icons.Filled.MoreVert,
+                                    contentDescription = "Playlist actions"
+                                )
+                            }
+
+                            DropdownMenu(
+                                expanded = isMenuExpanded,
+                                onDismissRequest = {
+                                    isMenuExpanded = false
+                                }
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = "Rename")
+                                    },
+                                    onClick = {
+                                        isMenuExpanded = false
+                                        playlistPendingRename = playlist
+                                    }
+                                )
+
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = "Delete")
+                                    },
+                                    onClick = {
+                                        isMenuExpanded = false
+                                        playlistPendingDelete = playlist
+                                    }
                                 )
                             }
                         },
@@ -92,5 +138,41 @@ fun PlaylistListScreen(
                 }
             }
         }
+    }
+
+    val playlistToRename = playlistPendingRename
+
+    if (playlistToRename != null) {
+        PlaylistNameDialog(
+            title = "Rename Playlist",
+            confirmButtonText = "Rename",
+            initialName = playlistToRename.name,
+            originalName = playlistToRename.name,
+            existingPlaylistNames = playlists.map { playlist ->
+                playlist.name
+            },
+            onDismiss = {
+                playlistPendingRename = null
+            },
+            onConfirmClick = { newName ->
+                onRenamePlaylistClick(playlistToRename, newName)
+                playlistPendingRename = null
+            }
+        )
+    }
+
+    val playlistToDelete = playlistPendingDelete
+
+    if (playlistToDelete != null) {
+        DeletePlaylistDialog(
+            playlist = playlistToDelete,
+            onDismiss = {
+                playlistPendingDelete = null
+            },
+            onConfirmDeleteClick = { playlist ->
+                onDeletePlaylistClick(playlist)
+                playlistPendingDelete = null
+            }
+        )
     }
 }

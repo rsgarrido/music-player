@@ -177,6 +177,12 @@ class MainActivity : ComponentActivity() {
                         onCreatePlaylistClick = { playlistName ->
                             libraryController.createPlaylist(playlistName)
                         },
+                        onRenamePlaylistClick = { playlist, newName ->
+                            libraryController.renamePlaylist(
+                                playlist = playlist,
+                                newName = newName
+                            )
+                        },
                         onDeletePlaylistClick = { playlist ->
                             libraryController.deletePlaylist(playlist)
                         },

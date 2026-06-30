@@ -63,6 +63,7 @@ fun MusicScreen(
     selectedPlaylistName: String,
     selectedPlaylistSongs: List<PlaylistSong>,
     onCreatePlaylistClick: (String) -> Unit,
+    onRenamePlaylistClick: (Playlist, String) -> Unit,
     onDeletePlaylistClick: (Playlist) -> Unit,
     onPlaylistSelected: (Playlist) -> Unit,
     onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
@@ -94,6 +95,12 @@ fun MusicScreen(
         onUndoPlayNextSongsClick = onUndoPlayNextSongsClick,
         onAddSongsToQueueClick = onAddSongsToQueueClick,
         onUndoAddSongsToQueueClick = onUndoAddSongsToQueueClick
+    )
+
+    val playlistSnackbarActions = rememberPlaylistSnackbarActions(
+        snackbarHostState = snackbarHostState,
+        onAddSongToPlaylistClick = onAddSongToPlaylistClick,
+        onRemovePlaylistSongClick = onRemovePlaylistSongClick
     )
 
     val recentlyAddedSongIds = queueSnackbarActions.recentlyAddedSongIds
@@ -259,6 +266,7 @@ fun MusicScreen(
             onCreatePlaylistClick = {
                 isCreatePlaylistDialogVisible = true
             },
+            onRenamePlaylistClick = onRenamePlaylistClick,
             onPlaylistClick = { playlist ->
                 selectedPlaylistId = playlist.playlistId
                 onPlaylistSelected(playlist)
@@ -267,7 +275,9 @@ fun MusicScreen(
             onBackFromPlaylist = {
                 selectedPlaylistId = null
             },
-            onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+            onRemovePlaylistSongClick = { playlistSong ->
+                playlistSnackbarActions.removePlaylistSong(playlistSong)
+            },
             modifier = Modifier.fillMaxSize()
         )
 
@@ -313,7 +323,9 @@ fun MusicScreen(
             onDismissAddToPlaylistDialog = {
                 songPendingPlaylistAdd = null
             },
-            onAddSongToPlaylistClick = onAddSongToPlaylistClick
+            onAddSongToPlaylistClick = { playlist, song ->
+                playlistSnackbarActions.addSongToPlaylist(playlist, song)
+            }
         )
     }
 }
