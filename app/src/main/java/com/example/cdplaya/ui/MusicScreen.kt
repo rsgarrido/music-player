@@ -97,6 +97,12 @@ fun MusicScreen(
         onUndoAddSongsToQueueClick = onUndoAddSongsToQueueClick
     )
 
+    val playlistSnackbarActions = rememberPlaylistSnackbarActions(
+        snackbarHostState = snackbarHostState,
+        onAddSongToPlaylistClick = onAddSongToPlaylistClick,
+        onRemovePlaylistSongClick = onRemovePlaylistSongClick
+    )
+
     val recentlyAddedSongIds = queueSnackbarActions.recentlyAddedSongIds
 
     BackHandler(
@@ -269,7 +275,9 @@ fun MusicScreen(
             onBackFromPlaylist = {
                 selectedPlaylistId = null
             },
-            onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+            onRemovePlaylistSongClick = { playlistSong ->
+                playlistSnackbarActions.removePlaylistSong(playlistSong)
+            },
             modifier = Modifier.fillMaxSize()
         )
 
@@ -315,7 +323,9 @@ fun MusicScreen(
             onDismissAddToPlaylistDialog = {
                 songPendingPlaylistAdd = null
             },
-            onAddSongToPlaylistClick = onAddSongToPlaylistClick
+            onAddSongToPlaylistClick = { playlist, song ->
+                playlistSnackbarActions.addSongToPlaylist(playlist, song)
+            }
         )
     }
 }
