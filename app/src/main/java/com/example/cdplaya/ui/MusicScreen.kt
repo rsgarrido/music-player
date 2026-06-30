@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,16 +15,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -37,10 +32,8 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.player.RepeatMode
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun MusicScreen(
     songs: List<Song>,
@@ -534,85 +527,49 @@ fun MusicScreen(
             }
         }
 
-        if (isPlayerExpanded && currentSong != null) {
-            PlayerCard(
-                modifier = Modifier.fillMaxSize(),
-                currentSong = currentSong,
-                isPlaying = isPlaying,
-                isExpanded = true,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onExpandClick = {
-                    isPlayerExpanded = true
-                },
-                onCollapseClick = {
-                    isPlayerExpanded = false
-                },
-                onOpenUpNextClick = {
-                    isExpandedUpNextSheetVisible = true
-                },
-                isCurrentSongFavorite = currentSong?.let { song ->
-                    song.favoriteKey() in favoriteSongKeys
-                } == true,
-                onToggleFavoriteClick = onToggleFavoriteClick
-            )
-        }
-
-        if (isExpandedUpNextSheetVisible) {
-            ModalBottomSheet(
-                onDismissRequest = {
-                    isExpandedUpNextSheetVisible = false
-                }
-            ) {
-                QueueScreen(
-                    queuedSongs = queuedSongs,
-                    upcomingSongs = upcomingSongs,
-                    isShuffleEnabled = isShuffleEnabled,
-                    onBackClick = {
-                        isExpandedUpNextSheetVisible = false
-                    },
-                    onRemoveFromQueueClick = onRemoveFromQueueClick,
-                    onMoveQueueItemUpClick = onMoveQueueItemUpClick,
-                    onMoveQueueItemDownClick = onMoveQueueItemDownClick,
-                    onClearQueueClick = onClearQueueClick,
-                    modifier = Modifier.fillMaxHeight(0.86f)
-                )
-            }
-        }
-
-        if (isCreatePlaylistDialogVisible) {
-            PlaylistNameDialog(
-                onDismiss = {
-                    isCreatePlaylistDialogVisible = false
-                },
-                onCreateClick = { playlistName ->
-                    onCreatePlaylistClick(playlistName)
-                    isCreatePlaylistDialogVisible = false
-                }
-            )
-        }
-
-        val selectedSongForPlaylist = songPendingPlaylistAdd
-
-        if (selectedSongForPlaylist != null) {
-            AddToPlaylistDialog(
-                playlists = playlists,
-                onDismiss = {
-                    songPendingPlaylistAdd = null
-                },
-                onPlaylistSelected = { playlist ->
-                    onAddSongToPlaylistClick(playlist, selectedSongForPlaylist)
-                    songPendingPlaylistAdd = null
-                }
-            )
-        }
+        MusicScreenOverlays(
+            isPlayerExpanded = isPlayerExpanded,
+            currentSong = currentSong,
+            isPlaying = isPlaying,
+            isShuffleEnabled = isShuffleEnabled,
+            repeatMode = repeatMode,
+            currentPosition = currentPosition,
+            duration = duration,
+            favoriteSongKeys = favoriteSongKeys,
+            isExpandedUpNextSheetVisible = isExpandedUpNextSheetVisible,
+            queuedSongs = queuedSongs,
+            upcomingSongs = upcomingSongs,
+            isCreatePlaylistDialogVisible = isCreatePlaylistDialogVisible,
+            songPendingPlaylistAdd = songPendingPlaylistAdd,
+            playlists = playlists,
+            onPlayPauseClick = onPlayPauseClick,
+            onPreviousClick = onPreviousClick,
+            onNextClick = onNextClick,
+            onSeekChange = onSeekChange,
+            onShuffleClick = onShuffleClick,
+            onRepeatClick = onRepeatClick,
+            onCollapseExpandedPlayer = {
+                isPlayerExpanded = false
+            },
+            onShowExpandedUpNextSheet = {
+                isExpandedUpNextSheetVisible = true
+            },
+            onDismissExpandedUpNextSheet = {
+                isExpandedUpNextSheetVisible = false
+            },
+            onRemoveFromQueueClick = onRemoveFromQueueClick,
+            onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+            onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+            onClearQueueClick = onClearQueueClick,
+            onToggleFavoriteClick = onToggleFavoriteClick,
+            onDismissCreatePlaylistDialog = {
+                isCreatePlaylistDialogVisible = false
+            },
+            onCreatePlaylistClick = onCreatePlaylistClick,
+            onDismissAddToPlaylistDialog = {
+                songPendingPlaylistAdd = null
+            },
+            onAddSongToPlaylistClick = onAddSongToPlaylistClick
+        )
     }
 }
