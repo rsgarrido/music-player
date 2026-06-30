@@ -91,8 +91,13 @@ fun MusicScreenOverlays(
 
     if (isCreatePlaylistDialogVisible) {
         PlaylistNameDialog(
+            title = "Create Playlist",
+            confirmButtonText = "Create",
+            existingPlaylistNames = playlists.map { playlist ->
+                playlist.name
+            },
             onDismiss = onDismissCreatePlaylistDialog,
-            onCreateClick = { playlistName ->
+            onConfirmClick = { playlistName ->
                 onCreatePlaylistClick(playlistName)
                 onDismissCreatePlaylistDialog()
             }

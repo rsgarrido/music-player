@@ -12,15 +12,35 @@ import androidx.compose.runtime.setValue
 
 @Composable
 fun PlaylistNameDialog(
+    title: String = "Create Playlist",
+    confirmButtonText: String = "Create",
+    initialName: String = "",
+    existingPlaylistNames: List<String> = emptyList(),
+    originalName: String? = null,
     onDismiss: () -> Unit,
-    onCreateClick: (String) -> Unit
+    onConfirmClick: (String) -> Unit
 ) {
-    var playlistName by remember { mutableStateOf("") }
+    var playlistName by remember {
+        mutableStateOf(initialName)
+    }
+
+    val trimmedName = playlistName.trim()
+
+    val duplicateNameExists = existingPlaylistNames.any { existingName ->
+        existingName.equals(trimmedName, ignoreCase = true) &&
+                !existingName.equals(originalName, ignoreCase = true)
+    }
+
+    val errorMessage = when {
+        trimmedName.isBlank() -> "Playlist name cannot be empty."
+        duplicateNameExists -> "A playlist with this name already exists."
+        else -> null
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Create Playlist")
+            Text(text = title)
         },
         text = {
             OutlinedTextField(
@@ -31,17 +51,23 @@ fun PlaylistNameDialog(
                 label = {
                     Text(text = "Playlist name")
                 },
-                singleLine = true
+                singleLine = true,
+                isError = errorMessage != null,
+                supportingText = {
+                    if (errorMessage != null) {
+                        Text(text = errorMessage)
+                    }
+                }
             )
         },
         confirmButton = {
             Button(
                 onClick = {
-                    onCreateClick(playlistName)
+                    onConfirmClick(trimmedName)
                 },
-                enabled = playlistName.isNotBlank()
+                enabled = errorMessage == null
             ) {
-                Text(text = "Create")
+                Text(text = confirmButtonText)
             }
         },
         dismissButton = {

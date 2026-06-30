@@ -29,11 +29,34 @@ interface PlaylistDao {
     @Query("SELECT * FROM playlist_songs WHERE playlistId = :playlistId ORDER BY position ASC")
     suspend fun getPlaylistSongs(playlistId: Long): List<PlaylistSongEntity>
 
+    @Query("SELECT COUNT(*) FROM playlists WHERE LOWER(name) = LOWER(:name)")
+    suspend fun countPlaylistsWithName(name: String): Int
+
+    @Query(
+        """
+        SELECT COUNT(*) 
+        FROM playlists 
+        WHERE LOWER(name) = LOWER(:name) 
+        AND playlistId != :playlistId
+        """
+    )
+    suspend fun countOtherPlaylistsWithName(
+        playlistId: Long,
+        name: String
+    ): Int
+
     @Insert
     suspend fun insertPlaylist(playlist: PlaylistEntity): Long
 
     @Insert
     suspend fun insertPlaylistSong(playlistSong: PlaylistSongEntity): Long
+
+    @Query("UPDATE playlists SET name = :name, updatedAt = :updatedAt WHERE playlistId = :playlistId")
+    suspend fun renamePlaylist(
+        playlistId: Long,
+        name: String,
+        updatedAt: Long
+    )
 
     @Query("DELETE FROM playlists WHERE playlistId = :playlistId")
     suspend fun deletePlaylist(playlistId: Long)

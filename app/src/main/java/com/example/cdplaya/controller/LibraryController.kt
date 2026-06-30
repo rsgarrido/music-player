@@ -116,8 +116,38 @@ class LibraryController(
 
     fun createPlaylist(playlistName: String) {
         coroutineScope.launch {
-            playlistsRepository.createPlaylist(playlistName)
-            loadPlaylists()
+            val wasCreated = playlistsRepository.createPlaylist(playlistName)
+
+            if (wasCreated) {
+                loadPlaylists()
+            }
+        }
+    }
+
+    fun renamePlaylist(
+        playlist: Playlist,
+        newName: String
+    ) {
+        coroutineScope.launch {
+            val trimmedName = newName.trim()
+
+            val wasRenamed = playlistsRepository.renamePlaylist(
+                playlistId = playlist.playlistId,
+                newName = trimmedName
+            )
+
+            if (wasRenamed) {
+                loadPlaylists()
+
+                val renamedPlaylistWasSelected =
+                    selectedPlaylistSongs.any { playlistSong ->
+                        playlistSong.playlistId == playlist.playlistId
+                    }
+
+                if (renamedPlaylistWasSelected) {
+                    selectedPlaylistName = trimmedName
+                }
+            }
         }
     }
 

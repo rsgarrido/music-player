@@ -36,11 +36,18 @@ class PlaylistsRepository(
         }
     }
 
-    suspend fun createPlaylist(name: String) {
+    suspend fun createPlaylist(name: String): Boolean {
         val trimmedName = name.trim()
 
         if (trimmedName.isBlank()) {
-            return
+            return false
+        }
+
+        val playlistNameAlreadyExists =
+            playlistDao.countPlaylistsWithName(trimmedName) > 0
+
+        if (playlistNameAlreadyExists) {
+            return false
         }
 
         val now = System.currentTimeMillis()
@@ -52,6 +59,37 @@ class PlaylistsRepository(
                 updatedAt = now
             )
         )
+
+        return true
+    }
+
+    suspend fun renamePlaylist(
+        playlistId: Long,
+        newName: String
+    ): Boolean {
+        val trimmedName = newName.trim()
+
+        if (trimmedName.isBlank()) {
+            return false
+        }
+
+        val playlistNameAlreadyExists =
+            playlistDao.countOtherPlaylistsWithName(
+                playlistId = playlistId,
+                name = trimmedName
+            ) > 0
+
+        if (playlistNameAlreadyExists) {
+            return false
+        }
+
+        playlistDao.renamePlaylist(
+            playlistId = playlistId,
+            name = trimmedName,
+            updatedAt = System.currentTimeMillis()
+        )
+
+        return true
     }
 
     suspend fun deletePlaylist(playlistId: Long) {

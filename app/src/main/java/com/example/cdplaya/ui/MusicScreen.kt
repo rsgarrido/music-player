@@ -63,6 +63,7 @@ fun MusicScreen(
     selectedPlaylistName: String,
     selectedPlaylistSongs: List<PlaylistSong>,
     onCreatePlaylistClick: (String) -> Unit,
+    onRenamePlaylistClick: (Playlist, String) -> Unit,
     onDeletePlaylistClick: (Playlist) -> Unit,
     onPlaylistSelected: (Playlist) -> Unit,
     onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
@@ -259,6 +260,7 @@ fun MusicScreen(
             onCreatePlaylistClick = {
                 isCreatePlaylistDialogVisible = true
             },
+            onRenamePlaylistClick = onRenamePlaylistClick,
             onPlaylistClick = { playlist ->
                 selectedPlaylistId = playlist.playlistId
                 onPlaylistSelected(playlist)
