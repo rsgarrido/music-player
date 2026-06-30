@@ -36,7 +36,6 @@ import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
-import com.example.cdplaya.data.stableKey
 import com.example.cdplaya.player.RepeatMode
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -583,54 +582,38 @@ fun MusicScreen(
                             }
 
                             LibraryTab.PLAYLISTS -> {
-                                if (selectedPlaylistId == null) {
-                                    PlaylistListScreen(
-                                        playlists = playlists,
-                                        onCreatePlaylistClick = {
-                                            isCreatePlaylistDialogVisible = true
-                                        },
-                                        onPlaylistClick = { playlist ->
-                                            selectedPlaylistId = playlist.playlistId
-                                            onPlaylistSelected(playlist)
-                                        },
-                                        onDeletePlaylistClick = onDeletePlaylistClick,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                } else {
-                                    val availablePlaylistSongs = selectedPlaylistSongs.mapNotNull { playlistSong ->
-                                        songs.firstOrNull { song ->
-                                            song.stableKey() == playlistSong.songKey
-                                        }
-                                    }
-
-                                    PlaylistDetailScreen(
-                                        playlistName = selectedPlaylistName,
-                                        playlistSongs = availablePlaylistSongs,
-                                        playlistSongRows = selectedPlaylistSongs,
-                                        currentSongId = currentSong?.id,
-                                        recentlyAddedSongIds = recentlyAddedSongIds,
-                                        favoriteSongKeys = favoriteSongKeys,
-                                        onBackClick = {
-                                            selectedPlaylistId = null
-                                        },
-                                        onPlayAllClick = {
-                                            onPlaySongsClick(availablePlaylistSongs, false)
-                                        },
-                                        onShuffleAllClick = {
-                                            onPlaySongsClick(availablePlaylistSongs, true)
-                                        },
-                                        onSongClick = onSongClick,
-                                        onPlayNextClick = { song ->
-                                            handlePlayNext(song)
-                                        },
-                                        onAddToQueueClick = { song ->
-                                            handleAddToQueue(song)
-                                        },
-                                        onToggleFavoriteClick = onToggleFavoriteClick,
-                                        onRemovePlaylistSongClick = onRemovePlaylistSongClick,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
+                                PlaylistsTabContent(
+                                    songs = songs,
+                                    playlists = playlists,
+                                    selectedPlaylistId = selectedPlaylistId,
+                                    selectedPlaylistName = selectedPlaylistName,
+                                    selectedPlaylistSongs = selectedPlaylistSongs,
+                                    currentSong = currentSong,
+                                    recentlyAddedSongIds = recentlyAddedSongIds,
+                                    favoriteSongKeys = favoriteSongKeys,
+                                    onCreatePlaylistClick = {
+                                        isCreatePlaylistDialogVisible = true
+                                    },
+                                    onPlaylistClick = { playlist ->
+                                        selectedPlaylistId = playlist.playlistId
+                                        onPlaylistSelected(playlist)
+                                    },
+                                    onDeletePlaylistClick = onDeletePlaylistClick,
+                                    onBackFromPlaylist = {
+                                        selectedPlaylistId = null
+                                    },
+                                    onPlaySongsClick = onPlaySongsClick,
+                                    onSongClick = onSongClick,
+                                    onPlayNextClick = { song ->
+                                        handlePlayNext(song)
+                                    },
+                                    onAddToQueueClick = { song ->
+                                        handleAddToQueue(song)
+                                    },
+                                    onToggleFavoriteClick = onToggleFavoriteClick,
+                                    onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
                         }
                     }
