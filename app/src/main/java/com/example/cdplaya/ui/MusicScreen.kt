@@ -91,6 +91,7 @@ fun MusicScreen(
     var songsPendingPlaylistAdd by remember { mutableStateOf<List<Song>>(emptyList()) }
     var songPendingTagEdit by remember { mutableStateOf<Song?>(null) }
     val tagEditorRepository = remember { TagEditorRepository() }
+    var isTagSaveInProgress by remember { mutableStateOf(false) }
 
     val tagEditorActions = rememberTagEditorActions(
         snackbarHostState = snackbarHostState,
@@ -98,8 +99,12 @@ fun MusicScreen(
         onTagsSaved = { originalSong, editedTags ->
             onTagsEdited(originalSong, editedTags)
         },
+        onSavingChanged = { isSaving ->
+            isTagSaveInProgress = isSaving
+        },
         onCloseEditor = {
             songPendingTagEdit = null
+            isTagSaveInProgress = false
         }
     )
 
@@ -137,7 +142,9 @@ fun MusicScreen(
     ) {
         when {
             songPendingTagEdit != null -> {
-                songPendingTagEdit = null
+                if (!isTagSaveInProgress) {
+                    songPendingTagEdit = null
+                }
             }
 
             isExpandedUpNextSheetVisible -> {
@@ -188,12 +195,23 @@ fun MusicScreen(
                 tagEditorRepository.readTags(selectedSongForTagEdit)
             }
 
+            val unsupportedTagEditingMessage = remember(
+                selectedSongForTagEdit.id,
+                selectedSongForTagEdit.filePath
+            ) {
+                tagEditorRepository.getUnsupportedEditingMessage(selectedSongForTagEdit)
+            }
+
             TagEditorScreen(
                 song = selectedSongForTagEdit,
                 initialTags = initialEditableTags,
-                isSaveEnabled = true,
+                isSaving = isTagSaveInProgress,
+                unsupportedMessage = unsupportedTagEditingMessage,
+                isCurrentSong = currentSong?.id == selectedSongForTagEdit.id,
                 onBackClick = {
-                    songPendingTagEdit = null
+                    if (!isTagSaveInProgress) {
+                        songPendingTagEdit = null
+                    }
                 },
                 onSaveClick = { editedTags ->
                     tagEditorActions.saveTags(
@@ -332,6 +350,7 @@ fun MusicScreen(
                     playlistSnackbarActions.removePlaylistSong(playlistSong)
                 },
                 onEditSongTagsClick = { song ->
+                    isTagSaveInProgress = false
                     songPendingTagEdit = song
                 },
                 modifier = Modifier.fillMaxSize()

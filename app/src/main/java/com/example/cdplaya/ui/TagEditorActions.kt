@@ -38,6 +38,7 @@ fun rememberTagEditorActions(
     snackbarHostState: SnackbarHostState,
     tagEditorRepository: TagEditorRepository,
     onTagsSaved: (Song, EditableSongTags) -> Unit,
+    onSavingChanged: (Boolean) -> Unit,
     onCloseEditor: () -> Unit
 ): TagEditorActions {
     val context = LocalContext.current
@@ -69,8 +70,10 @@ fun rememberTagEditorActions(
         ) { _, _ ->
             coroutineScope.launch {
                 delay(500)
+
                 onTagsSaved(song, editedTags)
                 onCloseEditor()
+                onSavingChanged(false)
 
                 snackbarHostState.showSnackbar(
                     message = successMessage,
@@ -86,6 +89,8 @@ fun rememberTagEditorActions(
         editedTags: EditableSongTags
     ) {
         coroutineScope.launch {
+            onSavingChanged(true)
+
             val result = withContext(Dispatchers.IO) {
                 tagEditorRepository.writeTags(
                     song = song,
@@ -100,6 +105,7 @@ fun rememberTagEditorActions(
                     successMessage = result.message
                 )
             } else {
+                onSavingChanged(false)
                 showMessage(result.message)
             }
         }
@@ -112,6 +118,7 @@ fun rememberTagEditorActions(
         pendingTagSave = null
 
         if (pendingSave == null) {
+            onSavingChanged(false)
             return@rememberLauncherForActivityResult
         }
 
@@ -121,14 +128,25 @@ fun rememberTagEditorActions(
                 editedTags = pendingSave.editedTags
             )
         } else {
+            onSavingChanged(false)
             showMessage("Write permission was denied.")
         }
     }
 
     return TagEditorActions(
         saveTags = { song, editedTags ->
+            val unsupportedMessage =
+                tagEditorRepository.getUnsupportedEditingMessage(song)
+
+            if (unsupportedMessage != null) {
+                showMessage(unsupportedMessage)
+                return@TagEditorActions
+            }
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 try {
+                    onSavingChanged(true)
+
                     pendingTagSave = PendingTagSave(
                         song = song,
                         editedTags = editedTags
@@ -146,6 +164,8 @@ fun rememberTagEditorActions(
                     )
                 } catch (exception: Exception) {
                     pendingTagSave = null
+                    onSavingChanged(false)
+
                     showMessage(
                         exception.message ?: "Could not request write permission."
                     )
