@@ -180,14 +180,36 @@ class LibraryController(
         playlist: Playlist,
         song: Song
     ) {
+        addSongsToPlaylist(
+            playlist = playlist,
+            songs = listOf(song)
+        )
+    }
+
+    fun addSongsToPlaylist(
+        playlist: Playlist,
+        songs: List<Song>
+    ) {
+        if (songs.isEmpty()) {
+            return
+        }
+
         coroutineScope.launch {
-            playlistsRepository.addSongToPlaylist(
+            playlistsRepository.addSongsToPlaylist(
                 playlistId = playlist.playlistId,
-                song = song
+                songs = songs
             )
 
             loadPlaylists()
-            selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(playlist.playlistId)
+
+            val addedToSelectedPlaylist =
+                selectedPlaylistSongs.any { playlistSong ->
+                    playlistSong.playlistId == playlist.playlistId
+                }
+
+            if (addedToSelectedPlaylist) {
+                selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(playlist.playlistId)
+            }
         }
     }
 
