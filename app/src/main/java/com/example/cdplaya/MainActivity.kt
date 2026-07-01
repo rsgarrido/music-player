@@ -195,6 +195,12 @@ class MainActivity : ComponentActivity() {
                                 song = song
                             )
                         },
+                        onAddSongsToPlaylistClick = { playlist, songs ->
+                            libraryController.addSongsToPlaylist(
+                                playlist = playlist,
+                                songs = songs
+                            )
+                        },
                         onRemovePlaylistSongClick = { playlistSong ->
                             libraryController.removePlaylistSong(playlistSong)
                         }

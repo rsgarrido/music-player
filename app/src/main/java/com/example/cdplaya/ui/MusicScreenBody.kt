@@ -86,6 +86,7 @@ fun MusicScreenBody(
     onDeletePlaylistClick: (Playlist) -> Unit,
     onBackFromPlaylist: () -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    onAddSongsToPlaylistClick: (List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when {
@@ -217,6 +218,7 @@ fun MusicScreenBody(
                         onDeletePlaylistClick = onDeletePlaylistClick,
                         onBackFromPlaylist = onBackFromPlaylist,
                         onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+                        onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                         modifier = Modifier.weight(1f)
                     )
                 }

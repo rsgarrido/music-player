@@ -50,6 +50,7 @@ fun MusicLibraryContent(
     onDeletePlaylistClick: (Playlist) -> Unit,
     onBackFromPlaylist: () -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    onAddSongsToPlaylistClick: (List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (selectedLibraryTab) {
