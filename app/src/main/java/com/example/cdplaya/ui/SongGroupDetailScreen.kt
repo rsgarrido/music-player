@@ -49,6 +49,7 @@ fun SongGroupDetailScreen(
     favoriteSongKeys: Set<String>,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
+    onAddAllToPlaylistClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -140,6 +141,13 @@ fun SongGroupDetailScreen(
                         Spacer(modifier = Modifier.width(6.dp))
 
                         Text(text = "Shuffle")
+                    }
+
+                    Button(
+                        onClick = onAddAllToPlaylistClick,
+                        enabled = songs.isNotEmpty()
+                    ) {
+                        Text(text = "Add to playlist")
                     }
                 }
             }

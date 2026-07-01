@@ -1,6 +1,8 @@
 package com.example.cdplaya.ui
 
+import androidx.compose.foundation.layout.Column // Added
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button // Added
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -72,6 +74,7 @@ fun FavoritesTabContent(
     onAddToQueueClick: (Song) -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
+    onAddSongsToPlaylistClick: (List<Song>) -> Unit, // Added here
     modifier: Modifier = Modifier
 ) {
     val favoriteSongs = songs.filter { song ->
@@ -99,18 +102,33 @@ fun FavoritesTabContent(
             modifier = Modifier.padding(16.dp)
         )
     } else {
-        SongList(
-            songs = displayedSongs,
-            currentSongId = currentSong?.id,
-            recentlyAddedSongIds = recentlyAddedSongIds,
-            favoriteSongKeys = favoriteSongKeys,
-            onSongClick = onSongClick,
-            onPlayNextClick = onPlayNextClick,
-            onAddToQueueClick = onAddToQueueClick,
-            onToggleFavoriteClick = onToggleFavoriteClick,
-            onAddToPlaylistClick = onAddToPlaylistClick,
+        // Wrapped with Column and Button layout as instructed
+        Column(
             modifier = modifier
-        )
+        ) {
+            Button(
+                onClick = {
+                    onAddSongsToPlaylistClick(displayedSongs)
+                },
+                enabled = displayedSongs.isNotEmpty(),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                Text(text = "Add all to playlist")
+            }
+
+            SongList(
+                songs = displayedSongs,
+                currentSongId = currentSong?.id,
+                recentlyAddedSongIds = recentlyAddedSongIds,
+                favoriteSongKeys = favoriteSongKeys,
+                onSongClick = onSongClick,
+                onPlayNextClick = onPlayNextClick,
+                onAddToQueueClick = onAddToQueueClick,
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                onAddToPlaylistClick = onAddToPlaylistClick,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 
@@ -133,6 +151,7 @@ fun ArtistsTabContent(
     favoriteSongKeys: Set<String>,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
+    onAddSongsToPlaylistClick: (List<Song>) -> Unit, // Added here
     modifier: Modifier = Modifier
 ) {
     val artistSearchSongs = filterSongsByArtistSearch(
@@ -167,6 +186,9 @@ fun ArtistsTabContent(
                 },
                 onArtistAddToQueueClick = { artistName, artistSongs ->
                     onAddSongsToQueueClick(artistName, artistSongs)
+                },
+                onArtistAddToPlaylistClick = { _, artistSongs -> // Added here
+                    onAddSongsToPlaylistClick(artistSongs)
                 },
                 modifier = modifier
             )
@@ -211,6 +233,9 @@ fun ArtistsTabContent(
             favoriteSongKeys = favoriteSongKeys,
             onToggleFavoriteClick = onToggleFavoriteClick,
             onAddToPlaylistClick = onAddToPlaylistClick,
+            onAddAllToPlaylistClick = { // Added here
+                onAddSongsToPlaylistClick(displayedArtistSongs)
+            },
             modifier = modifier
         )
     }
@@ -235,6 +260,7 @@ fun AlbumsTabContent(
     favoriteSongKeys: Set<String>,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
+    onAddSongsToPlaylistClick: (List<Song>) -> Unit, // Added here
     modifier: Modifier = Modifier
 ) {
     val albumSearchSongs = filterSongsByAlbumSearch(
@@ -269,6 +295,9 @@ fun AlbumsTabContent(
                 },
                 onAlbumAddToQueueClick = { albumTitle, albumSongs ->
                     onAddSongsToQueueClick(albumTitle, albumSongs)
+                },
+                onAlbumAddToPlaylistClick = { _, albumSongs -> // Added here
+                    onAddSongsToPlaylistClick(albumSongs)
                 },
                 modifier = modifier
             )
@@ -315,6 +344,9 @@ fun AlbumsTabContent(
             favoriteSongKeys = favoriteSongKeys,
             onToggleFavoriteClick = onToggleFavoriteClick,
             onAddToPlaylistClick = onAddToPlaylistClick,
+            onAddAllToPlaylistClick = { // Added here
+                onAddSongsToPlaylistClick(displayedAlbumSongs)
+            },
             modifier = modifier
         )
     }

@@ -90,6 +90,7 @@ fun MusicLibraryContent(
                 favoriteSongKeys = favoriteSongKeys,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
+                onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                 modifier = modifier
             )
         }
@@ -113,6 +114,7 @@ fun MusicLibraryContent(
                 favoriteSongKeys = favoriteSongKeys,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
+                onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                 modifier = modifier
             )
         }
@@ -130,6 +132,7 @@ fun MusicLibraryContent(
                 onAddToQueueClick = onAddToQueueClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
+                onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                 modifier = modifier
             )
         }

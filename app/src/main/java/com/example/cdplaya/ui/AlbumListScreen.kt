@@ -42,6 +42,7 @@ fun AlbumListScreen(
     onAlbumShuffleClick: (String, List<Song>) -> Unit,
     onAlbumPlayNextClick: (String, List<Song>) -> Unit,
     onAlbumAddToQueueClick: (String, List<Song>) -> Unit,
+    onAlbumAddToPlaylistClick: (String, List<Song>) -> Unit, // Added here
     modifier: Modifier = Modifier,
     sortOption: LibrarySortOption = LibrarySortOption.TITLE
 ) {
@@ -131,7 +132,8 @@ fun AlbumListScreen(
                         onPlayClick = onAlbumPlayClick,
                         onShuffleClick = onAlbumShuffleClick,
                         onPlayNextClick = onAlbumPlayNextClick,
-                        onAddToQueueClick = onAlbumAddToQueueClick
+                        onAddToQueueClick = onAlbumAddToQueueClick,
+                        onAddToPlaylistClick = onAlbumAddToPlaylistClick
                     )
                 },
                 modifier = Modifier.clickable {
@@ -149,7 +151,8 @@ private fun AlbumActionsMenu(
     onPlayClick: (String, List<Song>) -> Unit,
     onShuffleClick: (String, List<Song>) -> Unit,
     onPlayNextClick: (String, List<Song>) -> Unit,
-    onAddToQueueClick: (String, List<Song>) -> Unit
+    onAddToQueueClick: (String, List<Song>) -> Unit,
+    onAddToPlaylistClick: (String, List<Song>) -> Unit
 ) {
     var isMenuExpanded by remember { mutableStateOf(false) }
 
@@ -199,6 +202,16 @@ private fun AlbumActionsMenu(
             onClick = {
                 isMenuExpanded = false
                 onAddToQueueClick(albumTitle, albumSongs)
+            }
+        )
+
+        DropdownMenuItem(
+            text = {
+                Text(text = "Add to playlist")
+            },
+            onClick = {
+                isMenuExpanded = false
+                onAddToPlaylistClick(albumTitle, albumSongs)
             }
         )
     }
