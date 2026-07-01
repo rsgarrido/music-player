@@ -113,39 +113,49 @@ fun SongGroupDetailScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                Row {
-                    Button(
-                        onClick = onPlayAllClick,
-                        enabled = songs.isNotEmpty()
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Play"
-                        )
+                        Button(
+                            onClick = onPlayAllClick,
+                            enabled = songs.isNotEmpty(),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = "Play"
+                            )
 
-                        Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
 
-                        Text(text = "Play")
+                            Text(text = "Play")
+                        }
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        Button(
+                            onClick = onShuffleAllClick,
+                            enabled = songs.isNotEmpty(),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Shuffle,
+                                contentDescription = "Shuffle"
+                            )
+
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            Text(text = "Shuffle")
+                        }
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Button(
-                        onClick = onShuffleAllClick
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Shuffle,
-                            contentDescription = "Shuffle"
-                        )
-
-                        Spacer(modifier = Modifier.width(6.dp))
-
-                        Text(text = "Shuffle")
-                    }
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Button(
                         onClick = onAddAllToPlaylistClick,
-                        enabled = songs.isNotEmpty()
+                        enabled = songs.isNotEmpty(),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(text = "Add to playlist")
                     }

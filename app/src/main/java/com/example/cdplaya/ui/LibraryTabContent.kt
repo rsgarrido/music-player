@@ -1,8 +1,8 @@
 package com.example.cdplaya.ui
 
-import androidx.compose.foundation.layout.Column // Added
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button // Added
+import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -74,7 +74,7 @@ fun FavoritesTabContent(
     onAddToQueueClick: (Song) -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
-    onAddSongsToPlaylistClick: (List<Song>) -> Unit, // Added here
+    onAddSongsToPlaylistClick: (List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val favoriteSongs = songs.filter { song ->
@@ -102,7 +102,6 @@ fun FavoritesTabContent(
             modifier = Modifier.padding(16.dp)
         )
     } else {
-        // Wrapped with Column and Button layout as instructed
         Column(
             modifier = modifier
         ) {
@@ -151,7 +150,7 @@ fun ArtistsTabContent(
     favoriteSongKeys: Set<String>,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
-    onAddSongsToPlaylistClick: (List<Song>) -> Unit, // Added here
+    onAddSongsToPlaylistClick: (List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val artistSearchSongs = filterSongsByArtistSearch(
@@ -187,7 +186,7 @@ fun ArtistsTabContent(
                 onArtistAddToQueueClick = { artistName, artistSongs ->
                     onAddSongsToQueueClick(artistName, artistSongs)
                 },
-                onArtistAddToPlaylistClick = { _, artistSongs -> // Added here
+                onArtistAddToPlaylistClick = { _, artistSongs ->
                     onAddSongsToPlaylistClick(artistSongs)
                 },
                 modifier = modifier
@@ -233,7 +232,7 @@ fun ArtistsTabContent(
             favoriteSongKeys = favoriteSongKeys,
             onToggleFavoriteClick = onToggleFavoriteClick,
             onAddToPlaylistClick = onAddToPlaylistClick,
-            onAddAllToPlaylistClick = { // Added here
+            onAddAllToPlaylistClick = {
                 onAddSongsToPlaylistClick(displayedArtistSongs)
             },
             modifier = modifier
@@ -260,7 +259,7 @@ fun AlbumsTabContent(
     favoriteSongKeys: Set<String>,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
-    onAddSongsToPlaylistClick: (List<Song>) -> Unit, // Added here
+    onAddSongsToPlaylistClick: (List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val albumSearchSongs = filterSongsByAlbumSearch(
@@ -296,7 +295,7 @@ fun AlbumsTabContent(
                 onAlbumAddToQueueClick = { albumTitle, albumSongs ->
                     onAddSongsToQueueClick(albumTitle, albumSongs)
                 },
-                onAlbumAddToPlaylistClick = { _, albumSongs -> // Added here
+                onAlbumAddToPlaylistClick = { _, albumSongs ->
                     onAddSongsToPlaylistClick(albumSongs)
                 },
                 modifier = modifier
@@ -344,7 +343,7 @@ fun AlbumsTabContent(
             favoriteSongKeys = favoriteSongKeys,
             onToggleFavoriteClick = onToggleFavoriteClick,
             onAddToPlaylistClick = onAddToPlaylistClick,
-            onAddAllToPlaylistClick = { // Added here
+            onAddAllToPlaylistClick = {
                 onAddSongsToPlaylistClick(displayedAlbumSongs)
             },
             modifier = modifier
