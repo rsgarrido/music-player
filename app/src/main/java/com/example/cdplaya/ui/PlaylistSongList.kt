@@ -44,6 +44,7 @@ fun PlaylistSongList(
     onAddToQueueClick: (Song) -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -145,6 +146,16 @@ fun PlaylistSongList(
                             onClick = {
                                 isMenuExpanded = false
                                 onToggleFavoriteClick(song)
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = "Edit tags")
+                            },
+                            onClick = {
+                                isMenuExpanded = false
+                                onEditSongTagsClick(song)
                             }
                         )
 

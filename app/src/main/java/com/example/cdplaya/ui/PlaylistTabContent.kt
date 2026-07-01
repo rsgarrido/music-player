@@ -28,6 +28,7 @@ fun PlaylistsTabContent(
     onToggleFavoriteClick: (Song) -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
     onRenamePlaylistClick: (Playlist, String) -> Unit,
+    onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (selectedPlaylistId == null) {
@@ -65,6 +66,7 @@ fun PlaylistsTabContent(
             onAddToQueueClick = onAddToQueueClick,
             onToggleFavoriteClick = onToggleFavoriteClick,
             onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+            onEditSongTagsClick = onEditSongTagsClick,
             modifier = modifier
         )
     }

@@ -43,6 +43,7 @@ fun SongList(
     onAddToQueueClick: (Song) -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
+    onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
     showAlbumName: Boolean = false,
     showTrackNumbers: Boolean = false
@@ -169,6 +170,16 @@ fun SongList(
                             onClick = {
                                 isMenuExpanded = false
                                 onAddToPlaylistClick(song)
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = "Edit tags")
+                            },
+                            onClick = {
+                                isMenuExpanded = false
+                                onEditSongTagsClick(song)
                             }
                         )
                     }

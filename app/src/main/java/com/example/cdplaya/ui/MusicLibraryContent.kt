@@ -51,6 +51,7 @@ fun MusicLibraryContent(
     onBackFromPlaylist: () -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
+    onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (selectedLibraryTab) {
@@ -67,6 +68,7 @@ fun MusicLibraryContent(
                 favoriteSongKeys = favoriteSongKeys,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
+                onEditSongTagsClick = onEditSongTagsClick,
                 modifier = modifier
             )
         }
@@ -91,6 +93,7 @@ fun MusicLibraryContent(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
+                onEditSongTagsClick = onEditSongTagsClick,
                 modifier = modifier
             )
         }
@@ -115,6 +118,7 @@ fun MusicLibraryContent(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
+                onEditSongTagsClick = onEditSongTagsClick,
                 modifier = modifier
             )
         }
@@ -133,6 +137,7 @@ fun MusicLibraryContent(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
+                onEditSongTagsClick = onEditSongTagsClick,
                 modifier = modifier
             )
         }
@@ -172,6 +177,7 @@ fun MusicLibraryContent(
                 onAddToQueueClick = onAddToQueueClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+                onEditSongTagsClick = onEditSongTagsClick,
                 modifier = modifier
             )
         }

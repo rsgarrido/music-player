@@ -37,6 +37,7 @@ fun PlaylistDetailScreen(
     onAddToQueueClick: (Song) -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -118,6 +119,7 @@ fun PlaylistDetailScreen(
                 onAddToQueueClick = onAddToQueueClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+                onEditSongTagsClick = onEditSongTagsClick,
                 modifier = Modifier.weight(1f)
             )
         }
