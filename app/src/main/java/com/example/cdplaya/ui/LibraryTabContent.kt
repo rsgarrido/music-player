@@ -23,6 +23,7 @@ fun SongsTabContent(
     favoriteSongKeys: Set<String>,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
+    onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val filteredSongs = filterSongsForSearch(
@@ -56,6 +57,7 @@ fun SongsTabContent(
             onToggleFavoriteClick = onToggleFavoriteClick,
             favoriteSongKeys = favoriteSongKeys,
             onAddToPlaylistClick = onAddToPlaylistClick,
+            onEditSongTagsClick = onEditSongTagsClick,
             modifier = modifier
         )
     }
@@ -75,6 +77,7 @@ fun FavoritesTabContent(
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
+    onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val favoriteSongs = songs.filter { song ->
@@ -125,6 +128,7 @@ fun FavoritesTabContent(
                 onAddToQueueClick = onAddToQueueClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
+                onEditSongTagsClick = onEditSongTagsClick,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -151,6 +155,7 @@ fun ArtistsTabContent(
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
+    onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val artistSearchSongs = filterSongsByArtistSearch(
@@ -235,6 +240,7 @@ fun ArtistsTabContent(
             onAddAllToPlaylistClick = {
                 onAddSongsToPlaylistClick(displayedArtistSongs)
             },
+            onEditSongTagsClick = onEditSongTagsClick,
             modifier = modifier
         )
     }
@@ -260,6 +266,7 @@ fun AlbumsTabContent(
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
+    onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val albumSearchSongs = filterSongsByAlbumSearch(
@@ -346,6 +353,7 @@ fun AlbumsTabContent(
             onAddAllToPlaylistClick = {
                 onAddSongsToPlaylistClick(displayedAlbumSongs)
             },
+            onEditSongTagsClick = onEditSongTagsClick,
             modifier = modifier
         )
     }

@@ -61,6 +61,27 @@ interface PlaylistDao {
         updatedAt: Long
     )
 
+    @Query(
+        """
+    UPDATE playlist_songs
+    SET 
+        songKey = :newSongKey,
+        title = :title,
+        artist = :artist,
+        album = :album,
+        duration = :duration
+    WHERE songKey = :oldSongKey
+    """
+    )
+    suspend fun updatePlaylistSongReferences(
+        oldSongKey: String,
+        newSongKey: String,
+        title: String,
+        artist: String,
+        album: String,
+        duration: Long
+    )
+
     @Query("DELETE FROM playlists WHERE playlistId = :playlistId")
     suspend fun deletePlaylist(playlistId: Long)
 

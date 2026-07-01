@@ -150,4 +150,31 @@ class PlaylistsRepository(
             updatedAt = System.currentTimeMillis()
         )
     }
+
+    suspend fun updateSongReferencesAfterTagEdit(
+        originalSong: Song,
+        editedTags: EditableSongTags
+    ) {
+        val oldSongKey = originalSong.stableKey()
+
+        val newTitle = editedTags.title.trim()
+        val newArtist = editedTags.artist.trim()
+        val newAlbum = editedTags.album.trim()
+
+        val newSongKey = stableSongKey(
+            title = newTitle,
+            artist = newArtist,
+            album = newAlbum,
+            duration = originalSong.duration
+        )
+
+        playlistDao.updatePlaylistSongReferences(
+            oldSongKey = oldSongKey,
+            newSongKey = newSongKey,
+            title = newTitle,
+            artist = newArtist,
+            album = newAlbum,
+            duration = originalSong.duration
+        )
+    }
 }

@@ -50,6 +50,7 @@ fun SongGroupDetailScreen(
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
     onAddAllToPlaylistClick: () -> Unit,
+    onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -181,6 +182,7 @@ fun SongGroupDetailScreen(
                 favoriteSongKeys = favoriteSongKeys,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
+                onEditSongTagsClick = onEditSongTagsClick,
                 modifier = Modifier.weight(1f)
             )
         }

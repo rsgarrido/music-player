@@ -10,6 +10,7 @@ data class Song(
     val trackNumber: Int,
     val duration: Long,
     val uri: Uri,
+    val filePath: String,
     val folderPath: String,
     val albumArtUri: Uri?
 )

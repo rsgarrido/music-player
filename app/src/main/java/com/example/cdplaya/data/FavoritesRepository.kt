@@ -26,4 +26,47 @@ class FavoritesRepository(
     suspend fun removeFavorite(song: Song) {
         favoriteSongDao.deleteFavoriteByKey(song.favoriteKey())
     }
+
+    suspend fun updateSongReferenceAfterTagEdit(
+        originalSong: Song,
+        editedTags: EditableSongTags
+    ) {
+        val oldSongKey = originalSong.favoriteKey()
+
+        val newTitle = editedTags.title.trim()
+        val newArtist = editedTags.artist.trim()
+        val newAlbum = editedTags.album.trim()
+
+        val newSongKey = stableSongKey(
+            title = newTitle,
+            artist = newArtist,
+            album = newAlbum,
+            duration = originalSong.duration
+        )
+
+        val oldFavoriteExists =
+            favoriteSongDao.countFavoriteByKey(oldSongKey) > 0
+
+        if (!oldFavoriteExists) {
+            return
+        }
+
+        val newFavoriteAlreadyExists =
+            oldSongKey != newSongKey &&
+                    favoriteSongDao.countFavoriteByKey(newSongKey) > 0
+
+        if (newFavoriteAlreadyExists) {
+            favoriteSongDao.deleteFavoriteByKey(oldSongKey)
+            return
+        }
+
+        favoriteSongDao.updateFavoriteSongReference(
+            oldSongKey = oldSongKey,
+            newSongKey = newSongKey,
+            title = newTitle,
+            artist = newArtist,
+            album = newAlbum,
+            duration = originalSong.duration
+        )
+    }
 }

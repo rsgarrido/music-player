@@ -61,7 +61,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+
     implementation("io.coil-kt:coil-compose:2.7.0")
+    implementation(libs.jaudiotagger)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

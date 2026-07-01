@@ -109,6 +109,7 @@ class MusicRepository(private val context: Context) {
                     trackNumber = trackNumber,
                     duration = duration,
                     uri = uri,
+                    filePath = filePath,
                     folderPath = folderPath,
                     albumArtUri = albumArtUri
                 )

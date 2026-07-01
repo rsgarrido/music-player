@@ -3,6 +3,24 @@ package com.example.cdplaya.data
 import java.security.MessageDigest
 
 fun Song.stableKey(): String {
+    return stableSongKey(
+        title = title,
+        artist = artist,
+        album = album,
+        duration = duration
+    )
+}
+
+fun Song.favoriteKey(): String {
+    return stableKey()
+}
+
+fun stableSongKey(
+    title: String,
+    artist: String,
+    album: String,
+    duration: Long
+): String {
     val rawKey = listOf(
         title.normalizedForStableKey(),
         artist.normalizedForStableKey(),
@@ -11,10 +29,6 @@ fun Song.stableKey(): String {
     ).joinToString("|")
 
     return rawKey.sha256()
-}
-
-fun Song.favoriteKey(): String {
-    return stableKey()
 }
 
 private fun String.normalizedForStableKey(): String {
