@@ -69,7 +69,8 @@ fun MusicScreen(
     onPlaylistSelected: (Playlist) -> Unit,
     onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
     onAddSongsToPlaylistClick: (Playlist, List<Song>) -> Unit,
-    onRemovePlaylistSongClick: (PlaylistSong) -> Unit
+    onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    onTagsEdited: () -> Unit
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
@@ -89,6 +90,15 @@ fun MusicScreen(
     var songsPendingPlaylistAdd by remember { mutableStateOf<List<Song>>(emptyList()) }
     var songPendingTagEdit by remember { mutableStateOf<Song?>(null) }
     val tagEditorRepository = remember { TagEditorRepository() }
+
+    val tagEditorActions = rememberTagEditorActions(
+        snackbarHostState = snackbarHostState,
+        tagEditorRepository = tagEditorRepository,
+        onTagsSaved = onTagsEdited,
+        onCloseEditor = {
+            songPendingTagEdit = null
+        }
+    )
 
     val queueSnackbarActions = rememberQueueSnackbarActions(
         snackbarHostState = snackbarHostState,
@@ -178,11 +188,15 @@ fun MusicScreen(
             TagEditorScreen(
                 song = selectedSongForTagEdit,
                 initialTags = initialEditableTags,
-                isSaveEnabled = false,
+                isSaveEnabled = true,
                 onBackClick = {
                     songPendingTagEdit = null
                 },
-                onSaveClick = {
+                onSaveClick = { editedTags ->
+                    tagEditorActions.saveTags(
+                        selectedSongForTagEdit,
+                        editedTags
+                    )
                 },
                 modifier = Modifier.fillMaxSize()
             )

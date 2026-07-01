@@ -95,6 +95,16 @@ class LibraryController(
         reloadSongsAfterFolderChange()
     }
 
+    fun refreshSongsAfterTagEdit() {
+        val repository = MusicRepository(applicationContext)
+
+        libraryFolders.clear()
+        libraryFolders.addAll(repository.getLibraryFolders())
+
+        songs = repository.getSongs(selectedLibraryFolders)
+        playbackController.handleLibrarySongsChanged(songs)
+    }
+
     fun toggleFavorite(song: Song) {
         val songKey = song.favoriteKey()
         val shouldFavorite = songKey !in favoriteSongKeys

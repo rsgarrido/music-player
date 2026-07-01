@@ -173,16 +173,6 @@ fun TagEditorScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        if (!isSaveEnabled) {
-            Text(
-                text = "Saving will be connected in the next spike step.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-        }
-
         Row {
             Button(
                 onClick = onBackClick,
