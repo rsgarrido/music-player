@@ -67,6 +67,7 @@ fun MusicScreen(
     onDeletePlaylistClick: (Playlist) -> Unit,
     onPlaylistSelected: (Playlist) -> Unit,
     onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
+    onAddSongsToPlaylistClick: (Playlist, List<Song>) -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
@@ -84,6 +85,7 @@ fun MusicScreen(
     var selectedPlaylistId by rememberSaveable { mutableStateOf<Long?>(null) }
     var isCreatePlaylistDialogVisible by rememberSaveable { mutableStateOf(false) }
     var songPendingPlaylistAdd by remember { mutableStateOf<Song?>(null) }
+    var songsPendingPlaylistAdd by remember { mutableStateOf<List<Song>>(emptyList()) }
 
     val queueSnackbarActions = rememberQueueSnackbarActions(
         snackbarHostState = snackbarHostState,
@@ -100,6 +102,7 @@ fun MusicScreen(
     val playlistSnackbarActions = rememberPlaylistSnackbarActions(
         snackbarHostState = snackbarHostState,
         onAddSongToPlaylistClick = onAddSongToPlaylistClick,
+        onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
         onRemovePlaylistSongClick = onRemovePlaylistSongClick
     )
 
@@ -244,6 +247,9 @@ fun MusicScreen(
             onAddToPlaylistClick = { song ->
                 songPendingPlaylistAdd = song
             },
+            onAddSongsToPlaylistClick = { songs ->
+                songsPendingPlaylistAdd = songs
+            },
             onArtistSelected = { artistName ->
                 selectedArtistName = artistName
             },
@@ -323,8 +329,15 @@ fun MusicScreen(
             onDismissAddToPlaylistDialog = {
                 songPendingPlaylistAdd = null
             },
+            songsPendingPlaylistAdd = songsPendingPlaylistAdd,
+            onDismissBulkAddToPlaylistDialog = {
+                songsPendingPlaylistAdd = emptyList()
+            },
             onAddSongToPlaylistClick = { playlist, song ->
                 playlistSnackbarActions.addSongToPlaylist(playlist, song)
+            },
+            onAddSongsToPlaylistClick = { playlist, songs ->
+                playlistSnackbarActions.addSongsToPlaylist(playlist, songs)
             }
         )
     }

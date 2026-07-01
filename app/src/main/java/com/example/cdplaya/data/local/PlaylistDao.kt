@@ -51,6 +51,9 @@ interface PlaylistDao {
     @Insert
     suspend fun insertPlaylistSong(playlistSong: PlaylistSongEntity): Long
 
+    @Insert
+    suspend fun insertPlaylistSongs(playlistSongs: List<PlaylistSongEntity>): List<Long>
+
     @Query("UPDATE playlists SET name = :name, updatedAt = :updatedAt WHERE playlistId = :playlistId")
     suspend fun renamePlaylist(
         playlistId: Long,

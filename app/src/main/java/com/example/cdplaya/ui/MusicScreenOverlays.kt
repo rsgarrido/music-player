@@ -45,7 +45,10 @@ fun MusicScreenOverlays(
     onDismissCreatePlaylistDialog: () -> Unit,
     onCreatePlaylistClick: (String) -> Unit,
     onDismissAddToPlaylistDialog: () -> Unit,
-    onAddSongToPlaylistClick: (Playlist, Song) -> Unit
+    onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
+    onAddSongsToPlaylistClick: (Playlist, List<Song>) -> Unit,
+    songsPendingPlaylistAdd: List<Song>,
+    onDismissBulkAddToPlaylistDialog: () -> Unit,
 ) {
     if (isPlayerExpanded && currentSong != null) {
         PlayerCard(
@@ -111,6 +114,17 @@ fun MusicScreenOverlays(
             onPlaylistSelected = { playlist ->
                 onAddSongToPlaylistClick(playlist, songPendingPlaylistAdd)
                 onDismissAddToPlaylistDialog()
+            }
+        )
+    }
+
+    if (songsPendingPlaylistAdd.isNotEmpty()) {
+        AddToPlaylistDialog(
+            playlists = playlists,
+            onDismiss = onDismissBulkAddToPlaylistDialog,
+            onPlaylistSelected = { playlist ->
+                onAddSongsToPlaylistClick(playlist, songsPendingPlaylistAdd)
+                onDismissBulkAddToPlaylistDialog()
             }
         )
     }

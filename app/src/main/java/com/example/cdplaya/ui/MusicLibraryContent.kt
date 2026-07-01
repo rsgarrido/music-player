@@ -50,6 +50,7 @@ fun MusicLibraryContent(
     onDeletePlaylistClick: (Playlist) -> Unit,
     onBackFromPlaylist: () -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    onAddSongsToPlaylistClick: (List<Song>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (selectedLibraryTab) {
@@ -89,6 +90,7 @@ fun MusicLibraryContent(
                 favoriteSongKeys = favoriteSongKeys,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
+                onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                 modifier = modifier
             )
         }
@@ -112,6 +114,7 @@ fun MusicLibraryContent(
                 favoriteSongKeys = favoriteSongKeys,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
+                onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                 modifier = modifier
             )
         }
@@ -129,6 +132,7 @@ fun MusicLibraryContent(
                 onAddToQueueClick = onAddToQueueClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
+                onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                 modifier = modifier
             )
         }

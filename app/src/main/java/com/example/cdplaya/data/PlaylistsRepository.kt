@@ -100,26 +100,44 @@ class PlaylistsRepository(
         playlistId: Long,
         song: Song
     ) {
-        val now = System.currentTimeMillis()
-        val nextPosition = playlistDao.getLastPositionForPlaylist(playlistId) + 1
+        addSongsToPlaylist(
+            playlistId = playlistId,
+            songs = listOf(song)
+        )
+    }
 
-        playlistDao.insertPlaylistSong(
+    suspend fun addSongsToPlaylist(
+        playlistId: Long,
+        songs: List<Song>
+    ): Int {
+        if (songs.isEmpty()) {
+            return 0
+        }
+
+        val now = System.currentTimeMillis()
+        val firstPosition = playlistDao.getLastPositionForPlaylist(playlistId) + 1
+
+        val playlistSongEntities = songs.mapIndexed { index, song ->
             PlaylistSongEntity(
                 playlistId = playlistId,
                 songKey = song.stableKey(),
-                position = nextPosition,
+                position = firstPosition + index,
                 title = song.title,
                 artist = song.artist,
                 album = song.album,
                 duration = song.duration,
                 addedAt = now
             )
-        )
+        }
+
+        playlistDao.insertPlaylistSongs(playlistSongEntities)
 
         playlistDao.updatePlaylistTimestamp(
             playlistId = playlistId,
             updatedAt = now
         )
+
+        return songs.size
     }
 
     suspend fun removePlaylistSong(
