@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.FavoritesRepository
 import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.LibraryPreferences
@@ -95,14 +96,38 @@ class LibraryController(
         reloadSongsAfterFolderChange()
     }
 
-    fun refreshSongsAfterTagEdit() {
-        val repository = MusicRepository(applicationContext)
+    fun refreshSongsAfterTagEdit(
+        originalSong: Song,
+        editedTags: EditableSongTags
+    ) {
+        coroutineScope.launch {
+            favoritesRepository.updateSongReferenceAfterTagEdit(
+                originalSong = originalSong,
+                editedTags = editedTags
+            )
 
-        libraryFolders.clear()
-        libraryFolders.addAll(repository.getLibraryFolders())
+            playlistsRepository.updateSongReferencesAfterTagEdit(
+                originalSong = originalSong,
+                editedTags = editedTags
+            )
 
-        songs = repository.getSongs(selectedLibraryFolders)
-        playbackController.handleLibrarySongsChanged(songs)
+            favoriteSongKeys = favoritesRepository.getFavoriteSongKeys()
+            loadPlaylists()
+
+            val selectedPlaylistId = selectedPlaylistSongs.firstOrNull()?.playlistId
+
+            if (selectedPlaylistId != null) {
+                selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(selectedPlaylistId)
+            }
+
+            val repository = MusicRepository(applicationContext)
+
+            libraryFolders.clear()
+            libraryFolders.addAll(repository.getLibraryFolders())
+
+            songs = repository.getSongs(selectedLibraryFolders)
+            playbackController.handleLibrarySongsChanged(songs)
+        }
     }
 
     fun toggleFavorite(song: Song) {

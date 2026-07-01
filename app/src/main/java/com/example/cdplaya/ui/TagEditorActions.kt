@@ -37,7 +37,7 @@ private data class PendingTagSave(
 fun rememberTagEditorActions(
     snackbarHostState: SnackbarHostState,
     tagEditorRepository: TagEditorRepository,
-    onTagsSaved: () -> Unit,
+    onTagsSaved: (Song, EditableSongTags) -> Unit,
     onCloseEditor: () -> Unit
 ): TagEditorActions {
     val context = LocalContext.current
@@ -59,6 +59,7 @@ fun rememberTagEditorActions(
 
     fun scanEditedSongFile(
         song: Song,
+        editedTags: EditableSongTags,
         successMessage: String
     ) {
         MediaScannerConnection.scanFile(
@@ -68,7 +69,7 @@ fun rememberTagEditorActions(
         ) { _, _ ->
             coroutineScope.launch {
                 delay(500)
-                onTagsSaved()
+                onTagsSaved(song, editedTags)
                 onCloseEditor()
 
                 snackbarHostState.showSnackbar(
@@ -95,6 +96,7 @@ fun rememberTagEditorActions(
             if (result.wasSuccessful) {
                 scanEditedSongFile(
                     song = song,
+                    editedTags = editedTags,
                     successMessage = result.message
                 )
             } else {

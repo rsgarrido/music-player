@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.Playlist
@@ -70,7 +71,7 @@ fun MusicScreen(
     onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
     onAddSongsToPlaylistClick: (Playlist, List<Song>) -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
-    onTagsEdited: () -> Unit
+    onTagsEdited: (Song, EditableSongTags) -> Unit
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
@@ -94,7 +95,9 @@ fun MusicScreen(
     val tagEditorActions = rememberTagEditorActions(
         snackbarHostState = snackbarHostState,
         tagEditorRepository = tagEditorRepository,
-        onTagsSaved = onTagsEdited,
+        onTagsSaved = { originalSong, editedTags ->
+            onTagsEdited(originalSong, editedTags)
+        },
         onCloseEditor = {
             songPendingTagEdit = null
         }
