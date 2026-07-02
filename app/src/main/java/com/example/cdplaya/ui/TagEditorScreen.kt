@@ -24,6 +24,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,7 @@ fun TagEditorScreen(
     isCurrentSong: Boolean,
     onBackClick: () -> Unit,
     onSaveClick: (EditableSongTags) -> Unit,
+    onUnsavedChangesChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var title by remember(song.id, initialTags) {
@@ -70,13 +72,27 @@ fun TagEditorScreen(
         mutableStateOf(initialTags.year)
     }
 
+    val currentTags = EditableSongTags(
+        title = title,
+        artist = artist,
+        album = album,
+        trackNumber = trackNumber,
+        year = year
+    )
+
+    val hasUnsavedChanges = currentTags != initialTags
+
+    LaunchedEffect(hasUnsavedChanges) {
+        onUnsavedChangesChanged(hasUnsavedChanges)
+    }
+
     val titleError = title.trim().isBlank()
     val artistError = artist.trim().isBlank()
     val albumError = album.trim().isBlank()
 
     val hasValidationError = titleError || artistError || albumError
     val canEditFields = !isSaving && unsupportedMessage == null
-    val canSave = canEditFields && !hasValidationError
+    val canSave = canEditFields && !hasValidationError && hasUnsavedChanges
 
     Column(
         modifier = modifier
@@ -283,15 +299,7 @@ fun TagEditorScreen(
 
             Button(
                 onClick = {
-                    onSaveClick(
-                        EditableSongTags(
-                            title = title,
-                            artist = artist,
-                            album = album,
-                            trackNumber = trackNumber,
-                            year = year
-                        )
-                    )
+                    onSaveClick(currentTags)
                 },
                 enabled = canSave,
                 modifier = Modifier.weight(1f)
