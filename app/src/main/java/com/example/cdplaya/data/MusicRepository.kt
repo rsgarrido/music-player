@@ -102,7 +102,7 @@ class MusicRepository(private val context: Context) {
                 )
 
                 val albumArtUri =
-                    albumArtByFolder[folderPath] ?: getEmbeddedAlbumArtUri(filePath)
+                    getEmbeddedAlbumArtUri(filePath) ?: albumArtByFolder[folderPath]
 
                 val song = Song(
                     id = id,

@@ -247,7 +247,8 @@ fun MusicScreen(
                 onSaveClick = { editedTags ->
                     tagEditorActions.saveTags(
                         selectedSongForTagEdit,
-                        editedTags
+                        editedTags,
+                        selectedArtworkUriForTagEdit
                     )
                 },
                 onUnsavedChangesChanged = { hasChanges ->

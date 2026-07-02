@@ -97,7 +97,10 @@ fun TagEditorScreen(
 
     val hasValidationError = titleError || artistError || albumError
     val canEditFields = !isSaving && unsupportedMessage == null
-    val canSave = canEditFields && !hasValidationError && hasUnsavedTagChanges
+    val canSave =
+        canEditFields &&
+                !hasValidationError &&
+                (hasUnsavedTagChanges || selectedArtworkUri != null)
 
     Column(
         modifier = modifier
@@ -181,7 +184,7 @@ fun TagEditorScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "New artwork selected. Saving artwork will be connected in the next step.",
+                text = "New artwork selected. Tap Save to write it into the audio file.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
