@@ -19,6 +19,8 @@ import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.player.PlaybackController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class LibraryController(
     context: Context,
@@ -58,15 +60,22 @@ class LibraryController(
     }
 
     fun loadSongs() {
-        val repository = MusicRepository(applicationContext)
+        coroutineScope.launch {
+            val savedSelectedFolders = libraryPreferences.getSelectedFolders()
 
-        selectedLibraryFolders = libraryPreferences.getSelectedFolders()
+            val libraryData = withContext(Dispatchers.IO) {
+                val repository = MusicRepository(applicationContext)
+                repository.getLibraryData(savedSelectedFolders)
+            }
 
-        libraryFolders.clear()
-        libraryFolders.addAll(repository.getLibraryFolders())
+            selectedLibraryFolders = savedSelectedFolders
 
-        songs = repository.getSongs(selectedLibraryFolders)
-        playbackController.setLibrarySongs(songs)
+            libraryFolders.clear()
+            libraryFolders.addAll(libraryData.libraryFolders)
+
+            songs = libraryData.songs
+            playbackController.setLibrarySongs(songs)
+        }
     }
 
     fun toggleLibraryFolder(folderPath: String) {
@@ -111,21 +120,31 @@ class LibraryController(
                 editedTags = editedTags
             )
 
-            favoriteSongKeys = favoritesRepository.getFavoriteSongKeys()
-            loadPlaylists()
+            val updatedFavoriteSongKeys = favoritesRepository.getFavoriteSongKeys()
+            val updatedPlaylists = playlistsRepository.getPlaylists()
 
             val selectedPlaylistId = selectedPlaylistSongs.firstOrNull()?.playlistId
 
-            if (selectedPlaylistId != null) {
-                selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(selectedPlaylistId)
+            val updatedSelectedPlaylistSongs = selectedPlaylistId?.let { playlistId ->
+                playlistsRepository.getPlaylistSongs(playlistId)
             }
 
-            val repository = MusicRepository(applicationContext)
+            val libraryData = withContext(Dispatchers.IO) {
+                val repository = MusicRepository(applicationContext)
+                repository.getLibraryData(selectedLibraryFolders)
+            }
+
+            favoriteSongKeys = updatedFavoriteSongKeys
+            playlists = updatedPlaylists
+
+            if (updatedSelectedPlaylistSongs != null) {
+                selectedPlaylistSongs = updatedSelectedPlaylistSongs
+            }
 
             libraryFolders.clear()
-            libraryFolders.addAll(repository.getLibraryFolders())
+            libraryFolders.addAll(libraryData.libraryFolders)
 
-            songs = repository.getSongs(selectedLibraryFolders)
+            songs = libraryData.songs
             playbackController.handleLibrarySongsChanged(songs)
         }
     }
@@ -261,10 +280,18 @@ class LibraryController(
     }
 
     private fun reloadSongsAfterFolderChange() {
-        val repository = MusicRepository(applicationContext)
+        coroutineScope.launch {
+            val libraryData = withContext(Dispatchers.IO) {
+                val repository = MusicRepository(applicationContext)
+                repository.getLibraryData(selectedLibraryFolders)
+            }
 
-        songs = repository.getSongs(selectedLibraryFolders)
-        playbackController.handleLibrarySongsChanged(songs)
+            libraryFolders.clear()
+            libraryFolders.addAll(libraryData.libraryFolders)
+
+            songs = libraryData.songs
+            playbackController.handleLibrarySongsChanged(songs)
+        }
     }
 
     private fun loadFavoriteSongKeys() {

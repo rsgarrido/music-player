@@ -8,23 +8,39 @@ import org.jaudiotagger.audio.AudioFileIO
 import java.io.File
 import java.security.MessageDigest
 
+data class MusicLibraryData(
+    val songs: List<Song>,
+    val libraryFolders: List<LibraryFolder>
+)
+
 class MusicRepository(private val context: Context) {
 
-    fun getSongs(selectedFolders: Set<String> = emptySet()): List<Song> {
+    fun getLibraryData(selectedFolders: Set<String> = emptySet()): MusicLibraryData {
         val allSongs = getAllSongs()
 
-        if (selectedFolders.isEmpty()) {
-            return allSongs
+        val filteredSongs = if (selectedFolders.isEmpty()) {
+            allSongs
+        } else {
+            allSongs.filter { song ->
+                selectedFolders.contains(song.folderPath)
+            }
         }
 
-        return allSongs.filter { song ->
-            selectedFolders.contains(song.folderPath)
-        }
+        return MusicLibraryData(
+            songs = filteredSongs,
+            libraryFolders = buildLibraryFolders(allSongs)
+        )
+    }
+
+    fun getSongs(selectedFolders: Set<String> = emptySet()): List<Song> {
+        return getLibraryData(selectedFolders).songs
     }
 
     fun getLibraryFolders(): List<LibraryFolder> {
-        val songs = getAllSongs()
+        return getLibraryData().libraryFolders
+    }
 
+    private fun buildLibraryFolders(songs: List<Song>): List<LibraryFolder> {
         return songs
             .groupBy { song -> song.folderPath }
             .map { entry ->
@@ -195,6 +211,13 @@ class MusicRepository(private val context: Context) {
             cacheDirectory.mkdirs()
         }
 
+        findCachedEmbeddedArtworkUri(
+            audioFile = audioFile,
+            cacheDirectory = cacheDirectory
+        )?.let { cachedArtworkUri ->
+            return cachedArtworkUri
+        }
+
         return try {
             val tag = AudioFileIO.read(audioFile).tag ?: return null
             val artwork = tag.firstArtwork ?: return null
@@ -222,17 +245,36 @@ class MusicRepository(private val context: Context) {
         }
     }
 
-    private fun buildEmbeddedArtworkCacheFileName(
+    private fun findCachedEmbeddedArtworkUri(
         audioFile: File,
-        extension: String
-    ): String {
+        cacheDirectory: File
+    ): Uri? {
+        val cacheKey = buildEmbeddedArtworkCacheKey(audioFile)
+
+        val cachedArtworkFile = cacheDirectory.listFiles()?.firstOrNull { file ->
+            file.isFile && file.nameWithoutExtension == cacheKey
+        }
+
+        return cachedArtworkFile?.let { file ->
+            Uri.fromFile(file)
+        }
+    }
+
+    private fun buildEmbeddedArtworkCacheKey(audioFile: File): String {
         val rawKey = listOf(
             audioFile.absolutePath,
             audioFile.lastModified().toString(),
             audioFile.length().toString()
         ).joinToString("|")
 
-        return "${rawKey.sha256()}.$extension"
+        return rawKey.sha256()
+    }
+
+    private fun buildEmbeddedArtworkCacheFileName(
+        audioFile: File,
+        extension: String
+    ): String {
+        return "${buildEmbeddedArtworkCacheKey(audioFile)}.$extension"
     }
 
     private fun getArtworkFileExtension(mimeType: String?): String {

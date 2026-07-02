@@ -1,6 +1,7 @@
 package com.example.cdplaya.data
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import org.jaudiotagger.audio.AudioFileIO
@@ -8,10 +9,12 @@ import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.Tag
 import org.jaudiotagger.tag.flac.FlacTag
 import org.jaudiotagger.tag.images.ArtworkFactory
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.security.MessageDigest
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlin.math.max
 
 class TagEditorRepository {
 
@@ -136,32 +139,32 @@ class TagEditorRepository {
             )
 
             if (artworkUri != null) {
-                if (tag is FlacTag) {
-                    val artworkImageData = readArtworkImageData(
-                        context = context,
-                        artworkUri = artworkUri
-                    ) ?: return TagEditorResult(
-                        wasSuccessful = false,
-                        message = "The selected artwork could not be read."
-                    )
+                val optimizedArtwork = createOptimizedArtworkImageData(
+                    context = context,
+                    artworkUri = artworkUri
+                ) ?: return TagEditorResult(
+                    wasSuccessful = false,
+                    message = "The selected artwork could not be read."
+                )
 
-                    selectedFlacArtworkHash = artworkImageData.bytes.sha256()
+                if (tag is FlacTag) {
+                    selectedFlacArtworkHash = optimizedArtwork.bytes.sha256()
                     isFlacArtworkSave = true
 
                     setFlacArtwork(
                         flacTag = tag,
-                        artworkImageData = artworkImageData
+                        artworkImageData = optimizedArtwork
                     )
                 } else {
                     temporaryArtworkFile = createTemporaryArtworkFile(
                         context = context,
-                        artworkUri = artworkUri
+                        artworkImageData = optimizedArtwork
                     )
 
                     if (temporaryArtworkFile == null || !temporaryArtworkFile.exists()) {
                         return TagEditorResult(
                             wasSuccessful = false,
-                            message = "The selected artwork could not be read."
+                            message = "The selected artwork could not be prepared."
                         )
                     }
 
@@ -291,72 +294,143 @@ class TagEditorRepository {
         }
     }
 
-    private fun createTemporaryArtworkFile(
-        context: Context,
-        artworkUri: Uri
-    ): File? {
-        val mimeType = context.contentResolver.getType(artworkUri)
-        val extension = getImageFileExtension(mimeType)
-
-        val temporaryArtworkFile = File.createTempFile(
-            "selected_artwork_",
-            ".$extension",
-            context.cacheDir
-        )
-
-        val inputStream = context.contentResolver.openInputStream(artworkUri)
-            ?: return null
-
-        inputStream.use { input ->
-            temporaryArtworkFile.outputStream().use { output ->
-                input.copyTo(output)
-            }
-        }
-
-        return temporaryArtworkFile
-    }
-
-    private fun readArtworkImageData(
+    private fun createOptimizedArtworkImageData(
         context: Context,
         artworkUri: Uri
     ): ArtworkImageData? {
-        val mimeType = context.contentResolver.getType(artworkUri)
-            ?: DEFAULT_IMAGE_MIME_TYPE
-
-        val artworkBytes = context.contentResolver.openInputStream(artworkUri)
+        val originalBytes = context.contentResolver.openInputStream(artworkUri)
             ?.use { inputStream ->
                 inputStream.readBytes()
             }
             ?: return null
 
-        if (artworkBytes.isEmpty()) {
+        if (originalBytes.isEmpty()) {
             return null
         }
 
-        val bitmapOptions = BitmapFactory.Options().apply {
+        val boundsOptions = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
         }
 
         BitmapFactory.decodeByteArray(
-            artworkBytes,
+            originalBytes,
             0,
-            artworkBytes.size,
-            bitmapOptions
+            originalBytes.size,
+            boundsOptions
         )
 
-        val width = bitmapOptions.outWidth
-        val height = bitmapOptions.outHeight
+        val originalWidth = boundsOptions.outWidth
+        val originalHeight = boundsOptions.outHeight
 
-        if (width <= 0 || height <= 0) {
+        if (originalWidth <= 0 || originalHeight <= 0) {
+            return null
+        }
+
+        val decodeOptions = BitmapFactory.Options().apply {
+            inSampleSize = calculateInSampleSize(
+                width = originalWidth,
+                height = originalHeight,
+                maxSize = MAX_ARTWORK_SIZE_PX
+            )
+        }
+
+        val decodedBitmap = BitmapFactory.decodeByteArray(
+            originalBytes,
+            0,
+            originalBytes.size,
+            decodeOptions
+        ) ?: return null
+
+        val scaledBitmap = scaleBitmapIfNeeded(
+            bitmap = decodedBitmap,
+            maxSize = MAX_ARTWORK_SIZE_PX
+        )
+
+        if (scaledBitmap !== decodedBitmap) {
+            decodedBitmap.recycle()
+        }
+
+        val outputStream = ByteArrayOutputStream()
+
+        scaledBitmap.compress(
+            Bitmap.CompressFormat.JPEG,
+            ARTWORK_JPEG_QUALITY,
+            outputStream
+        )
+
+        val optimizedBytes = outputStream.toByteArray()
+
+        val width = scaledBitmap.width
+        val height = scaledBitmap.height
+
+        scaledBitmap.recycle()
+
+        if (optimizedBytes.isEmpty()) {
             return null
         }
 
         return ArtworkImageData(
-            bytes = artworkBytes,
-            mimeType = mimeType,
+            bytes = optimizedBytes,
+            mimeType = OPTIMIZED_ARTWORK_MIME_TYPE,
             width = width,
             height = height
         )
+    }
+
+    private fun calculateInSampleSize(
+        width: Int,
+        height: Int,
+        maxSize: Int
+    ): Int {
+        var sampleSize = 1
+
+        var sampledWidth = width
+        var sampledHeight = height
+
+        while (sampledWidth / 2 >= maxSize || sampledHeight / 2 >= maxSize) {
+            sampleSize *= 2
+            sampledWidth /= 2
+            sampledHeight /= 2
+        }
+
+        return sampleSize
+    }
+
+    private fun scaleBitmapIfNeeded(
+        bitmap: Bitmap,
+        maxSize: Int
+    ): Bitmap {
+        val largestSide = max(bitmap.width, bitmap.height)
+
+        if (largestSide <= maxSize) {
+            return bitmap
+        }
+
+        val scale = maxSize.toFloat() / largestSide.toFloat()
+        val newWidth = (bitmap.width * scale).toInt().coerceAtLeast(1)
+        val newHeight = (bitmap.height * scale).toInt().coerceAtLeast(1)
+
+        return Bitmap.createScaledBitmap(
+            bitmap,
+            newWidth,
+            newHeight,
+            true
+        )
+    }
+
+    private fun createTemporaryArtworkFile(
+        context: Context,
+        artworkImageData: ArtworkImageData
+    ): File {
+        val temporaryArtworkFile = File.createTempFile(
+            "selected_artwork_",
+            ".jpg",
+            context.cacheDir
+        )
+
+        temporaryArtworkFile.writeBytes(artworkImageData.bytes)
+
+        return temporaryArtworkFile
     }
 
     private fun flacArtworkMatches(
@@ -381,14 +455,6 @@ class TagEditorRepository {
         }
     }
 
-    private fun getImageFileExtension(mimeType: String?): String {
-        return when (mimeType?.lowercase()) {
-            "image/png" -> "png"
-            "image/webp" -> "webp"
-            else -> "jpg"
-        }
-    }
-
     private fun ByteArray.sha256(): String {
         val bytes = MessageDigest
             .getInstance("SHA-256")
@@ -410,6 +476,9 @@ class TagEditorRepository {
         private const val FRONT_COVER_PICTURE_TYPE = 3
         private const val DEFAULT_COLOUR_DEPTH = 24
         private const val DEFAULT_INDEXED_COLOUR_COUNT = 0
-        private const val DEFAULT_IMAGE_MIME_TYPE = "image/jpeg"
+
+        private const val MAX_ARTWORK_SIZE_PX = 1000
+        private const val ARTWORK_JPEG_QUALITY = 90
+        private const val OPTIMIZED_ARTWORK_MIME_TYPE = "image/jpeg"
     }
 }
