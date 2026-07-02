@@ -1,5 +1,6 @@
 package com.example.cdplaya.ui
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,10 +45,12 @@ import com.example.cdplaya.data.Song
 fun TagEditorScreen(
     song: Song,
     initialTags: EditableSongTags,
+    selectedArtworkUri: Uri?,
     isSaving: Boolean,
     unsupportedMessage: String?,
     isCurrentSong: Boolean,
     onBackClick: () -> Unit,
+    onChangeArtworkClick: () -> Unit,
     onSaveClick: (EditableSongTags) -> Unit,
     onUnsavedChangesChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier
@@ -80,11 +83,13 @@ fun TagEditorScreen(
         year = year
     )
 
-    val hasUnsavedChanges = currentTags != initialTags
+    val hasUnsavedTagChanges = currentTags != initialTags
 
-    LaunchedEffect(hasUnsavedChanges) {
-        onUnsavedChangesChanged(hasUnsavedChanges)
+    LaunchedEffect(hasUnsavedTagChanges) {
+        onUnsavedChangesChanged(hasUnsavedTagChanges)
     }
+
+    val artworkPreviewUri = selectedArtworkUri ?: song.albumArtUri
 
     val titleError = title.trim().isBlank()
     val artistError = artist.trim().isBlank()
@@ -92,7 +97,7 @@ fun TagEditorScreen(
 
     val hasValidationError = titleError || artistError || albumError
     val canEditFields = !isSaving && unsupportedMessage == null
-    val canSave = canEditFields && !hasValidationError && hasUnsavedChanges
+    val canSave = canEditFields && !hasValidationError && hasUnsavedTagChanges
 
     Column(
         modifier = modifier
@@ -125,10 +130,10 @@ fun TagEditorScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = song.albumArtUri,
+                model = artworkPreviewUri,
                 contentDescription = "Artwork for ${song.title}",
                 modifier = Modifier
-                    .size(88.dp)
+                    .size(96.dp)
                     .clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop,
                 error = painterResource(android.R.drawable.ic_media_play),
@@ -154,7 +159,32 @@ fun TagEditorScreen(
                     maxLines = 1,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                OutlinedButton(
+                    onClick = onChangeArtworkClick,
+                    enabled = canEditFields
+                ) {
+                    Text(
+                        text = if (selectedArtworkUri == null) {
+                            "Change Artwork"
+                        } else {
+                            "Choose Different Artwork"
+                        }
+                    )
+                }
             }
+        }
+
+        if (selectedArtworkUri != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "New artwork selected. Saving artwork will be connected in the next step.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         Spacer(modifier = Modifier.height(12.dp))
