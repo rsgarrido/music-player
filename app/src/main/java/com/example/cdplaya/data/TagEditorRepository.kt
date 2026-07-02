@@ -103,4 +103,36 @@ class TagEditorRepository {
             )
         }
     }
+
+    fun getUnsupportedEditingMessage(song: Song): String? {
+        val file = File(song.filePath)
+
+        if (!file.exists()) {
+            return "The audio file could not be found."
+        }
+
+        val extension = file.extension.lowercase()
+
+        if (extension.isBlank()) {
+            return "This file does not have a recognizable audio extension."
+        }
+
+        val supportedExtensions = setOf(
+            "mp3",
+            "flac",
+            "m4a",
+            "mp4",
+            "ogg",
+            "opus",
+            "wav",
+            "aif",
+            "aiff"
+        )
+
+        if (extension !in supportedExtensions) {
+            return "Tag editing is not enabled for .$extension files yet."
+        }
+
+        return null
+    }
 }

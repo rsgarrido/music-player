@@ -90,7 +90,11 @@ fun MusicScreen(
     var songPendingPlaylistAdd by remember { mutableStateOf<Song?>(null) }
     var songsPendingPlaylistAdd by remember { mutableStateOf<List<Song>>(emptyList()) }
     var songPendingTagEdit by remember { mutableStateOf<Song?>(null) }
+
     val tagEditorRepository = remember { TagEditorRepository() }
+    var isTagSaveInProgress by remember { mutableStateOf(false) }
+    var hasUnsavedTagChanges by remember { mutableStateOf(false) }
+    var isDiscardTagChangesDialogVisible by remember { mutableStateOf(false) }
 
     val tagEditorActions = rememberTagEditorActions(
         snackbarHostState = snackbarHostState,
@@ -98,8 +102,13 @@ fun MusicScreen(
         onTagsSaved = { originalSong, editedTags ->
             onTagsEdited(originalSong, editedTags)
         },
+        onSavingChanged = { isSaving ->
+            isTagSaveInProgress = isSaving
+        },
         onCloseEditor = {
             songPendingTagEdit = null
+            isTagSaveInProgress = false
+            hasUnsavedTagChanges = false
         }
     )
 
@@ -124,6 +133,19 @@ fun MusicScreen(
 
     val recentlyAddedSongIds = queueSnackbarActions.recentlyAddedSongIds
 
+    fun requestCloseTagEditor() {
+        if (isTagSaveInProgress) {
+            return
+        }
+
+        if (hasUnsavedTagChanges) {
+            isDiscardTagChangesDialogVisible = true
+        } else {
+            songPendingTagEdit = null
+            hasUnsavedTagChanges = false
+        }
+    }
+
     BackHandler(
         enabled = songPendingTagEdit != null ||
                 isExpandedUpNextSheetVisible ||
@@ -137,7 +159,7 @@ fun MusicScreen(
     ) {
         when {
             songPendingTagEdit != null -> {
-                songPendingTagEdit = null
+                requestCloseTagEditor()
             }
 
             isExpandedUpNextSheetVisible -> {
@@ -188,18 +210,30 @@ fun MusicScreen(
                 tagEditorRepository.readTags(selectedSongForTagEdit)
             }
 
+            val unsupportedTagEditingMessage = remember(
+                selectedSongForTagEdit.id,
+                selectedSongForTagEdit.filePath
+            ) {
+                tagEditorRepository.getUnsupportedEditingMessage(selectedSongForTagEdit)
+            }
+
             TagEditorScreen(
                 song = selectedSongForTagEdit,
                 initialTags = initialEditableTags,
-                isSaveEnabled = true,
+                isSaving = isTagSaveInProgress,
+                unsupportedMessage = unsupportedTagEditingMessage,
+                isCurrentSong = currentSong?.id == selectedSongForTagEdit.id,
                 onBackClick = {
-                    songPendingTagEdit = null
+                    requestCloseTagEditor()
                 },
                 onSaveClick = { editedTags ->
                     tagEditorActions.saveTags(
                         selectedSongForTagEdit,
                         editedTags
                     )
+                },
+                onUnsavedChangesChanged = { hasChanges ->
+                    hasUnsavedTagChanges = hasChanges
                 },
                 modifier = Modifier.fillMaxSize()
             )
@@ -332,9 +366,25 @@ fun MusicScreen(
                     playlistSnackbarActions.removePlaylistSong(playlistSong)
                 },
                 onEditSongTagsClick = { song ->
+                    isTagSaveInProgress = false
+                    hasUnsavedTagChanges = false
+                    isDiscardTagChangesDialogVisible = false
                     songPendingTagEdit = song
                 },
                 modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        if (isDiscardTagChangesDialogVisible) {
+            DiscardTagChangesDialog(
+                onDismiss = {
+                    isDiscardTagChangesDialogVisible = false
+                },
+                onConfirmDiscardClick = {
+                    isDiscardTagChangesDialogVisible = false
+                    hasUnsavedTagChanges = false
+                    songPendingTagEdit = null
+                }
             )
         }
 
