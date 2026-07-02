@@ -17,7 +17,7 @@ fun DiscardTagChangesDialog(
         },
         text = {
             Text(
-                text = "You have unsaved tag changes. If you leave now, those edits will be lost."
+                text = "You have unsaved tag or artwork changes. If you leave now, those edits will be lost."
             )
         },
         confirmButton = {

@@ -1,6 +1,8 @@
 package com.example.cdplaya.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.SnackbarHostState
@@ -11,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import android.net.Uri
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.Song
@@ -95,6 +98,7 @@ fun MusicScreen(
     var isTagSaveInProgress by remember { mutableStateOf(false) }
     var hasUnsavedTagChanges by remember { mutableStateOf(false) }
     var isDiscardTagChangesDialogVisible by remember { mutableStateOf(false) }
+    var selectedArtworkUriForTagEdit by remember { mutableStateOf<Uri?>(null) }
 
     val tagEditorActions = rememberTagEditorActions(
         snackbarHostState = snackbarHostState,
@@ -109,6 +113,7 @@ fun MusicScreen(
             songPendingTagEdit = null
             isTagSaveInProgress = false
             hasUnsavedTagChanges = false
+            selectedArtworkUriForTagEdit = null
         }
     )
 
@@ -131,6 +136,14 @@ fun MusicScreen(
         onRemovePlaylistSongClick = onRemovePlaylistSongClick
     )
 
+    val artworkPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { selectedUri ->
+        if (selectedUri != null) {
+            selectedArtworkUriForTagEdit = selectedUri
+        }
+    }
+
     val recentlyAddedSongIds = queueSnackbarActions.recentlyAddedSongIds
 
     fun requestCloseTagEditor() {
@@ -138,11 +151,12 @@ fun MusicScreen(
             return
         }
 
-        if (hasUnsavedTagChanges) {
+        if (hasUnsavedTagChanges || selectedArtworkUriForTagEdit != null) {
             isDiscardTagChangesDialogVisible = true
         } else {
             songPendingTagEdit = null
             hasUnsavedTagChanges = false
+            selectedArtworkUriForTagEdit = null
         }
     }
 
@@ -223,13 +237,18 @@ fun MusicScreen(
                 isSaving = isTagSaveInProgress,
                 unsupportedMessage = unsupportedTagEditingMessage,
                 isCurrentSong = currentSong?.id == selectedSongForTagEdit.id,
+                selectedArtworkUri = selectedArtworkUriForTagEdit,
+                onChangeArtworkClick = {
+                    artworkPickerLauncher.launch("image/*")
+                },
                 onBackClick = {
                     requestCloseTagEditor()
                 },
                 onSaveClick = { editedTags ->
                     tagEditorActions.saveTags(
                         selectedSongForTagEdit,
-                        editedTags
+                        editedTags,
+                        selectedArtworkUriForTagEdit
                     )
                 },
                 onUnsavedChangesChanged = { hasChanges ->
@@ -369,6 +388,7 @@ fun MusicScreen(
                     isTagSaveInProgress = false
                     hasUnsavedTagChanges = false
                     isDiscardTagChangesDialogVisible = false
+                    selectedArtworkUriForTagEdit = null
                     songPendingTagEdit = song
                 },
                 modifier = Modifier.fillMaxSize()
@@ -383,6 +403,7 @@ fun MusicScreen(
                 onConfirmDiscardClick = {
                     isDiscardTagChangesDialogVisible = false
                     hasUnsavedTagChanges = false
+                    selectedArtworkUriForTagEdit = null
                     songPendingTagEdit = null
                 }
             )

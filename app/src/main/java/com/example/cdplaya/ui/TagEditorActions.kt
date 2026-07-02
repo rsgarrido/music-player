@@ -2,6 +2,7 @@ package com.example.cdplaya.ui
 
 import android.app.Activity
 import android.media.MediaScannerConnection
+import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -25,12 +26,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 data class TagEditorActions(
-    val saveTags: (Song, EditableSongTags) -> Unit
+    val saveTags: (Song, EditableSongTags, Uri?) -> Unit
 )
 
 private data class PendingTagSave(
     val song: Song,
-    val editedTags: EditableSongTags
+    val editedTags: EditableSongTags,
+    val artworkUri: Uri?
 )
 
 @Composable
@@ -86,15 +88,18 @@ fun rememberTagEditorActions(
 
     fun writeTagsAfterPermission(
         song: Song,
-        editedTags: EditableSongTags
+        editedTags: EditableSongTags,
+        artworkUri: Uri?
     ) {
         coroutineScope.launch {
             onSavingChanged(true)
 
             val result = withContext(Dispatchers.IO) {
-                tagEditorRepository.writeTags(
+                tagEditorRepository.writeTagsAndArtwork(
+                    context = context.applicationContext,
                     song = song,
-                    editedTags = editedTags
+                    editedTags = editedTags,
+                    artworkUri = artworkUri
                 )
             }
 
@@ -125,7 +130,8 @@ fun rememberTagEditorActions(
         if (result.resultCode == Activity.RESULT_OK) {
             writeTagsAfterPermission(
                 song = pendingSave.song,
-                editedTags = pendingSave.editedTags
+                editedTags = pendingSave.editedTags,
+                artworkUri = pendingSave.artworkUri
             )
         } else {
             onSavingChanged(false)
@@ -134,7 +140,7 @@ fun rememberTagEditorActions(
     }
 
     return TagEditorActions(
-        saveTags = { song, editedTags ->
+        saveTags = { song, editedTags, artworkUri ->
             val unsupportedMessage =
                 tagEditorRepository.getUnsupportedEditingMessage(song)
 
@@ -149,7 +155,8 @@ fun rememberTagEditorActions(
 
                     pendingTagSave = PendingTagSave(
                         song = song,
-                        editedTags = editedTags
+                        editedTags = editedTags,
+                        artworkUri = artworkUri
                     )
 
                     val pendingIntent = MediaStore.createWriteRequest(
@@ -173,7 +180,8 @@ fun rememberTagEditorActions(
             } else {
                 writeTagsAfterPermission(
                     song = song,
-                    editedTags = editedTags
+                    editedTags = editedTags,
+                    artworkUri = artworkUri
                 )
             }
         }
