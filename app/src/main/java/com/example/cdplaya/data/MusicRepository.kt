@@ -4,7 +4,9 @@ import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
+import org.jaudiotagger.audio.AudioFileIO
 import java.io.File
+import java.security.MessageDigest
 
 class MusicRepository(private val context: Context) {
 
@@ -99,7 +101,8 @@ class MusicRepository(private val context: Context) {
                     id
                 )
 
-                val albumArtUri = albumArtByFolder[folderPath]
+                val albumArtUri =
+                    albumArtByFolder[folderPath] ?: getEmbeddedAlbumArtUri(filePath)
 
                 val song = Song(
                     id = id,
@@ -179,6 +182,67 @@ class MusicRepository(private val context: Context) {
         return albumArtByFolder
     }
 
+    private fun getEmbeddedAlbumArtUri(filePath: String): Uri? {
+        val audioFile = File(filePath)
+
+        if (!audioFile.exists()) {
+            return null
+        }
+
+        val cacheDirectory = File(context.cacheDir, EMBEDDED_ARTWORK_CACHE_DIRECTORY)
+
+        if (!cacheDirectory.exists()) {
+            cacheDirectory.mkdirs()
+        }
+
+        return try {
+            val tag = AudioFileIO.read(audioFile).tag ?: return null
+            val artwork = tag.firstArtwork ?: return null
+            val artworkBytes = artwork.binaryData ?: return null
+
+            if (artworkBytes.isEmpty()) {
+                return null
+            }
+
+            val artworkFileExtension = getArtworkFileExtension(artwork.mimeType)
+            val cacheFileName = buildEmbeddedArtworkCacheFileName(
+                audioFile = audioFile,
+                extension = artworkFileExtension
+            )
+
+            val cachedArtworkFile = File(cacheDirectory, cacheFileName)
+
+            if (!cachedArtworkFile.exists()) {
+                cachedArtworkFile.writeBytes(artworkBytes)
+            }
+
+            Uri.fromFile(cachedArtworkFile)
+        } catch (exception: Exception) {
+            null
+        }
+    }
+
+    private fun buildEmbeddedArtworkCacheFileName(
+        audioFile: File,
+        extension: String
+    ): String {
+        val rawKey = listOf(
+            audioFile.absolutePath,
+            audioFile.lastModified().toString(),
+            audioFile.length().toString()
+        ).joinToString("|")
+
+        return "${rawKey.sha256()}.$extension"
+    }
+
+    private fun getArtworkFileExtension(mimeType: String?): String {
+        return when (mimeType?.lowercase()) {
+            "image/png" -> "png"
+            "image/webp" -> "webp"
+            else -> "jpg"
+        }
+    }
+
     private fun isLikelyAlbumCover(fileName: String): Boolean {
         val normalizedName = fileName.lowercase()
 
@@ -190,5 +254,19 @@ class MusicRepository(private val context: Context) {
                 normalizedName == "front.png" ||
                 normalizedName == "album.jpg" ||
                 normalizedName == "album.png"
+    }
+
+    private fun String.sha256(): String {
+        val bytes = MessageDigest
+            .getInstance("SHA-256")
+            .digest(toByteArray())
+
+        return bytes.joinToString("") { byte ->
+            "%02x".format(byte)
+        }
+    }
+
+    companion object {
+        private const val EMBEDDED_ARTWORK_CACHE_DIRECTORY = "embedded_album_art"
     }
 }
