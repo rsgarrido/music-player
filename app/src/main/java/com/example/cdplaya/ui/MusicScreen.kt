@@ -74,7 +74,11 @@ fun MusicScreen(
     onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
     onAddSongsToPlaylistClick: (Playlist, List<Song>) -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
-    onTagsEdited: (Song, EditableSongTags) -> Unit
+    onTagsEdited: (Song, EditableSongTags) -> Unit,
+    isSleepTimerActive: Boolean,
+    sleepTimerDisplayText: String,
+    onStartSleepTimerClick: (Int) -> Unit,
+    onCancelSleepTimerClick: () -> Unit
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
@@ -93,6 +97,7 @@ fun MusicScreen(
     var songPendingPlaylistAdd by remember { mutableStateOf<Song?>(null) }
     var songsPendingPlaylistAdd by remember { mutableStateOf<List<Song>>(emptyList()) }
     var songPendingTagEdit by remember { mutableStateOf<Song?>(null) }
+    var isSleepTimerDialogVisible by remember { mutableStateOf(false) }
 
     val tagEditorRepository = remember { TagEditorRepository() }
     var isTagSaveInProgress by remember { mutableStateOf(false) }
@@ -391,6 +396,11 @@ fun MusicScreen(
                     selectedArtworkUriForTagEdit = null
                     songPendingTagEdit = song
                 },
+                isSleepTimerActive = isSleepTimerActive,
+                sleepTimerDisplayText = sleepTimerDisplayText,
+                onSleepTimerClick = {
+                    isSleepTimerDialogVisible = true
+                },
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -461,6 +471,14 @@ fun MusicScreen(
                 },
                 onAddSongsToPlaylistClick = { playlist, songs ->
                     playlistSnackbarActions.addSongsToPlaylist(playlist, songs)
+                },
+                isSleepTimerDialogVisible = isSleepTimerDialogVisible,
+                isSleepTimerActive = isSleepTimerActive,
+                sleepTimerDisplayText = sleepTimerDisplayText,
+                onStartSleepTimerClick = onStartSleepTimerClick,
+                onCancelSleepTimerClick = onCancelSleepTimerClick,
+                onDismissSleepTimerDialog = {
+                    isSleepTimerDialogVisible = false
                 }
             )
         }

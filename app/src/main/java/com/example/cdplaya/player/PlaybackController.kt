@@ -204,6 +204,12 @@ class PlaybackController(
         }
     }
 
+    fun pausePlayback() {
+        musicPlayer.pause()
+        isPlaying = false
+        savePlayerState()
+    }
+
     fun skipToPrevious() {
         musicPlayer.skipToPrevious()
     }

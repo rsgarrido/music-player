@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.example.cdplaya.controller.LibraryController
+import com.example.cdplaya.controller.SleepTimerController
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
 import com.example.cdplaya.player.PlaybackController
@@ -33,6 +34,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var appDatabase: AppDatabase
     private lateinit var playbackController: PlaybackController
     private lateinit var libraryController: LibraryController
+    private lateinit var sleepTimerController: SleepTimerController
 
     private val mediaPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -56,6 +58,13 @@ class MainActivity : ComponentActivity() {
 
         playbackController = PlaybackController(this)
         playbackController.connect()
+
+        sleepTimerController = SleepTimerController(
+            coroutineScope = lifecycleScope,
+            onTimerFinished = {
+                playbackController.pausePlayback()
+            }
+        )
 
         libraryController = LibraryController(
             context = this,
@@ -209,6 +218,14 @@ class MainActivity : ComponentActivity() {
                                 originalSong = originalSong,
                                 editedTags = editedTags
                             )
+                        },
+                        isSleepTimerActive = sleepTimerController.isTimerActive,
+                        sleepTimerDisplayText = sleepTimerController.getDisplayText(),
+                        onStartSleepTimerClick = { minutes ->
+                            sleepTimerController.startTimer(minutes)
+                        },
+                        onCancelSleepTimerClick = {
+                            sleepTimerController.cancelTimer()
                         }
                     )
                 }
@@ -238,5 +255,6 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         playbackController.release()
         super.onDestroy()
+        sleepTimerController.release()
     }
 }
