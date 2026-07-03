@@ -62,8 +62,17 @@ fun MiniPlayerSection(
     onRepeatClick: () -> Unit,
     onExpandClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit
+    onToggleFavoriteClick: (Song) -> Unit,
+    isSleepTimerActive: Boolean,
+    sleepTimerDisplayText: String,
+    onSleepTimerClick: () -> Unit
 ) {
+    SleepTimerStatusBanner(
+        isSleepTimerActive = isSleepTimerActive,
+        sleepTimerDisplayText = sleepTimerDisplayText,
+        onSleepTimerClick = onSleepTimerClick
+    )
+
     PlayerCard(
         currentSong = currentSong,
         isPlaying = isPlaying,

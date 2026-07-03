@@ -28,6 +28,9 @@ fun SettingsScreen(
     selectedFolderCount: Int,
     onBackClick: () -> Unit,
     onLibraryFoldersClick: () -> Unit,
+    isSleepTimerActive: Boolean,
+    sleepTimerDisplayText: String,
+    onSleepTimerClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val folderSelectionText = if (selectedFolderCount == 0) {
@@ -99,6 +102,24 @@ fun SettingsScreen(
             },
             supportingContent = {
                 Text(text = "Use the player card, notification, or Up Next screen.")
+            }
+        )
+
+        ListItem(
+            headlineContent = {
+                Text(text = "Sleep Timer")
+            },
+            supportingContent = {
+                Text(
+                    text = if (isSleepTimerActive) {
+                        sleepTimerDisplayText
+                    } else {
+                        "Pause playback after a set time"
+                    }
+                )
+            },
+            modifier = Modifier.clickable {
+                onSleepTimerClick()
             }
         )
 

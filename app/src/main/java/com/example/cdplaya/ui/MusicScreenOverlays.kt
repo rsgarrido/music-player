@@ -49,6 +49,12 @@ fun MusicScreenOverlays(
     onAddSongsToPlaylistClick: (Playlist, List<Song>) -> Unit,
     songsPendingPlaylistAdd: List<Song>,
     onDismissBulkAddToPlaylistDialog: () -> Unit,
+    isSleepTimerDialogVisible: Boolean,
+    isSleepTimerActive: Boolean,
+    sleepTimerDisplayText: String,
+    onStartSleepTimerClick: (Int) -> Unit,
+    onCancelSleepTimerClick: () -> Unit,
+    onDismissSleepTimerDialog: () -> Unit
 ) {
     if (isPlayerExpanded && currentSong != null) {
         PlayerCard(
@@ -104,6 +110,16 @@ fun MusicScreenOverlays(
                 onCreatePlaylistClick(playlistName)
                 onDismissCreatePlaylistDialog()
             }
+        )
+    }
+
+    if (isSleepTimerDialogVisible) {
+        SleepTimerDialog(
+            isTimerActive = isSleepTimerActive,
+            sleepTimerDisplayText = sleepTimerDisplayText,
+            onStartTimerClick = onStartSleepTimerClick,
+            onCancelTimerClick = onCancelSleepTimerClick,
+            onDismiss = onDismissSleepTimerDialog
         )
     }
 

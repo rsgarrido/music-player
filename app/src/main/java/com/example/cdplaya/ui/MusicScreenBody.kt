@@ -88,6 +88,9 @@ fun MusicScreenBody(
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    isSleepTimerActive: Boolean,
+    sleepTimerDisplayText: String,
+    onSleepTimerClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     when {
@@ -110,6 +113,9 @@ fun MusicScreenBody(
                 selectedFolderCount = selectedLibraryFolders.size,
                 onBackClick = onSettingsBackClick,
                 onLibraryFoldersClick = onLibraryFoldersClick,
+                isSleepTimerActive = isSleepTimerActive,
+                sleepTimerDisplayText = sleepTimerDisplayText,
+                onSleepTimerClick = onSleepTimerClick,
                 modifier = modifier.fillMaxSize()
             )
         }
@@ -147,7 +153,10 @@ fun MusicScreenBody(
                             onRepeatClick = onRepeatClick,
                             onExpandClick = onExpandPlayerClick,
                             onOpenUpNextClick = onMiniPlayerUpNextClick,
-                            onToggleFavoriteClick = onToggleFavoriteClick
+                            onToggleFavoriteClick = onToggleFavoriteClick,
+                            isSleepTimerActive = isSleepTimerActive,
+                            sleepTimerDisplayText = sleepTimerDisplayText,
+                            onSleepTimerClick = onSleepTimerClick
                         )
                     }
 
