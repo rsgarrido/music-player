@@ -153,7 +153,10 @@ fun MusicScreenBody(
                             onRepeatClick = onRepeatClick,
                             onExpandClick = onExpandPlayerClick,
                             onOpenUpNextClick = onMiniPlayerUpNextClick,
-                            onToggleFavoriteClick = onToggleFavoriteClick
+                            onToggleFavoriteClick = onToggleFavoriteClick,
+                            isSleepTimerActive = isSleepTimerActive,
+                            sleepTimerDisplayText = sleepTimerDisplayText,
+                            onSleepTimerClick = onSleepTimerClick
                         )
                     }
 

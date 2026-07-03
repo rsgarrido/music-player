@@ -70,7 +70,7 @@ class SleepTimerController(
     }
 
     companion object {
-        val TIMER_OPTIONS_MINUTES = listOf(5, 10, 30, 45, 60)
+        val TIMER_OPTIONS_MINUTES = listOf(5, 10, 15, 30, 45, 60)
 
         private const val SECONDS_PER_MINUTE = 60
         private const val ONE_SECOND_MS = 1_000L
