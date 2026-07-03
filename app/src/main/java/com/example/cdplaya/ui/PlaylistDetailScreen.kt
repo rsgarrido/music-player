@@ -37,6 +37,8 @@ fun PlaylistDetailScreen(
     onAddToQueueClick: (Song) -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    onMovePlaylistSongUpClick: (PlaylistSong) -> Unit,
+    onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -119,6 +121,8 @@ fun PlaylistDetailScreen(
                 onAddToQueueClick = onAddToQueueClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+                onMovePlaylistSongUpClick = onMovePlaylistSongUpClick,
+                onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
                 onEditSongTagsClick = onEditSongTagsClick,
                 modifier = Modifier.weight(1f)
             )

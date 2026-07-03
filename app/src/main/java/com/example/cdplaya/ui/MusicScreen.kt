@@ -74,6 +74,8 @@ fun MusicScreen(
     onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
     onAddSongsToPlaylistClick: (Playlist, List<Song>) -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    onMovePlaylistSongUpClick: (PlaylistSong) -> Unit,
+    onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onTagsEdited: (Song, EditableSongTags) -> Unit,
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
@@ -389,6 +391,8 @@ fun MusicScreen(
                 onRemovePlaylistSongClick = { playlistSong ->
                     playlistSnackbarActions.removePlaylistSong(playlistSong)
                 },
+                onMovePlaylistSongUpClick = onMovePlaylistSongUpClick,
+                onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
                 onEditSongTagsClick = { song ->
                     isTagSaveInProgress = false
                     hasUnsavedTagChanges = false
