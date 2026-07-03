@@ -151,6 +151,76 @@ class PlaylistsRepository(
         )
     }
 
+    suspend fun movePlaylistSongUp(
+        playlistId: Long,
+        playlistSongId: Long
+    ) {
+        val playlistSongs = playlistDao.getPlaylistSongs(playlistId)
+        val currentIndex = playlistSongs.indexOfFirst { playlistSong ->
+            playlistSong.playlistSongId == playlistSongId
+        }
+
+        if (currentIndex <= 0) {
+            return
+        }
+
+        val currentPlaylistSong = playlistSongs[currentIndex]
+        val previousPlaylistSong = playlistSongs[currentIndex - 1]
+
+        swapPlaylistSongPositions(
+            playlistId = playlistId,
+            firstPlaylistSong = currentPlaylistSong,
+            secondPlaylistSong = previousPlaylistSong
+        )
+    }
+
+    suspend fun movePlaylistSongDown(
+        playlistId: Long,
+        playlistSongId: Long
+    ) {
+        val playlistSongs = playlistDao.getPlaylistSongs(playlistId)
+        val currentIndex = playlistSongs.indexOfFirst { playlistSong ->
+            playlistSong.playlistSongId == playlistSongId
+        }
+
+        if (currentIndex == -1 || currentIndex >= playlistSongs.lastIndex) {
+            return
+        }
+
+        val currentPlaylistSong = playlistSongs[currentIndex]
+        val nextPlaylistSong = playlistSongs[currentIndex + 1]
+
+        swapPlaylistSongPositions(
+            playlistId = playlistId,
+            firstPlaylistSong = currentPlaylistSong,
+            secondPlaylistSong = nextPlaylistSong
+        )
+    }
+
+    private suspend fun swapPlaylistSongPositions(
+        playlistId: Long,
+        firstPlaylistSong: PlaylistSongEntity,
+        secondPlaylistSong: PlaylistSongEntity
+    ) {
+        val firstPosition = firstPlaylistSong.position
+        val secondPosition = secondPlaylistSong.position
+
+        playlistDao.updatePlaylistSongPosition(
+            playlistSongId = firstPlaylistSong.playlistSongId,
+            position = secondPosition
+        )
+
+        playlistDao.updatePlaylistSongPosition(
+            playlistSongId = secondPlaylistSong.playlistSongId,
+            position = firstPosition
+        )
+
+        playlistDao.updatePlaylistTimestamp(
+            playlistId = playlistId,
+            updatedAt = System.currentTimeMillis()
+        )
+    }
+
     suspend fun updateSongReferencesAfterTagEdit(
         originalSong: Song,
         editedTags: EditableSongTags
