@@ -87,6 +87,8 @@ fun MusicScreenBody(
     onBackFromPlaylist: () -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
+    onMovePlaylistSongUpClick: (PlaylistSong) -> Unit,
+    onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
@@ -228,6 +230,8 @@ fun MusicScreenBody(
                         onDeletePlaylistClick = onDeletePlaylistClick,
                         onBackFromPlaylist = onBackFromPlaylist,
                         onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+                        onMovePlaylistSongUpClick = onMovePlaylistSongUpClick,
+                        onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
                         onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                         onEditSongTagsClick = onEditSongTagsClick,
                         modifier = Modifier.weight(1f)

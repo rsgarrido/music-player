@@ -44,6 +44,8 @@ fun PlaylistSongList(
     onAddToQueueClick: (Song) -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
+    onMovePlaylistSongUpClick: (PlaylistSong) -> Unit,
+    onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -52,13 +54,17 @@ fun PlaylistSongList(
     ) {
         itemsIndexed(
             items = playlistSongs,
-            key = { index, song -> "${song.id}-$index" }
+            key = { index, song ->
+                playlistSongRows.getOrNull(index)?.playlistSongId ?: "${song.id}-$index"
+            }
         ) { index, song ->
             val playlistSong = playlistSongRows.getOrNull(index)
             val isCurrentSong = song.id == currentSongId
             val wasRecentlyAdded = song.id in recentlyAddedSongIds
             val isFavorite = song.favoriteKey() in favoriteSongKeys
             var isMenuExpanded by remember { mutableStateOf(false) }
+            val canMoveUp = playlistSong != null && index > 0
+            val canMoveDown = playlistSong != null && index < playlistSongRows.lastIndex
 
             ListItem(
                 leadingContent = {
@@ -146,6 +152,34 @@ fun PlaylistSongList(
                             onClick = {
                                 isMenuExpanded = false
                                 onToggleFavoriteClick(song)
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = "Move up")
+                            },
+                            enabled = canMoveUp,
+                            onClick = {
+                                isMenuExpanded = false
+
+                                playlistSong?.let { row ->
+                                    onMovePlaylistSongUpClick(row)
+                                }
+                            }
+                        )
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(text = "Move down")
+                            },
+                            enabled = canMoveDown,
+                            onClick = {
+                                isMenuExpanded = false
+
+                                playlistSong?.let { row ->
+                                    onMovePlaylistSongDownClick(row)
+                                }
                             }
                         )
 

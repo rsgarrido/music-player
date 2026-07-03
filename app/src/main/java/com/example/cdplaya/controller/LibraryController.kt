@@ -279,6 +279,34 @@ class LibraryController(
         }
     }
 
+    fun movePlaylistSongUp(playlistSong: PlaylistSong) {
+        coroutineScope.launch {
+            playlistsRepository.movePlaylistSongUp(
+                playlistId = playlistSong.playlistId,
+                playlistSongId = playlistSong.playlistSongId
+            )
+
+            loadPlaylists()
+            selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(
+                playlistSong.playlistId
+            )
+        }
+    }
+
+    fun movePlaylistSongDown(playlistSong: PlaylistSong) {
+        coroutineScope.launch {
+            playlistsRepository.movePlaylistSongDown(
+                playlistId = playlistSong.playlistId,
+                playlistSongId = playlistSong.playlistSongId
+            )
+
+            loadPlaylists()
+            selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(
+                playlistSong.playlistId
+            )
+        }
+    }
+
     private fun reloadSongsAfterFolderChange() {
         coroutineScope.launch {
             val libraryData = withContext(Dispatchers.IO) {

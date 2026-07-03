@@ -51,6 +51,8 @@ fun MusicLibraryContent(
     onBackFromPlaylist: () -> Unit,
     onRemovePlaylistSongClick: (PlaylistSong) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
+    onMovePlaylistSongUpClick: (PlaylistSong) -> Unit,
+    onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -172,6 +174,8 @@ fun MusicLibraryContent(
                 onDeletePlaylistClick = onDeletePlaylistClick,
                 onBackFromPlaylist = onBackFromPlaylist,
                 onPlaySongsClick = onPlaySongsClick,
+                onMovePlaylistSongUpClick = onMovePlaylistSongUpClick,
+                onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
                 onSongClick = onSongClick,
                 onPlayNextClick = onPlayNextClick,
                 onAddToQueueClick = onAddToQueueClick,

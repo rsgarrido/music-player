@@ -213,6 +213,12 @@ class MainActivity : ComponentActivity() {
                         onRemovePlaylistSongClick = { playlistSong ->
                             libraryController.removePlaylistSong(playlistSong)
                         },
+                        onMovePlaylistSongUpClick = { playlistSong ->
+                            libraryController.movePlaylistSongUp(playlistSong)
+                        },
+                        onMovePlaylistSongDownClick = { playlistSong ->
+                            libraryController.movePlaylistSongDown(playlistSong)
+                        },
                         onTagsEdited = { originalSong, editedTags ->
                             libraryController.refreshSongsAfterTagEdit(
                                 originalSong = originalSong,
