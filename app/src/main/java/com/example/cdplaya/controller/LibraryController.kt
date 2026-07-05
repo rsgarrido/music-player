@@ -9,6 +9,9 @@ import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.FavoritesRepository
 import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.LibraryPreferences
+import com.example.cdplaya.data.ListeningHistoryEntry
+import com.example.cdplaya.data.ListeningHistoryRepository
+import com.example.cdplaya.data.stableKey
 import com.example.cdplaya.data.MusicRepository
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
@@ -33,6 +36,9 @@ class LibraryController(
     private val libraryPreferences = LibraryPreferences(applicationContext)
     private val favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
     private val playlistsRepository = PlaylistsRepository(appDatabase.playlistDao())
+    private val listeningHistoryRepository = ListeningHistoryRepository(
+        appDatabase.songPlayStatsDao()
+    )
 
     var songs by mutableStateOf<List<Song>>(emptyList())
         private set
@@ -52,6 +58,12 @@ class LibraryController(
         private set
 
     var selectedPlaylistSongs by mutableStateOf<List<PlaylistSong>>(emptyList())
+        private set
+
+    var recentlyPlayedSongs by mutableStateOf<List<Song>>(emptyList())
+        private set
+
+    var mostPlayedSongs by mutableStateOf<List<Song>>(emptyList())
         private set
 
     fun loadSavedUserData() {
@@ -74,6 +86,7 @@ class LibraryController(
             libraryFolders.addAll(libraryData.libraryFolders)
 
             songs = libraryData.songs
+            refreshListeningHistory()
             playbackController.setLibrarySongs(songs)
         }
     }
@@ -120,6 +133,11 @@ class LibraryController(
                 editedTags = editedTags
             )
 
+            listeningHistoryRepository.updateSongReferenceAfterTagEdit(
+                originalSong = originalSong,
+                editedTags = editedTags
+            )
+
             val updatedFavoriteSongKeys = favoritesRepository.getFavoriteSongKeys()
             val updatedPlaylists = playlistsRepository.getPlaylists()
 
@@ -145,6 +163,7 @@ class LibraryController(
             libraryFolders.addAll(libraryData.libraryFolders)
 
             songs = libraryData.songs
+            refreshListeningHistory()
             playbackController.handleLibrarySongsChanged(songs)
         }
     }
@@ -307,6 +326,20 @@ class LibraryController(
         }
     }
 
+    fun refreshListeningHistory() {
+        coroutineScope.launch {
+            val historyData = withContext(Dispatchers.IO) {
+                val recentlyPlayed = listeningHistoryRepository.getRecentlyPlayed()
+                val mostPlayed = listeningHistoryRepository.getMostPlayed()
+
+                recentlyPlayed to mostPlayed
+            }
+
+            recentlyPlayedSongs = mapListeningHistoryEntriesToSongs(historyData.first)
+            mostPlayedSongs = mapListeningHistoryEntriesToSongs(historyData.second)
+        }
+    }
+
     private fun reloadSongsAfterFolderChange() {
         coroutineScope.launch {
             val libraryData = withContext(Dispatchers.IO) {
@@ -318,6 +351,7 @@ class LibraryController(
             libraryFolders.addAll(libraryData.libraryFolders)
 
             songs = libraryData.songs
+            refreshListeningHistory()
             playbackController.handleLibrarySongsChanged(songs)
         }
     }
@@ -331,6 +365,18 @@ class LibraryController(
     private fun loadPlaylists() {
         coroutineScope.launch {
             playlists = playlistsRepository.getPlaylists()
+        }
+    }
+
+    private fun mapListeningHistoryEntriesToSongs(
+        historyEntries: List<ListeningHistoryEntry>
+    ): List<Song> {
+        val songsByStableKey = songs.associateBy { song ->
+            song.stableKey()
+        }
+
+        return historyEntries.mapNotNull { historyEntry ->
+            songsByStableKey[historyEntry.songKey]
         }
     }
 }

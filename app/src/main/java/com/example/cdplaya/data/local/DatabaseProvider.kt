@@ -17,7 +17,7 @@ object DatabaseProvider {
                 AppDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
                 .also { database ->
                     instance = database
@@ -75,6 +75,34 @@ object DatabaseProvider {
 
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_playlist_songs_playlistId` ON `playlist_songs` (`playlistId`)")
             db.execSQL("CREATE INDEX IF NOT EXISTS `index_playlist_songs_songKey` ON `playlist_songs` (`songKey`)")
+        }
+    }
+
+    private val MIGRATION_3_4 = object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+            CREATE TABLE IF NOT EXISTS `song_play_stats` (
+                `songKey` TEXT NOT NULL,
+                `title` TEXT NOT NULL,
+                `artist` TEXT NOT NULL,
+                `album` TEXT NOT NULL,
+                `duration` INTEGER NOT NULL,
+                `playCount` INTEGER NOT NULL,
+                `firstPlayedAt` INTEGER NOT NULL,
+                `lastPlayedAt` INTEGER NOT NULL,
+                PRIMARY KEY(`songKey`)
+            )
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_song_play_stats_lastPlayedAt` ON `song_play_stats` (`lastPlayedAt`)"
+            )
+
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_song_play_stats_playCount` ON `song_play_stats` (`playCount`)"
+            )
         }
     }
 

@@ -1,6 +1,11 @@
 package com.example.cdplaya.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
@@ -54,6 +59,8 @@ fun MusicLibraryContent(
     onMovePlaylistSongUpClick: (PlaylistSong) -> Unit,
     onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    recentlyPlayedSongs: List<Song>,
+    mostPlayedSongs: List<Song>,
     modifier: Modifier = Modifier
 ) {
     when (selectedLibraryTab) {
@@ -185,5 +192,64 @@ fun MusicLibraryContent(
                 modifier = modifier
             )
         }
+
+        LibraryTab.RECENTLY_PLAYED -> {
+            if (recentlyPlayedSongs.isEmpty()) {
+                EmptyHistoryMessage(
+                    message = "No recently played songs yet."
+                )
+            } else {
+                SongList(
+                    songs = recentlyPlayedSongs,
+                    currentSongId = currentSong?.id,
+                    recentlyAddedSongIds = recentlyAddedSongIds,
+                    favoriteSongKeys = favoriteSongKeys,
+                    onSongClick = onSongClick,
+                    onPlayNextClick = onPlayNextClick,
+                    onAddToQueueClick = onAddToQueueClick,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    onAddToPlaylistClick = onAddToPlaylistClick,
+                    onEditSongTagsClick = onEditSongTagsClick
+                )
+            }
+        }
+
+        LibraryTab.MOST_PLAYED -> {
+            if (mostPlayedSongs.isEmpty()) {
+                EmptyHistoryMessage(
+                    message = "No most played songs yet."
+                )
+            } else {
+                SongList(
+                    songs = mostPlayedSongs,
+                    currentSongId = currentSong?.id,
+                    recentlyAddedSongIds = recentlyAddedSongIds,
+                    favoriteSongKeys = favoriteSongKeys,
+                    onSongClick = onSongClick,
+                    onPlayNextClick = onPlayNextClick,
+                    onAddToQueueClick = onAddToQueueClick,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    onAddToPlaylistClick = onAddToPlaylistClick,
+                    onEditSongTagsClick = onEditSongTagsClick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyHistoryMessage(
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

@@ -93,6 +93,8 @@ fun MusicScreenBody(
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
     onSleepTimerClick: () -> Unit,
+    recentlyPlayedSongs: List<Song>,
+    mostPlayedSongs: List<Song>,
     modifier: Modifier = Modifier
 ) {
     when {
@@ -234,6 +236,8 @@ fun MusicScreenBody(
                         onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
                         onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                         onEditSongTagsClick = onEditSongTagsClick,
+                        recentlyPlayedSongs = recentlyPlayedSongs,
+                        mostPlayedSongs = mostPlayedSongs,
                         modifier = Modifier.weight(1f)
                     )
                 }

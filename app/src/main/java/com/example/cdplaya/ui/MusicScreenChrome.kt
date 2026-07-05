@@ -138,8 +138,10 @@ fun LibraryChromeControls(
             LibraryTab.FAVORITES -> selectedFavoriteSortOption
             LibraryTab.ARTISTS -> selectedArtistSortOption
             LibraryTab.ALBUMS -> selectedAlbumSortOption
-            LibraryTab.QUEUE -> selectedSongSortOption
             LibraryTab.PLAYLISTS -> selectedSongSortOption
+            LibraryTab.RECENTLY_PLAYED -> selectedSongSortOption
+            LibraryTab.MOST_PLAYED -> selectedSongSortOption
+            LibraryTab.QUEUE -> selectedSongSortOption
         }
 
         val availableSortOptions = when (selectedLibraryTab) {
@@ -161,8 +163,10 @@ fun LibraryChromeControls(
                 LibrarySortOption.SONG_COUNT
             )
 
+            LibraryTab.PLAYLISTS,
+            LibraryTab.RECENTLY_PLAYED,
+            LibraryTab.MOST_PLAYED,
             LibraryTab.QUEUE -> emptyList()
-            LibraryTab.PLAYLISTS -> emptyList()
         }
 
         LibrarySortDropdown(
@@ -174,8 +178,10 @@ fun LibraryChromeControls(
                     LibraryTab.FAVORITES -> onFavoriteSortOptionSelected(option)
                     LibraryTab.ARTISTS -> onArtistSortOptionSelected(option)
                     LibraryTab.ALBUMS -> onAlbumSortOptionSelected(option)
-                    LibraryTab.QUEUE -> Unit
                     LibraryTab.PLAYLISTS -> Unit
+                    LibraryTab.RECENTLY_PLAYED -> Unit
+                    LibraryTab.MOST_PLAYED -> Unit
+                    LibraryTab.QUEUE -> Unit
                 }
             }
         )

@@ -80,7 +80,9 @@ fun MusicScreen(
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
     onStartSleepTimerClick: (Int) -> Unit,
-    onCancelSleepTimerClick: () -> Unit
+    onCancelSleepTimerClick: () -> Unit,
+    recentlyPlayedSongs: List<Song>,
+    mostPlayedSongs: List<Song>
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
@@ -405,6 +407,8 @@ fun MusicScreen(
                 onSleepTimerClick = {
                     isSleepTimerDialogVisible = true
                 },
+                recentlyPlayedSongs = recentlyPlayedSongs,
+                mostPlayedSongs = mostPlayedSongs,
                 modifier = Modifier.fillMaxSize()
             )
         }
