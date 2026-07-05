@@ -82,6 +82,11 @@ class MainActivity : ComponentActivity() {
             playbackController = playbackController,
             coroutineScope = lifecycleScope
         )
+
+        playbackController.setOnListeningHistoryChanged {
+            libraryController.refreshListeningHistory()
+        }
+
         libraryController.loadSavedUserData()
 
         requestAudioPermission()
@@ -242,7 +247,9 @@ class MainActivity : ComponentActivity() {
                         },
                         onCancelSleepTimerClick = {
                             sleepTimerController.cancelTimer()
-                        }
+                        },
+                        recentlyPlayedSongs = libraryController.recentlyPlayedSongs,
+                        mostPlayedSongs = libraryController.mostPlayedSongs
                     )
                 }
             }

@@ -13,6 +13,7 @@ import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PlaybackController(
     context: Context,
@@ -24,6 +25,7 @@ class PlaybackController(
     private var librarySongs: List<Song> = emptyList()
     private var playbackContextSongs: List<Song> = emptyList()
     private var listeningHistoryRepository: ListeningHistoryRepository? = null
+    private var onListeningHistoryChanged: (() -> Unit)? = null
     private var playCountedForSongId: Long? = null
     private var listenedMsForCurrentSong = 0L
     private var lastObservedPositionForHistory: Int? = null
@@ -417,6 +419,10 @@ class PlaybackController(
         listeningHistoryRepository = repository
     }
 
+    fun setOnListeningHistoryChanged(listener: () -> Unit) {
+        onListeningHistoryChanged = listener
+    }
+
     private fun maybeRecordCurrentSongPlay() {
         val song = currentSong ?: return
 
@@ -452,6 +458,10 @@ class PlaybackController(
 
         coroutineScope.launch(Dispatchers.IO) {
             listeningHistoryRepository?.recordSongPlay(song)
+
+            withContext(Dispatchers.Main) {
+                onListeningHistoryChanged?.invoke()
+            }
         }
     }
 
