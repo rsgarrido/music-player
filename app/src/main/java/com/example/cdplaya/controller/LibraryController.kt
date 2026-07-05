@@ -133,6 +133,11 @@ class LibraryController(
                 editedTags = editedTags
             )
 
+            listeningHistoryRepository.updateSongReferenceAfterTagEdit(
+                originalSong = originalSong,
+                editedTags = editedTags
+            )
+
             val updatedFavoriteSongKeys = favoritesRepository.getFavoriteSongKeys()
             val updatedPlaylists = playlistsRepository.getPlaylists()
 
@@ -158,6 +163,7 @@ class LibraryController(
             libraryFolders.addAll(libraryData.libraryFolders)
 
             songs = libraryData.songs
+            refreshListeningHistory()
             playbackController.handleLibrarySongsChanged(songs)
         }
     }
