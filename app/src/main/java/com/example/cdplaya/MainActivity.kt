@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.example.cdplaya.controller.LibraryController
 import com.example.cdplaya.controller.SleepTimerController
+import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
 import com.example.cdplaya.player.PlaybackController
@@ -56,7 +57,16 @@ class MainActivity : ComponentActivity() {
         appDatabase = DatabaseProvider.getDatabase(this)
         Log.d("CDPlayaDatabase", "Room database initialized")
 
-        playbackController = PlaybackController(this)
+        playbackController = PlaybackController(
+            context = this,
+            coroutineScope = lifecycleScope
+        )
+
+        val listeningHistoryRepository = ListeningHistoryRepository(
+            appDatabase.songPlayStatsDao()
+        )
+
+        playbackController.setListeningHistoryRepository(listeningHistoryRepository)
         playbackController.connect()
 
         sleepTimerController = SleepTimerController(
