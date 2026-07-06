@@ -10,8 +10,8 @@ import androidx.compose.ui.Modifier
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.ui.PlaylistsTabContent
-import com.example.cdplaya.ui.QueueScreen
+import com.example.cdplaya.ui.playlist.PlaylistsTabContent
+import com.example.cdplaya.ui.queue.QueueScreen
 
 @Composable
 fun MusicLibraryContent(

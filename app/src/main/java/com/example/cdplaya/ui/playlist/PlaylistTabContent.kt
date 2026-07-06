@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.playlist
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier

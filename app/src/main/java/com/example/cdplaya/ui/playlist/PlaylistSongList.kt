@@ -1,5 +1,6 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.playlist
 
+import android.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -75,8 +76,8 @@ fun PlaylistSongList(
                             .size(56.dp)
                             .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop,
-                        error = painterResource(android.R.drawable.ic_media_play),
-                        placeholder = painterResource(android.R.drawable.ic_media_play)
+                        error = painterResource(R.drawable.ic_media_play),
+                        placeholder = painterResource(R.drawable.ic_media_play)
                     )
                 },
                 headlineContent = {

@@ -1,5 +1,6 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.queue
 
+import android.R
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -212,8 +213,8 @@ private fun QueuedSongRow(
                     .size(56.dp)
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop,
-                error = painterResource(android.R.drawable.ic_media_play),
-                placeholder = painterResource(android.R.drawable.ic_media_play)
+                error = painterResource(R.drawable.ic_media_play),
+                placeholder = painterResource(R.drawable.ic_media_play)
             )
         },
         headlineContent = {
@@ -282,8 +283,8 @@ private fun UpcomingSongRow(
                         .size(48.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop,
-                    error = painterResource(android.R.drawable.ic_media_play),
-                    placeholder = painterResource(android.R.drawable.ic_media_play)
+                    error = painterResource(R.drawable.ic_media_play),
+                    placeholder = painterResource(R.drawable.ic_media_play)
                 )
             }
         },
