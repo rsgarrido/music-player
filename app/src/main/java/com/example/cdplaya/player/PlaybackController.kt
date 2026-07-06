@@ -20,6 +20,7 @@ class PlaybackController(
     private val playbackHistoryRecorder = PlaybackHistoryRecorder(coroutineScope)
     private val playbackQueueManager = PlaybackQueueManager()
     private val playbackNavigationHistory = PlaybackNavigationHistory()
+    private val upcomingPlaylistBuilder = UpcomingPlaylistBuilder()
     private var librarySongs: List<Song> = emptyList()
     private var playbackContextSongs: List<Song> = emptyList()
     val playbackQueue = playbackQueueManager.playbackQueue
@@ -622,77 +623,21 @@ class PlaybackController(
         startSong: Song,
         preserveExistingShuffleOrder: Boolean
     ): List<Song> {
-        upcomingSongs = buildUpcomingPlaylistAfterCurrent(
+        val refreshedUpcomingSongs = upcomingPlaylistBuilder.buildUpcomingPlaylistAfterCurrent(
             startSong = startSong,
+            playbackSourceSongs = getPlaybackSourceSongs(),
+            queuedSongsAfterCurrent = playbackQueueManager.getQueuedSongsAfterCurrent(
+                currentSongId = startSong.id
+            ),
+            currentUpcomingSongs = upcomingSongs,
+            isShuffleEnabled = isShuffleEnabled,
+            repeatMode = repeatMode,
             preserveExistingShuffleOrder = preserveExistingShuffleOrder
         )
 
-        return upcomingSongs
-    }
+        upcomingSongs = refreshedUpcomingSongs
 
-    private fun buildUpcomingPlaylistAfterCurrent(
-        startSong: Song,
-        preserveExistingShuffleOrder: Boolean
-    ): List<Song> {
-        val queuedSongsAfterCurrent = playbackQueueManager.getQueuedSongsAfterCurrent(
-            currentSongId = startSong.id
-        )
-
-        val excludedSongIds = mutableSetOf<Long>()
-        excludedSongIds.add(startSong.id)
-        excludedSongIds.addAll(queuedSongsAfterCurrent.map { song -> song.id })
-
-        val playbackSourceSongs = getPlaybackSourceSongs()
-
-        val startIndex = playbackSourceSongs.indexOfFirst { song ->
-            song.id == startSong.id
-        }
-
-        val songsAfterCurrent = when {
-            startIndex == -1 -> {
-                getRemainingSongsFromExistingUpcoming(startSong)
-            }
-
-            preserveExistingShuffleOrder && isShuffleEnabled -> {
-                val remainingExistingUpcomingSongs = getRemainingSongsFromExistingUpcoming(startSong)
-
-                if (
-                    remainingExistingUpcomingSongs.isEmpty() &&
-                    repeatMode == RepeatMode.ALL &&
-                    playbackSourceSongs.size > 1
-                ) {
-                    playbackSourceSongs.filter { song ->
-                        song.id != startSong.id
-                    }
-                } else {
-                    remainingExistingUpcomingSongs
-                }
-            }
-
-            else -> {
-                playbackSourceSongs.drop(startIndex + 1) + playbackSourceSongs.take(startIndex)
-            }
-        }
-
-        val remainingContextSongs = songsAfterCurrent.filter { song ->
-            song.id !in excludedSongIds
-        }
-
-        val shouldCreateNewShuffleOrder =
-            isShuffleEnabled &&
-                    startIndex != -1 &&
-                    (
-                            !preserveExistingShuffleOrder ||
-                                    upcomingSongs.isEmpty() && repeatMode == RepeatMode.ALL
-                            )
-
-        val orderedRemainingSongs = if (shouldCreateNewShuffleOrder) {
-            remainingContextSongs.shuffled()
-        } else {
-            remainingContextSongs
-        }
-
-        return queuedSongsAfterCurrent + orderedRemainingSongs
+        return refreshedUpcomingSongs
     }
 
     private fun syncServicePlaylistKeepingCurrent(
@@ -711,18 +656,6 @@ class PlaybackController(
 
         musicPlayer.setShuffleEnabled(isShuffleEnabled)
         musicPlayer.setRepeatMode(repeatMode)
-    }
-
-    private fun getRemainingSongsFromExistingUpcoming(startSong: Song): List<Song> {
-        val currentSongIndexInUpcoming = upcomingSongs.indexOfFirst { song ->
-            song.id == startSong.id
-        }
-
-        return if (currentSongIndexInUpcoming == -1) {
-            upcomingSongs
-        } else {
-            upcomingSongs.drop(currentSongIndexInUpcoming + 1)
-        }
     }
 
     private fun getPlaybackSourceSongs(): List<Song> {
