@@ -3,7 +3,6 @@ package com.example.cdplaya
 import android.Manifest
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,14 +18,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.lifecycleScope
-import com.example.cdplaya.controller.LibraryController
-import com.example.cdplaya.controller.SleepTimerController
-import com.example.cdplaya.data.ListeningHistoryRepository
-import com.example.cdplaya.data.local.AppDatabase
-import com.example.cdplaya.data.local.DatabaseProvider
-import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.ui.MusicScreen
+import com.example.cdplaya.ui.MusicRoute
 import com.example.cdplaya.ui.theme.CdplayaTheme
 import com.example.cdplaya.viewmodel.MusicViewModel
 
@@ -53,10 +46,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val playbackController = musicViewModel.playbackController
-        val libraryController = musicViewModel.libraryController
-        val sleepTimerController = musicViewModel.sleepTimerController
-
         requestAudioPermission()
 
         setContent {
@@ -69,155 +58,11 @@ class MainActivity : ComponentActivity() {
                         SnackbarHost(hostState = snackbarHostState)
                     }
                 ) { innerPadding ->
-                    MusicScreen(
-                        songs = libraryController.songs,
+                    MusicRoute(
+                        musicViewModel = musicViewModel,
                         permissionGranted = permissionGranted,
-                        currentSong = playbackController.currentSong,
-                        isPlaying = playbackController.isPlaying,
-                        isShuffleEnabled = playbackController.isShuffleEnabled,
-                        repeatMode = playbackController.repeatMode,
-                        currentPosition = playbackController.currentPosition,
-                        duration = playbackController.duration,
-                        queuedSongs = playbackController.playbackQueue,
-                        upcomingSongs = playbackController.getComingUpSongsForDisplay(),
                         snackbarHostState = snackbarHostState,
-                        modifier = Modifier.padding(innerPadding),
-                        libraryFolders = libraryController.libraryFolders,
-                        selectedLibraryFolders = libraryController.selectedLibraryFolders,
-                        favoriteSongKeys = libraryController.favoriteSongKeys,
-                        playlists = libraryController.playlists,
-                        selectedPlaylistName = libraryController.selectedPlaylistName,
-                        selectedPlaylistSongs = libraryController.selectedPlaylistSongs,
-                        onSongClick = { song, playbackContext ->
-                            playbackController.playSelectedSong(
-                                song = song,
-                                playbackContext = playbackContext
-                            )
-                        },
-                        onPlaySongsClick = { playbackContext, shuffle ->
-                            playbackController.playSongsFromContext(
-                                playbackContext = playbackContext,
-                                shuffle = shuffle
-                            )
-                        },
-                        onPlayPauseClick = {
-                            playbackController.togglePlayPause()
-                        },
-                        onPreviousClick = {
-                            playbackController.skipToPrevious()
-                        },
-                        onNextClick = {
-                            playbackController.skipToNext()
-                        },
-                        onSeekChange = { position ->
-                            playbackController.seekTo(position)
-                        },
-                        onShuffleClick = {
-                            playbackController.toggleShuffle()
-                        },
-                        onRepeatClick = {
-                            playbackController.cycleRepeatMode()
-                        },
-                        onAddToQueueClick = { song ->
-                            playbackController.addSongToQueue(song)
-                        },
-                        onPlayNextClick = { song ->
-                            playbackController.addSongToPlayNext(song)
-                        },
-                        onUndoPlayNextClick = { song ->
-                            playbackController.removeFirstMatchingSongFromQueue(song)
-                        },
-                        onRemoveFromQueueClick = { index ->
-                            playbackController.removeSongFromQueue(index)
-                        },
-                        onMoveQueueItemUpClick = { index ->
-                            playbackController.moveQueuedSongUp(index)
-                        },
-                        onMoveQueueItemDownClick = { index ->
-                            playbackController.moveQueuedSongDown(index)
-                        },
-                        onClearQueueClick = {
-                            playbackController.clearQueue()
-                        },
-                        onUndoAddToQueueClick = { song ->
-                            playbackController.removeLastMatchingSongFromQueue(song)
-                        },
-                        onPlayNextSongsClick = { songs ->
-                            playbackController.addSongsToPlayNext(songs)
-                        },
-                        onAddSongsToQueueClick = { songs ->
-                            playbackController.addSongsToQueue(songs)
-                        },
-                        onUndoPlayNextSongsClick = { songs ->
-                            playbackController.removeFirstMatchingSongsFromQueue(songs)
-                        },
-                        onUndoAddSongsToQueueClick = { songs ->
-                            playbackController.removeLastMatchingSongsFromQueue(songs)
-                        },
-                        onLibraryFolderToggle = { folderPath ->
-                            libraryController.toggleLibraryFolder(folderPath)
-                        },
-                        onSelectAllLibraryFolders = {
-                            libraryController.selectAllLibraryFolders()
-                        },
-                        onClearSelectedLibraryFolders = {
-                            libraryController.clearSelectedLibraryFolders()
-                        },
-                        onToggleFavoriteClick = { song ->
-                            libraryController.toggleFavorite(song)
-                        },
-                        onCreatePlaylistClick = { playlistName ->
-                            libraryController.createPlaylist(playlistName)
-                        },
-                        onRenamePlaylistClick = { playlist, newName ->
-                            libraryController.renamePlaylist(
-                                playlist = playlist,
-                                newName = newName
-                            )
-                        },
-                        onDeletePlaylistClick = { playlist ->
-                            libraryController.deletePlaylist(playlist)
-                        },
-                        onPlaylistSelected = { playlist ->
-                            libraryController.loadSelectedPlaylist(playlist)
-                        },
-                        onAddSongToPlaylistClick = { playlist, song ->
-                            libraryController.addSongToPlaylist(
-                                playlist = playlist,
-                                song = song
-                            )
-                        },
-                        onAddSongsToPlaylistClick = { playlist, songs ->
-                            libraryController.addSongsToPlaylist(
-                                playlist = playlist,
-                                songs = songs
-                            )
-                        },
-                        onRemovePlaylistSongClick = { playlistSong ->
-                            libraryController.removePlaylistSong(playlistSong)
-                        },
-                        onMovePlaylistSongUpClick = { playlistSong ->
-                            libraryController.movePlaylistSongUp(playlistSong)
-                        },
-                        onMovePlaylistSongDownClick = { playlistSong ->
-                            libraryController.movePlaylistSongDown(playlistSong)
-                        },
-                        onTagsEdited = { originalSong, editedTags ->
-                            libraryController.refreshSongsAfterTagEdit(
-                                originalSong = originalSong,
-                                editedTags = editedTags
-                            )
-                        },
-                        isSleepTimerActive = sleepTimerController.isTimerActive,
-                        sleepTimerDisplayText = sleepTimerController.getDisplayText(),
-                        onStartSleepTimerClick = { minutes ->
-                            sleepTimerController.startTimer(minutes)
-                        },
-                        onCancelSleepTimerClick = {
-                            sleepTimerController.cancelTimer()
-                        },
-                        recentlyPlayedSongs = libraryController.recentlyPlayedSongs,
-                        mostPlayedSongs = libraryController.mostPlayedSongs
+                        modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
