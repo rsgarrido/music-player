@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -62,62 +62,57 @@ fun ClassicWheelExpandedPlayer(
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit,
-    onShuffleClick: () -> Unit,
-    onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit
 ) {
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFDDDAD1))
-            .padding(18.dp),
-        contentAlignment = Alignment.Center
+            .background(Color(0xFFF1EDE0))
+            .padding(horizontal = 14.dp, vertical = 16.dp)
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 4.dp),
-            shape = RoundedCornerShape(34.dp),
-            color = Color(0xFFF4F0E4),
-            shadowElevation = 12.dp,
-            tonalElevation = 2.dp
+        val wheelSize = minOf(
+            maxWidth * 0.88f,
+            370.dp
+        )
+
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
+            ClassicWheelScreen(
+                currentSong = currentSong,
+                currentPosition = currentPosition,
+                duration = duration,
+                isCurrentSongFavorite = isCurrentSongFavorite,
+                isShuffleEnabled = isShuffleEnabled,
+                repeatMode = repeatMode,
+                onSeekChange = onSeekChange,
+                onCollapseClick = onCollapseClick,
+                onOpenUpNextClick = onOpenUpNextClick,
+                onToggleFavoriteClick = onToggleFavoriteClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(22.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                ClassicWheelScreen(
-                    currentSong = currentSong,
-                    currentPosition = currentPosition,
-                    duration = duration,
-                    isCurrentSongFavorite = isCurrentSongFavorite,
-                    isShuffleEnabled = isShuffleEnabled,
-                    repeatMode = repeatMode,
-                    onSeekChange = onSeekChange,
-                    onCollapseClick = onCollapseClick,
-                    onOpenUpNextClick = onOpenUpNextClick,
-                    onToggleFavoriteClick = onToggleFavoriteClick
-                )
+                    .weight(1f)
+            )
 
-                Spacer(modifier = Modifier.height(38.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-                ClassicControlWheel(
-                    isPlaying = isPlaying,
-                    onPlayPauseClick = onPlayPauseClick,
-                    onPreviousClick = onPreviousClick,
-                    onNextClick = onNextClick,
-                    onMenuClick = onCollapseClick
-                )
+            ClassicControlWheel(
+                isPlaying = isPlaying,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onMenuClick = onCollapseClick,
+                modifier = Modifier.size(wheelSize)
+            )
 
-                Spacer(modifier = Modifier.height(18.dp))
-            }
+            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }
+
 
 @Composable
 private fun ClassicWheelScreen(
@@ -130,17 +125,18 @@ private fun ClassicWheelScreen(
     onSeekChange: (Int) -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit
+    onToggleFavoriteClick: (Song) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
         color = Color.Black,
-        shadowElevation = 4.dp
+        shadowElevation = 6.dp
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .padding(5.dp)
                 .background(Color(0xFFF7F7F2))
         ) {
@@ -149,11 +145,17 @@ private fun ClassicWheelScreen(
             )
 
             Column(
-                modifier = Modifier.padding(12.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.Top
                 ) {
                     AsyncImage(
                         model = currentSong?.albumArtUri,
@@ -163,7 +165,7 @@ private fun ClassicWheelScreen(
                         modifier = Modifier
                             .weight(0.95f)
                             .aspectRatio(1f)
-                            .clip(RoundedCornerShape(2.dp)),
+                            .clip(RoundedCornerShape(3.dp)),
                         contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                         error = painterResource(android.R.drawable.ic_media_play),
                         placeholder = painterResource(android.R.drawable.ic_media_play)
@@ -176,17 +178,19 @@ private fun ClassicWheelScreen(
                             text = currentSong?.title?.ifBlank { "Unknown Title" }
                                 ?: "No song selected",
                             color = Color.Black,
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
                         )
 
+                        Spacer(modifier = Modifier.height(4.dp))
+
                         Text(
                             text = currentSong?.artist?.ifBlank { "Unknown Artist" }
                                 ?: "Choose a song",
                             color = Color.Black,
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -195,12 +199,12 @@ private fun ClassicWheelScreen(
                             text = currentSong?.album?.ifBlank { "Unknown Album" }
                                 ?: "",
                             color = Color.DarkGray,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
 
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         Row(
                             verticalAlignment = Alignment.CenterVertically
@@ -211,7 +215,7 @@ private fun ClassicWheelScreen(
                                         onToggleFavoriteClick(song)
                                     }
                                 },
-                                modifier = Modifier.size(30.dp),
+                                modifier = Modifier.size(38.dp),
                                 enabled = currentSong != null
                             ) {
                                 Icon(
@@ -221,18 +225,20 @@ private fun ClassicWheelScreen(
                                         Icons.Filled.FavoriteBorder
                                     },
                                     contentDescription = "Favorite",
-                                    tint = Color.Black
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(30.dp)
                                 )
                             }
 
                             IconButton(
                                 onClick = onOpenUpNextClick,
-                                modifier = Modifier.size(30.dp)
+                                modifier = Modifier.size(38.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.QueueMusic,
                                     contentDescription = "Up Next",
-                                    tint = Color.Black
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(30.dp)
                                 )
                             }
                         }
@@ -243,14 +249,14 @@ private fun ClassicWheelScreen(
                                 repeatMode = repeatMode
                             ),
                             color = Color.DarkGray,
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 ClassicWheelProgress(
                     currentPosition = currentPosition,
@@ -366,27 +372,28 @@ private fun ClassicControlWheel(
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier.size(250.dp),
+        modifier = modifier.aspectRatio(1f),
         contentAlignment = Alignment.Center
     ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             shape = CircleShape,
             color = Color(0xFFC8C6BC),
-            shadowElevation = 5.dp
+            shadowElevation = 6.dp
         ) {}
 
         Text(
             text = "MENU",
             color = Color.White,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 20.dp)
+                .padding(top = 28.dp)
                 .clickable {
                     onMenuClick()
                 }
@@ -396,14 +403,14 @@ private fun ClassicControlWheel(
             onClick = onPreviousClick,
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 18.dp)
-                .size(54.dp)
+                .padding(start = 26.dp)
+                .size(68.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.SkipPrevious,
                 contentDescription = "Previous",
                 tint = Color.White,
-                modifier = Modifier.size(34.dp)
+                modifier = Modifier.size(42.dp)
             )
         }
 
@@ -411,14 +418,14 @@ private fun ClassicControlWheel(
             onClick = onNextClick,
             modifier = Modifier
                 .align(Alignment.CenterEnd)
-                .padding(end = 18.dp)
-                .size(54.dp)
+                .padding(end = 26.dp)
+                .size(68.dp)
         ) {
             Icon(
                 imageVector = Icons.Filled.SkipNext,
                 contentDescription = "Next",
                 tint = Color.White,
-                modifier = Modifier.size(34.dp)
+                modifier = Modifier.size(42.dp)
             )
         }
 
@@ -426,8 +433,8 @@ private fun ClassicControlWheel(
             onClick = onPlayPauseClick,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 18.dp)
-                .size(58.dp)
+                .padding(bottom = 26.dp)
+                .size(72.dp)
         ) {
             Icon(
                 imageVector = if (isPlaying) {
@@ -441,15 +448,15 @@ private fun ClassicControlWheel(
                     "Play"
                 },
                 tint = Color.White,
-                modifier = Modifier.size(34.dp)
+                modifier = Modifier.size(42.dp)
             )
         }
 
         Surface(
-            modifier = Modifier.size(82.dp),
+            modifier = Modifier.fillMaxSize(0.28f),
             shape = CircleShape,
-            color = Color(0xFFF4F0E4),
-            shadowElevation = 3.dp
+            color = Color(0xFFF1EDE0),
+            shadowElevation = 4.dp
         ) {}
     }
 }
