@@ -7,6 +7,7 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -27,15 +28,13 @@ import com.example.cdplaya.data.local.DatabaseProvider
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.ui.MusicScreen
 import com.example.cdplaya.ui.theme.CdplayaTheme
+import com.example.cdplaya.viewmodel.MusicViewModel
 
 class MainActivity : ComponentActivity() {
 
     private var permissionGranted by mutableStateOf(false)
 
-    private lateinit var appDatabase: AppDatabase
-    private lateinit var playbackController: PlaybackController
-    private lateinit var libraryController: LibraryController
-    private lateinit var sleepTimerController: SleepTimerController
+    private val musicViewModel: MusicViewModel by viewModels()
 
     private val mediaPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -46,7 +45,7 @@ class MainActivity : ComponentActivity() {
         permissionGranted = audioGranted && imagesGranted
 
         if (permissionGranted) {
-            libraryController.loadSongs()
+            musicViewModel.loadSongs()
         }
     }
 
@@ -54,40 +53,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        appDatabase = DatabaseProvider.getDatabase(this)
-        Log.d("CDPlayaDatabase", "Room database initialized")
-
-        playbackController = PlaybackController(
-            context = this,
-            coroutineScope = lifecycleScope
-        )
-
-        val listeningHistoryRepository = ListeningHistoryRepository(
-            appDatabase.songPlayStatsDao()
-        )
-
-        playbackController.setListeningHistoryRepository(listeningHistoryRepository)
-        playbackController.connect()
-
-        sleepTimerController = SleepTimerController(
-            coroutineScope = lifecycleScope,
-            onTimerFinished = {
-                playbackController.pausePlayback()
-            }
-        )
-
-        libraryController = LibraryController(
-            context = this,
-            appDatabase = appDatabase,
-            playbackController = playbackController,
-            coroutineScope = lifecycleScope
-        )
-
-        playbackController.setOnListeningHistoryChanged {
-            libraryController.refreshListeningHistory()
-        }
-
-        libraryController.loadSavedUserData()
+        val playbackController = musicViewModel.playbackController
+        val libraryController = musicViewModel.libraryController
+        val sleepTimerController = musicViewModel.sleepTimerController
 
         requestAudioPermission()
 
@@ -266,18 +234,16 @@ class MainActivity : ComponentActivity() {
             )
         } else {
             permissionGranted = true
-            libraryController.loadSongs()
+            musicViewModel.loadSongs()
         }
     }
 
     override fun onPause() {
         super.onPause()
-        playbackController.savePlayerState()
+        musicViewModel.savePlayerState()
     }
 
     override fun onDestroy() {
-        playbackController.release()
         super.onDestroy()
-        sleepTimerController.release()
     }
 }
