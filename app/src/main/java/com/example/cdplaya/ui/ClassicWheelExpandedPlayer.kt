@@ -314,12 +314,7 @@ private fun ClassicScreenStatusBar(
             )
         }
 
-        Surface(
-            modifier = Modifier.size(width = 32.dp, height = 14.dp),
-            shape = RoundedCornerShape(3.dp),
-            color = Color(0xFF9BCB61),
-            shadowElevation = 1.dp
-        ) {}
+        ClassicBatteryIndicator()
     }
 }
 
