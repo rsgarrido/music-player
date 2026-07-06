@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.cdplaya.data.Song
@@ -20,11 +19,9 @@ class PlaybackController(
     private val playerStateStorage = PlayerStateStorage(context)
     private val playbackHistoryRecorder = PlaybackHistoryRecorder(coroutineScope)
     private val playbackQueueManager = PlaybackQueueManager()
+    private val playbackNavigationHistory = PlaybackNavigationHistory()
     private var librarySongs: List<Song> = emptyList()
     private var playbackContextSongs: List<Song> = emptyList()
-    private val previousSongHistory = mutableListOf<Song>()
-    private val nextSongHistory = mutableListOf<Song>()
-
     val playbackQueue = playbackQueueManager.playbackQueue
 
     var currentSong by mutableStateOf<Song?>(null)
@@ -123,13 +120,7 @@ class PlaybackController(
 
         playbackQueueManager.removeInvalidSongs(validSongIds)
 
-        previousSongHistory.removeAll { historySong ->
-            historySong.id !in validSongIds
-        }
-
-        nextSongHistory.removeAll { historySong ->
-            historySong.id !in validSongIds
-        }
+        playbackNavigationHistory.removeInvalidSongs(validSongIds)
 
         playbackContextSongs = playbackContextSongs.filter { song ->
             song.id in validSongIds
@@ -155,8 +146,7 @@ class PlaybackController(
         }
 
         isShuffleEnabled = shuffle
-        previousSongHistory.clear()
-        nextSongHistory.clear()
+        playbackNavigationHistory.clearAll()
 
         val songToPlay = if (shuffle && playbackContext.size > 1) {
             playbackContext[Random.nextInt(playbackContext.size)]
@@ -179,11 +169,11 @@ class PlaybackController(
         val previousSong = currentSong
 
         if (addCurrentToHistory && previousSong != null && previousSong.id != song.id) {
-            previousSongHistory.add(previousSong)
+            playbackNavigationHistory.addPreviousSong(previousSong)
         }
 
         if (clearForwardHistory) {
-            nextSongHistory.clear()
+            playbackNavigationHistory.clearForwardHistory()
         }
 
         playbackContextSongs = playbackContext ?: getPlaybackSourceSongs()
@@ -239,8 +229,7 @@ class PlaybackController(
 
     fun toggleShuffle() {
         isShuffleEnabled = !isShuffleEnabled
-        previousSongHistory.clear()
-        nextSongHistory.clear()
+        playbackNavigationHistory.clearAll()
         syncServicePlaylistKeepingCurrent(preserveExistingShuffleOrder = false)
         savePlayerState()
     }
@@ -352,8 +341,8 @@ class PlaybackController(
             currentPosition = musicPlayer.getCurrentPosition(),
             isShuffleEnabled = isShuffleEnabled,
             repeatMode = repeatMode,
-            previousSongIds = previousSongHistory.map { song -> song.id },
-            nextSongIds = nextSongHistory.map { song -> song.id },
+            previousSongIds = playbackNavigationHistory.getPreviousSongIds(),
+            nextSongIds = playbackNavigationHistory.getNextSongIds(),
             queueSongIds = playbackQueueManager.getQueuedSongIds(),
             playbackContextSongIds = playbackContextSongs.map { song -> song.id }
         )
@@ -407,15 +396,13 @@ class PlaybackController(
             }
         )
 
-        previousSongHistory.clear()
-        previousSongHistory.addAll(
+        playbackNavigationHistory.replacePreviousSongs(
             playerStateStorage.getPreviousSongIds().mapNotNull { savedId ->
                 librarySongs.firstOrNull { song -> song.id == savedId }
             }
         )
 
-        nextSongHistory.clear()
-        nextSongHistory.addAll(
+        playbackNavigationHistory.replaceNextSongs(
             playerStateStorage.getNextSongIds().mapNotNull { savedId ->
                 librarySongs.firstOrNull { song -> song.id == savedId }
             }
@@ -458,11 +445,8 @@ class PlaybackController(
         }
 
         val nextSong = if (isShuffleEnabled) {
-            if (nextSongHistory.isNotEmpty()) {
-                nextSongHistory.removeAt(nextSongHistory.lastIndex)
-            } else {
-                getRandomSongExceptCurrent(playbackSourceSongs)
-            }
+            playbackNavigationHistory.popNextSong()
+                ?: getRandomSongExceptCurrent(playbackSourceSongs)
         } else {
             val currentIndex = playbackSourceSongs.indexOfFirst { song ->
                 song.id == currentSong?.id
@@ -490,12 +474,21 @@ class PlaybackController(
             return
         }
 
-        val previousSong = if (isShuffleEnabled && previousSongHistory.isNotEmpty()) {
-            currentSong?.let { song ->
-                nextSongHistory.add(song)
-            }
+        val previousSong = if (isShuffleEnabled) {
+            playbackNavigationHistory.popPreviousSongAndPushCurrent(currentSong)
+                ?: run {
+                    val currentIndex = playbackSourceSongs.indexOfFirst { song ->
+                        song.id == currentSong?.id
+                    }
 
-            previousSongHistory.removeAt(previousSongHistory.lastIndex)
+                    val previousIndex = if (currentIndex <= 0) {
+                        playbackSourceSongs.lastIndex
+                    } else {
+                        currentIndex - 1
+                    }
+
+                    playbackSourceSongs[previousIndex]
+                }
         } else {
             val currentIndex = playbackSourceSongs.indexOfFirst { song ->
                 song.id == currentSong?.id
