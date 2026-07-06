@@ -19,13 +19,13 @@ class PlaybackController(
     private val musicPlayer = MusicPlayer(context)
     private val playerStateStorage = PlayerStateStorage(context)
     private val playbackHistoryRecorder = PlaybackHistoryRecorder(coroutineScope)
-
+    private val playbackQueueManager = PlaybackQueueManager()
     private var librarySongs: List<Song> = emptyList()
     private var playbackContextSongs: List<Song> = emptyList()
     private val previousSongHistory = mutableListOf<Song>()
     private val nextSongHistory = mutableListOf<Song>()
 
-    val playbackQueue = mutableStateListOf<Song>()
+    val playbackQueue = playbackQueueManager.playbackQueue
 
     var currentSong by mutableStateOf<Song?>(null)
         private set
@@ -121,9 +121,7 @@ class PlaybackController(
             upcomingSongs = emptyList()
         }
 
-        playbackQueue.removeAll { queuedSong ->
-            queuedSong.id !in validSongIds
-        }
+        playbackQueueManager.removeInvalidSongs(validSongIds)
 
         previousSongHistory.removeAll { historySong ->
             historySong.id !in validSongIds
@@ -259,135 +257,91 @@ class PlaybackController(
     }
 
     fun addSongToQueue(song: Song) {
-        playbackQueue.add(song)
+        playbackQueueManager.addSongToQueue(song)
         syncServicePlaylistKeepingCurrent()
         savePlayerState()
     }
 
     fun addSongToPlayNext(song: Song) {
-        playbackQueue.add(0, song)
+        playbackQueueManager.addSongToPlayNext(song)
         syncServicePlaylistKeepingCurrent()
         savePlayerState()
     }
 
     fun removeSongFromQueue(index: Int) {
-        if (index in playbackQueue.indices) {
-            playbackQueue.removeAt(index)
+        if (playbackQueueManager.removeSongFromQueue(index)) {
             syncServicePlaylistKeepingCurrent()
             savePlayerState()
         }
     }
 
     fun moveQueuedSongUp(index: Int) {
-        if (index > 0 && index in playbackQueue.indices) {
-            val song = playbackQueue.removeAt(index)
-            playbackQueue.add(index - 1, song)
+        if (playbackQueueManager.moveQueuedSongUp(index)) {
             syncServicePlaylistKeepingCurrent()
             savePlayerState()
         }
     }
 
     fun moveQueuedSongDown(index: Int) {
-        if (index >= 0 && index < playbackQueue.lastIndex) {
-            val song = playbackQueue.removeAt(index)
-            playbackQueue.add(index + 1, song)
+        if (playbackQueueManager.moveQueuedSongDown(index)) {
             syncServicePlaylistKeepingCurrent()
             savePlayerState()
         }
     }
 
     fun clearQueue() {
-        playbackQueue.clear()
-        syncServicePlaylistKeepingCurrent()
-        savePlayerState()
+        if (playbackQueueManager.clearQueue()) {
+            syncServicePlaylistKeepingCurrent()
+            savePlayerState()
+        }
     }
 
     fun addSongsToPlayNext(songs: List<Song>) {
-        if (songs.isEmpty()) {
-            return
+        if (playbackQueueManager.addSongsToPlayNext(songs)) {
+            syncServicePlaylistKeepingCurrent()
+            savePlayerState()
         }
-
-        playbackQueue.addAll(0, songs)
-        syncServicePlaylistKeepingCurrent()
-        savePlayerState()
     }
 
     fun addSongsToQueue(songs: List<Song>) {
-        if (songs.isEmpty()) {
-            return
+        if (playbackQueueManager.addSongsToQueue(songs)) {
+            syncServicePlaylistKeepingCurrent()
+            savePlayerState()
         }
-
-        playbackQueue.addAll(songs)
-        syncServicePlaylistKeepingCurrent()
-        savePlayerState()
     }
 
     fun removeFirstMatchingSongsFromQueue(songs: List<Song>) {
-        var removedAnySong = false
-
-        songs.forEach { song ->
-            val index = playbackQueue.indexOfFirst { queuedSong ->
-                queuedSong.id == song.id
-            }
-
-            if (index != -1) {
-                playbackQueue.removeAt(index)
-                removedAnySong = true
-            }
-        }
-
-        if (removedAnySong) {
+        if (playbackQueueManager.removeFirstMatchingSongsFromQueue(songs)) {
             syncServicePlaylistKeepingCurrent()
             savePlayerState()
         }
     }
 
     fun removeLastMatchingSongsFromQueue(songs: List<Song>) {
-        var removedAnySong = false
-
-        songs.asReversed().forEach { song ->
-            for (index in playbackQueue.lastIndex downTo 0) {
-                if (playbackQueue[index].id == song.id) {
-                    playbackQueue.removeAt(index)
-                    removedAnySong = true
-                    break
-                }
-            }
-        }
-
-        if (removedAnySong) {
+        if (playbackQueueManager.removeLastMatchingSongsFromQueue(songs)) {
             syncServicePlaylistKeepingCurrent()
             savePlayerState()
         }
     }
 
     fun removeLastMatchingSongFromQueue(song: Song) {
-        for (index in playbackQueue.lastIndex downTo 0) {
-            if (playbackQueue[index].id == song.id) {
-                playbackQueue.removeAt(index)
-                syncServicePlaylistKeepingCurrent()
-                savePlayerState()
-                return
-            }
+        if (playbackQueueManager.removeLastMatchingSongFromQueue(song)) {
+            syncServicePlaylistKeepingCurrent()
+            savePlayerState()
         }
     }
 
     fun removeFirstMatchingSongFromQueue(song: Song) {
-        val index = playbackQueue.indexOfFirst { queuedSong ->
-            queuedSong.id == song.id
-        }
-
-        if (index != -1) {
-            playbackQueue.removeAt(index)
+        if (playbackQueueManager.removeFirstMatchingSongFromQueue(song)) {
             syncServicePlaylistKeepingCurrent()
             savePlayerState()
         }
     }
 
     fun getComingUpSongsForDisplay(): List<Song> {
-        val queuedSongCount = playbackQueue.count { queuedSong ->
-            queuedSong.id != currentSong?.id
-        }
+        val queuedSongCount = playbackQueueManager.getQueuedSongCountExcludingCurrent(
+            currentSongId = currentSong?.id
+        )
 
         return upcomingSongs.drop(queuedSongCount)
     }
@@ -400,7 +354,7 @@ class PlaybackController(
             repeatMode = repeatMode,
             previousSongIds = previousSongHistory.map { song -> song.id },
             nextSongIds = nextSongHistory.map { song -> song.id },
-            queueSongIds = playbackQueue.map { song -> song.id },
+            queueSongIds = playbackQueueManager.getQueuedSongIds(),
             playbackContextSongIds = playbackContextSongs.map { song -> song.id }
         )
     }
@@ -447,8 +401,7 @@ class PlaybackController(
             librarySongs
         }
 
-        playbackQueue.clear()
-        playbackQueue.addAll(
+        playbackQueueManager.replaceQueue(
             playerStateStorage.getQueueSongIds().mapNotNull { savedId ->
                 librarySongs.firstOrNull { song -> song.id == savedId }
             }
@@ -566,12 +519,9 @@ class PlaybackController(
     }
 
     private fun playNextQueuedSong(): Boolean {
-        if (playbackQueue.isEmpty()) {
-            return false
-        }
-
         val playbackSourceSongs = getPlaybackSourceSongs()
-        val nextQueuedSong = playbackQueue.removeAt(0)
+        val nextQueuedSong = playbackQueueManager.removeNextQueuedSong()
+            ?: return false
 
         playSelectedSong(
             song = nextQueuedSong,
@@ -691,9 +641,9 @@ class PlaybackController(
         startSong: Song,
         preserveExistingShuffleOrder: Boolean
     ): List<Song> {
-        val queuedSongsAfterCurrent = playbackQueue.filter { queuedSong ->
-            queuedSong.id != startSong.id
-        }
+        val queuedSongsAfterCurrent = playbackQueueManager.getQueuedSongsAfterCurrent(
+            currentSongId = startSong.id
+        )
 
         val excludedSongIds = mutableSetOf<Long>()
         excludedSongIds.add(startSong.id)
