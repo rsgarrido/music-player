@@ -6,6 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.cdplaya.controller.LibraryController
 import com.example.cdplaya.controller.SleepTimerController
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.EditableSongTags
+import com.example.cdplaya.data.Playlist
+import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
@@ -151,6 +154,86 @@ class MusicViewModel(
 
     fun removeLastMatchingSongsFromQueue(songs: List<Song>) {
         playbackController.removeLastMatchingSongsFromQueue(songs)
+    }
+
+    fun toggleLibraryFolder(folderPath: String) {
+        libraryController.toggleLibraryFolder(folderPath)
+    }
+
+    fun selectAllLibraryFolders() {
+        libraryController.selectAllLibraryFolders()
+    }
+
+    fun clearSelectedLibraryFolders() {
+        libraryController.clearSelectedLibraryFolders()
+    }
+
+    fun toggleFavorite(song: Song) {
+        libraryController.toggleFavorite(song)
+    }
+
+    fun createPlaylist(playlistName: String) {
+        libraryController.createPlaylist(playlistName)
+    }
+
+    fun renamePlaylist(
+        playlist: Playlist,
+        newName: String
+    ) {
+        libraryController.renamePlaylist(
+            playlist = playlist,
+            newName = newName
+        )
+    }
+
+    fun deletePlaylist(playlist: Playlist) {
+        libraryController.deletePlaylist(playlist)
+    }
+
+    fun loadSelectedPlaylist(playlist: Playlist) {
+        libraryController.loadSelectedPlaylist(playlist)
+    }
+
+    fun addSongToPlaylist(
+        playlist: Playlist,
+        song: Song
+    ) {
+        libraryController.addSongToPlaylist(
+            playlist = playlist,
+            song = song
+        )
+    }
+
+    fun addSongsToPlaylist(
+        playlist: Playlist,
+        songs: List<Song>
+    ) {
+        libraryController.addSongsToPlaylist(
+            playlist = playlist,
+            songs = songs
+        )
+    }
+
+    fun removePlaylistSong(playlistSong: PlaylistSong) {
+        libraryController.removePlaylistSong(playlistSong)
+    }
+
+    fun movePlaylistSongUp(playlistSong: PlaylistSong) {
+        libraryController.movePlaylistSongUp(playlistSong)
+    }
+
+    fun movePlaylistSongDown(playlistSong: PlaylistSong) {
+        libraryController.movePlaylistSongDown(playlistSong)
+    }
+
+    fun refreshSongsAfterTagEdit(
+        originalSong: Song,
+        editedTags: EditableSongTags
+    ) {
+        libraryController.refreshSongsAfterTagEdit(
+            originalSong = originalSong,
+            editedTags = editedTags
+        )
     }
 
     override fun onCleared() {

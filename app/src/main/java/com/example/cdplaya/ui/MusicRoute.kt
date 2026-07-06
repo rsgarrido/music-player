@@ -104,55 +104,55 @@ fun MusicRoute(
             musicViewModel.removeLastMatchingSongsFromQueue(songs)
         },
         onLibraryFolderToggle = { folderPath ->
-            libraryController.toggleLibraryFolder(folderPath)
+            musicViewModel.toggleLibraryFolder(folderPath)
         },
         onSelectAllLibraryFolders = {
-            libraryController.selectAllLibraryFolders()
+            musicViewModel.selectAllLibraryFolders()
         },
         onClearSelectedLibraryFolders = {
-            libraryController.clearSelectedLibraryFolders()
+            musicViewModel.clearSelectedLibraryFolders()
         },
         onToggleFavoriteClick = { song ->
-            libraryController.toggleFavorite(song)
+            musicViewModel.toggleFavorite(song)
         },
         onCreatePlaylistClick = { playlistName ->
-            libraryController.createPlaylist(playlistName)
+            musicViewModel.createPlaylist(playlistName)
         },
         onRenamePlaylistClick = { playlist, newName ->
-            libraryController.renamePlaylist(
+            musicViewModel.renamePlaylist(
                 playlist = playlist,
                 newName = newName
             )
         },
         onDeletePlaylistClick = { playlist ->
-            libraryController.deletePlaylist(playlist)
+            musicViewModel.deletePlaylist(playlist)
         },
         onPlaylistSelected = { playlist ->
-            libraryController.loadSelectedPlaylist(playlist)
+            musicViewModel.loadSelectedPlaylist(playlist)
         },
         onAddSongToPlaylistClick = { playlist, song ->
-            libraryController.addSongToPlaylist(
+            musicViewModel.addSongToPlaylist(
                 playlist = playlist,
                 song = song
             )
         },
         onAddSongsToPlaylistClick = { playlist, songs ->
-            libraryController.addSongsToPlaylist(
+            musicViewModel.addSongsToPlaylist(
                 playlist = playlist,
                 songs = songs
             )
         },
         onRemovePlaylistSongClick = { playlistSong ->
-            libraryController.removePlaylistSong(playlistSong)
+            musicViewModel.removePlaylistSong(playlistSong)
         },
         onMovePlaylistSongUpClick = { playlistSong ->
-            libraryController.movePlaylistSongUp(playlistSong)
+            musicViewModel.movePlaylistSongUp(playlistSong)
         },
         onMovePlaylistSongDownClick = { playlistSong ->
-            libraryController.movePlaylistSongDown(playlistSong)
+            musicViewModel.movePlaylistSongDown(playlistSong)
         },
         onTagsEdited = { originalSong, editedTags ->
-            libraryController.refreshSongsAfterTagEdit(
+            musicViewModel.refreshSongsAfterTagEdit(
                 originalSong = originalSong,
                 editedTags = editedTags
             )
