@@ -56,6 +56,21 @@ class MusicViewModel(
         libraryController.loadSavedUserData()
     }
 
+    val isSleepTimerActive: Boolean
+        get() = sleepTimerController.isTimerActive
+
+    fun getSleepTimerDisplayText(): String {
+        return sleepTimerController.getDisplayText()
+    }
+
+    fun startSleepTimer(minutes: Int) {
+        sleepTimerController.startTimer(minutes)
+    }
+
+    fun cancelSleepTimer() {
+        sleepTimerController.cancelTimer()
+    }
+
     fun loadSongs() {
         libraryController.loadSongs()
     }

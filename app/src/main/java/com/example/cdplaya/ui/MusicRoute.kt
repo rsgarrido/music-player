@@ -14,7 +14,6 @@ fun MusicRoute(
 ) {
     val playbackController = musicViewModel.playbackController
     val libraryController = musicViewModel.libraryController
-    val sleepTimerController = musicViewModel.sleepTimerController
 
     MusicScreen(
         songs = libraryController.songs,
@@ -157,13 +156,13 @@ fun MusicRoute(
                 editedTags = editedTags
             )
         },
-        isSleepTimerActive = sleepTimerController.isTimerActive,
-        sleepTimerDisplayText = sleepTimerController.getDisplayText(),
+        isSleepTimerActive = musicViewModel.isSleepTimerActive,
+        sleepTimerDisplayText = musicViewModel.getSleepTimerDisplayText(),
         onStartSleepTimerClick = { minutes ->
-            sleepTimerController.startTimer(minutes)
+            musicViewModel.startSleepTimer(minutes)
         },
         onCancelSleepTimerClick = {
-            sleepTimerController.cancelTimer()
+            musicViewModel.cancelSleepTimer()
         }
     )
 }
