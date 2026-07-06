@@ -15,6 +15,12 @@ import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.ui.player.ExpandedPlayerThemeHost
+import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
+import com.example.cdplaya.ui.playlist.AddToPlaylistDialog
+import com.example.cdplaya.ui.playlist.PlaylistNameDialog
+import com.example.cdplaya.ui.queue.QueueScreen
+import com.example.cdplaya.ui.settings.SleepTimerDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
