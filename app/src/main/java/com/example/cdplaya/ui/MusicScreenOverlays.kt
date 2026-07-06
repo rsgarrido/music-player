@@ -58,6 +58,12 @@ fun MusicScreenOverlays(
     onDismissSleepTimerDialog: () -> Unit,
     selectedPlayerTheme: PlayerTheme
 ) {
+
+    ImmersiveSystemBarsEffect(
+        isImmersive = isPlayerExpanded &&
+                selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL
+    )
+
     if (isPlayerExpanded && currentSong != null) {
         ExpandedPlayerThemeHost(
             selectedPlayerTheme = selectedPlayerTheme,
