@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.library
 
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.Box
@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.ui.PlaylistsTabContent
+import com.example.cdplaya.ui.QueueScreen
 
 @Composable
 fun MusicLibraryContent(

@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.library
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -9,6 +9,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.ui.filterSongsByAlbumSearch
+import com.example.cdplaya.ui.filterSongsByArtistSearch
+import com.example.cdplaya.ui.filterSongsForSearch
+import com.example.cdplaya.ui.sortSongsByAlbumOrder
+import com.example.cdplaya.ui.sortSongsForArtistDetail
+import com.example.cdplaya.ui.sortSongsForLibrary
 
 @Composable
 fun SongsTabContent(

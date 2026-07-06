@@ -1,5 +1,6 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.library
 
+import android.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -26,73 +27,48 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.ui.sortSongsForArtistDetail
 
-private data class AlbumGroup(
-    val key: String,
-    val title: String,
-    val artistText: String,
+private data class ArtistGroup(
+    val name: String,
     val songs: List<Song>
 )
 
 @Composable
-fun AlbumListScreen(
+fun ArtistListScreen(
     songs: List<Song>,
-    onAlbumClick: (String) -> Unit,
-    onAlbumPlayClick: (String, List<Song>) -> Unit,
-    onAlbumShuffleClick: (String, List<Song>) -> Unit,
-    onAlbumPlayNextClick: (String, List<Song>) -> Unit,
-    onAlbumAddToQueueClick: (String, List<Song>) -> Unit,
-    onAlbumAddToPlaylistClick: (String, List<Song>) -> Unit, // Added here
+    onArtistClick: (String) -> Unit,
+    onArtistPlayClick: (String, List<Song>) -> Unit,
+    onArtistShuffleClick: (String, List<Song>) -> Unit,
+    onArtistPlayNextClick: (String, List<Song>) -> Unit,
+    onArtistAddToQueueClick: (String, List<Song>) -> Unit,
+    onArtistAddToPlaylistClick: (String, List<Song>) -> Unit,
     modifier: Modifier = Modifier,
-    sortOption: LibrarySortOption = LibrarySortOption.TITLE
+    sortOption: LibrarySortOption = LibrarySortOption.NAME
 ) {
-    val albumGroups = songs
-        .groupBy { song -> song.folderPath }
+    val artistGroups = songs
+        .groupBy { song -> song.artist.ifBlank { "Unknown Artist" } }
         .map { entry ->
-            val albumSongs = sortSongsByAlbumOrder(entry.value)
-            val firstSong = albumSongs.first()
-
-            val artists = albumSongs
-                .map { song -> song.artist }
-                .distinct()
-                .filter { artist -> artist.isNotBlank() }
-
-            AlbumGroup(
-                key = entry.key,
-                title = firstSong.album.ifBlank { "Unknown Album" },
-                artistText = if (artists.size == 1) {
-                    artists.first()
-                } else {
-                    "Various Artists"
-                },
-                songs = albumSongs
+            ArtistGroup(
+                name = entry.key,
+                songs = sortSongsForArtistDetail(entry.value)
             )
         }
 
-    val albums = when (sortOption) {
-        LibrarySortOption.ARTIST -> {
-            albumGroups.sortedWith(
-                compareBy<AlbumGroup> { album ->
-                    album.artistText.lowercase()
-                }.thenBy { album ->
-                    album.title.lowercase()
-                }
-            )
-        }
-
+    val artists = when (sortOption) {
         LibrarySortOption.SONG_COUNT -> {
-            albumGroups.sortedWith(
-                compareByDescending<AlbumGroup> { album ->
-                    album.songs.size
-                }.thenBy { album ->
-                    album.title.lowercase()
+            artistGroups.sortedWith(
+                compareByDescending<ArtistGroup> { artist ->
+                    artist.songs.size
+                }.thenBy { artist ->
+                    artist.name.lowercase()
                 }
             )
         }
 
         else -> {
-            albumGroups.sortedBy { album ->
-                album.title.lowercase()
+            artistGroups.sortedBy { artist ->
+                artist.name.lowercase()
             }
         }
     }
@@ -101,43 +77,43 @@ fun AlbumListScreen(
         modifier = modifier.fillMaxSize()
     ) {
         items(
-            items = albums,
-            key = { album -> album.key }
-        ) { album ->
-            val firstSong = album.songs.firstOrNull()
+            items = artists,
+            key = { artist -> artist.name }
+        ) { artist ->
+            val firstSong = artist.songs.firstOrNull()
 
             ListItem(
                 leadingContent = {
                     AsyncImage(
                         model = firstSong?.albumArtUri,
-                        contentDescription = "Album art for ${album.title}",
+                        contentDescription = "Artwork for ${artist.name}",
                         modifier = Modifier
                             .size(56.dp)
                             .clip(RoundedCornerShape(8.dp)),
                         contentScale = ContentScale.Crop,
-                        error = painterResource(android.R.drawable.ic_media_play),
-                        placeholder = painterResource(android.R.drawable.ic_media_play)
+                        error = painterResource(R.drawable.ic_media_play),
+                        placeholder = painterResource(R.drawable.ic_media_play)
                     )
                 },
                 headlineContent = {
-                    Text(text = album.title)
+                    Text(text = artist.name)
                 },
                 supportingContent = {
-                    Text(text = "${album.artistText} • ${album.songs.size} song(s)")
+                    Text(text = "${artist.songs.size} song(s)")
                 },
                 trailingContent = {
-                    AlbumActionsMenu(
-                        albumTitle = album.title,
-                        albumSongs = album.songs,
-                        onPlayClick = onAlbumPlayClick,
-                        onShuffleClick = onAlbumShuffleClick,
-                        onPlayNextClick = onAlbumPlayNextClick,
-                        onAddToQueueClick = onAlbumAddToQueueClick,
-                        onAddToPlaylistClick = onAlbumAddToPlaylistClick
+                    ArtistActionsMenu(
+                        artistName = artist.name,
+                        artistSongs = artist.songs,
+                        onPlayClick = onArtistPlayClick,
+                        onShuffleClick = onArtistShuffleClick,
+                        onPlayNextClick = onArtistPlayNextClick,
+                        onAddToQueueClick = onArtistAddToQueueClick,
+                        onAddToPlaylistClick = onArtistAddToPlaylistClick
                     )
                 },
                 modifier = Modifier.clickable {
-                    onAlbumClick(album.key)
+                    onArtistClick(artist.name)
                 }
             )
         }
@@ -145,9 +121,9 @@ fun AlbumListScreen(
 }
 
 @Composable
-private fun AlbumActionsMenu(
-    albumTitle: String,
-    albumSongs: List<Song>,
+private fun ArtistActionsMenu(
+    artistName: String,
+    artistSongs: List<Song>,
     onPlayClick: (String, List<Song>) -> Unit,
     onShuffleClick: (String, List<Song>) -> Unit,
     onPlayNextClick: (String, List<Song>) -> Unit,
@@ -163,7 +139,7 @@ private fun AlbumActionsMenu(
     ) {
         Icon(
             imageVector = Icons.Filled.MoreVert,
-            contentDescription = "Album actions"
+            contentDescription = "Artist actions"
         )
     }
 
@@ -177,7 +153,7 @@ private fun AlbumActionsMenu(
             text = { Text(text = "Play") },
             onClick = {
                 isMenuExpanded = false
-                onPlayClick(albumTitle, albumSongs)
+                onPlayClick(artistName, artistSongs)
             }
         )
 
@@ -185,7 +161,7 @@ private fun AlbumActionsMenu(
             text = { Text(text = "Shuffle") },
             onClick = {
                 isMenuExpanded = false
-                onShuffleClick(albumTitle, albumSongs)
+                onShuffleClick(artistName, artistSongs)
             }
         )
 
@@ -193,7 +169,7 @@ private fun AlbumActionsMenu(
             text = { Text(text = "Play next") },
             onClick = {
                 isMenuExpanded = false
-                onPlayNextClick(albumTitle, albumSongs)
+                onPlayNextClick(artistName, artistSongs)
             }
         )
 
@@ -201,7 +177,7 @@ private fun AlbumActionsMenu(
             text = { Text(text = "Add to queue") },
             onClick = {
                 isMenuExpanded = false
-                onAddToQueueClick(albumTitle, albumSongs)
+                onAddToQueueClick(artistName, artistSongs)
             }
         )
 
@@ -211,7 +187,7 @@ private fun AlbumActionsMenu(
             },
             onClick = {
                 isMenuExpanded = false
-                onAddToPlaylistClick(albumTitle, albumSongs)
+                onAddToPlaylistClick(artistName, artistSongs)
             }
         )
     }

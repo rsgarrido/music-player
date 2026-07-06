@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.library
 
 enum class LibrarySortOption(val title: String) {
     TITLE("Title"),

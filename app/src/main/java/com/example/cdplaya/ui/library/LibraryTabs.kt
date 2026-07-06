@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.library
 
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab

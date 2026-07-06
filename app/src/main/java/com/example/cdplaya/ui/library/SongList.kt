@@ -1,5 +1,6 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.library
 
+import android.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
@@ -31,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.ui.getDisplayTrackNumber
 
 @Composable
 fun SongList(
@@ -76,8 +78,8 @@ fun SongList(
                                 .size(56.dp)
                                 .clip(RoundedCornerShape(8.dp)),
                             contentScale = ContentScale.Crop,
-                            error = painterResource(android.R.drawable.ic_media_play),
-                            placeholder = painterResource(android.R.drawable.ic_media_play)
+                            error = painterResource(R.drawable.ic_media_play),
+                            placeholder = painterResource(R.drawable.ic_media_play)
                         )
                     }
                 },

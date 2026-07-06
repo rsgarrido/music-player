@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.library
 
 enum class LibraryTab(val title: String) {
     SONGS("Songs"),
