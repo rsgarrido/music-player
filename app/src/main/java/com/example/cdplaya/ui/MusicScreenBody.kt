@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.LibraryFolder
+import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
@@ -95,6 +96,8 @@ fun MusicScreenBody(
     onSleepTimerClick: () -> Unit,
     recentlyPlayedSongs: List<Song>,
     mostPlayedSongs: List<Song>,
+    selectedPlayerTheme: PlayerTheme,
+    onPlayerThemeSelected: (PlayerTheme) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when {
@@ -120,6 +123,8 @@ fun MusicScreenBody(
                 isSleepTimerActive = isSleepTimerActive,
                 sleepTimerDisplayText = sleepTimerDisplayText,
                 onSleepTimerClick = onSleepTimerClick,
+                selectedPlayerTheme = selectedPlayerTheme,
+                onPlayerThemeSelected = onPlayerThemeSelected,
                 modifier = modifier.fillMaxSize()
             )
         }
