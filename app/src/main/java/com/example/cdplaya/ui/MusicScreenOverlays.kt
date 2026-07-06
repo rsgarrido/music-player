@@ -1,11 +1,16 @@
 package com.example.cdplaya.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
@@ -54,30 +59,45 @@ fun MusicScreenOverlays(
     sleepTimerDisplayText: String,
     onStartSleepTimerClick: (Int) -> Unit,
     onCancelSleepTimerClick: () -> Unit,
-    onDismissSleepTimerDialog: () -> Unit
+    onDismissSleepTimerDialog: () -> Unit,
+    selectedPlayerTheme: PlayerTheme
 ) {
+
+    ImmersiveSystemBarsEffect(
+        isImmersive = isPlayerExpanded &&
+                selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL
+    )
+
     if (isPlayerExpanded && currentSong != null) {
-        PlayerCard(
-            modifier = Modifier.fillMaxSize(),
-            currentSong = currentSong,
-            isPlaying = isPlaying,
-            isExpanded = true,
-            isShuffleEnabled = isShuffleEnabled,
-            repeatMode = repeatMode,
-            currentPosition = currentPosition,
-            duration = duration,
-            onPlayPauseClick = onPlayPauseClick,
-            onPreviousClick = onPreviousClick,
-            onNextClick = onNextClick,
-            onSeekChange = onSeekChange,
-            onShuffleClick = onShuffleClick,
-            onRepeatClick = onRepeatClick,
-            onExpandClick = {},
-            onCollapseClick = onCollapseExpandedPlayer,
-            onOpenUpNextClick = onShowExpandedUpNextSheet,
-            isCurrentSongFavorite = currentSong.favoriteKey() in favoriteSongKeys,
-            onToggleFavoriteClick = onToggleFavoriteClick
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {}
+                )
+        ) {
+            ExpandedPlayerThemeHost(
+                selectedPlayerTheme = selectedPlayerTheme,
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                isShuffleEnabled = isShuffleEnabled,
+                repeatMode = repeatMode,
+                currentPosition = currentPosition,
+                duration = duration,
+                isCurrentSongFavorite = currentSong.favoriteKey() in favoriteSongKeys,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onSeekChange = onSeekChange,
+                onShuffleClick = onShuffleClick,
+                onRepeatClick = onRepeatClick,
+                onCollapseClick = onCollapseExpandedPlayer,
+                onOpenUpNextClick = onShowExpandedUpNextSheet,
+                onToggleFavoriteClick = onToggleFavoriteClick
+            )
+        }
     }
 
     if (isExpandedUpNextSheetVisible) {

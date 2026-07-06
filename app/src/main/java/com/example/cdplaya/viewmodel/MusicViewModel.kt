@@ -1,6 +1,9 @@
 package com.example.cdplaya.viewmodel
 
 import android.app.Application
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cdplaya.controller.LibraryController
@@ -9,6 +12,8 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
+import com.example.cdplaya.data.PlayerTheme
+import com.example.cdplaya.data.PlayerThemePreferences
 import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
@@ -22,6 +27,17 @@ class MusicViewModel(
 
     private val appDatabase: AppDatabase = DatabaseProvider.getDatabase(appContext)
 
+    private val playerThemePreferences = PlayerThemePreferences(appContext)
+
+    var selectedPlayerTheme by mutableStateOf(
+        playerThemePreferences.getSelectedPlayerTheme()
+    )
+        private set
+
+    fun selectPlayerTheme(playerTheme: PlayerTheme) {
+        selectedPlayerTheme = playerTheme
+        playerThemePreferences.saveSelectedPlayerTheme(playerTheme)
+    }
     val playbackController = PlaybackController(
         context = appContext,
         coroutineScope = viewModelScope

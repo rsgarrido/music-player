@@ -17,6 +17,7 @@ import android.net.Uri
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.TagEditorRepository
@@ -82,6 +83,8 @@ fun MusicScreen(
     onStartSleepTimerClick: (Int) -> Unit,
     onCancelSleepTimerClick: () -> Unit,
     recentlyPlayedSongs: List<Song>,
+    selectedPlayerTheme: PlayerTheme,
+    onPlayerThemeSelected: (PlayerTheme) -> Unit,
     mostPlayedSongs: List<Song>
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
@@ -409,6 +412,8 @@ fun MusicScreen(
                 },
                 recentlyPlayedSongs = recentlyPlayedSongs,
                 mostPlayedSongs = mostPlayedSongs,
+                selectedPlayerTheme = selectedPlayerTheme,
+                onPlayerThemeSelected = onPlayerThemeSelected,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -487,7 +492,8 @@ fun MusicScreen(
                 onCancelSleepTimerClick = onCancelSleepTimerClick,
                 onDismissSleepTimerDialog = {
                     isSleepTimerDialogVisible = false
-                }
+                },
+                selectedPlayerTheme = selectedPlayerTheme,
             )
         }
     }
