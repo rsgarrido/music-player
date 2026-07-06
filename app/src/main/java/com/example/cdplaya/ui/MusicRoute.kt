@@ -38,70 +38,70 @@ fun MusicRoute(
         selectedPlaylistName = libraryController.selectedPlaylistName,
         selectedPlaylistSongs = libraryController.selectedPlaylistSongs,
         onSongClick = { song, playbackContext ->
-            playbackController.playSelectedSong(
+            musicViewModel.playSelectedSong(
                 song = song,
                 playbackContext = playbackContext
             )
         },
         onPlaySongsClick = { playbackContext, shuffle ->
-            playbackController.playSongsFromContext(
+            musicViewModel.playSongsFromContext(
                 playbackContext = playbackContext,
                 shuffle = shuffle
             )
         },
         onPlayPauseClick = {
-            playbackController.togglePlayPause()
+            musicViewModel.togglePlayPause()
         },
         onPreviousClick = {
-            playbackController.skipToPrevious()
+            musicViewModel.skipToPrevious()
         },
         onNextClick = {
-            playbackController.skipToNext()
+            musicViewModel.skipToNext()
         },
         onSeekChange = { position ->
-            playbackController.seekTo(position)
+            musicViewModel.seekTo(position)
         },
         onShuffleClick = {
-            playbackController.toggleShuffle()
+            musicViewModel.toggleShuffle()
         },
         onRepeatClick = {
-            playbackController.cycleRepeatMode()
+            musicViewModel.cycleRepeatMode()
         },
         onAddToQueueClick = { song ->
-            playbackController.addSongToQueue(song)
+            musicViewModel.addSongToQueue(song)
         },
         onPlayNextClick = { song ->
-            playbackController.addSongToPlayNext(song)
+            musicViewModel.addSongToPlayNext(song)
         },
         onUndoPlayNextClick = { song ->
-            playbackController.removeFirstMatchingSongFromQueue(song)
+            musicViewModel.removeFirstMatchingSongFromQueue(song)
         },
         onRemoveFromQueueClick = { index ->
-            playbackController.removeSongFromQueue(index)
+            musicViewModel.removeSongFromQueue(index)
         },
         onMoveQueueItemUpClick = { index ->
-            playbackController.moveQueuedSongUp(index)
+            musicViewModel.moveQueuedSongUp(index)
         },
         onMoveQueueItemDownClick = { index ->
-            playbackController.moveQueuedSongDown(index)
+            musicViewModel.moveQueuedSongDown(index)
         },
         onClearQueueClick = {
-            playbackController.clearQueue()
+            musicViewModel.clearQueue()
         },
         onUndoAddToQueueClick = { song ->
-            playbackController.removeLastMatchingSongFromQueue(song)
+            musicViewModel.removeLastMatchingSongFromQueue(song)
         },
         onPlayNextSongsClick = { songs ->
-            playbackController.addSongsToPlayNext(songs)
+            musicViewModel.addSongsToPlayNext(songs)
         },
         onAddSongsToQueueClick = { songs ->
-            playbackController.addSongsToQueue(songs)
+            musicViewModel.addSongsToQueue(songs)
         },
         onUndoPlayNextSongsClick = { songs ->
-            playbackController.removeFirstMatchingSongsFromQueue(songs)
+            musicViewModel.removeFirstMatchingSongsFromQueue(songs)
         },
         onUndoAddSongsToQueueClick = { songs ->
-            playbackController.removeLastMatchingSongsFromQueue(songs)
+            musicViewModel.removeLastMatchingSongsFromQueue(songs)
         },
         onLibraryFolderToggle = { folderPath ->
             libraryController.toggleLibraryFolder(folderPath)
