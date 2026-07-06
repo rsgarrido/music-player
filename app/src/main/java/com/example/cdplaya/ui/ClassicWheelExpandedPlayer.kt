@@ -1,5 +1,7 @@
 package com.example.cdplaya.ui
 
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,8 +25,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueueMusic
-import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
@@ -35,9 +35,18 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -48,6 +57,7 @@ import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import kotlin.math.roundToInt
+
 
 @Composable
 fun ClassicWheelExpandedPlayer(
@@ -62,6 +72,8 @@ fun ClassicWheelExpandedPlayer(
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit,
+    onShuffleClick: () -> Unit,
+    onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit
@@ -72,14 +84,21 @@ fun ClassicWheelExpandedPlayer(
             .background(Color(0xFFF1EDE0))
             .padding(horizontal = 14.dp, vertical = 16.dp)
     ) {
+        val screenHeight = minOf(
+            maxHeight * 0.42f,
+            360.dp
+        )
+
         val wheelSize = minOf(
-            maxWidth * 0.88f,
+            maxWidth * 0.9f,
+            maxHeight * 0.43f,
             370.dp
         )
 
         Column(
             modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceEvenly
         ) {
             ClassicWheelScreen(
                 currentSong = currentSong,
@@ -94,10 +113,8 @@ fun ClassicWheelExpandedPlayer(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f)
+                    .height(screenHeight)
             )
-
-            Spacer(modifier = Modifier.height(24.dp))
 
             ClassicControlWheel(
                 isPlaying = isPlaying,
@@ -107,8 +124,6 @@ fun ClassicWheelExpandedPlayer(
                 onMenuClick = onCollapseClick,
                 modifier = Modifier.size(wheelSize)
             )
-
-            Spacer(modifier = Modifier.height(10.dp))
         }
     }
 }
@@ -315,14 +330,28 @@ private fun ClassicWheelProgress(
     onSeekChange: (Int) -> Unit
 ) {
     val safeDuration = duration.coerceAtLeast(1)
-    val progress = currentPosition.toFloat() / safeDuration.toFloat()
+    val clampedPosition = currentPosition.coerceIn(0, safeDuration)
+    val progress = clampedPosition.toFloat() / safeDuration.toFloat()
+
+    var progressBarWidthPx by remember {
+        mutableStateOf(1)
+    }
+
+    fun seekToPositionFromX(x: Float) {
+        val seekRatio = (x / progressBarWidthPx.toFloat())
+            .coerceIn(0f, 1f)
+
+        onSeekChange(
+            (seekRatio * safeDuration).roundToInt()
+        )
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = formatTime(currentPosition),
+            text = formatTime(clampedPosition),
             color = Color.Black,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
@@ -331,34 +360,88 @@ private fun ClassicWheelProgress(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 8.dp),
+                .height(38.dp)
+                .padding(horizontal = 10.dp)
+                .onSizeChanged { size ->
+                    progressBarWidthPx = size.width.coerceAtLeast(1)
+                }
+                .pointerInput(safeDuration, progressBarWidthPx) {
+                    detectDragGestures(
+                        onDragStart = { offset ->
+                            seekToPositionFromX(offset.x)
+                        },
+                        onDrag = { change, _ ->
+                            seekToPositionFromX(change.position.x)
+                        }
+                    )
+                },
             contentAlignment = Alignment.Center
         ) {
-            LinearProgressIndicator(
-                progress = {
-                    progress.coerceIn(0f, 1f)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp),
-                color = Color(0xFF4FA3FF),
-                trackColor = Color(0xFFD8D8D8)
-            )
+            Canvas(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                val trackHeight = 10.dp.toPx()
+                val trackTop = (size.height - trackHeight) / 2f
+                val trackCorner = CornerRadius(
+                    x = trackHeight / 2f,
+                    y = trackHeight / 2f
+                )
 
-            Slider(
-                value = currentPosition.coerceIn(0, safeDuration).toFloat(),
-                onValueChange = { value ->
-                    onSeekChange(value.roundToInt())
-                },
-                valueRange = 0f..safeDuration.toFloat(),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(28.dp)
-            )
+                val progressWidth = size.width * progress.coerceIn(0f, 1f)
+
+                drawRoundRect(
+                    color = Color(0xFFD8D8D2),
+                    topLeft = Offset(
+                        x = 0f,
+                        y = trackTop
+                    ),
+                    size = Size(
+                        width = size.width,
+                        height = trackHeight
+                    ),
+                    cornerRadius = trackCorner
+                )
+
+                drawRoundRect(
+                    color = Color(0xFF67AEE7),
+                    topLeft = Offset(
+                        x = 0f,
+                        y = trackTop
+                    ),
+                    size = Size(
+                        width = progressWidth,
+                        height = trackHeight
+                    ),
+                    cornerRadius = trackCorner
+                )
+
+                val handleWidth = 5.dp.toPx()
+                val handleHeight = 28.dp.toPx()
+                val handleCorner = CornerRadius(
+                    x = 3.dp.toPx(),
+                    y = 3.dp.toPx()
+                )
+
+                val handleLeft = (progressWidth - handleWidth / 2f)
+                    .coerceIn(0f, size.width - handleWidth)
+
+                drawRoundRect(
+                    color = Color(0xFF9DB2FF),
+                    topLeft = Offset(
+                        x = handleLeft,
+                        y = (size.height - handleHeight) / 2f
+                    ),
+                    size = Size(
+                        width = handleWidth,
+                        height = handleHeight
+                    ),
+                    cornerRadius = handleCorner
+                )
+            }
         }
 
         Text(
-            text = "-${formatTime((safeDuration - currentPosition).coerceAtLeast(0))}",
+            text = "-${formatTime((safeDuration - clampedPosition).coerceAtLeast(0))}",
             color = Color.Black,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
