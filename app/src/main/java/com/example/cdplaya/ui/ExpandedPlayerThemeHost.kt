@@ -48,7 +48,7 @@ fun ExpandedPlayerThemeHost(
         }
 
         PlayerTheme.CLASSIC_WHEEL -> {
-            DefaultExpandedPlayer(
+            ClassicWheelExpandedPlayer(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
