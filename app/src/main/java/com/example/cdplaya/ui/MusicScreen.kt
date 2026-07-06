@@ -26,6 +26,9 @@ import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.playlist.rememberPlaylistSnackbarActions
 import com.example.cdplaya.ui.queue.rememberQueueSnackbarActions
+import com.example.cdplaya.ui.tageditor.DiscardTagChangesDialog
+import com.example.cdplaya.ui.tageditor.TagEditorScreen
+import com.example.cdplaya.ui.tageditor.rememberTagEditorActions
 
 
 @Composable

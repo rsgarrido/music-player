@@ -1,5 +1,6 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.tageditor
 
+import android.R
 import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -139,8 +140,8 @@ fun TagEditorScreen(
                     .size(96.dp)
                     .clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop,
-                error = painterResource(android.R.drawable.ic_media_play),
-                placeholder = painterResource(android.R.drawable.ic_media_play)
+                error = painterResource(R.drawable.ic_media_play),
+                placeholder = painterResource(R.drawable.ic_media_play)
             )
 
             Spacer(modifier = Modifier.width(16.dp))

@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.settings
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth

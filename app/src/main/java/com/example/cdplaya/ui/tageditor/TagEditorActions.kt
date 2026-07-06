@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.tageditor
 
 import android.app.Activity
 import android.media.MediaScannerConnection

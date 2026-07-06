@@ -20,6 +20,7 @@ import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
 import com.example.cdplaya.ui.playlist.AddToPlaylistDialog
 import com.example.cdplaya.ui.playlist.PlaylistNameDialog
 import com.example.cdplaya.ui.queue.QueueScreen
+import com.example.cdplaya.ui.settings.SleepTimerDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

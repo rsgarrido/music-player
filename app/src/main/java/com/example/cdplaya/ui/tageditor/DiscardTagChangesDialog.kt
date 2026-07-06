@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.tageditor
 
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
