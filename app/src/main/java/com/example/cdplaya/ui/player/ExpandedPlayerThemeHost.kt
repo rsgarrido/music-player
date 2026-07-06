@@ -1,9 +1,10 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.player
 
 import androidx.compose.runtime.Composable
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
 
 @Composable
 fun ExpandedPlayerThemeHost(

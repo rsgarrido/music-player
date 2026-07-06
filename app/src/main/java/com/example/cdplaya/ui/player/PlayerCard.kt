@@ -1,5 +1,6 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.player
 
+import android.R
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -61,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.ui.formatDuration
 import kotlin.math.abs
 
 @Composable
@@ -170,8 +172,8 @@ private fun MiniPlayerCard(
                     .size(albumArtSize)
                     .clip(RoundedCornerShape(10.dp)),
                 contentScale = ContentScale.Crop,
-                error = painterResource(android.R.drawable.ic_media_play),
-                placeholder = painterResource(android.R.drawable.ic_media_play)
+                error = painterResource(R.drawable.ic_media_play),
+                placeholder = painterResource(R.drawable.ic_media_play)
             )
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -274,8 +276,8 @@ private fun ImmersiveExpandedPlayerContent(
                 .matchParentSize()
                 .blur(42.dp),
             contentScale = ContentScale.Crop,
-            error = painterResource(android.R.drawable.ic_media_play),
-            placeholder = painterResource(android.R.drawable.ic_media_play)
+            error = painterResource(R.drawable.ic_media_play),
+            placeholder = painterResource(R.drawable.ic_media_play)
         )
 
         Box(
@@ -366,8 +368,8 @@ private fun ImmersiveExpandedPlayerContent(
                     contentDescription = "Album art for ${currentSong.title}",
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
-                    error = painterResource(android.R.drawable.ic_media_play),
-                    placeholder = painterResource(android.R.drawable.ic_media_play)
+                    error = painterResource(R.drawable.ic_media_play),
+                    placeholder = painterResource(R.drawable.ic_media_play)
                 )
             }
 

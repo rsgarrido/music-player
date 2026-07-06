@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.player
 
 import android.app.Activity
 import android.content.Context

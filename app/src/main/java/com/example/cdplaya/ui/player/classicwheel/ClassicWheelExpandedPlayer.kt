@@ -1,5 +1,6 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.player.classicwheel
 
+import android.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.background
@@ -29,9 +30,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,6 +47,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -181,9 +181,9 @@ private fun ClassicWheelScreen(
                             .weight(0.95f)
                             .aspectRatio(1f)
                             .clip(RoundedCornerShape(3.dp)),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        error = painterResource(android.R.drawable.ic_media_play),
-                        placeholder = painterResource(android.R.drawable.ic_media_play)
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(R.drawable.ic_media_play),
+                        placeholder = painterResource(R.drawable.ic_media_play)
                     )
 
                     Column(

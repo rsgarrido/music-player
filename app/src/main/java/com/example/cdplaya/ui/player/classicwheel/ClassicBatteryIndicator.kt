@@ -1,4 +1,4 @@
-package com.example.cdplaya.ui
+package com.example.cdplaya.ui.player.classicwheel
 
 import android.content.BroadcastReceiver
 import android.content.Context

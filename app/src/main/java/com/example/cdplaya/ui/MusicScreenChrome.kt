@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.ui.player.PlayerCard
+import com.example.cdplaya.ui.player.SleepTimerStatusBanner
 
 @Composable
 fun MusicScreenHeader(

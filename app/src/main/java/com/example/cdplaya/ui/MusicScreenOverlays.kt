@@ -15,6 +15,8 @@ import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.ui.player.ExpandedPlayerThemeHost
+import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
