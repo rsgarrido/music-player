@@ -492,7 +492,8 @@ fun MusicScreen(
                 onCancelSleepTimerClick = onCancelSleepTimerClick,
                 onDismissSleepTimerDialog = {
                     isSleepTimerDialogVisible = false
-                }
+                },
+                selectedPlayerTheme = selectedPlayerTheme,
             )
         }
     }

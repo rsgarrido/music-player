@@ -6,6 +6,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
@@ -54,28 +55,29 @@ fun MusicScreenOverlays(
     sleepTimerDisplayText: String,
     onStartSleepTimerClick: (Int) -> Unit,
     onCancelSleepTimerClick: () -> Unit,
-    onDismissSleepTimerDialog: () -> Unit
+    onDismissSleepTimerDialog: () -> Unit,
+    selectedPlayerTheme: PlayerTheme
 ) {
     if (isPlayerExpanded && currentSong != null) {
-        PlayerCard(
-            modifier = Modifier.fillMaxSize(),
+        ExpandedPlayerThemeHost(
+            selectedPlayerTheme = selectedPlayerTheme,
             currentSong = currentSong,
             isPlaying = isPlaying,
-            isExpanded = true,
             isShuffleEnabled = isShuffleEnabled,
             repeatMode = repeatMode,
             currentPosition = currentPosition,
             duration = duration,
+            isCurrentSongFavorite = currentSong?.let { song ->
+                song.favoriteKey() in favoriteSongKeys
+            } == true,
             onPlayPauseClick = onPlayPauseClick,
             onPreviousClick = onPreviousClick,
             onNextClick = onNextClick,
             onSeekChange = onSeekChange,
             onShuffleClick = onShuffleClick,
             onRepeatClick = onRepeatClick,
-            onExpandClick = {},
             onCollapseClick = onCollapseExpandedPlayer,
             onOpenUpNextClick = onShowExpandedUpNextSheet,
-            isCurrentSongFavorite = currentSong.favoriteKey() in favoriteSongKeys,
             onToggleFavoriteClick = onToggleFavoriteClick
         )
     }
