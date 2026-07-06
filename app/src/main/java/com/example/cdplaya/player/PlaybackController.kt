@@ -11,9 +11,6 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.ListeningHistoryRepository
 import kotlin.random.Random
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class PlaybackController(
     context: Context,
@@ -21,15 +18,10 @@ class PlaybackController(
 ) {
     private val musicPlayer = MusicPlayer(context)
     private val playerStateStorage = PlayerStateStorage(context)
+    private val playbackHistoryRecorder = PlaybackHistoryRecorder(coroutineScope)
 
     private var librarySongs: List<Song> = emptyList()
     private var playbackContextSongs: List<Song> = emptyList()
-    private var listeningHistoryRepository: ListeningHistoryRepository? = null
-    private var onListeningHistoryChanged: (() -> Unit)? = null
-    private var playCountedForSongId: Long? = null
-    private var listenedMsForCurrentSong = 0L
-    private var lastObservedPositionForHistory: Int? = null
-
     private val previousSongHistory = mutableListOf<Song>()
     private val nextSongHistory = mutableListOf<Song>()
 
@@ -69,8 +61,12 @@ class PlaybackController(
                 currentPosition = updatedPosition
                 duration = musicPlayer.getDuration()
 
-                updateListenedTimeForHistory(updatedPosition)
-                maybeRecordCurrentSongPlay()
+                playbackHistoryRecorder.onProgressUpdated(
+                    currentSong = currentSong,
+                    isPlaying = isPlaying,
+                    updatedPosition = updatedPosition,
+                    duration = duration
+                )
 
                 progressHandler.postDelayed(this, 500)
             }
@@ -200,7 +196,7 @@ class PlaybackController(
         )
 
         currentSong = song
-        resetPlayCountTracking()
+        playbackHistoryRecorder.resetForNewSong()
         isPlaying = true
         currentPosition = 0
         duration = song.duration.toInt()
@@ -239,7 +235,7 @@ class PlaybackController(
     fun seekTo(position: Int) {
         musicPlayer.seekTo(position)
         currentPosition = position
-        lastObservedPositionForHistory = position
+        playbackHistoryRecorder.onSeek(position)
         savePlayerState()
     }
 
@@ -416,82 +412,11 @@ class PlaybackController(
     }
 
     fun setListeningHistoryRepository(repository: ListeningHistoryRepository) {
-        listeningHistoryRepository = repository
+        playbackHistoryRecorder.setListeningHistoryRepository(repository)
     }
 
     fun setOnListeningHistoryChanged(listener: () -> Unit) {
-        onListeningHistoryChanged = listener
-    }
-
-    private fun maybeRecordCurrentSongPlay() {
-        val song = currentSong ?: return
-
-        if (!isPlaying) {
-            return
-        }
-
-        if (playCountedForSongId == song.id) {
-            return
-        }
-
-        val songDuration = duration.takeIf { value ->
-            value > 0
-        } ?: song.duration.toInt()
-
-        if (songDuration <= 0) {
-            return
-        }
-
-        val halfDuration = songDuration / 2
-        val playThreshold = minOf(
-            PLAY_COUNT_THRESHOLD_MS,
-            halfDuration.toLong()
-        )
-            .coerceAtLeast(MIN_PLAY_COUNT_THRESHOLD_MS)
-            .coerceAtMost(songDuration.toLong())
-
-        if (listenedMsForCurrentSong < playThreshold) {
-            return
-        }
-
-        playCountedForSongId = song.id
-
-        coroutineScope.launch(Dispatchers.IO) {
-            listeningHistoryRepository?.recordSongPlay(song)
-
-            withContext(Dispatchers.Main) {
-                onListeningHistoryChanged?.invoke()
-            }
-        }
-    }
-
-    companion object {
-        private const val PLAY_COUNT_THRESHOLD_MS = 30_000L
-        private const val MIN_PLAY_COUNT_THRESHOLD_MS = 5_000L
-        private const val MAX_POSITION_JUMP_FOR_HISTORY_MS = 2_000
-    }
-
-    private fun updateListenedTimeForHistory(updatedPosition: Int) {
-        val previousPosition = lastObservedPositionForHistory
-
-        if (isPlaying && previousPosition != null) {
-            val positionDifference = updatedPosition - previousPosition
-
-            if (
-                positionDifference > 0 &&
-                positionDifference <= MAX_POSITION_JUMP_FOR_HISTORY_MS
-            ) {
-                listenedMsForCurrentSong += positionDifference
-            }
-        }
-
-        lastObservedPositionForHistory = updatedPosition
-    }
-
-    private fun resetPlayCountTracking() {
-        playCountedForSongId = null
-        listenedMsForCurrentSong = 0L
-        lastObservedPositionForHistory = null
+        playbackHistoryRecorder.setOnListeningHistoryChanged(listener)
     }
 
     private fun restorePlayerState() {
@@ -505,7 +430,7 @@ class PlaybackController(
         currentPosition = playerStateStorage.getCurrentPosition()
         duration = restoredSong.duration.toInt()
         isPlaying = false
-        playCountedForSongId = null
+        playbackHistoryRecorder.resetForNewSong()
 
         isShuffleEnabled = playerStateStorage.isShuffleEnabled()
         repeatMode = playerStateStorage.getRepeatMode()
@@ -709,7 +634,7 @@ class PlaybackController(
         }
 
         currentSong = newSong
-        resetPlayCountTracking()
+        playbackHistoryRecorder.resetForNewSong()
         currentPosition = musicPlayer.getCurrentPosition()
         duration = newSong.duration.toInt()
         isPlaying = musicPlayer.isPlaying()
