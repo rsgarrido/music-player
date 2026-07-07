@@ -1,6 +1,5 @@
 package com.example.cdplaya.ui.player.classicwheel
 
-import android.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.background
@@ -47,7 +46,6 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -84,6 +82,18 @@ fun ClassicWheelExpandedPlayer(
             .background(Color(0xFFF1EDE0))
             .padding(horizontal = 14.dp, vertical = 16.dp)
     ) {
+        val menuState = remember {
+            ClassicWheelMenuState()
+        }
+
+        val onMenuClick = {
+            if (menuState.currentScreen == ClassicWheelMenuScreen.NowPlaying) {
+                menuState.openMainMenu()
+            } else {
+                menuState.goBack()
+            }
+        }
+
         val screenHeight = minOf(
             maxHeight * 0.42f,
             360.dp
@@ -107,6 +117,7 @@ fun ClassicWheelExpandedPlayer(
                 isCurrentSongFavorite = isCurrentSongFavorite,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
+                menuState = menuState,
                 onSeekChange = onSeekChange,
                 onCollapseClick = onCollapseClick,
                 onOpenUpNextClick = onOpenUpNextClick,
@@ -121,7 +132,7 @@ fun ClassicWheelExpandedPlayer(
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
-                onMenuClick = onCollapseClick,
+                onMenuClick = onMenuClick,
                 modifier = Modifier.size(wheelSize)
             )
         }
@@ -137,6 +148,7 @@ private fun ClassicWheelScreen(
     isCurrentSongFavorite: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
+    menuState: ClassicWheelMenuState,
     onSeekChange: (Int) -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
@@ -159,127 +171,180 @@ private fun ClassicWheelScreen(
                 onCollapseClick = onCollapseClick
             )
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    AsyncImage(
-                        model = currentSong?.albumArtUri,
-                        contentDescription = currentSong?.let { song ->
-                            "Album art for ${song.title}"
-                        },
-                        modifier = Modifier
-                            .weight(0.95f)
-                            .aspectRatio(1f)
-                            .clip(RoundedCornerShape(3.dp)),
-                        contentScale = ContentScale.Crop,
-                        error = painterResource(R.drawable.ic_media_play),
-                        placeholder = painterResource(R.drawable.ic_media_play)
+            when (menuState.currentScreen) {
+                ClassicWheelMenuScreen.NowPlaying -> {
+                    ClassicWheelNowPlayingDisplay(
+                        currentSong = currentSong,
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        isCurrentSongFavorite = isCurrentSongFavorite,
+                        isShuffleEnabled = isShuffleEnabled,
+                        repeatMode = repeatMode,
+                        onSeekChange = onSeekChange,
+                        onOpenUpNextClick = onOpenUpNextClick,
+                        onToggleFavoriteClick = onToggleFavoriteClick
                     )
+                }
 
-                    Column(
-                        modifier = Modifier.weight(1.15f)
+                ClassicWheelMenuScreen.MainMenu -> {
+                    ClassicWheelMenuDisplay(
+                        title = "Music",
+                        menuItems = buildClassicWheelMainMenuItems(),
+                        selectedIndex = menuState.selectedIndex,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                ClassicWheelMenuScreen.Songs -> {
+                    ClassicWheelMenuDisplay(
+                        title = "Songs",
+                        menuItems = listOf(
+                            ClassicWheelMenuItem(
+                                title = "Song browsing coming next",
+                                subtitle = "This screen is wired up",
+                                action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
+                            )
+                        ),
+                        selectedIndex = 0,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClassicWheelNowPlayingDisplay(
+    currentSong: Song?,
+    currentPosition: Int,
+    duration: Int,
+    isCurrentSongFavorite: Boolean,
+    isShuffleEnabled: Boolean,
+    repeatMode: RepeatMode,
+    onSeekChange: (Int) -> Unit,
+    onOpenUpNextClick: () -> Unit,
+    onToggleFavoriteClick: (Song) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            AsyncImage(
+                model = currentSong?.albumArtUri,
+                contentDescription = currentSong?.let { song ->
+                    "Album art for ${song.title}"
+                },
+                modifier = Modifier
+                    .weight(0.95f)
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(3.dp)),
+                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                error = painterResource(android.R.drawable.ic_media_play),
+                placeholder = painterResource(android.R.drawable.ic_media_play)
+            )
+
+            Column(
+                modifier = Modifier.weight(1.15f)
+            ) {
+                Text(
+                    text = currentSong?.title?.ifBlank { "Unknown Title" }
+                        ?: "No song selected",
+                    color = Color.Black,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = currentSong?.artist?.ifBlank { "Unknown Artist" }
+                        ?: "Choose a song",
+                    color = Color.Black,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Text(
+                    text = currentSong?.album?.ifBlank { "Unknown Album" }
+                        ?: "",
+                    color = Color.DarkGray,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = {
+                            currentSong?.let { song ->
+                                onToggleFavoriteClick(song)
+                            }
+                        },
+                        modifier = Modifier.size(38.dp),
+                        enabled = currentSong != null
                     ) {
-                        Text(
-                            text = currentSong?.title?.ifBlank { "Unknown Title" }
-                                ?: "No song selected",
-                            color = Color.Black,
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                        Icon(
+                            imageVector = if (isCurrentSongFavorite) {
+                                Icons.Filled.Favorite
+                            } else {
+                                Icons.Filled.FavoriteBorder
+                            },
+                            contentDescription = "Favorite",
+                            tint = Color.Black,
+                            modifier = Modifier.size(30.dp)
                         )
+                    }
 
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = currentSong?.artist?.ifBlank { "Unknown Artist" }
-                                ?: "Choose a song",
-                            color = Color.Black,
-                            style = MaterialTheme.typography.bodyLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Text(
-                            text = currentSong?.album?.ifBlank { "Unknown Album" }
-                                ?: "",
-                            color = Color.DarkGray,
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-
-                        Spacer(modifier = Modifier.height(10.dp))
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = {
-                                    currentSong?.let { song ->
-                                        onToggleFavoriteClick(song)
-                                    }
-                                },
-                                modifier = Modifier.size(38.dp),
-                                enabled = currentSong != null
-                            ) {
-                                Icon(
-                                    imageVector = if (isCurrentSongFavorite) {
-                                        Icons.Filled.Favorite
-                                    } else {
-                                        Icons.Filled.FavoriteBorder
-                                    },
-                                    contentDescription = "Favorite",
-                                    tint = Color.Black,
-                                    modifier = Modifier.size(30.dp)
-                                )
-                            }
-
-                            IconButton(
-                                onClick = onOpenUpNextClick,
-                                modifier = Modifier.size(38.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.QueueMusic,
-                                    contentDescription = "Up Next",
-                                    tint = Color.Black,
-                                    modifier = Modifier.size(30.dp)
-                                )
-                            }
-                        }
-
-                        Text(
-                            text = buildPlaybackModeText(
-                                isShuffleEnabled = isShuffleEnabled,
-                                repeatMode = repeatMode
-                            ),
-                            color = Color.DarkGray,
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                    IconButton(
+                        onClick = onOpenUpNextClick,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.QueueMusic,
+                            contentDescription = "Up Next",
+                            tint = Color.Black,
+                            modifier = Modifier.size(30.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
-                ClassicWheelProgress(
-                    currentPosition = currentPosition,
-                    duration = duration,
-                    onSeekChange = onSeekChange
+                Text(
+                    text = buildPlaybackModeText(
+                        isShuffleEnabled = isShuffleEnabled,
+                        repeatMode = repeatMode
+                    ),
+                    color = Color.DarkGray,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        ClassicWheelProgress(
+            currentPosition = currentPosition,
+            duration = duration,
+            onSeekChange = onSeekChange
+        )
     }
 }
 
@@ -564,4 +629,17 @@ private fun buildPlaybackModeText(
     }
 
     return "$shuffleText • $repeatText"
+}
+
+private fun buildClassicWheelMainMenuItems(): List<ClassicWheelMenuItem> {
+    return listOf(
+        ClassicWheelMenuItem(
+            title = "Now Playing",
+            action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
+        ),
+        ClassicWheelMenuItem(
+            title = "Songs",
+            action = ClassicWheelMenuAction.OPEN_SONGS
+        )
+    )
 }
