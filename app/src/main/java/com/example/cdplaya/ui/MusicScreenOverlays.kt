@@ -27,6 +27,8 @@ import com.example.cdplaya.ui.settings.SleepTimerDialog
 fun MusicScreenOverlays(
     isPlayerExpanded: Boolean,
     currentSong: Song?,
+    songs: List<Song>,
+    onSongClick: (Song, List<Song>) -> Unit,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -101,7 +103,9 @@ fun MusicScreenOverlays(
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseExpandedPlayer,
                 onOpenUpNextClick = onShowExpandedUpNextSheet,
-                onToggleFavoriteClick = onToggleFavoriteClick
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                songs = songs,
+                onSongClick = onSongClick
             )
         }
     }

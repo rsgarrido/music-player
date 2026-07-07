@@ -24,7 +24,9 @@ fun ExpandedPlayerThemeHost(
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit
+    onToggleFavoriteClick: (Song) -> Unit,
+    songs: List<Song>,
+    onSongClick: (Song, List<Song>) -> Unit
 ) {
     when (selectedPlayerTheme) {
         PlayerTheme.DEFAULT -> {
@@ -65,7 +67,9 @@ fun ExpandedPlayerThemeHost(
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseClick,
                 onOpenUpNextClick = onOpenUpNextClick,
-                onToggleFavoriteClick = onToggleFavoriteClick
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                songs = songs,
+                onSongClick = onSongClick
             )
         }
     }
