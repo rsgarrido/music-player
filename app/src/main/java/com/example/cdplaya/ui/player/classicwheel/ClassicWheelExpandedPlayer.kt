@@ -55,6 +55,8 @@ import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import kotlin.math.roundToInt
+import kotlin.math.PI
+import kotlin.math.atan2
 
 
 @Composable
@@ -118,6 +120,24 @@ fun ClassicWheelExpandedPlayer(
             }
         }
 
+        val currentMenuItemCount = when (menuState.currentScreen) {
+            ClassicWheelMenuScreen.NowPlaying -> 0
+            ClassicWheelMenuScreen.MainMenu -> buildClassicWheelMainMenuItems().size
+            ClassicWheelMenuScreen.Songs -> 1
+        }
+
+        val onRotateClockwise = {
+            if (currentMenuItemCount > 1) {
+                menuState.moveSelectionDown(currentMenuItemCount)
+            }
+        }
+
+        val onRotateCounterClockwise = {
+            if (currentMenuItemCount > 1) {
+                menuState.moveSelectionUp(currentMenuItemCount)
+            }
+        }
+
         val screenHeight = minOf(
             maxHeight * 0.42f,
             360.dp
@@ -158,6 +178,9 @@ fun ClassicWheelExpandedPlayer(
                 onNextClick = onNextClick,
                 onMenuClick = onMenuClick,
                 onCenterClick = onCenterClick,
+                onRotateClockwise = onRotateClockwise,
+                onRotateCounterClockwise = onRotateCounterClockwise,
+                rotationItemCount = currentMenuItemCount,
                 modifier = Modifier.size(wheelSize)
             )
         }
@@ -542,18 +565,81 @@ private fun ClassicControlWheel(
     onNextClick: () -> Unit,
     onMenuClick: () -> Unit,
     onCenterClick: () -> Unit,
+    onRotateClockwise: () -> Unit,
+    onRotateCounterClockwise: () -> Unit,
+    rotationItemCount: Int,
     modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier.aspectRatio(1f),
+        modifier = modifier
+            .aspectRatio(1f)
+            .pointerInput(rotationItemCount) {
+                var previousAngle: Float? = null
+                var accumulatedAngleDelta = 0f
+                val selectionStepDegrees = 55f
+
+                detectDragGestures(
+                    onDragStart = { offset ->
+                        previousAngle = offset.angleDegreesFromCenter(
+                            width = size.width.toFloat(),
+                            height = size.height.toFloat()
+                        )
+                        accumulatedAngleDelta = 0f
+                    },
+                    onDrag = { change, _ ->
+                        if (rotationItemCount <= 1) {
+                            return@detectDragGestures
+                        }
+
+                        val currentAngle = change.position.angleDegreesFromCenter(
+                            width = size.width.toFloat(),
+                            height = size.height.toFloat()
+                        )
+
+                        val oldAngle = previousAngle ?: currentAngle
+                        var angleDelta = currentAngle - oldAngle
+
+                        if (angleDelta > 180f) {
+                            angleDelta -= 360f
+                        }
+
+                        if (angleDelta < -180f) {
+                            angleDelta += 360f
+                        }
+
+                        accumulatedAngleDelta += angleDelta
+
+                        while (accumulatedAngleDelta >= selectionStepDegrees) {
+                            onRotateClockwise()
+                            accumulatedAngleDelta -= selectionStepDegrees
+                        }
+
+                        while (accumulatedAngleDelta <= -selectionStepDegrees) {
+                            onRotateCounterClockwise()
+                            accumulatedAngleDelta += selectionStepDegrees
+                        }
+
+                        previousAngle = currentAngle
+                        change.consume()
+                    },
+                    onDragEnd = {
+                        previousAngle = null
+                        accumulatedAngleDelta = 0f
+                    },
+                    onDragCancel = {
+                        previousAngle = null
+                        accumulatedAngleDelta = 0f
+                    }
+                )
+            },
         contentAlignment = Alignment.Center
     ) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            shape = CircleShape,
-            color = Color(0xFFC8C6BC),
-            shadowElevation = 6.dp
-        ) {}
+            Surface(
+                modifier = Modifier.fillMaxSize(),
+                shape = CircleShape,
+                color = Color(0xFFC8C6BC),
+                shadowElevation = 6.dp
+            ) {}
 
         Text(
             text = "MENU",
@@ -640,6 +726,21 @@ private fun formatTime(milliseconds: Int): String {
     val seconds = totalSeconds % 60
 
     return "$minutes:${seconds.toString().padStart(2, '0')}"
+}
+
+private fun Offset.angleDegreesFromCenter(
+    width: Float,
+    height: Float
+): Float {
+    val centerX = width / 2f
+    val centerY = height / 2f
+
+    val angleRadians = atan2(
+        y = y - centerY,
+        x = x - centerX
+    )
+
+    return (angleRadians * 180f / PI).toFloat()
 }
 
 private fun buildPlaybackModeText(
