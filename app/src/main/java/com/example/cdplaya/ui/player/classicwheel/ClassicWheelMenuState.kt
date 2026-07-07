@@ -80,4 +80,35 @@ class ClassicWheelMenuState {
         currentScreen = previousScreen
         selectedIndex = 0
     }
+
+    fun openArtists() {
+        backStack.add(currentScreen)
+        currentScreen = ClassicWheelMenuScreen.Artists
+        selectedIndex = 0
+    }
+
+    fun openArtistSongs(artistName: String) {
+        backStack.add(currentScreen)
+        currentScreen = ClassicWheelMenuScreen.ArtistSongs(artistName)
+        selectedIndex = 0
+    }
+
+    fun openAlbums() {
+        backStack.add(currentScreen)
+        currentScreen = ClassicWheelMenuScreen.Albums
+        selectedIndex = 0
+    }
+
+    fun openAlbumSongs(
+        albumKey: String,
+        albumTitle: String
+    ) {
+        backStack.add(currentScreen)
+        currentScreen = ClassicWheelMenuScreen.AlbumSongs(
+            albumKey = albumKey,
+            albumTitle = albumTitle
+        )
+        selectedIndex = 0
+    }
 }
+

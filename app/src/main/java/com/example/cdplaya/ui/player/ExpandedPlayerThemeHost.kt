@@ -26,7 +26,7 @@ fun ExpandedPlayerThemeHost(
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     songs: List<Song>,
-    onSongClick: (Song) -> Unit,
+    onSongClick: (Song, List<Song>) -> Unit
 ) {
     when (selectedPlayerTheme) {
         PlayerTheme.DEFAULT -> {

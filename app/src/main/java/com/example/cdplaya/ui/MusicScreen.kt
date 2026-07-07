@@ -502,9 +502,7 @@ fun MusicScreen(
                 },
                 selectedPlayerTheme = selectedPlayerTheme,
                 songs = songs,
-                onSongClick = { song ->
-                    onSongClick(song, songs)
-                }
+                onSongClick = onSongClick
             )
         }
     }

@@ -28,7 +28,7 @@ fun MusicScreenOverlays(
     isPlayerExpanded: Boolean,
     currentSong: Song?,
     songs: List<Song>,
-    onSongClick: (Song) -> Unit,
+    onSongClick: (Song, List<Song>) -> Unit,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,

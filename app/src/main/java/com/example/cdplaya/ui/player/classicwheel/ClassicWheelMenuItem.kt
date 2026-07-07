@@ -8,5 +8,7 @@ data class ClassicWheelMenuItem(
 
 enum class ClassicWheelMenuAction {
     OPEN_NOW_PLAYING,
-    OPEN_SONGS
+    OPEN_SONGS,
+    OPEN_ARTISTS,
+    OPEN_ALBUMS
 }
