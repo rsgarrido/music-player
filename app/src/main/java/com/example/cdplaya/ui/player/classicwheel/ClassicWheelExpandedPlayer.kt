@@ -230,6 +230,7 @@ private fun ClassicWheelScreen(
                 .background(Color(0xFFF7F7F2))
         ) {
             ClassicScreenStatusBar(
+                title = buildClassicWheelStatusTitle(menuState.currentScreen),
                 onCollapseClick = onCollapseClick
             )
 
@@ -406,6 +407,7 @@ private fun ClassicWheelNowPlayingDisplay(
 
 @Composable
 private fun ClassicScreenStatusBar(
+    title: String,
     onCollapseClick: () -> Unit
 ) {
     Row(
@@ -416,7 +418,7 @@ private fun ClassicScreenStatusBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Now Playing",
+            text = title,
             color = Color.Black,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
@@ -436,6 +438,16 @@ private fun ClassicScreenStatusBar(
         }
 
         ClassicBatteryIndicator()
+    }
+}
+
+private fun buildClassicWheelStatusTitle(
+    screen: ClassicWheelMenuScreen
+): String {
+    return when (screen) {
+        ClassicWheelMenuScreen.NowPlaying -> "Now Playing"
+        ClassicWheelMenuScreen.MainMenu -> "Music"
+        ClassicWheelMenuScreen.Songs -> "Songs"
     }
 }
 

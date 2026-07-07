@@ -40,8 +40,11 @@ class ClassicWheelMenuState {
 
     fun moveSelectionUp(itemCount: Int) {
         if (itemCount <= 0) {
+            selectedIndex = 0
             return
         }
+
+        selectedIndex = selectedIndex.coerceIn(0, itemCount - 1)
 
         selectedIndex = if (selectedIndex <= 0) {
             itemCount - 1
@@ -52,8 +55,11 @@ class ClassicWheelMenuState {
 
     fun moveSelectionDown(itemCount: Int) {
         if (itemCount <= 0) {
+            selectedIndex = 0
             return
         }
+
+        selectedIndex = selectedIndex.coerceIn(0, itemCount - 1)
 
         selectedIndex = if (selectedIndex >= itemCount - 1) {
             0
