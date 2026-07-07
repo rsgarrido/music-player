@@ -94,6 +94,30 @@ fun ClassicWheelExpandedPlayer(
             }
         }
 
+        val onCenterClick = {
+            when (menuState.currentScreen) {
+                ClassicWheelMenuScreen.NowPlaying -> {
+                    menuState.openMainMenu()
+                }
+
+                ClassicWheelMenuScreen.MainMenu -> {
+                    val selectedItem = buildClassicWheelMainMenuItems()
+                        .getOrNull(menuState.selectedIndex)
+
+                    if (selectedItem != null) {
+                        handleClassicWheelMenuAction(
+                            action = selectedItem.action,
+                            menuState = menuState
+                        )
+                    }
+                }
+
+                ClassicWheelMenuScreen.Songs -> {
+                    menuState.openNowPlaying()
+                }
+            }
+        }
+
         val screenHeight = minOf(
             maxHeight * 0.42f,
             360.dp
@@ -133,6 +157,7 @@ fun ClassicWheelExpandedPlayer(
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
                 onMenuClick = onMenuClick,
+                onCenterClick = onCenterClick,
                 modifier = Modifier.size(wheelSize)
             )
         }
@@ -516,6 +541,7 @@ private fun ClassicControlWheel(
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onMenuClick: () -> Unit,
+    onCenterClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -596,7 +622,11 @@ private fun ClassicControlWheel(
         }
 
         Surface(
-            modifier = Modifier.fillMaxSize(0.28f),
+            modifier = Modifier
+                .fillMaxSize(0.28f)
+                .clickable {
+                    onCenterClick()
+                },
             shape = CircleShape,
             color = Color(0xFFF1EDE0),
             shadowElevation = 4.dp
@@ -642,4 +672,19 @@ private fun buildClassicWheelMainMenuItems(): List<ClassicWheelMenuItem> {
             action = ClassicWheelMenuAction.OPEN_SONGS
         )
     )
+}
+
+private fun handleClassicWheelMenuAction(
+    action: ClassicWheelMenuAction,
+    menuState: ClassicWheelMenuState
+) {
+    when (action) {
+        ClassicWheelMenuAction.OPEN_NOW_PLAYING -> {
+            menuState.openNowPlaying()
+        }
+
+        ClassicWheelMenuAction.OPEN_SONGS -> {
+            menuState.openSongs()
+        }
+    }
 }
