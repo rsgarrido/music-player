@@ -501,6 +501,10 @@ fun MusicScreen(
                     isSleepTimerDialogVisible = false
                 },
                 selectedPlayerTheme = selectedPlayerTheme,
+                songs = songs,
+                onSongClick = { song ->
+                    onSongClick(song, songs)
+                }
             )
         }
     }

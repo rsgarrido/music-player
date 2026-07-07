@@ -62,6 +62,7 @@ import kotlin.math.atan2
 @Composable
 fun ClassicWheelExpandedPlayer(
     currentSong: Song?,
+    songs: List<Song>,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -76,7 +77,8 @@ fun ClassicWheelExpandedPlayer(
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit
+    onToggleFavoriteClick: (Song) -> Unit,
+    onSongClick: (Song) -> Unit
 ) {
     BoxWithConstraints(
         modifier = Modifier
@@ -87,6 +89,9 @@ fun ClassicWheelExpandedPlayer(
         val menuState = remember {
             ClassicWheelMenuState()
         }
+
+        val mainMenuItems = buildClassicWheelMainMenuItems()
+        val songMenuItems = buildClassicWheelSongMenuItems(songs)
 
         val onMenuClick = {
             if (menuState.currentScreen == ClassicWheelMenuScreen.NowPlaying) {
@@ -103,7 +108,7 @@ fun ClassicWheelExpandedPlayer(
                 }
 
                 ClassicWheelMenuScreen.MainMenu -> {
-                    val selectedItem = buildClassicWheelMainMenuItems()
+                    val selectedItem = mainMenuItems
                         .getOrNull(menuState.selectedIndex)
 
                     if (selectedItem != null) {
@@ -115,15 +120,20 @@ fun ClassicWheelExpandedPlayer(
                 }
 
                 ClassicWheelMenuScreen.Songs -> {
-                    menuState.openNowPlaying()
+                    val selectedSong = songs.getOrNull(menuState.selectedIndex)
+
+                    if (selectedSong != null) {
+                        onSongClick(selectedSong)
+                        menuState.openNowPlaying()
+                    }
                 }
             }
         }
 
         val currentMenuItemCount = when (menuState.currentScreen) {
             ClassicWheelMenuScreen.NowPlaying -> 0
-            ClassicWheelMenuScreen.MainMenu -> buildClassicWheelMainMenuItems().size
-            ClassicWheelMenuScreen.Songs -> 1
+            ClassicWheelMenuScreen.MainMenu -> mainMenuItems.size
+            ClassicWheelMenuScreen.Songs -> songs.size
         }
 
         val onRotateClockwise = {
@@ -162,6 +172,8 @@ fun ClassicWheelExpandedPlayer(
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
                 menuState = menuState,
+                mainMenuItems = mainMenuItems,
+                songMenuItems = songMenuItems,
                 onSeekChange = onSeekChange,
                 onCollapseClick = onCollapseClick,
                 onOpenUpNextClick = onOpenUpNextClick,
@@ -197,6 +209,8 @@ private fun ClassicWheelScreen(
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
     menuState: ClassicWheelMenuState,
+    mainMenuItems: List<ClassicWheelMenuItem>,
+    songMenuItems: List<ClassicWheelMenuItem>,
     onSeekChange: (Int) -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
@@ -237,7 +251,7 @@ private fun ClassicWheelScreen(
                 ClassicWheelMenuScreen.MainMenu -> {
                     ClassicWheelMenuDisplay(
                         title = "Music",
-                        menuItems = buildClassicWheelMainMenuItems(),
+                        menuItems = mainMenuItems,
                         selectedIndex = menuState.selectedIndex,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -246,14 +260,8 @@ private fun ClassicWheelScreen(
                 ClassicWheelMenuScreen.Songs -> {
                     ClassicWheelMenuDisplay(
                         title = "Songs",
-                        menuItems = listOf(
-                            ClassicWheelMenuItem(
-                                title = "Song browsing coming next",
-                                subtitle = "This screen is wired up",
-                                action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
-                            )
-                        ),
-                        selectedIndex = 0,
+                        menuItems = songMenuItems,
+                        selectedIndex = menuState.selectedIndex,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -773,6 +781,28 @@ private fun buildClassicWheelMainMenuItems(): List<ClassicWheelMenuItem> {
             action = ClassicWheelMenuAction.OPEN_SONGS
         )
     )
+}
+
+private fun buildClassicWheelSongMenuItems(
+    songs: List<Song>
+): List<ClassicWheelMenuItem> {
+    if (songs.isEmpty()) {
+        return listOf(
+            ClassicWheelMenuItem(
+                title = "No songs found",
+                subtitle = "Check your library",
+                action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
+            )
+        )
+    }
+
+    return songs.map { song ->
+        ClassicWheelMenuItem(
+            title = song.title.ifBlank { "Unknown Title" },
+            subtitle = song.artist.ifBlank { "Unknown Artist" },
+            action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
+        )
+    }
 }
 
 private fun handleClassicWheelMenuAction(
