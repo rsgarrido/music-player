@@ -1,5 +1,7 @@
 package com.example.cdplaya.ui.player.classicwheel
 
+import android.content.Context
+import android.media.AudioManager
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.background
@@ -27,14 +29,19 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,6 +65,7 @@ import java.io.File
 import kotlin.math.roundToInt
 import kotlin.math.PI
 import kotlin.math.atan2
+import kotlinx.coroutines.delay
 
 
 @Composable
@@ -89,6 +97,57 @@ fun ClassicWheelExpandedPlayer(
     ) {
         val menuState = remember {
             ClassicWheelMenuState()
+        }
+
+        val context = androidx.compose.ui.platform.LocalContext.current
+
+        val audioManager = remember {
+            context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        }
+
+        val maxMusicVolume = remember {
+            audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        }
+
+        var musicVolume by remember {
+            mutableIntStateOf(
+                audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+            )
+        }
+
+        var isVolumeOverlayVisible by remember {
+            mutableStateOf(false)
+        }
+
+        fun changeMusicVolume(delta: Int) {
+            val currentSystemVolume = audioManager.getStreamVolume(
+                AudioManager.STREAM_MUSIC
+            )
+
+            val updatedVolume = (currentSystemVolume + delta)
+                .coerceIn(0, maxMusicVolume)
+
+            if (updatedVolume == currentSystemVolume) {
+                musicVolume = currentSystemVolume
+                isVolumeOverlayVisible = true
+                return
+            }
+
+            audioManager.setStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                updatedVolume,
+                0
+            )
+
+            musicVolume = updatedVolume
+            isVolumeOverlayVisible = true
+        }
+
+        LaunchedEffect(isVolumeOverlayVisible, musicVolume) {
+            if (isVolumeOverlayVisible) {
+                delay(1200)
+                isVolumeOverlayVisible = false
+            }
         }
 
         val mainMenuItems = buildClassicWheelMainMenuItems()
@@ -206,13 +265,17 @@ fun ClassicWheelExpandedPlayer(
         }
 
         val onRotateClockwise = {
-            if (currentMenuItemCount > 1) {
+            if (menuState.currentScreen == ClassicWheelMenuScreen.NowPlaying) {
+                changeMusicVolume(1)
+            } else if (currentMenuItemCount > 1) {
                 menuState.moveSelectionDown(currentMenuItemCount)
             }
         }
 
         val onRotateCounterClockwise = {
-            if (currentMenuItemCount > 1) {
+            if (menuState.currentScreen == ClassicWheelMenuScreen.NowPlaying) {
+                changeMusicVolume(-1)
+            } else if (currentMenuItemCount > 1) {
                 menuState.moveSelectionUp(currentMenuItemCount)
             }
         }
@@ -247,7 +310,12 @@ fun ClassicWheelExpandedPlayer(
                 albumMenuItems = albumMenuItems,
                 selectedArtistSongMenuItems = selectedArtistSongMenuItems,
                 selectedAlbumSongMenuItems = selectedAlbumSongMenuItems,
+                musicVolume = musicVolume,
+                maxMusicVolume = maxMusicVolume,
+                isVolumeOverlayVisible = isVolumeOverlayVisible,
                 onSeekChange = onSeekChange,
+                onShuffleClick = onShuffleClick,
+                onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseClick,
                 onOpenUpNextClick = onOpenUpNextClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
@@ -266,6 +334,13 @@ fun ClassicWheelExpandedPlayer(
                 onRotateClockwise = onRotateClockwise,
                 onRotateCounterClockwise = onRotateCounterClockwise,
                 rotationItemCount = currentMenuItemCount,
+                isRotationEnabled = menuState.currentScreen == ClassicWheelMenuScreen.NowPlaying ||
+                        currentMenuItemCount > 1,
+                rotationStepDegrees = if (menuState.currentScreen == ClassicWheelMenuScreen.NowPlaying) {
+                    95f
+                } else {
+                    55f
+                },
                 modifier = Modifier.size(wheelSize)
             )
         }
@@ -288,7 +363,12 @@ private fun ClassicWheelScreen(
     albumMenuItems: List<ClassicWheelMenuItem>,
     selectedArtistSongMenuItems: List<ClassicWheelMenuItem>,
     selectedAlbumSongMenuItems: List<ClassicWheelMenuItem>,
+    musicVolume: Int,
+    maxMusicVolume: Int,
+    isVolumeOverlayVisible: Boolean,
     onSeekChange: (Int) -> Unit,
+    onShuffleClick: () -> Unit,
+    onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
@@ -320,7 +400,12 @@ private fun ClassicWheelScreen(
                         isCurrentSongFavorite = isCurrentSongFavorite,
                         isShuffleEnabled = isShuffleEnabled,
                         repeatMode = repeatMode,
+                        musicVolume = musicVolume,
+                        maxMusicVolume = maxMusicVolume,
+                        isVolumeIndicatorVisible = isVolumeOverlayVisible,
                         onSeekChange = onSeekChange,
+                        onShuffleClick = onShuffleClick,
+                        onRepeatClick = onRepeatClick,
                         onOpenUpNextClick = onOpenUpNextClick,
                         onToggleFavoriteClick = onToggleFavoriteClick
                     )
@@ -406,7 +491,12 @@ private fun ClassicWheelNowPlayingDisplay(
     isCurrentSongFavorite: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
+    musicVolume: Int,
+    maxMusicVolume: Int,
+    isVolumeIndicatorVisible: Boolean,
     onSeekChange: (Int) -> Unit,
+    onShuffleClick: () -> Unit,
+    onRepeatClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit
 ) {
@@ -476,6 +566,42 @@ private fun ClassicWheelNowPlayingDisplay(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
+                        onClick = onShuffleClick,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Shuffle,
+                            contentDescription = "Shuffle",
+                            tint = if (isShuffleEnabled) {
+                                Color(0xFF2F80D8)
+                            } else {
+                                Color.Black
+                            },
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onRepeatClick,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (repeatMode == RepeatMode.ONE) {
+                                Icons.Filled.RepeatOne
+                            } else {
+                                Icons.Filled.Repeat
+                            },
+                            contentDescription = "Repeat",
+                            tint = if (repeatMode == RepeatMode.OFF) {
+                                Color.Black
+                            } else {
+                                Color(0xFF2F80D8)
+                            },
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    IconButton(
                         onClick = {
                             currentSong?.let { song ->
                                 onToggleFavoriteClick(song)
@@ -491,8 +617,12 @@ private fun ClassicWheelNowPlayingDisplay(
                                 Icons.Filled.FavoriteBorder
                             },
                             contentDescription = "Favorite",
-                            tint = Color.Black,
-                            modifier = Modifier.size(30.dp)
+                            tint = if (isCurrentSongFavorite) {
+                                Color(0xFF2F80D8)
+                            } else {
+                                Color.Black
+                            },
+                            modifier = Modifier.size(28.dp)
                         )
                     }
 
@@ -504,7 +634,7 @@ private fun ClassicWheelNowPlayingDisplay(
                             imageVector = Icons.Filled.QueueMusic,
                             contentDescription = "Up Next",
                             tint = Color.Black,
-                            modifier = Modifier.size(30.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
@@ -524,13 +654,21 @@ private fun ClassicWheelNowPlayingDisplay(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        ClassicWheelProgress(
-            currentPosition = currentPosition,
-            duration = duration,
-            onSeekChange = onSeekChange
-        )
+        if (isVolumeIndicatorVisible) {
+            ClassicWheelVolumeProgress(
+                volume = musicVolume,
+                maxVolume = maxMusicVolume
+            )
+        } else {
+            ClassicWheelProgress(
+                currentPosition = currentPosition,
+                duration = duration,
+                onSeekChange = onSeekChange
+            )
+        }
     }
 }
+
 
 @Composable
 private fun ClassicScreenStatusBar(
@@ -716,6 +854,106 @@ private fun ClassicWheelProgress(
 }
 
 @Composable
+private fun ClassicWheelVolumeProgress(
+    volume: Int,
+    maxVolume: Int
+) {
+    val safeMaxVolume = maxVolume.coerceAtLeast(1)
+    val clampedVolume = volume.coerceIn(0, safeMaxVolume)
+    val progress = clampedVolume.toFloat() / safeMaxVolume.toFloat()
+    val volumePercent = (progress * 100).roundToInt()
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Volume",
+            color = Color.Black,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .height(38.dp)
+                .padding(horizontal = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                val trackHeight = 10.dp.toPx()
+                val trackTop = (size.height - trackHeight) / 2f
+                val trackCorner = CornerRadius(
+                    x = trackHeight / 2f,
+                    y = trackHeight / 2f
+                )
+
+                val progressWidth = size.width * progress.coerceIn(0f, 1f)
+
+                drawRoundRect(
+                    color = Color(0xFFD8D8D2),
+                    topLeft = Offset(
+                        x = 0f,
+                        y = trackTop
+                    ),
+                    size = Size(
+                        width = size.width,
+                        height = trackHeight
+                    ),
+                    cornerRadius = trackCorner
+                )
+
+                drawRoundRect(
+                    color = Color(0xFF67AEE7),
+                    topLeft = Offset(
+                        x = 0f,
+                        y = trackTop
+                    ),
+                    size = Size(
+                        width = progressWidth,
+                        height = trackHeight
+                    ),
+                    cornerRadius = trackCorner
+                )
+
+                val handleWidth = 5.dp.toPx()
+                val handleHeight = 28.dp.toPx()
+                val handleCorner = CornerRadius(
+                    x = 3.dp.toPx(),
+                    y = 3.dp.toPx()
+                )
+
+                val handleLeft = (progressWidth - handleWidth / 2f)
+                    .coerceIn(0f, size.width - handleWidth)
+
+                drawRoundRect(
+                    color = Color(0xFF9DB2FF),
+                    topLeft = Offset(
+                        x = handleLeft,
+                        y = (size.height - handleHeight) / 2f
+                    ),
+                    size = Size(
+                        width = handleWidth,
+                        height = handleHeight
+                    ),
+                    cornerRadius = handleCorner
+                )
+            }
+        }
+
+        Text(
+            text = "$volumePercent%",
+            color = Color.Black,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
 private fun ClassicControlWheel(
     isPlaying: Boolean,
     onPlayPauseClick: () -> Unit,
@@ -726,15 +964,17 @@ private fun ClassicControlWheel(
     onRotateClockwise: () -> Unit,
     onRotateCounterClockwise: () -> Unit,
     rotationItemCount: Int,
+    isRotationEnabled: Boolean,
+    rotationStepDegrees: Float,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .pointerInput(rotationItemCount) {
+            .pointerInput(rotationItemCount, isRotationEnabled, rotationStepDegrees) {
                 var previousAngle: Float? = null
                 var accumulatedAngleDelta = 0f
-                val selectionStepDegrees = 55f
+                val selectionStepDegrees = rotationStepDegrees
 
                 detectDragGestures(
                     onDragStart = { offset ->
@@ -745,7 +985,7 @@ private fun ClassicControlWheel(
                         accumulatedAngleDelta = 0f
                     },
                     onDrag = { change, _ ->
-                        if (rotationItemCount <= 1) {
+                        if (!isRotationEnabled) {
                             return@detectDragGestures
                         }
 
