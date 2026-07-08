@@ -29,6 +29,9 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -311,6 +314,8 @@ fun ClassicWheelExpandedPlayer(
                 maxMusicVolume = maxMusicVolume,
                 isVolumeOverlayVisible = isVolumeOverlayVisible,
                 onSeekChange = onSeekChange,
+                onShuffleClick = onShuffleClick,
+                onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseClick,
                 onOpenUpNextClick = onOpenUpNextClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
@@ -362,6 +367,8 @@ private fun ClassicWheelScreen(
     maxMusicVolume: Int,
     isVolumeOverlayVisible: Boolean,
     onSeekChange: (Int) -> Unit,
+    onShuffleClick: () -> Unit,
+    onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
@@ -397,6 +404,8 @@ private fun ClassicWheelScreen(
                         maxMusicVolume = maxMusicVolume,
                         isVolumeIndicatorVisible = isVolumeOverlayVisible,
                         onSeekChange = onSeekChange,
+                        onShuffleClick = onShuffleClick,
+                        onRepeatClick = onRepeatClick,
                         onOpenUpNextClick = onOpenUpNextClick,
                         onToggleFavoriteClick = onToggleFavoriteClick
                     )
@@ -486,6 +495,8 @@ private fun ClassicWheelNowPlayingDisplay(
     maxMusicVolume: Int,
     isVolumeIndicatorVisible: Boolean,
     onSeekChange: (Int) -> Unit,
+    onShuffleClick: () -> Unit,
+    onRepeatClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit
 ) {
@@ -555,6 +566,42 @@ private fun ClassicWheelNowPlayingDisplay(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
+                        onClick = onShuffleClick,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Shuffle,
+                            contentDescription = "Shuffle",
+                            tint = if (isShuffleEnabled) {
+                                Color(0xFF2F80D8)
+                            } else {
+                                Color.Black
+                            },
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onRepeatClick,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (repeatMode == RepeatMode.ONE) {
+                                Icons.Filled.RepeatOne
+                            } else {
+                                Icons.Filled.Repeat
+                            },
+                            contentDescription = "Repeat",
+                            tint = if (repeatMode == RepeatMode.OFF) {
+                                Color.Black
+                            } else {
+                                Color(0xFF2F80D8)
+                            },
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    IconButton(
                         onClick = {
                             currentSong?.let { song ->
                                 onToggleFavoriteClick(song)
@@ -570,8 +617,12 @@ private fun ClassicWheelNowPlayingDisplay(
                                 Icons.Filled.FavoriteBorder
                             },
                             contentDescription = "Favorite",
-                            tint = Color.Black,
-                            modifier = Modifier.size(30.dp)
+                            tint = if (isCurrentSongFavorite) {
+                                Color(0xFF2F80D8)
+                            } else {
+                                Color.Black
+                            },
+                            modifier = Modifier.size(28.dp)
                         )
                     }
 
@@ -583,7 +634,7 @@ private fun ClassicWheelNowPlayingDisplay(
                             imageVector = Icons.Filled.QueueMusic,
                             contentDescription = "Up Next",
                             tint = Color.Black,
-                            modifier = Modifier.size(30.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
