@@ -159,6 +159,8 @@ fun ClassicWheelExpandedPlayer(
         val artistMenuItems = buildClassicWheelArtistMenuItems(artistGroups)
         val albumMenuItems = buildClassicWheelAlbumMenuItems(albumGroups)
 
+        val albumCarouselItems = buildClassicWheelAlbumCarouselItems(albumGroups)
+
         val currentScreen = menuState.currentScreen
 
         val selectedArtistSongs = if (currentScreen is ClassicWheelMenuScreen.ArtistSongs) {
@@ -308,6 +310,7 @@ fun ClassicWheelExpandedPlayer(
                 songMenuItems = songMenuItems,
                 artistMenuItems = artistMenuItems,
                 albumMenuItems = albumMenuItems,
+                albumCarouselItems = albumCarouselItems,
                 selectedArtistSongMenuItems = selectedArtistSongMenuItems,
                 selectedAlbumSongMenuItems = selectedAlbumSongMenuItems,
                 musicVolume = musicVolume,
@@ -361,6 +364,7 @@ private fun ClassicWheelScreen(
     songMenuItems: List<ClassicWheelMenuItem>,
     artistMenuItems: List<ClassicWheelMenuItem>,
     albumMenuItems: List<ClassicWheelMenuItem>,
+    albumCarouselItems: List<ClassicWheelAlbumCarouselItem>,
     selectedArtistSongMenuItems: List<ClassicWheelMenuItem>,
     selectedAlbumSongMenuItems: List<ClassicWheelMenuItem>,
     musicVolume: Int,
@@ -448,9 +452,8 @@ private fun ClassicWheelScreen(
                 }
 
                 ClassicWheelMenuScreen.Albums -> {
-                    ClassicWheelMenuDisplay(
-                        title = "Albums",
-                        menuItems = albumMenuItems,
+                    ClassicWheelAlbumCarouselDisplay(
+                        items = albumCarouselItems,
                         selectedIndex = menuState.selectedIndex,
                         modifier = Modifier.fillMaxSize()
                     )
@@ -1339,4 +1342,16 @@ private fun sortClassicWheelAlbumSongs(
             song.title.lowercase()
         }
     )
+}
+
+private fun buildClassicWheelAlbumCarouselItems(
+    albumGroups: List<ClassicWheelAlbumGroup>
+): List<ClassicWheelAlbumCarouselItem> {
+    return albumGroups.map { albumGroup ->
+        ClassicWheelAlbumCarouselItem(
+            title = albumGroup.title,
+            artist = albumGroup.artist,
+            albumArtUri = albumGroup.songs.firstOrNull()?.albumArtUri
+        )
+    }
 }
