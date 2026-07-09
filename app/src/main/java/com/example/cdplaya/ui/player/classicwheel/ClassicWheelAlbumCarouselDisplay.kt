@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -97,7 +98,7 @@ fun ClassicWheelAlbumCarouselDisplay(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxSize(),
+                .fillMaxWidth(),
             contentAlignment = Alignment.Center
         ) {
             carouselPositions.forEach { position ->
@@ -106,35 +107,35 @@ fun ClassicWheelAlbumCarouselDisplay(
                     val item = items[position.itemIndex]
 
                     val targetCoverSize = when (distanceFromCenter) {
-                        0 -> 142.dp
-                        1 -> 118.dp
-                        else -> 96.dp
+                        0 -> 166.dp
+                        1 -> 136.dp
+                        else -> 112.dp
                     }
 
                     val targetOffsetX = when (position.relativeOffset) {
-                        -2 -> (-104).dp
-                        -1 -> (-66).dp
+                        -2 -> (-170).dp
+                        -1 -> (-92).dp
                         0 -> 0.dp
-                        1 -> 66.dp
-                        2 -> 104.dp
-                        else -> (position.relativeOffset * 66).dp
+                        1 -> 92.dp
+                        2 -> 170.dp
+                        else -> (position.relativeOffset * 92).dp
                     }
 
                     val targetScale = when (distanceFromCenter) {
                         0 -> 1f
-                        1 -> 0.84f
-                        else -> 0.68f
+                        1 -> 0.88f
+                        else -> 0.76f
                     }
 
                     val targetAlpha = when (distanceFromCenter) {
                         0 -> 1f
-                        1 -> 0.88f
-                        else -> 0.48f
+                        1 -> 0.9f
+                        else -> 0.62f
                     }
 
                     val targetRotationY = when {
-                        position.relativeOffset < 0 -> 58f
-                        position.relativeOffset > 0 -> -58f
+                        position.relativeOffset < 0 -> 50f
+                        position.relativeOffset > 0 -> -50f
                         else -> 0f
                     }
 
@@ -214,11 +215,11 @@ fun ClassicWheelAlbumCarouselDisplay(
                                 }
                             },
                         shape = RoundedCornerShape(5.dp),
-                        color = Color.Black,
+                        color = Color.Transparent,
                         shadowElevation = if (distanceFromCenter == 0) {
-                            10.dp
+                            12.dp
                         } else {
-                            3.dp
+                            4.dp
                         }
                     ) {
                         AsyncImage(
@@ -226,8 +227,7 @@ fun ClassicWheelAlbumCarouselDisplay(
                             contentDescription = "Album art for ${item.title}",
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(3.dp)
-                                .clip(RoundedCornerShape(3.dp))
+                                .clip(RoundedCornerShape(5.dp))
                                 .aspectRatio(1f),
                             contentScale = ContentScale.Crop,
                             error = painterResource(android.R.drawable.ic_media_play),
@@ -238,7 +238,7 @@ fun ClassicWheelAlbumCarouselDisplay(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         Text(
             text = selectedItem.title,
@@ -257,16 +257,6 @@ fun ClassicWheelAlbumCarouselDisplay(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(2.dp))
-
-        Text(
-            text = "Center to open",
-            color = Color.DarkGray,
-            style = MaterialTheme.typography.labelMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
         )
     }
 }
