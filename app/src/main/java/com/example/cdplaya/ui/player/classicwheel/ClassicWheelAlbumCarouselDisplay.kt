@@ -1,5 +1,9 @@
 package com.example.cdplaya.ui.player.classicwheel
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,12 +20,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -78,6 +85,8 @@ fun ClassicWheelAlbumCarouselDisplay(
         selectedIndex = safeSelectedIndex
     )
 
+    val density = LocalDensity.current
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -92,64 +101,139 @@ fun ClassicWheelAlbumCarouselDisplay(
             contentAlignment = Alignment.Center
         ) {
             carouselPositions.forEach { position ->
-                val distanceFromCenter = abs(position.relativeOffset)
-                val item = items[position.itemIndex]
+                key(position.itemIndex) {
+                    val distanceFromCenter = abs(position.relativeOffset)
+                    val item = items[position.itemIndex]
 
-                val coverSize = when (distanceFromCenter) {
-                    0 -> 132.dp
-                    1 -> 112.dp
-                    else -> 94.dp
-                }
-
-                val scale = when (distanceFromCenter) {
-                    0 -> 1f
-                    1 -> 0.86f
-                    else -> 0.72f
-                }
-
-                val alpha = when (distanceFromCenter) {
-                    0 -> 1f
-                    1 -> 0.9f
-                    else -> 0.55f
-                }
-
-                val rotation = when {
-                    position.relativeOffset < 0 -> 46f
-                    position.relativeOffset > 0 -> -46f
-                    else -> 0f
-                }
-
-                Surface(
-                    modifier = Modifier
-                        .offset(x = (position.relativeOffset * 56).dp)
-                        .size(coverSize)
-                        .zIndex(10f - distanceFromCenter)
-                        .graphicsLayer {
-                            rotationY = rotation
-                            scaleX = scale
-                            scaleY = scale
-                            this.alpha = alpha
-                        },
-                    shape = RoundedCornerShape(5.dp),
-                    color = Color.Black,
-                    shadowElevation = if (distanceFromCenter == 0) {
-                        8.dp
-                    } else {
-                        3.dp
+                    val targetCoverSize = when (distanceFromCenter) {
+                        0 -> 142.dp
+                        1 -> 118.dp
+                        else -> 96.dp
                     }
-                ) {
-                    AsyncImage(
-                        model = item.albumArtUri,
-                        contentDescription = "Album art for ${item.title}",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(3.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .aspectRatio(1f),
-                        contentScale = ContentScale.Crop,
-                        error = painterResource(android.R.drawable.ic_media_play),
-                        placeholder = painterResource(android.R.drawable.ic_media_play)
+
+                    val targetOffsetX = when (position.relativeOffset) {
+                        -2 -> (-104).dp
+                        -1 -> (-66).dp
+                        0 -> 0.dp
+                        1 -> 66.dp
+                        2 -> 104.dp
+                        else -> (position.relativeOffset * 66).dp
+                    }
+
+                    val targetScale = when (distanceFromCenter) {
+                        0 -> 1f
+                        1 -> 0.84f
+                        else -> 0.68f
+                    }
+
+                    val targetAlpha = when (distanceFromCenter) {
+                        0 -> 1f
+                        1 -> 0.88f
+                        else -> 0.48f
+                    }
+
+                    val targetRotationY = when {
+                        position.relativeOffset < 0 -> 58f
+                        position.relativeOffset > 0 -> -58f
+                        else -> 0f
+                    }
+
+                    val targetTranslationY = when (distanceFromCenter) {
+                        0 -> 0f
+                        1 -> 8f
+                        else -> 18f
+                    }
+
+                    val animatedCoverSize by animateDpAsState(
+                        targetValue = targetCoverSize,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        label = "carouselCoverSize"
                     )
+
+                    val animatedOffsetX by animateDpAsState(
+                        targetValue = targetOffsetX,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        label = "carouselOffsetX"
+                    )
+
+                    val animatedScale by animateFloatAsState(
+                        targetValue = targetScale,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        label = "carouselScale"
+                    )
+
+                    val animatedAlpha by animateFloatAsState(
+                        targetValue = targetAlpha,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        label = "carouselAlpha"
+                    )
+
+                    val animatedRotationY by animateFloatAsState(
+                        targetValue = targetRotationY,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        label = "carouselRotationY"
+                    )
+
+                    val animatedTranslationY by animateFloatAsState(
+                        targetValue = targetTranslationY,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioNoBouncy,
+                            stiffness = Spring.StiffnessMediumLow
+                        ),
+                        label = "carouselTranslationY"
+                    )
+
+                    Surface(
+                        modifier = Modifier
+                            .offset(x = animatedOffsetX)
+                            .size(animatedCoverSize)
+                            .zIndex(10f - distanceFromCenter)
+                            .graphicsLayer {
+                                rotationY = animatedRotationY
+                                scaleX = animatedScale
+                                scaleY = animatedScale
+                                alpha = animatedAlpha
+                                translationY = animatedTranslationY
+                                cameraDistance = with(density) {
+                                    18.dp.toPx()
+                                }
+                            },
+                        shape = RoundedCornerShape(5.dp),
+                        color = Color.Black,
+                        shadowElevation = if (distanceFromCenter == 0) {
+                            10.dp
+                        } else {
+                            3.dp
+                        }
+                    ) {
+                        AsyncImage(
+                            model = item.albumArtUri,
+                            contentDescription = "Album art for ${item.title}",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(3.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .aspectRatio(1f),
+                            contentScale = ContentScale.Crop,
+                            error = painterResource(android.R.drawable.ic_media_play),
+                            placeholder = painterResource(android.R.drawable.ic_media_play)
+                        )
+                    }
                 }
             }
         }
