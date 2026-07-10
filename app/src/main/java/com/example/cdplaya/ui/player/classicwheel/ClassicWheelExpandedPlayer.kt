@@ -3,9 +3,8 @@ package com.example.cdplaya.ui.player.classicwheel
 import android.content.Context
 import android.media.AudioManager
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -18,17 +17,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.QueueMusic
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
@@ -40,8 +34,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,9 +44,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -61,11 +55,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import kotlinx.coroutines.delay
 import java.io.File
 import kotlin.math.roundToInt
-import kotlin.math.PI
-import kotlin.math.atan2
-import kotlinx.coroutines.delay
 
 
 @Composable
@@ -956,170 +948,6 @@ private fun ClassicWheelVolumeProgress(
     }
 }
 
-@Composable
-private fun ClassicControlWheel(
-    isPlaying: Boolean,
-    onPlayPauseClick: () -> Unit,
-    onPreviousClick: () -> Unit,
-    onNextClick: () -> Unit,
-    onMenuClick: () -> Unit,
-    onCenterClick: () -> Unit,
-    onRotateClockwise: () -> Unit,
-    onRotateCounterClockwise: () -> Unit,
-    rotationItemCount: Int,
-    isRotationEnabled: Boolean,
-    rotationStepDegrees: Float,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = modifier
-            .aspectRatio(1f)
-            .pointerInput(rotationItemCount, isRotationEnabled, rotationStepDegrees) {
-                var previousAngle: Float? = null
-                var accumulatedAngleDelta = 0f
-                val selectionStepDegrees = rotationStepDegrees
-
-                detectDragGestures(
-                    onDragStart = { offset ->
-                        previousAngle = offset.angleDegreesFromCenter(
-                            width = size.width.toFloat(),
-                            height = size.height.toFloat()
-                        )
-                        accumulatedAngleDelta = 0f
-                    },
-                    onDrag = { change, _ ->
-                        if (!isRotationEnabled) {
-                            return@detectDragGestures
-                        }
-
-                        val currentAngle = change.position.angleDegreesFromCenter(
-                            width = size.width.toFloat(),
-                            height = size.height.toFloat()
-                        )
-
-                        val oldAngle = previousAngle ?: currentAngle
-                        var angleDelta = currentAngle - oldAngle
-
-                        if (angleDelta > 180f) {
-                            angleDelta -= 360f
-                        }
-
-                        if (angleDelta < -180f) {
-                            angleDelta += 360f
-                        }
-
-                        accumulatedAngleDelta += angleDelta
-
-                        while (accumulatedAngleDelta >= selectionStepDegrees) {
-                            onRotateClockwise()
-                            accumulatedAngleDelta -= selectionStepDegrees
-                        }
-
-                        while (accumulatedAngleDelta <= -selectionStepDegrees) {
-                            onRotateCounterClockwise()
-                            accumulatedAngleDelta += selectionStepDegrees
-                        }
-
-                        previousAngle = currentAngle
-                        change.consume()
-                    },
-                    onDragEnd = {
-                        previousAngle = null
-                        accumulatedAngleDelta = 0f
-                    },
-                    onDragCancel = {
-                        previousAngle = null
-                        accumulatedAngleDelta = 0f
-                    }
-                )
-            },
-        contentAlignment = Alignment.Center
-    ) {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                shape = CircleShape,
-                color = Color(0xFFC8C6BC),
-                shadowElevation = 6.dp
-            ) {}
-
-        Text(
-            text = "MENU",
-            color = Color.White,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 28.dp)
-                .clickable {
-                    onMenuClick()
-                }
-        )
-
-        IconButton(
-            onClick = onPreviousClick,
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .padding(start = 26.dp)
-                .size(68.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.SkipPrevious,
-                contentDescription = "Previous",
-                tint = Color.White,
-                modifier = Modifier.size(42.dp)
-            )
-        }
-
-        IconButton(
-            onClick = onNextClick,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .padding(end = 26.dp)
-                .size(68.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Filled.SkipNext,
-                contentDescription = "Next",
-                tint = Color.White,
-                modifier = Modifier.size(42.dp)
-            )
-        }
-
-        IconButton(
-            onClick = onPlayPauseClick,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 26.dp)
-                .size(72.dp)
-        ) {
-            Icon(
-                imageVector = if (isPlaying) {
-                    Icons.Filled.Pause
-                } else {
-                    Icons.Filled.PlayArrow
-                },
-                contentDescription = if (isPlaying) {
-                    "Pause"
-                } else {
-                    "Play"
-                },
-                tint = Color.White,
-                modifier = Modifier.size(42.dp)
-            )
-        }
-
-        Surface(
-            modifier = Modifier
-                .fillMaxSize(0.28f)
-                .clickable {
-                    onCenterClick()
-                },
-            shape = CircleShape,
-            color = Color(0xFFF1EDE0),
-            shadowElevation = 4.dp
-        ) {}
-    }
-}
 
 private fun formatTime(milliseconds: Int): String {
     val totalSeconds = (milliseconds / 1000).coerceAtLeast(0)
@@ -1129,20 +957,6 @@ private fun formatTime(milliseconds: Int): String {
     return "$minutes:${seconds.toString().padStart(2, '0')}"
 }
 
-private fun Offset.angleDegreesFromCenter(
-    width: Float,
-    height: Float
-): Float {
-    val centerX = width / 2f
-    val centerY = height / 2f
-
-    val angleRadians = atan2(
-        y = y - centerY,
-        x = x - centerX
-    )
-
-    return (angleRadians * 180f / PI).toFloat()
-}
 
 private fun buildPlaybackModeText(
     isShuffleEnabled: Boolean,
