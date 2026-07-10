@@ -15,9 +15,9 @@ fun replayGainDbToVolumeMultiplier(gainDb: Float): Float {
 
 fun replayGainTrackMultiplier(
     replayGainInfo: ReplayGainInfo?,
-    isReplayGainEnabled: Boolean
+    replayGainMode: ReplayGainMode
 ): Float {
-    if (!isReplayGainEnabled) {
+    if (replayGainMode == ReplayGainMode.OFF) {
         return 1f
     }
 
