@@ -15,6 +15,11 @@ import java.security.MessageDigest
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlin.math.max
+import com.example.cdplaya.player.replaygain.ReplayGainInfo
+import com.example.cdplaya.player.replaygain.parseReplayGainDb
+import com.example.cdplaya.player.replaygain.parseReplayGainPeak
+import org.jaudiotagger.tag.TagField
+import org.jaudiotagger.tag.TagTextField
 
 class TagEditorRepository {
 
@@ -66,6 +71,50 @@ class TagEditorRepository {
                 }?.toString() ?: "",
                 year = ""
             )
+        }
+    }
+
+    fun readReplayGainTags(song: Song): ReplayGainInfo {
+        val file = File(song.filePath)
+
+        if (!file.exists()) {
+            return emptyReplayGainInfo()
+        }
+
+        return try {
+            val audioFile = AudioFileIO.read(file)
+            val tag = audioFile.tag ?: return emptyReplayGainInfo()
+
+            ReplayGainInfo(
+                trackGainDb = parseReplayGainDb(
+                    readReplayGainTagValue(
+                        tag = tag,
+                        possibleFieldNames = replayGainTrackGainFieldNames
+                    )
+                ),
+                trackPeak = parseReplayGainPeak(
+                    readReplayGainTagValue(
+                        tag = tag,
+                        possibleFieldNames = replayGainTrackPeakFieldNames
+                    )
+                ),
+                albumGainDb = parseReplayGainDb(
+                    readReplayGainTagValue(
+                        tag = tag,
+                        possibleFieldNames = replayGainAlbumGainFieldNames
+                    )
+                ),
+                albumPeak = parseReplayGainPeak(
+                    readReplayGainTagValue(
+                        tag = tag,
+                        possibleFieldNames = replayGainAlbumPeakFieldNames
+                    )
+                )
+            )
+        } catch (exception: Exception) {
+            emptyReplayGainInfo()
+        } catch (error: LinkageError) {
+            emptyReplayGainInfo()
         }
     }
 
@@ -266,6 +315,90 @@ class TagEditorRepository {
         }
     }
 
+    private fun readReplayGainTagValue(
+        tag: Tag,
+        possibleFieldNames: List<String>
+    ): String? {
+        val directValue = readReplayGainDirectTagValue(
+            tag = tag,
+            possibleFieldNames = possibleFieldNames
+        )
+
+        if (directValue != null) {
+            return directValue
+        }
+
+        return readReplayGainRawTagValue(
+            tag = tag,
+            possibleFieldNames = possibleFieldNames
+        )
+    }
+
+    private fun readReplayGainDirectTagValue(
+        tag: Tag,
+        possibleFieldNames: List<String>
+    ): String? {
+        possibleFieldNames.forEach { fieldName ->
+            val directValue = try {
+                tag.getFirst(fieldName)
+            } catch (exception: Exception) {
+                ""
+            }
+
+            if (directValue.isNotBlank()) {
+                return directValue
+            }
+        }
+
+        return null
+    }
+
+    private fun readReplayGainRawTagValue(
+        tag: Tag,
+        possibleFieldNames: List<String>
+    ): String? {
+        val normalizedFieldNames = possibleFieldNames.map { fieldName ->
+            fieldName.uppercase()
+        }
+
+        val fields = tag.getFields()
+
+        while (fields.hasNext()) {
+            val field = fields.next()
+            val fieldId = field.id.orEmpty()
+            val fieldContent = field.readReplayGainFieldContent()
+
+            val combinedText = "$fieldId $fieldContent".uppercase()
+
+            val matchingFieldName = normalizedFieldNames.firstOrNull { fieldName ->
+                combinedText.contains(fieldName)
+            }
+
+            if (matchingFieldName != null && fieldContent.isNotBlank()) {
+                return fieldContent
+            }
+        }
+
+        return null
+    }
+
+    private fun TagField.readReplayGainFieldContent(): String {
+        return if (this is TagTextField) {
+            content.orEmpty()
+        } else {
+            toString()
+        }
+    }
+
+    private fun emptyReplayGainInfo(): ReplayGainInfo {
+        return ReplayGainInfo(
+            trackGainDb = null,
+            trackPeak = null,
+            albumGainDb = null,
+            albumPeak = null
+        )
+    }
+
     private fun setFlacArtwork(
         flacTag: FlacTag,
         artworkImageData: ArtworkImageData
@@ -290,7 +423,6 @@ class TagEditorRepository {
         try {
             tag.deleteArtworkField()
         } catch (exception: Exception) {
-            // Some files may not have artwork yet. In that case, we can continue.
         }
     }
 
@@ -480,5 +612,25 @@ class TagEditorRepository {
         private const val MAX_ARTWORK_SIZE_PX = 1000
         private const val ARTWORK_JPEG_QUALITY = 90
         private const val OPTIMIZED_ARTWORK_MIME_TYPE = "image/jpeg"
+
+        private val replayGainTrackGainFieldNames = listOf(
+            "REPLAYGAIN_TRACK_GAIN",
+            "replaygain_track_gain"
+        )
+
+        private val replayGainTrackPeakFieldNames = listOf(
+            "REPLAYGAIN_TRACK_PEAK",
+            "replaygain_track_peak"
+        )
+
+        private val replayGainAlbumGainFieldNames = listOf(
+            "REPLAYGAIN_ALBUM_GAIN",
+            "replaygain_album_gain"
+        )
+
+        private val replayGainAlbumPeakFieldNames = listOf(
+            "REPLAYGAIN_ALBUM_PEAK",
+            "replaygain_album_peak"
+        )
     }
 }
