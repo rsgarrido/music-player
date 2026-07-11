@@ -14,6 +14,7 @@ import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.FolderSelectionScreen
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
@@ -104,6 +105,8 @@ fun MusicScreenBody(
     mostPlayedSongs: List<Song>,
     selectedPlayerTheme: PlayerTheme,
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
+    selectedReplayGainMode: ReplayGainMode,
+    onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
     when {
@@ -131,6 +134,8 @@ fun MusicScreenBody(
                 onSleepTimerClick = onSleepTimerClick,
                 selectedPlayerTheme = selectedPlayerTheme,
                 onPlayerThemeSelected = onPlayerThemeSelected,
+                selectedReplayGainMode = selectedReplayGainMode,
+                onReplayGainModeSelected = onReplayGainModeSelected,
                 modifier = modifier.fillMaxSize()
             )
         }

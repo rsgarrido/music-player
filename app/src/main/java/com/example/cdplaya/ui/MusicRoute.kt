@@ -168,5 +168,9 @@ fun MusicRoute(
         onPlayerThemeSelected = { playerTheme ->
             musicViewModel.selectPlayerTheme(playerTheme)
         },
+        selectedReplayGainMode = musicViewModel.selectedReplayGainMode,
+        onReplayGainModeSelected = { replayGainMode ->
+            musicViewModel.selectReplayGainMode(replayGainMode)
+        },
     )
 }

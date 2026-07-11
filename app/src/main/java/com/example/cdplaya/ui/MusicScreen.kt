@@ -22,6 +22,7 @@ import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.TagEditorRepository
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.playlist.rememberPlaylistSnackbarActions
@@ -92,6 +93,8 @@ fun MusicScreen(
     recentlyPlayedSongs: List<Song>,
     selectedPlayerTheme: PlayerTheme,
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
+    selectedReplayGainMode: ReplayGainMode,
+    onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     mostPlayedSongs: List<Song>
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
@@ -421,6 +424,8 @@ fun MusicScreen(
                 mostPlayedSongs = mostPlayedSongs,
                 selectedPlayerTheme = selectedPlayerTheme,
                 onPlayerThemeSelected = onPlayerThemeSelected,
+                selectedReplayGainMode = selectedReplayGainMode,
+                onReplayGainModeSelected = onReplayGainModeSelected,
                 modifier = Modifier.fillMaxSize()
             )
         }
