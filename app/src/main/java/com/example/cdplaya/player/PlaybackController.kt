@@ -6,10 +6,14 @@ import android.os.Looper
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.ListeningHistoryRepository
-import kotlin.random.Random
+import com.example.cdplaya.data.Song
+import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.player.replaygain.ReplayGainRepository
+import com.example.cdplaya.player.replaygain.replayGainTrackMultiplier
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 class PlaybackController(
     context: Context,
@@ -21,8 +25,11 @@ class PlaybackController(
     private val playbackQueueManager = PlaybackQueueManager()
     private val playbackNavigationHistory = PlaybackNavigationHistory()
     private val upcomingPlaylistBuilder = UpcomingPlaylistBuilder()
+    private val replayGainRepository = ReplayGainRepository()
     private var librarySongs: List<Song> = emptyList()
     private var playbackContextSongs: List<Song> = emptyList()
+    private var replayGainMode: ReplayGainMode = ReplayGainMode.OFF
+    private var replayGainRequestId = 0
     val playbackQueue = playbackQueueManager.playbackQueue
 
     var currentSong by mutableStateOf<Song?>(null)
@@ -95,6 +102,11 @@ class PlaybackController(
         }
     }
 
+    fun setReplayGainMode(mode: ReplayGainMode) {
+        replayGainMode = mode
+        applyReplayGainForCurrentSong()
+    }
+
     fun setLibrarySongs(songs: List<Song>) {
         librarySongs = songs
 
@@ -112,6 +124,7 @@ class PlaybackController(
 
         if (currentSong != null && currentSong?.id !in validSongIds) {
             musicPlayer.stop()
+            musicPlayer.setVolume(1f)
             currentSong = null
             isPlaying = false
             currentPosition = 0
@@ -192,6 +205,7 @@ class PlaybackController(
 
         musicPlayer.setShuffleEnabled(isShuffleEnabled)
         musicPlayer.setRepeatMode(repeatMode)
+        applyReplayGainForCurrentSong()
 
         startProgressUpdates()
         savePlayerState()
@@ -418,6 +432,7 @@ class PlaybackController(
 
         musicPlayer.setShuffleEnabled(isShuffleEnabled)
         musicPlayer.setRepeatMode(repeatMode)
+        applyReplayGainForCurrentSong()
 
         startProgressUpdates()
     }
@@ -574,6 +589,7 @@ class PlaybackController(
         if (currentSong?.id == newSong.id) {
             musicPlayer.setRepeatMode(repeatMode)
             musicPlayer.setShuffleEnabled(isShuffleEnabled)
+            applyReplayGainForCurrentSong()
             return
         }
 
@@ -588,6 +604,7 @@ class PlaybackController(
         }
 
         syncServicePlaylistKeepingCurrent()
+        applyReplayGainForCurrentSong()
 
         startProgressUpdates()
         savePlayerState()
@@ -656,6 +673,38 @@ class PlaybackController(
 
         musicPlayer.setShuffleEnabled(isShuffleEnabled)
         musicPlayer.setRepeatMode(repeatMode)
+    }
+
+    private fun applyReplayGainForCurrentSong() {
+        val song = currentSong
+        val requestedMode = replayGainMode
+
+        replayGainRequestId += 1
+        val requestId = replayGainRequestId
+
+        if (song == null || requestedMode == ReplayGainMode.OFF) {
+            musicPlayer.setVolume(1f)
+            return
+        }
+
+        musicPlayer.setVolume(1f)
+
+        coroutineScope.launch {
+            val replayGainInfo = replayGainRepository.getReplayGainInfo(song)
+
+            val volumeMultiplier = replayGainTrackMultiplier(
+                replayGainInfo = replayGainInfo,
+                replayGainMode = requestedMode
+            )
+
+            val isStillCurrentRequest = replayGainRequestId == requestId
+            val isStillSameSong = currentSong?.id == song.id
+            val isStillSameMode = replayGainMode == requestedMode
+
+            if (isStillCurrentRequest && isStillSameSong && isStillSameMode) {
+                musicPlayer.setVolume(volumeMultiplier)
+            }
+        }
     }
 
     private fun getPlaybackSourceSongs(): List<Song> {

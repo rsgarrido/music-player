@@ -18,6 +18,8 @@ import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
 import com.example.cdplaya.player.PlaybackController
+import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.player.replaygain.ReplayGainPreferences
 
 class MusicViewModel(
     application: Application
@@ -29,6 +31,8 @@ class MusicViewModel(
 
     private val playerThemePreferences = PlayerThemePreferences(appContext)
 
+    private val replayGainPreferences = ReplayGainPreferences(appContext)
+
     var selectedPlayerTheme by mutableStateOf(
         playerThemePreferences.getSelectedPlayerTheme()
     )
@@ -37,6 +41,17 @@ class MusicViewModel(
     fun selectPlayerTheme(playerTheme: PlayerTheme) {
         selectedPlayerTheme = playerTheme
         playerThemePreferences.saveSelectedPlayerTheme(playerTheme)
+    }
+
+    var selectedReplayGainMode by mutableStateOf(
+        replayGainPreferences.getReplayGainMode()
+    )
+        private set
+
+    fun selectReplayGainMode(replayGainMode: ReplayGainMode) {
+        selectedReplayGainMode = replayGainMode
+        replayGainPreferences.setReplayGainMode(replayGainMode)
+        playbackController.setReplayGainMode(replayGainMode)
     }
     val playbackController = PlaybackController(
         context = appContext,
@@ -68,6 +83,7 @@ class MusicViewModel(
             libraryController.refreshListeningHistory()
         }
 
+        playbackController.setReplayGainMode(selectedReplayGainMode)
         playbackController.connect()
         libraryController.loadSavedUserData()
     }

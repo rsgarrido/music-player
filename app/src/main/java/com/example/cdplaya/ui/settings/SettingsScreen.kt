@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
+import com.example.cdplaya.player.replaygain.ReplayGainMode
 
 @Composable
 fun SettingsScreen(
@@ -41,9 +42,15 @@ fun SettingsScreen(
     onSleepTimerClick: () -> Unit,
     selectedPlayerTheme: PlayerTheme,
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
+    selectedReplayGainMode: ReplayGainMode,
+    onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isPlayerThemeDialogVisible by remember {
+        mutableStateOf(false)
+    }
+
+    var isReplayGainDialogVisible by remember {
         mutableStateOf(false)
     }
 
@@ -121,6 +128,24 @@ fun SettingsScreen(
 
         ListItem(
             headlineContent = {
+                Text(text = "ReplayGain")
+            },
+            supportingContent = {
+                Text(text = selectedReplayGainMode.displayName)
+            },
+            trailingContent = {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    contentDescription = "Open ReplayGain settings"
+                )
+            },
+            modifier = Modifier.clickable {
+                isReplayGainDialogVisible = true
+            }
+        )
+
+        ListItem(
+            headlineContent = {
                 Text(text = "Sleep Timer")
             },
             supportingContent = {
@@ -148,6 +173,61 @@ fun SettingsScreen(
                 isPlayerThemeDialogVisible = true
             }
         )
+
+        if (isReplayGainDialogVisible) {
+            AlertDialog(
+                onDismissRequest = {
+                    isReplayGainDialogVisible = false
+                },
+                title = {
+                    Text(text = "ReplayGain")
+                },
+                text = {
+                    Column {
+                        ReplayGainMode.values().forEach { replayGainMode ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onReplayGainModeSelected(replayGainMode)
+                                        isReplayGainDialogVisible = false
+                                    }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedReplayGainMode == replayGainMode,
+                                    onClick = {
+                                        onReplayGainModeSelected(replayGainMode)
+                                        isReplayGainDialogVisible = false
+                                    }
+                                )
+
+                                Column(
+                                    modifier = Modifier.padding(start = 4.dp)
+                                ) {
+                                    Text(text = replayGainMode.displayName)
+
+                                    Text(
+                                        text = replayGainMode.description,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            isReplayGainDialogVisible = false
+                        }
+                    ) {
+                        Text(text = "Close")
+                    }
+                }
+            )
+        }
 
         if (isPlayerThemeDialogVisible) {
             AlertDialog(
