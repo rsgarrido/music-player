@@ -121,6 +121,7 @@ class MusicPlayer(private val context: Context) {
 
     fun stop() {
         controller?.stop()
+        controller?.volume = 1f
         currentSong = null
     }
 
@@ -211,6 +212,13 @@ class MusicPlayer(private val context: Context) {
 
     fun seekTo(position: Int) {
         controller?.seekTo(position.toLong())
+    }
+
+    fun setVolume(volumeMultiplier: Float) {
+        controller?.volume = volumeMultiplier.coerceIn(
+            minimumValue = 0f,
+            maximumValue = 1f
+        )
     }
 
     fun release() {

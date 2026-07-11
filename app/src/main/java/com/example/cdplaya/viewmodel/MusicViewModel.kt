@@ -51,6 +51,7 @@ class MusicViewModel(
     fun selectReplayGainMode(replayGainMode: ReplayGainMode) {
         selectedReplayGainMode = replayGainMode
         replayGainPreferences.setReplayGainMode(replayGainMode)
+        playbackController.setReplayGainMode(replayGainMode)
     }
     val playbackController = PlaybackController(
         context = appContext,
@@ -82,6 +83,7 @@ class MusicViewModel(
             libraryController.refreshListeningHistory()
         }
 
+        playbackController.setReplayGainMode(selectedReplayGainMode)
         playbackController.connect()
         libraryController.loadSavedUserData()
     }
