@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import org.jaudiotagger.audio.AudioFileIO
+import org.jaudiotagger.tag.FieldKey
 import java.io.File
 import java.security.MessageDigest
 
@@ -120,6 +121,8 @@ class MusicRepository(private val context: Context) {
                 val albumArtUri =
                     getEmbeddedAlbumArtUri(filePath) ?: albumArtByFolder[folderPath]
 
+                val albumArtist = getAlbumArtist(filePath)
+
                 val song = Song(
                     id = id,
                     title = title,
@@ -130,7 +133,8 @@ class MusicRepository(private val context: Context) {
                     uri = uri,
                     filePath = filePath,
                     folderPath = folderPath,
-                    albumArtUri = albumArtUri
+                    albumArtUri = albumArtUri,
+                    albumArtist = albumArtist
                 )
 
                 songs.add(song)
@@ -242,6 +246,27 @@ class MusicRepository(private val context: Context) {
             Uri.fromFile(cachedArtworkFile)
         } catch (exception: Exception) {
             null
+        }
+    }
+
+    private fun getAlbumArtist(filePath: String): String {
+        val audioFile = File(filePath)
+
+        if (!audioFile.exists()) {
+            return ""
+        }
+
+        return try {
+            AudioFileIO
+                .read(audioFile)
+                .tag
+                ?.getFirst(FieldKey.ALBUM_ARTIST)
+                .orEmpty()
+                .trim()
+        } catch (exception: Exception) {
+            ""
+        } catch (error: LinkageError) {
+            ""
         }
     }
 

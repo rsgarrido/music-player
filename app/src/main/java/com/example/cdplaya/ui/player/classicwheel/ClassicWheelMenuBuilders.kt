@@ -1,7 +1,7 @@
 package com.example.cdplaya.ui.player.classicwheel
 
 import com.example.cdplaya.data.Song
-import java.io.File
+import com.example.cdplaya.ui.library.buildLibraryAlbumGroups
 
 fun buildClassicWheelMainMenuItems(): List<ClassicWheelMenuItem> {
     return listOf(
@@ -90,19 +90,13 @@ fun buildClassicWheelArtistMenuItems(
 fun buildClassicWheelAlbumGroups(
     songs: List<Song>
 ): List<ClassicWheelAlbumGroup> {
-    return songs
-        .groupBy { song ->
-            buildClassicWheelAlbumKey(song)
-        }
-        .map { entry ->
-            val albumSongs = sortClassicWheelAlbumSongs(entry.value)
-            val firstSong = albumSongs.first()
-
+    return buildLibraryAlbumGroups(songs)
+        .map { albumGroup ->
             ClassicWheelAlbumGroup(
-                key = entry.key,
-                title = firstSong.album.ifBlank { "Unknown Album" },
-                artist = firstSong.artist.ifBlank { "Unknown Artist" },
-                songs = albumSongs
+                key = albumGroup.key,
+                title = albumGroup.title,
+                artist = albumGroup.artistText,
+                songs = albumGroup.songs
             )
         }
         .sortedBy { albumGroup ->
@@ -131,15 +125,6 @@ fun buildClassicWheelAlbumMenuItems(
         )
     }
 }
-
-private fun buildClassicWheelAlbumKey(song: Song): String {
-    val albumTitle = song.album.ifBlank { "Unknown Album" }
-    val artistName = song.artist.ifBlank { "Unknown Artist" }
-    val folderPath = File(song.filePath).parent ?: ""
-
-    return "$albumTitle|$artistName|$folderPath"
-}
-
 
 fun buildClassicWheelAlbumCarouselItems(
     albumGroups: List<ClassicWheelAlbumGroup>
