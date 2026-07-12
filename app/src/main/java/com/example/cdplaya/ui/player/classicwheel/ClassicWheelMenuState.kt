@@ -15,11 +15,11 @@ class ClassicWheelMenuState {
     var selectedIndex by mutableIntStateOf(0)
         private set
 
-    private val backStack = mutableStateListOf<ClassicWheelMenuScreen>()
+    private val backStack = mutableStateListOf<ClassicWheelBackStackEntry>()
 
     fun openMainMenu() {
         if (currentScreen != ClassicWheelMenuScreen.MainMenu) {
-            backStack.add(currentScreen)
+            pushCurrentScreenToBackStack()
         }
 
         currentScreen = ClassicWheelMenuScreen.MainMenu
@@ -27,7 +27,7 @@ class ClassicWheelMenuState {
     }
 
     fun openSongs() {
-        backStack.add(currentScreen)
+        pushCurrentScreenToBackStack()
         currentScreen = ClassicWheelMenuScreen.Songs
         selectedIndex = 0
     }
@@ -69,32 +69,32 @@ class ClassicWheelMenuState {
     }
 
     fun goBack() {
-        val previousScreen = backStack.removeLastOrNull()
+        val previousEntry = backStack.removeLastOrNull()
 
-        if (previousScreen == null) {
+        if (previousEntry == null) {
             currentScreen = ClassicWheelMenuScreen.NowPlaying
             selectedIndex = 0
             return
         }
 
-        currentScreen = previousScreen
-        selectedIndex = 0
+        currentScreen = previousEntry.screen
+        selectedIndex = previousEntry.selectedIndex
     }
 
     fun openArtists() {
-        backStack.add(currentScreen)
+        pushCurrentScreenToBackStack()
         currentScreen = ClassicWheelMenuScreen.Artists
         selectedIndex = 0
     }
 
     fun openArtistSongs(artistName: String) {
-        backStack.add(currentScreen)
+        pushCurrentScreenToBackStack()
         currentScreen = ClassicWheelMenuScreen.ArtistSongs(artistName)
         selectedIndex = 0
     }
 
     fun openAlbums() {
-        backStack.add(currentScreen)
+        pushCurrentScreenToBackStack()
         currentScreen = ClassicWheelMenuScreen.Albums
         selectedIndex = 0
     }
@@ -103,12 +103,25 @@ class ClassicWheelMenuState {
         albumKey: String,
         albumTitle: String
     ) {
-        backStack.add(currentScreen)
+        pushCurrentScreenToBackStack()
         currentScreen = ClassicWheelMenuScreen.AlbumSongs(
             albumKey = albumKey,
             albumTitle = albumTitle
         )
         selectedIndex = 0
     }
-}
 
+    private fun pushCurrentScreenToBackStack() {
+        backStack.add(
+            ClassicWheelBackStackEntry(
+                screen = currentScreen,
+                selectedIndex = selectedIndex
+            )
+        )
+    }
+
+    private data class ClassicWheelBackStackEntry(
+        val screen: ClassicWheelMenuScreen,
+        val selectedIndex: Int
+    )
+}
