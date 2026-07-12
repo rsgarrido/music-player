@@ -27,14 +27,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.ui.sortSongsByAlbumOrder
-
-private data class AlbumGroup(
-    val key: String,
-    val title: String,
-    val artistText: String,
-    val songs: List<Song>
-)
 
 @Composable
 fun AlbumListScreen(
@@ -44,37 +36,16 @@ fun AlbumListScreen(
     onAlbumShuffleClick: (String, List<Song>) -> Unit,
     onAlbumPlayNextClick: (String, List<Song>) -> Unit,
     onAlbumAddToQueueClick: (String, List<Song>) -> Unit,
-    onAlbumAddToPlaylistClick: (String, List<Song>) -> Unit, // Added here
+    onAlbumAddToPlaylistClick: (String, List<Song>) -> Unit,
     modifier: Modifier = Modifier,
     sortOption: LibrarySortOption = LibrarySortOption.TITLE
 ) {
-    val albumGroups = songs
-        .groupBy { song -> song.folderPath }
-        .map { entry ->
-            val albumSongs = sortSongsByAlbumOrder(entry.value)
-            val firstSong = albumSongs.first()
-
-            val artists = albumSongs
-                .map { song -> song.artist }
-                .distinct()
-                .filter { artist -> artist.isNotBlank() }
-
-            AlbumGroup(
-                key = entry.key,
-                title = firstSong.album.ifBlank { "Unknown Album" },
-                artistText = if (artists.size == 1) {
-                    artists.first()
-                } else {
-                    "Various Artists"
-                },
-                songs = albumSongs
-            )
-        }
+    val albumGroups = buildLibraryAlbumGroups(songs)
 
     val albums = when (sortOption) {
         LibrarySortOption.ARTIST -> {
             albumGroups.sortedWith(
-                compareBy<AlbumGroup> { album ->
+                compareBy<LibraryAlbumGroup> { album ->
                     album.artistText.lowercase()
                 }.thenBy { album ->
                     album.title.lowercase()
@@ -84,7 +55,7 @@ fun AlbumListScreen(
 
         LibrarySortOption.SONG_COUNT -> {
             albumGroups.sortedWith(
-                compareByDescending<AlbumGroup> { album ->
+                compareBy<LibraryAlbumGroup> { album ->
                     album.songs.size
                 }.thenBy { album ->
                     album.title.lowercase()
