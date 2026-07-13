@@ -18,6 +18,7 @@ data class MusicLibraryData(
 class MusicRepository(private val context: Context) {
 
     private var embeddedArtworkCacheHitCount = 0
+    private var embeddedArtworkNoArtworkCacheHitCount = 0
     private var embeddedArtworkTagReadCount = 0
     private var albumArtistTagReadCount = 0
 
@@ -49,6 +50,7 @@ class MusicRepository(private val context: Context) {
                     "filteredSongs=${filteredSongs.size}, " +
                     "folders=${libraryFolders.size}, " +
                     "embeddedArtworkCacheHits=$embeddedArtworkCacheHitCount, " +
+                    "embeddedArtworkNoArtworkCacheHits=$embeddedArtworkNoArtworkCacheHitCount, " +
                     "embeddedArtworkTagReads=$embeddedArtworkTagReadCount, " +
                     "albumArtistTagReads=$albumArtistTagReadCount"
         )
@@ -268,13 +270,32 @@ class MusicRepository(private val context: Context) {
             return cachedArtworkUri
         }
 
+        if (hasNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)) {
+            embeddedArtworkNoArtworkCacheHitCount += 1
+            return null
+        }
+
         return try {
             embeddedArtworkTagReadCount += 1
-            val tag = AudioFileIO.read(audioFile).tag ?: return null
-            val artwork = tag.firstArtwork ?: return null
-            val artworkBytes = artwork.binaryData ?: return null
 
-            if (artworkBytes.isEmpty()) {
+            val tag = AudioFileIO.read(audioFile).tag
+
+            if (tag == null) {
+                writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
+                return null
+            }
+
+            val artwork = tag.firstArtwork
+
+            if (artwork == null) {
+                writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
+                return null
+            }
+
+            val artworkBytes = artwork.binaryData
+
+            if (artworkBytes == null || artworkBytes.isEmpty()) {
+                writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
                 return null
             }
 
@@ -292,8 +313,47 @@ class MusicRepository(private val context: Context) {
 
             Uri.fromFile(cachedArtworkFile)
         } catch (exception: Exception) {
+            writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
+            null
+        } catch (error: LinkageError) {
+            writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
             null
         }
+    }
+
+    private fun hasNoEmbeddedArtworkCacheMarker(
+        audioFile: File,
+        cacheDirectory: File
+    ): Boolean {
+        val markerFile = File(
+            cacheDirectory,
+            buildNoEmbeddedArtworkCacheFileName(audioFile)
+        )
+
+        return markerFile.exists() && markerFile.isFile
+    }
+
+    private fun writeNoEmbeddedArtworkCacheMarker(
+        audioFile: File,
+        cacheDirectory: File
+    ) {
+        val markerFile = File(
+            cacheDirectory,
+            buildNoEmbeddedArtworkCacheFileName(audioFile)
+        )
+
+        if (markerFile.exists()) {
+            return
+        }
+
+        try {
+            markerFile.writeText("no_embedded_artwork")
+        } catch (exception: Exception) {
+        }
+    }
+
+    private fun buildNoEmbeddedArtworkCacheFileName(audioFile: File): String {
+        return "${buildEmbeddedArtworkCacheKey(audioFile)}.no_artwork"
     }
 
 
@@ -368,6 +428,7 @@ class MusicRepository(private val context: Context) {
 
     private fun resetPerformanceCounters() {
         embeddedArtworkCacheHitCount = 0
+        embeddedArtworkNoArtworkCacheHitCount = 0
         embeddedArtworkTagReadCount = 0
         albumArtistTagReadCount = 0
     }
