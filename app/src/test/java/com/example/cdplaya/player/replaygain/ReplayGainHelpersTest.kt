@@ -148,4 +148,198 @@ class ReplayGainHelpersTest {
             0.001f
         )
     }
+
+    @Test
+    fun selectReplayGainDb_returnsTrackGainForTrackMode() {
+        val replayGainInfo = ReplayGainInfo(
+            trackGainDb = -6f,
+            trackPeak = null,
+            albumGainDb = -3f,
+            albumPeak = null
+        )
+
+        val result = selectReplayGainDb(
+            replayGainInfo = replayGainInfo,
+            replayGainMode = ReplayGainMode.TRACK,
+            isAlbumPlaybackContext = true
+        )
+
+        assertEquals(
+            -6f,
+            result ?: 0f,
+            0.001f
+        )
+    }
+
+    @Test
+    fun selectReplayGainDb_returnsAlbumGainForAlbumMode() {
+        val replayGainInfo = ReplayGainInfo(
+            trackGainDb = -6f,
+            trackPeak = null,
+            albumGainDb = -3f,
+            albumPeak = null
+        )
+
+        val result = selectReplayGainDb(
+            replayGainInfo = replayGainInfo,
+            replayGainMode = ReplayGainMode.ALBUM,
+            isAlbumPlaybackContext = false
+        )
+
+        assertEquals(
+            -3f,
+            result ?: 0f,
+            0.001f
+        )
+    }
+
+    @Test
+    fun selectReplayGainDb_fallsBackToTrackGainForAlbumModeWhenAlbumGainIsMissing() {
+        val replayGainInfo = ReplayGainInfo(
+            trackGainDb = -6f,
+            trackPeak = null,
+            albumGainDb = null,
+            albumPeak = null
+        )
+
+        val result = selectReplayGainDb(
+            replayGainInfo = replayGainInfo,
+            replayGainMode = ReplayGainMode.ALBUM,
+            isAlbumPlaybackContext = false
+        )
+
+        assertEquals(
+            -6f,
+            result ?: 0f,
+            0.001f
+        )
+    }
+
+    @Test
+    fun selectReplayGainDb_returnsAlbumGainForSmartModeInAlbumContext() {
+        val replayGainInfo = ReplayGainInfo(
+            trackGainDb = -6f,
+            trackPeak = null,
+            albumGainDb = -3f,
+            albumPeak = null
+        )
+
+        val result = selectReplayGainDb(
+            replayGainInfo = replayGainInfo,
+            replayGainMode = ReplayGainMode.SMART,
+            isAlbumPlaybackContext = true
+        )
+
+        assertEquals(
+            -3f,
+            result ?: 0f,
+            0.001f
+        )
+    }
+
+    @Test
+    fun selectReplayGainDb_returnsTrackGainForSmartModeInMixedContext() {
+        val replayGainInfo = ReplayGainInfo(
+            trackGainDb = -6f,
+            trackPeak = null,
+            albumGainDb = -3f,
+            albumPeak = null
+        )
+
+        val result = selectReplayGainDb(
+            replayGainInfo = replayGainInfo,
+            replayGainMode = ReplayGainMode.SMART,
+            isAlbumPlaybackContext = false
+        )
+
+        assertEquals(
+            -6f,
+            result ?: 0f,
+            0.001f
+        )
+    }
+
+    @Test
+    fun selectReplayGainDb_fallsBackToTrackGainForSmartModeInAlbumContextWhenAlbumGainIsMissing() {
+        val replayGainInfo = ReplayGainInfo(
+            trackGainDb = -6f,
+            trackPeak = null,
+            albumGainDb = null,
+            albumPeak = null
+        )
+
+        val result = selectReplayGainDb(
+            replayGainInfo = replayGainInfo,
+            replayGainMode = ReplayGainMode.SMART,
+            isAlbumPlaybackContext = true
+        )
+
+        assertEquals(
+            -6f,
+            result ?: 0f,
+            0.001f
+        )
+    }
+
+    @Test
+    fun selectReplayGainDb_returnsNullForSmartModeInMixedContextWhenTrackGainIsMissing() {
+        val replayGainInfo = ReplayGainInfo(
+            trackGainDb = null,
+            trackPeak = null,
+            albumGainDb = -3f,
+            albumPeak = null
+        )
+
+        val result = selectReplayGainDb(
+            replayGainInfo = replayGainInfo,
+            replayGainMode = ReplayGainMode.SMART,
+            isAlbumPlaybackContext = false
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun replayGainVolumeMultiplier_usesAlbumGainForSmartModeInAlbumContext() {
+        val replayGainInfo = ReplayGainInfo(
+            trackGainDb = -6.0206f,
+            trackPeak = null,
+            albumGainDb = -12.0412f,
+            albumPeak = null
+        )
+
+        val result = replayGainVolumeMultiplier(
+            replayGainInfo = replayGainInfo,
+            replayGainMode = ReplayGainMode.SMART,
+            isAlbumPlaybackContext = true
+        )
+
+        assertEquals(
+            0.25f,
+            result,
+            0.001f
+        )
+    }
+
+    @Test
+    fun replayGainVolumeMultiplier_usesTrackGainForSmartModeInMixedContext() {
+        val replayGainInfo = ReplayGainInfo(
+            trackGainDb = -6.0206f,
+            trackPeak = null,
+            albumGainDb = -12.0412f,
+            albumPeak = null
+        )
+
+        val result = replayGainVolumeMultiplier(
+            replayGainInfo = replayGainInfo,
+            replayGainMode = ReplayGainMode.SMART,
+            isAlbumPlaybackContext = false
+        )
+
+        assertEquals(
+            0.5f,
+            result,
+            0.001f
+        )
+    }
 }
