@@ -6,7 +6,6 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
 import org.jaudiotagger.audio.AudioFileIO
-import org.jaudiotagger.tag.FieldKey
 import java.io.File
 import java.security.MessageDigest
 import kotlin.system.measureTimeMillis
@@ -160,7 +159,7 @@ class MusicRepository(private val context: Context) {
                     val albumArtUri =
                         getEmbeddedAlbumArtUri(filePath) ?: albumArtByFolder[folderPath]
 
-                    val albumArtist = getAlbumArtist(filePath)
+                    val albumArtist = ""
 
                     val song = Song(
                         id = id,
@@ -297,28 +296,6 @@ class MusicRepository(private val context: Context) {
         }
     }
 
-    private fun getAlbumArtist(filePath: String): String {
-        val audioFile = File(filePath)
-
-        if (!audioFile.exists()) {
-            return ""
-        }
-
-        return try {
-            albumArtistTagReadCount += 1
-
-            AudioFileIO
-                .read(audioFile)
-                .tag
-                ?.getFirst(FieldKey.ALBUM_ARTIST)
-                .orEmpty()
-                .trim()
-        } catch (exception: Exception) {
-            ""
-        } catch (error: LinkageError) {
-            ""
-        }
-    }
 
     private fun findCachedEmbeddedArtworkUri(
         audioFile: File,
