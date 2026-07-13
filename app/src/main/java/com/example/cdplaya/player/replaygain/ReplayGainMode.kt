@@ -10,6 +10,14 @@ enum class ReplayGainMode(
     ),
     TRACK(
         displayName = "Track gain",
-        description = "Normalize songs using ReplayGain track tags when available."
+        description = "Normalize each song individually using ReplayGain track tags."
+    ),
+    ALBUM(
+        displayName = "Album gain",
+        description = "Use album gain when available to preserve album loudness differences."
+    ),
+    SMART(
+        displayName = "Smart",
+        description = "Use album gain for album playback and track gain for mixed playback."
     )
 }

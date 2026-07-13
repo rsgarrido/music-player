@@ -13,17 +13,61 @@ fun replayGainDbToVolumeMultiplier(gainDb: Float): Float {
     )
 }
 
+fun replayGainVolumeMultiplier(
+    replayGainInfo: ReplayGainInfo?,
+    replayGainMode: ReplayGainMode,
+    isAlbumPlaybackContext: Boolean
+): Float {
+    val gainDb = selectReplayGainDb(
+        replayGainInfo = replayGainInfo,
+        replayGainMode = replayGainMode,
+        isAlbumPlaybackContext = isAlbumPlaybackContext
+    ) ?: return 1f
+
+    return replayGainDbToVolumeMultiplier(gainDb)
+}
+
 fun replayGainTrackMultiplier(
     replayGainInfo: ReplayGainInfo?,
     replayGainMode: ReplayGainMode
 ): Float {
-    if (replayGainMode == ReplayGainMode.OFF) {
-        return 1f
+    return replayGainVolumeMultiplier(
+        replayGainInfo = replayGainInfo,
+        replayGainMode = replayGainMode,
+        isAlbumPlaybackContext = false
+    )
+}
+
+fun selectReplayGainDb(
+    replayGainInfo: ReplayGainInfo?,
+    replayGainMode: ReplayGainMode,
+    isAlbumPlaybackContext: Boolean
+): Float? {
+    if (replayGainInfo == null || replayGainMode == ReplayGainMode.OFF) {
+        return null
     }
 
-    val trackGainDb = replayGainInfo?.trackGainDb ?: return 1f
+    return when (replayGainMode) {
+        ReplayGainMode.OFF -> null
 
-    return replayGainDbToVolumeMultiplier(trackGainDb)
+        ReplayGainMode.TRACK -> {
+            replayGainInfo.trackGainDb
+        }
+
+        ReplayGainMode.ALBUM -> {
+            replayGainInfo.albumGainDb
+                ?: replayGainInfo.trackGainDb
+        }
+
+        ReplayGainMode.SMART -> {
+            if (isAlbumPlaybackContext) {
+                replayGainInfo.albumGainDb
+                    ?: replayGainInfo.trackGainDb
+            } else {
+                replayGainInfo.trackGainDb
+            }
+        }
+    }
 }
 
 fun parseReplayGainDb(rawValue: String?): Float? {
