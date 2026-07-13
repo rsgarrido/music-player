@@ -10,7 +10,7 @@ import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.player.replaygain.ReplayGainRepository
-import com.example.cdplaya.player.replaygain.replayGainTrackMultiplier
+import com.example.cdplaya.player.replaygain.replayGainVolumeMultiplier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.random.Random
@@ -687,23 +687,65 @@ class PlaybackController(
             return
         }
 
+        val requestedIsAlbumPlaybackContext = isAlbumPlaybackContextForSong(song)
+
         musicPlayer.setVolume(1f)
 
         coroutineScope.launch {
             val replayGainInfo = replayGainRepository.getReplayGainInfo(song)
 
-            val volumeMultiplier = replayGainTrackMultiplier(
+            val volumeMultiplier = replayGainVolumeMultiplier(
                 replayGainInfo = replayGainInfo,
-                replayGainMode = requestedMode
+                replayGainMode = requestedMode,
+                isAlbumPlaybackContext = requestedIsAlbumPlaybackContext
             )
 
             val isStillCurrentRequest = replayGainRequestId == requestId
             val isStillSameSong = currentSong?.id == song.id
             val isStillSameMode = replayGainMode == requestedMode
+            val isStillSamePlaybackContext =
+                isAlbumPlaybackContextForSong(song) == requestedIsAlbumPlaybackContext
 
-            if (isStillCurrentRequest && isStillSameSong && isStillSameMode) {
+            if (
+                isStillCurrentRequest &&
+                isStillSameSong &&
+                isStillSameMode &&
+                isStillSamePlaybackContext
+            ) {
                 musicPlayer.setVolume(volumeMultiplier)
             }
+        }
+    }
+
+    private fun isAlbumPlaybackContextForSong(song: Song): Boolean {
+        if (playbackContextSongs.size <= 1) {
+            return false
+        }
+
+        val currentAlbumTitle = song.album.ifBlank {
+            "Unknown Album"
+        }
+
+        val currentFolderPath = song.folderPath
+
+        val currentSongIsInContext = playbackContextSongs.any { contextSong ->
+            contextSong.id == song.id
+        }
+
+        if (!currentSongIsInContext) {
+            return false
+        }
+
+        return playbackContextSongs.all { contextSong ->
+            val contextAlbumTitle = contextSong.album.ifBlank {
+                "Unknown Album"
+            }
+
+            contextSong.folderPath == currentFolderPath &&
+                    contextAlbumTitle.equals(
+                        currentAlbumTitle,
+                        ignoreCase = true
+                    )
         }
     }
 
