@@ -326,8 +326,14 @@ class MusicRepository(private val context: Context) {
     ): Uri? {
         val cacheKey = buildEmbeddedArtworkCacheKey(audioFile)
 
-        val cachedArtworkFile = cacheDirectory.listFiles()?.firstOrNull { file ->
-            file.isFile && file.nameWithoutExtension == cacheKey
+        val possibleCachedFiles = listOf(
+            File(cacheDirectory, "$cacheKey.jpg"),
+            File(cacheDirectory, "$cacheKey.png"),
+            File(cacheDirectory, "$cacheKey.webp")
+        )
+
+        val cachedArtworkFile = possibleCachedFiles.firstOrNull { file ->
+            file.exists() && file.isFile
         }
 
         return cachedArtworkFile?.let { file ->
