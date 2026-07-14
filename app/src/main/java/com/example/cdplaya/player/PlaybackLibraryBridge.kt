@@ -1,0 +1,29 @@
+package com.example.cdplaya.player
+
+import com.example.cdplaya.data.Song
+
+/** Shares the phone UI's already-filtered library with the playback service process. */
+object PlaybackLibraryBridge {
+    private var playbackController: PlaybackController? = null
+
+    var songs: List<Song> = emptyList()
+        private set
+
+    fun register(controller: PlaybackController) {
+        playbackController = controller
+    }
+
+    fun unregister(controller: PlaybackController) {
+        if (playbackController === controller) {
+            playbackController = null
+        }
+    }
+
+    fun updateSongs(filteredSongs: List<Song>) {
+        songs = filteredSongs
+    }
+
+    fun playSelectedSong(song: Song, playbackContext: List<Song>) {
+        playbackController?.playSelectedSong(song, playbackContext)
+    }
+}

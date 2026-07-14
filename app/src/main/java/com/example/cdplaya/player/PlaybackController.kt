@@ -19,6 +19,9 @@ class PlaybackController(
     context: Context,
     private val coroutineScope: CoroutineScope
 ) {
+    init {
+        PlaybackLibraryBridge.register(this)
+    }
     private val musicPlayer = MusicPlayer(context)
     private val playerStateStorage = PlayerStateStorage(context)
     private val playbackHistoryRecorder = PlaybackHistoryRecorder(coroutineScope)
@@ -367,6 +370,7 @@ class PlaybackController(
         savePlayerState()
         progressHandler.removeCallbacks(progressRunnable)
         musicPlayer.release()
+        PlaybackLibraryBridge.unregister(this)
     }
 
     fun setListeningHistoryRepository(repository: ListeningHistoryRepository) {
