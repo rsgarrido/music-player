@@ -27,6 +27,7 @@ fun ExpandedPlayerThemeHost(
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     songs: List<Song>,
+    upcomingSongs: List<Song>,
     onSongClick: (Song, List<Song>) -> Unit
 ) {
     when (selectedPlayerTheme) {
@@ -77,7 +78,23 @@ fun ExpandedPlayerThemeHost(
         PlayerTheme.RETRO_RACK -> {
             RetroRackExpandedPlayer(
                 currentSong = currentSong,
-                onCollapseClick = onCollapseClick
+                isPlaying = isPlaying,
+                isShuffleEnabled = isShuffleEnabled,
+                repeatMode = repeatMode,
+                currentPosition = currentPosition,
+                duration = duration,
+                isCurrentSongFavorite = isCurrentSongFavorite,
+                upcomingSongs = upcomingSongs,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onSeekChange = onSeekChange,
+                onShuffleClick = onShuffleClick,
+                onRepeatClick = onRepeatClick,
+                onCollapseClick = onCollapseClick,
+                onOpenUpNextClick = onOpenUpNextClick,
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                onSongClick = onSongClick
             )
         }
     }
