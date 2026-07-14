@@ -30,21 +30,31 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode as AnimationRepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import kotlin.math.sin
 
 @Composable
 fun RetroRackExpandedPlayer(
@@ -68,13 +78,18 @@ fun RetroRackExpandedPlayer(
     onSongClick: (Song, List<Song>) -> Unit
 ) {
     val playbackContext = listOfNotNull(currentSong) + upcomingSongs
+    val configuration = LocalConfiguration.current
+    val compact = configuration.screenHeightDp < 700 || configuration.screenWidthDp < 360
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(RackBackground)
-            .padding(horizontal = 8.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
+            .padding(
+                horizontal = if (compact) 5.dp else 8.dp,
+                vertical = if (compact) 6.dp else 10.dp
+            ),
+        verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 7.dp)
     ) {
         RackModule(
             title = "CDPLAYA // MAIN DECK",
@@ -95,7 +110,8 @@ fun RetroRackExpandedPlayer(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseClick,
-                onToggleFavoriteClick = onToggleFavoriteClick
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                compact = compact
             )
         }
 
@@ -103,7 +119,10 @@ fun RetroRackExpandedPlayer(
             title = "SPECTRUM MONITOR // VISUAL",
             modifier = Modifier.weight(0.48f)
         ) {
-            DecorativeSpectrum(modifier = Modifier.fillMaxSize())
+            DecorativeSpectrum(
+                isPlaying = isPlaying,
+                modifier = Modifier.fillMaxSize()
+            )
         }
 
         RackModule(
@@ -144,13 +163,14 @@ private fun MainDeck(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit
+    onToggleFavoriteClick: (Song) -> Unit,
+    compact: Boolean
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(if (compact) 5.dp else 8.dp),
+        verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 6.dp)
     ) {
         Row(
             modifier = Modifier
@@ -162,8 +182,9 @@ private fun MainDeck(
                 model = currentSong?.albumArtUri,
                 contentDescription = "Current album artwork",
                 modifier = Modifier
-                    .size(74.dp)
+                    .size(if (compact) 58.dp else 74.dp)
                     .background(DisplayBlack)
+                    .rackBevel()
                     .padding(3.dp)
             )
 
@@ -171,6 +192,7 @@ private fun MainDeck(
                 modifier = Modifier
                     .weight(1f)
                     .background(DisplayBlack)
+                    .rackBevel()
                     .padding(horizontal = 8.dp, vertical = 5.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
@@ -282,19 +304,39 @@ private fun MainDeck(
 }
 
 @Composable
-private fun DecorativeSpectrum(modifier: Modifier = Modifier) {
+private fun DecorativeSpectrum(
+    isPlaying: Boolean,
+    modifier: Modifier = Modifier
+) {
     val levels = listOf(0.32f, 0.56f, 0.76f, 0.42f, 0.88f, 0.64f, 0.94f, 0.51f, 0.72f, 0.38f, 0.61f, 0.82f)
+    val transition = rememberInfiniteTransition(label = "rack spectrum")
+    val phase by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 6.283f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1_600, easing = LinearEasing),
+            repeatMode = AnimationRepeatMode.Restart
+        ),
+        label = "rack spectrum phase"
+    )
     Canvas(
         modifier = modifier
             .background(DisplayBlack)
+            .rackBevel()
             .padding(8.dp)
     ) {
         val gap = size.width * 0.018f
         val barWidth = (size.width - gap * (levels.size - 1)) / levels.size
         levels.forEachIndexed { index, level ->
-            val height = size.height * level
+            val movement = if (isPlaying) {
+                sin(phase + index * 0.78f) * 0.14f
+            } else {
+                0f
+            }
+            val animatedLevel = (level + movement).coerceIn(0.12f, 0.98f)
+            val height = size.height * animatedLevel
             drawRect(
-                color = if (level > 0.8f) MeterAmber else LcdGreen,
+                color = if (animatedLevel > 0.8f) MeterAmber else LcdGreen,
                 topLeft = Offset(index * (barWidth + gap), size.height - height),
                 size = Size(barWidth, height)
             )
@@ -314,6 +356,7 @@ private fun RackPlaylist(
         modifier = Modifier
             .fillMaxSize()
             .background(DisplayBlack)
+            .rackBevel()
             .padding(vertical = 3.dp)
     ) {
         itemsIndexed(
@@ -365,11 +408,16 @@ private fun RackModule(
         modifier = modifier
             .fillMaxWidth()
             .background(PanelDark)
+            .rackBevel()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(PanelHeader)
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(PanelHeader, PanelHeaderEnd, PanelHeader)
+                    )
+                )
                 .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -401,6 +449,7 @@ private fun RackIconButton(
         modifier = Modifier
             .clickable(onClick = onClick)
             .background(if (active) ActiveButton else ButtonFace)
+            .rackBevel()
             .padding(horizontal = 6.dp, vertical = 3.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -439,15 +488,3 @@ private fun formatRackTime(milliseconds: Int): String {
     val totalSeconds = (milliseconds.coerceAtLeast(0) / 1000)
     return "%d:%02d".format(totalSeconds / 60, totalSeconds % 60)
 }
-
-private val RackBackground = Color(0xFF0D0F12)
-private val PanelDark = Color(0xFF25282E)
-private val PanelHeader = Color(0xFF343841)
-private val DisplayBlack = Color(0xFF050806)
-private val LcdGreen = Color(0xFF75F05F)
-private val LcdGreenDim = Color(0xFF51A94A)
-private val MeterAmber = Color(0xFFE0C04A)
-private val ControlSilver = Color(0xFFD2D5D9)
-private val ButtonFace = Color(0xFF484D56)
-private val ActiveButton = Color(0xFF8ACD74)
-private val SelectedRow = Color(0xFF78D866)
