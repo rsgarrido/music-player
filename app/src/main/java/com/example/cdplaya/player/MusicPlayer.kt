@@ -160,29 +160,28 @@ class MusicPlayer(private val context: Context) {
             return
         }
 
-        val songById = currentPlaylist.associateBy { song ->
-            song.id
+        if (currentIndex > 0) {
+            playerController.removeMediaItems(0, currentIndex)
         }
 
-        val preservedSongs = (0..currentIndex).mapNotNull { index ->
-            val songId = playerController
-                .getMediaItemAt(index)
-                .mediaId
-                .toLongOrNull()
+        val current = currentSong ?: return
+        val existingUpcomingIds = (1 until playerController.mediaItemCount).map { index ->
+            playerController.getMediaItemAt(index).mediaId
+        }
+        val requestedUpcomingIds = upcomingSongs.map { song -> song.id.toString() }
 
-            songId?.let { id ->
-                songById[id]
-            }
+        currentPlaylist = listOf(current) + upcomingSongs
+
+        if (existingUpcomingIds == requestedUpcomingIds) {
+            return
         }
 
         val upcomingMediaItems = upcomingSongs.map { song ->
             song.toMediaItem()
         }
 
-        currentPlaylist = preservedSongs + upcomingSongs
-
         playerController.replaceMediaItems(
-            currentIndex + 1,
+            1,
             playerController.mediaItemCount,
             upcomingMediaItems
         )

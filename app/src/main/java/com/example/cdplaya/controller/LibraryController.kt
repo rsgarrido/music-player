@@ -20,6 +20,7 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.player.PlaybackController
+import com.example.cdplaya.player.PlaybackLibraryBridge
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -86,6 +87,7 @@ class LibraryController(
             libraryFolders.addAll(libraryData.libraryFolders)
 
             songs = libraryData.songs
+            PlaybackLibraryBridge.updateSongs(songs)
             refreshListeningHistory()
             playbackController.setLibrarySongs(songs)
         }
@@ -163,6 +165,7 @@ class LibraryController(
             libraryFolders.addAll(libraryData.libraryFolders)
 
             songs = libraryData.songs
+            PlaybackLibraryBridge.updateSongs(songs)
             refreshListeningHistory()
             playbackController.handleLibrarySongsChanged(songs)
         }
@@ -351,6 +354,7 @@ class LibraryController(
             libraryFolders.addAll(libraryData.libraryFolders)
 
             songs = libraryData.songs
+            PlaybackLibraryBridge.updateSongs(songs)
             refreshListeningHistory()
             playbackController.handleLibrarySongsChanged(songs)
         }

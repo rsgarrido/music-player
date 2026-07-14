@@ -311,7 +311,7 @@ class MusicRepository(private val context: Context) {
                 cachedArtworkFile.writeBytes(artworkBytes)
             }
 
-            Uri.fromFile(cachedArtworkFile)
+            buildEmbeddedArtworkContentUri(cachedArtworkFile)
         } catch (exception: Exception) {
             writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
             null
@@ -374,8 +374,16 @@ class MusicRepository(private val context: Context) {
         }
 
         return cachedArtworkFile?.let { file ->
-            Uri.fromFile(file)
+            buildEmbeddedArtworkContentUri(file)
         }
+    }
+
+    private fun buildEmbeddedArtworkContentUri(artworkFile: File): Uri {
+        return Uri.Builder()
+            .scheme("content")
+            .authority("${context.packageName}.embeddedartwork")
+            .appendPath(artworkFile.name)
+            .build()
     }
 
     private fun buildEmbeddedArtworkCacheKey(audioFile: File): String {

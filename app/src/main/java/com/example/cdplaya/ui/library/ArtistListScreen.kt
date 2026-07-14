@@ -27,12 +27,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.ui.sortSongsForArtistDetail
-
-private data class ArtistGroup(
-    val name: String,
-    val songs: List<Song>
-)
 
 @Composable
 fun ArtistListScreen(
@@ -46,19 +40,12 @@ fun ArtistListScreen(
     modifier: Modifier = Modifier,
     sortOption: LibrarySortOption = LibrarySortOption.NAME
 ) {
-    val artistGroups = songs
-        .groupBy { song -> song.artist.ifBlank { "Unknown Artist" } }
-        .map { entry ->
-            ArtistGroup(
-                name = entry.key,
-                songs = sortSongsForArtistDetail(entry.value)
-            )
-        }
+    val artistGroups = buildLibraryArtistGroups(songs)
 
     val artists = when (sortOption) {
         LibrarySortOption.SONG_COUNT -> {
             artistGroups.sortedWith(
-                compareByDescending<ArtistGroup> { artist ->
+                compareByDescending<LibraryArtistGroup> { artist ->
                     artist.songs.size
                 }.thenBy { artist ->
                     artist.name.lowercase()
