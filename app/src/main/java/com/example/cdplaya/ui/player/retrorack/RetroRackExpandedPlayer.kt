@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -52,6 +53,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
@@ -452,15 +454,26 @@ private fun RackPlaylist(
                     fontFamily = FontFamily.Monospace,
                     fontSize = 10.sp,
                     maxLines = 1,
+                    softWrap = false,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                Text(
-                    text = formatRackTime(song.duration.toInt()),
-                    color = if (index == 0) ControlSilver else LcdGreenDim,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 9.sp
-                )
+                Box(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .padding(start = 6.dp)
+                ) {
+                    Text(
+                        text = formatRackTime(song.duration.toInt()),
+                        color = if (index == 0) ControlSilver else LcdGreenDim,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 9.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
     }
