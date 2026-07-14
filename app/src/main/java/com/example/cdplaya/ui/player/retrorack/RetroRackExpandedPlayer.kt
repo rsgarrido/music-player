@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
@@ -84,6 +85,13 @@ fun RetroRackExpandedPlayer(
     val playbackContext = listOfNotNull(currentSong) + upcomingSongs
     val configuration = LocalConfiguration.current
     val compact = configuration.screenHeightDp < 700 || configuration.screenWidthDp < 360
+    val fontScale = LocalDensity.current.fontScale
+    val mainDeckHeight = when {
+        compact && fontScale > 1.15f -> 212.dp
+        compact -> 202.dp
+        fontScale > 1.15f -> 230.dp
+        else -> 216.dp
+    }
     val visualProfile = remember(
         currentSong?.id,
         currentSong?.title,
@@ -108,7 +116,7 @@ fun RetroRackExpandedPlayer(
     ) {
         RackModule(
             title = "CDPLAYA // MAIN DECK",
-            modifier = Modifier.height(if (compact) 176.dp else 196.dp),
+            modifier = Modifier.height(mainDeckHeight),
             trailingAction = {
                 RackIconButton(
                     icon = Icons.Filled.Close,
@@ -194,6 +202,14 @@ private fun MainDeck(
     accent: Color,
     compact: Boolean
 ) {
+    val fontScale = LocalDensity.current.fontScale
+    val displayHeight = when {
+        compact && fontScale > 1.15f -> 76.dp
+        compact -> 68.dp
+        fontScale > 1.15f -> 84.dp
+        else -> 76.dp
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -203,14 +219,14 @@ private fun MainDeck(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (compact) 52.dp else 60.dp),
+                .height(displayHeight),
             horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             AsyncImage(
                 model = currentSong?.albumArtUri,
                 contentDescription = "Current album artwork",
                 modifier = Modifier
-                    .size(if (compact) 52.dp else 60.dp)
+                    .size(displayHeight)
                     .background(DisplayBlack)
                     .rackBevel()
                     .padding(2.dp)
@@ -222,7 +238,7 @@ private fun MainDeck(
                     .background(DisplayBlack)
                     .rackBevel()
                     .padding(horizontal = 6.dp, vertical = 3.dp),
-                verticalArrangement = Arrangement.spacedBy(1.dp)
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = currentSong?.title?.uppercase() ?: "NO TRACK LOADED",
@@ -230,6 +246,7 @@ private fun MainDeck(
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
                     fontSize = if (compact) 12.sp else 13.sp,
+                    lineHeight = if (compact) 14.sp else 15.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -238,12 +255,14 @@ private fun MainDeck(
                     color = LcdGreenDim,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 9.sp,
+                    lineHeight = 11.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     LcdLabel(text = if (isPlaying) "PLAY" else "PAUSE")
                     LcdLabel(text = "320K")
@@ -253,7 +272,12 @@ private fun MainDeck(
                         color = LcdGreen,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 10.sp
+                        fontSize = 10.sp,
+                        lineHeight = 11.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
@@ -553,6 +577,9 @@ private fun LcdLabel(text: String) {
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Bold,
         fontSize = 8.sp,
+        lineHeight = 9.sp,
+        maxLines = 1,
+        softWrap = false,
         modifier = Modifier
             .background(LcdGreenDim)
             .padding(horizontal = 3.dp, vertical = 1.dp)
