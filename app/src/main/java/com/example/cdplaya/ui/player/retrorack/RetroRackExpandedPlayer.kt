@@ -84,6 +84,17 @@ fun RetroRackExpandedPlayer(
     val playbackContext = listOfNotNull(currentSong) + upcomingSongs
     val configuration = LocalConfiguration.current
     val compact = configuration.screenHeightDp < 700 || configuration.screenWidthDp < 360
+    val visualProfile = remember(
+        currentSong?.id,
+        currentSong?.title,
+        currentSong?.artist
+    ) {
+        buildRetroRackVisualProfile(
+            songId = currentSong?.id,
+            title = currentSong?.title,
+            artist = currentSong?.artist
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -122,6 +133,7 @@ fun RetroRackExpandedPlayer(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
+                accent = visualProfile.accent,
                 compact = compact
             )
         }
@@ -131,7 +143,9 @@ fun RetroRackExpandedPlayer(
             modifier = Modifier.height(if (compact) 72.dp else 88.dp)
         ) {
             DecorativeSpectrum(
+                profile = visualProfile,
                 isPlaying = isPlaying,
+                currentPosition = currentPosition,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -144,6 +158,7 @@ fun RetroRackExpandedPlayer(
                     icon = Icons.Filled.List,
                     label = "QUEUE",
                     active = true,
+                    activeColor = visualProfile.accent,
                     compact = true,
                     onClick = onOpenUpNextClick
                 )
@@ -153,6 +168,7 @@ fun RetroRackExpandedPlayer(
                 currentSong = currentSong,
                 upcomingSongs = upcomingSongs,
                 playbackContext = playbackContext,
+                accent = visualProfile.accent,
                 onSongClick = onSongClick
             )
         }
@@ -175,6 +191,7 @@ private fun MainDeck(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
+    accent: Color,
     compact: Boolean
 ) {
     Column(
@@ -209,7 +226,7 @@ private fun MainDeck(
             ) {
                 Text(
                     text = currentSong?.title?.uppercase() ?: "NO TRACK LOADED",
-                    color = LcdGreen,
+                    color = accent,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
                     fontSize = if (compact) 12.sp else 13.sp,
@@ -248,7 +265,7 @@ private fun MainDeck(
             valueRange = 0f..duration.coerceAtLeast(1).toFloat(),
             colors = SliderDefaults.colors(
                 thumbColor = ControlSilver,
-                activeTrackColor = LcdGreen,
+                activeTrackColor = accent,
                 inactiveTrackColor = Color(0xFF30343A)
             ),
             modifier = Modifier
@@ -265,6 +282,7 @@ private fun MainDeck(
                 icon = Icons.Filled.Shuffle,
                 label = "SHUF",
                 active = isShuffleEnabled,
+                activeColor = accent,
                 compact = compact,
                 onClick = onShuffleClick
             )
@@ -279,6 +297,7 @@ private fun MainDeck(
                 icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                 label = if (isPlaying) "PAUSE" else "PLAY",
                 active = true,
+                activeColor = accent,
                 compact = compact,
                 onClick = onPlayPauseClick
             )
@@ -297,6 +316,7 @@ private fun MainDeck(
                     RepeatMode.ONE -> "ONE"
                 },
                 active = repeatMode != RepeatMode.OFF,
+                activeColor = accent,
                 compact = compact,
                 onClick = onRepeatClick
             )
@@ -308,6 +328,7 @@ private fun MainDeck(
                 },
                 label = "FAV",
                 active = isCurrentSongFavorite,
+                activeColor = accent,
                 compact = compact,
                 onClick = { currentSong?.let(onToggleFavoriteClick) }
             )
@@ -317,10 +338,11 @@ private fun MainDeck(
 
 @Composable
 private fun DecorativeSpectrum(
+    profile: RetroRackVisualProfile,
     isPlaying: Boolean,
+    currentPosition: Int,
     modifier: Modifier = Modifier
 ) {
-    val levels = listOf(0.32f, 0.56f, 0.76f, 0.42f, 0.88f, 0.64f, 0.94f, 0.51f, 0.72f, 0.38f, 0.61f, 0.82f)
     val transition = rememberInfiniteTransition(label = "rack spectrum")
     val phase by transition.animateFloat(
         initialValue = 0f,
@@ -337,21 +359,35 @@ private fun DecorativeSpectrum(
             .rackBevel()
             .padding(8.dp)
     ) {
-        val gap = size.width * 0.018f
-        val barWidth = (size.width - gap * (levels.size - 1)) / levels.size
-        levels.forEachIndexed { index, level ->
+        val gap = size.width * 0.012f
+        val barWidth = (size.width - gap * (profile.levels.size - 1)) / profile.levels.size
+        val segmentGap = 2.dp.toPx()
+        val segmentHeight = 3.dp.toPx()
+        val playbackPhase = (currentPosition / 1_000f) * 0.22f
+        profile.levels.forEachIndexed { index, level ->
             val movement = if (isPlaying) {
-                sin(phase + index * 0.78f) * 0.14f
+                sin(
+                    phase * (0.58f + index % 4 * 0.07f) +
+                            playbackPhase +
+                            profile.phaseOffset +
+                            index * 0.73f
+                ) * 0.11f
             } else {
                 0f
             }
             val animatedLevel = (level + movement).coerceIn(0.12f, 0.98f)
             val height = size.height * animatedLevel
-            drawRect(
-                color = if (animatedLevel > 0.8f) MeterAmber else LcdGreen,
-                topLeft = Offset(index * (barWidth + gap), size.height - height),
-                size = Size(barWidth, height)
-            )
+            val segmentStep = segmentHeight + segmentGap
+            val segmentCount = (height / segmentStep).toInt().coerceAtLeast(1)
+            repeat(segmentCount) { segmentIndex ->
+                val segmentTop = size.height - (segmentIndex + 1) * segmentStep
+                val isPeak = segmentTop < size.height * 0.18f
+                drawRect(
+                    color = if (isPeak) profile.peak else profile.accent,
+                    topLeft = Offset(index * (barWidth + gap), segmentTop),
+                    size = Size(barWidth, segmentHeight)
+                )
+            }
         }
     }
 }
@@ -361,6 +397,7 @@ private fun RackPlaylist(
     currentSong: Song?,
     upcomingSongs: List<Song>,
     playbackContext: List<Song>,
+    accent: Color,
     onSongClick: (Song, List<Song>) -> Unit
 ) {
     val rows = listOfNotNull(currentSong) + upcomingSongs
@@ -391,7 +428,7 @@ private fun RackPlaylist(
                 )
                 Text(
                     text = "  ${song.artist} — ${song.title}",
-                    color = if (index == 0) ControlSilver else LcdGreen,
+                    color = if (index == 0) ControlSilver else accent,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 10.sp,
                     maxLines = 1,
@@ -463,6 +500,7 @@ private fun RackIconButton(
     icon: ImageVector,
     label: String,
     active: Boolean = false,
+    activeColor: Color = ActiveButton,
     compact: Boolean = false,
     onClick: () -> Unit
 ) {
@@ -482,7 +520,7 @@ private fun RackIconButton(
             .background(
                 when {
                     isPressed -> ButtonPressed
-                    active -> ActiveButton
+                    active -> activeColor
                     else -> ButtonFace
                 }
             )
