@@ -3,6 +3,8 @@ package com.example.cdplaya.ui.player.retrorack
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -38,6 +41,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -93,7 +97,15 @@ fun RetroRackExpandedPlayer(
     ) {
         RackModule(
             title = "CDPLAYA // MAIN DECK",
-            modifier = Modifier.weight(1.15f)
+            modifier = Modifier.height(if (compact) 176.dp else 196.dp),
+            trailingAction = {
+                RackIconButton(
+                    icon = Icons.Filled.Close,
+                    label = "CLOSE",
+                    compact = true,
+                    onClick = onCollapseClick
+                )
+            }
         ) {
             MainDeck(
                 currentSong = currentSong,
@@ -109,7 +121,6 @@ fun RetroRackExpandedPlayer(
                 onSeekChange = onSeekChange,
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
-                onCollapseClick = onCollapseClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 compact = compact
             )
@@ -117,7 +128,7 @@ fun RetroRackExpandedPlayer(
 
         RackModule(
             title = "SPECTRUM MONITOR // VISUAL",
-            modifier = Modifier.weight(0.48f)
+            modifier = Modifier.height(if (compact) 72.dp else 88.dp)
         ) {
             DecorativeSpectrum(
                 isPlaying = isPlaying,
@@ -133,6 +144,7 @@ fun RetroRackExpandedPlayer(
                     icon = Icons.Filled.List,
                     label = "QUEUE",
                     active = true,
+                    compact = true,
                     onClick = onOpenUpNextClick
                 )
             }
@@ -162,30 +174,29 @@ private fun MainDeck(
     onSeekChange: (Int) -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
-    onCollapseClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     compact: Boolean
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (compact) 5.dp else 8.dp),
-        verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 6.dp)
+            .padding(horizontal = 5.dp, vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .height(if (compact) 52.dp else 60.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             AsyncImage(
                 model = currentSong?.albumArtUri,
                 contentDescription = "Current album artwork",
                 modifier = Modifier
-                    .size(if (compact) 58.dp else 74.dp)
+                    .size(if (compact) 52.dp else 60.dp)
                     .background(DisplayBlack)
                     .rackBevel()
-                    .padding(3.dp)
+                    .padding(2.dp)
             )
 
             Column(
@@ -193,15 +204,15 @@ private fun MainDeck(
                     .weight(1f)
                     .background(DisplayBlack)
                     .rackBevel()
-                    .padding(horizontal = 8.dp, vertical = 5.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                verticalArrangement = Arrangement.spacedBy(1.dp)
             ) {
                 Text(
                     text = currentSong?.title?.uppercase() ?: "NO TRACK LOADED",
                     color = LcdGreen,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
+                    fontSize = if (compact) 12.sp else 13.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -209,11 +220,10 @@ private fun MainDeck(
                     text = currentSong?.artist?.uppercase().orEmpty(),
                     color = LcdGreenDim,
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
+                    fontSize = 9.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.weight(1f))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -226,16 +236,10 @@ private fun MainDeck(
                         color = LcdGreen,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
+                        fontSize = 10.sp
                     )
                 }
             }
-
-            RackIconButton(
-                icon = Icons.Filled.Close,
-                label = "CLOSE",
-                onClick = onCollapseClick
-            )
         }
 
         Slider(
@@ -249,36 +253,42 @@ private fun MainDeck(
             ),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(24.dp)
+                .height(20.dp)
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             RackIconButton(
                 icon = Icons.Filled.Shuffle,
                 label = "SHUF",
                 active = isShuffleEnabled,
+                compact = compact,
                 onClick = onShuffleClick
             )
+            Spacer(modifier = Modifier.weight(1f))
             RackIconButton(
                 icon = Icons.Filled.KeyboardArrowLeft,
                 label = "PREV",
+                compact = compact,
                 onClick = onPreviousClick
             )
             RackIconButton(
                 icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                 label = if (isPlaying) "PAUSE" else "PLAY",
                 active = true,
+                compact = compact,
                 onClick = onPlayPauseClick
             )
             RackIconButton(
                 icon = Icons.Filled.KeyboardArrowRight,
                 label = "NEXT",
+                compact = compact,
                 onClick = onNextClick
             )
+            Spacer(modifier = Modifier.weight(1f))
             RackIconButton(
                 icon = Icons.Filled.Repeat,
                 label = when (repeatMode) {
@@ -287,6 +297,7 @@ private fun MainDeck(
                     RepeatMode.ONE -> "ONE"
                 },
                 active = repeatMode != RepeatMode.OFF,
+                compact = compact,
                 onClick = onRepeatClick
             )
             RackIconButton(
@@ -297,6 +308,7 @@ private fun MainDeck(
                 },
                 label = "FAV",
                 active = isCurrentSongFavorite,
+                compact = compact,
                 onClick = { currentSong?.let(onToggleFavoriteClick) }
             )
         }
@@ -357,7 +369,7 @@ private fun RackPlaylist(
             .fillMaxSize()
             .background(DisplayBlack)
             .rackBevel()
-            .padding(vertical = 3.dp)
+            .padding(vertical = 2.dp)
     ) {
         itemsIndexed(
             items = rows,
@@ -368,29 +380,29 @@ private fun RackPlaylist(
                     .fillMaxWidth()
                     .clickable { onSongClick(song, playbackContext) }
                     .background(if (index == 0) SelectedRow else Color.Transparent)
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .padding(horizontal = 6.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = (index + 1).toString().padStart(2, '0'),
                     color = LcdGreenDim,
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp
+                    fontSize = 9.sp
                 )
                 Text(
                     text = "  ${song.artist} — ${song.title}",
-                    color = if (index == 0) DisplayBlack else LcdGreen,
+                    color = if (index == 0) ControlSilver else LcdGreen,
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 12.sp,
+                    fontSize = 10.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
                 Text(
                     text = formatRackTime(song.duration.toInt()),
-                    color = if (index == 0) DisplayBlack else LcdGreen,
+                    color = if (index == 0) ControlSilver else LcdGreenDim,
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp
+                    fontSize = 9.sp
                 )
             }
         }
@@ -418,17 +430,25 @@ private fun RackModule(
                         listOf(PanelHeader, PanelHeaderEnd, PanelHeader)
                     )
                 )
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(5.dp)
+                    .background(RackShadow)
+                    .rackBevel(pressed = true)
+            )
             Text(
                 text = title,
                 color = ControlSilver,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
-                fontSize = 11.sp,
+                fontSize = 9.sp,
                 maxLines = 1,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 5.dp)
             )
             trailingAction?.invoke()
         }
@@ -443,28 +463,45 @@ private fun RackIconButton(
     icon: ImageVector,
     label: String,
     active: Boolean = false,
+    compact: Boolean = false,
     onClick: () -> Unit
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
     Column(
         modifier = Modifier
-            .clickable(onClick = onClick)
-            .background(if (active) ActiveButton else ButtonFace)
-            .rackBevel()
-            .padding(horizontal = 6.dp, vertical = 3.dp),
+            .sizeIn(
+                minWidth = if (compact) 36.dp else 40.dp,
+                minHeight = if (compact) 30.dp else 34.dp
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .background(
+                when {
+                    isPressed -> ButtonPressed
+                    active -> ActiveButton
+                    else -> ButtonFace
+                }
+            )
+            .rackBevel(pressed = isPressed)
+            .padding(horizontal = 4.dp, vertical = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (active) DisplayBlack else ControlSilver,
-            modifier = Modifier.size(19.dp)
+            tint = if (active && !isPressed) DisplayBlack else ControlSilver,
+            modifier = Modifier.size(if (compact) 14.dp else 16.dp)
         )
         Text(
             text = label,
-            color = if (active) DisplayBlack else ControlSilver,
+            color = if (active && !isPressed) DisplayBlack else ControlSilver,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            fontSize = 7.sp,
+            fontSize = 6.sp,
             maxLines = 1
         )
     }
