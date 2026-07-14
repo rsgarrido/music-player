@@ -105,6 +105,7 @@ fun MusicScreenOverlays(
                 onOpenUpNextClick = onShowExpandedUpNextSheet,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 songs = songs,
+                upcomingSongs = upcomingSongs,
                 onSongClick = onSongClick
             )
         }

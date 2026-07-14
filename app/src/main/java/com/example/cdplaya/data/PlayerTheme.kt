@@ -12,6 +12,11 @@ enum class PlayerTheme(
     CLASSIC_WHEEL(
         id = "classic_wheel",
         displayName = "Classic Wheel"
+    ),
+
+    RETRO_RACK(
+        id = "retro_rack",
+        displayName = "Retro Rack"
     );
 
     companion object {

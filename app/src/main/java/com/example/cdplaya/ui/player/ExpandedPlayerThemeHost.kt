@@ -5,6 +5,7 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
+import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
 
 @Composable
 fun ExpandedPlayerThemeHost(
@@ -26,6 +27,7 @@ fun ExpandedPlayerThemeHost(
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     songs: List<Song>,
+    upcomingSongs: List<Song>,
     onSongClick: (Song, List<Song>) -> Unit
 ) {
     when (selectedPlayerTheme) {
@@ -69,6 +71,29 @@ fun ExpandedPlayerThemeHost(
                 onOpenUpNextClick = onOpenUpNextClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 songs = songs,
+                onSongClick = onSongClick
+            )
+        }
+
+        PlayerTheme.RETRO_RACK -> {
+            RetroRackExpandedPlayer(
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                isShuffleEnabled = isShuffleEnabled,
+                repeatMode = repeatMode,
+                currentPosition = currentPosition,
+                duration = duration,
+                isCurrentSongFavorite = isCurrentSongFavorite,
+                upcomingSongs = upcomingSongs,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onSeekChange = onSeekChange,
+                onShuffleClick = onShuffleClick,
+                onRepeatClick = onRepeatClick,
+                onCollapseClick = onCollapseClick,
+                onOpenUpNextClick = onOpenUpNextClick,
+                onToggleFavoriteClick = onToggleFavoriteClick,
                 onSongClick = onSongClick
             )
         }
