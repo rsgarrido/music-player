@@ -5,6 +5,7 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
+import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
 
 @Composable
 fun ExpandedPlayerThemeHost(
@@ -70,6 +71,13 @@ fun ExpandedPlayerThemeHost(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 songs = songs,
                 onSongClick = onSongClick
+            )
+        }
+
+        PlayerTheme.RETRO_RACK -> {
+            RetroRackExpandedPlayer(
+                currentSong = currentSong,
+                onCollapseClick = onCollapseClick
             )
         }
     }
