@@ -8,55 +8,17 @@ import org.jaudiotagger.audio.AudioFileIO
 import java.io.File
 import java.security.MessageDigest
 
-data class MusicLibraryData(
-    val songs: List<Song>,
-    val libraryFolders: List<LibraryFolder>
-)
 
 class MusicRepository(private val context: Context) {
     fun getLibraryData(selectedFolders: Set<String> = emptySet()): MusicLibraryData {
-        val allSongs = getAllSongs()
-
-        val filteredSongs = if (selectedFolders.isEmpty()) {
-            allSongs
-        } else {
-            allSongs.filter { song ->
-                selectedFolders.contains(song.folderPath)
-            }
-        }
-
-        return MusicLibraryData(
-            songs = filteredSongs,
-            libraryFolders = buildLibraryFolders(allSongs)
+        return buildMusicLibraryData(
+            allSongs = getAllSongs(),
+            selectedFolders = selectedFolders
         )
     }
 
     fun getSongs(selectedFolders: Set<String> = emptySet()): List<Song> {
         return getLibraryData(selectedFolders).songs
-    }
-
-    fun getLibraryFolders(): List<LibraryFolder> {
-        return getLibraryData().libraryFolders
-    }
-
-    private fun buildLibraryFolders(songs: List<Song>): List<LibraryFolder> {
-        return songs
-            .groupBy { song -> song.folderPath }
-            .map { entry ->
-                val folderPath = entry.key
-                val folderName = File(folderPath).name.ifBlank {
-                    folderPath
-                }
-
-                LibraryFolder(
-                    path = folderPath,
-                    name = folderName,
-                    songCount = entry.value.size
-                )
-            }
-            .sortedBy { folder ->
-                folder.name.lowercase()
-            }
     }
 
     private fun getAllSongs(): List<Song> {

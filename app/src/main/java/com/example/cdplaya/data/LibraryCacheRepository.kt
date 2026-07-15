@@ -3,7 +3,6 @@ package com.example.cdplaya.data
 import android.net.Uri
 import com.example.cdplaya.data.local.CachedSongDao
 import com.example.cdplaya.data.local.CachedSongEntity
-import java.io.File
 
 class LibraryCacheRepository(
     private val cachedSongDao: CachedSongDao
@@ -21,17 +20,9 @@ class LibraryCacheRepository(
                 cachedSong.toSong()
             }
 
-        val filteredSongs = if (selectedFolders.isEmpty()) {
-            allSongs
-        } else {
-            allSongs.filter { song ->
-                selectedFolders.contains(song.folderPath)
-            }
-        }
-
-        return MusicLibraryData(
-            songs = filteredSongs,
-            libraryFolders = buildLibraryFolders(allSongs)
+        return buildMusicLibraryData(
+            allSongs = allSongs,
+            selectedFolders = selectedFolders
         )
     }
 
@@ -47,26 +38,6 @@ class LibraryCacheRepository(
 
     suspend fun clearCachedSongs() {
         cachedSongDao.clearCachedSongs()
-    }
-
-    private fun buildLibraryFolders(songs: List<Song>): List<LibraryFolder> {
-        return songs
-            .groupBy { song -> song.folderPath }
-            .map { entry ->
-                val folderPath = entry.key
-                val folderName = File(folderPath).name.ifBlank {
-                    folderPath
-                }
-
-                LibraryFolder(
-                    path = folderPath,
-                    name = folderName,
-                    songCount = entry.value.size
-                )
-            }
-            .sortedBy { folder ->
-                folder.name.lowercase()
-            }
     }
 }
 
