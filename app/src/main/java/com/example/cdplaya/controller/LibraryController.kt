@@ -397,9 +397,16 @@ class LibraryController(
         selectedFolders: Set<String>
     ): MusicLibraryData {
         val repository = MusicRepository(applicationContext)
+        val hadCachedSongs = libraryCacheRepository.hasCachedSongs()
 
         val freshAllSongsLibraryData = repository.getLibraryData()
-        libraryCacheRepository.replaceCachedSongs(freshAllSongsLibraryData.songs)
+
+        val shouldReplaceCache =
+            freshAllSongsLibraryData.songs.isNotEmpty() || !hadCachedSongs
+
+        if (shouldReplaceCache) {
+            libraryCacheRepository.replaceCachedSongs(freshAllSongsLibraryData.songs)
+        }
 
         return libraryCacheRepository.getCachedLibraryData(selectedFolders)
     }
