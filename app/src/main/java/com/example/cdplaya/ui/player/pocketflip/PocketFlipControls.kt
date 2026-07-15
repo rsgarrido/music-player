@@ -345,7 +345,7 @@ private fun PocketFlipActionCluster(
         ) {
             PocketFlipRoundAction(
                 icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                label = if (isPlaying) "PAUSE" else "PLAY",
+                markCount = 1,
                 contentDescription = if (isPlaying) "Pause" else "Play",
                 faceSize = if (compact) 48.dp else 52.dp,
                 onClick = onPlayPauseClick
@@ -356,7 +356,7 @@ private fun PocketFlipActionCluster(
                 } else {
                     Icons.Filled.FavoriteBorder
                 },
-                label = "FAV",
+                markCount = 2,
                 contentDescription = if (isCurrentSongFavorite) {
                     "Remove from favorites"
                 } else {
@@ -373,7 +373,7 @@ private fun PocketFlipActionCluster(
 @Composable
 private fun PocketFlipRoundAction(
     icon: ImageVector,
-    label: String,
+    markCount: Int,
     contentDescription: String,
     faceSize: Dp,
     onClick: () -> Unit,
@@ -431,14 +431,19 @@ private fun PocketFlipRoundAction(
                 )
             }
         }
-        Text(
-            text = label,
-            color = PocketFlipColors.utilityLabel,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = 8.sp,
-            letterSpacing = 0.7.sp
-        )
+        Row(
+            modifier = Modifier.height(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            repeat(markCount) {
+                Box(
+                    modifier = Modifier
+                        .size(width = 4.dp, height = 2.dp)
+                        .background(PocketFlipColors.controlMark, RoundedCornerShape(50))
+                )
+            }
+        }
     }
 }
 

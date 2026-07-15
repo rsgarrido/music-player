@@ -71,6 +71,7 @@ internal object PocketFlipColors {
     val speakerHighlight = Color(0xFFBD5260)
     val controlWell = Color(0xFF741F2B)
     val controlGroove = Color(0xFF5B1822)
+    val controlMark = Color(0xFF681D27)
     val engravedText = Color(0xFFC66C76)
     val screw = Color(0xFF7D2732)
     val screwSlot = Color(0xFF48131B)
@@ -100,13 +101,7 @@ internal fun Modifier.pocketFlipActionPlateFinish(): Modifier =
                 height = size.height - inset * 2f
             ),
             cornerRadius = CornerRadius(size.height / 2f),
-            style = Stroke(width = 2.dp.toPx())
-        )
-        drawLine(
-            color = PocketFlipColors.shellHighlight.copy(alpha = 0.18f),
-            start = Offset(size.height * 0.32f, 2.dp.toPx()),
-            end = Offset(size.width - size.height * 0.32f, 2.dp.toPx()),
-            strokeWidth = 1.dp.toPx()
+            style = Stroke(width = 1.5.dp.toPx())
         )
     }
 
