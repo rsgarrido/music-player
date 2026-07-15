@@ -74,7 +74,8 @@ fun MusicScreenOverlays(
     ImmersiveSystemBarsEffect(
         isImmersive = isPlayerExpanded &&
                 (selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL ||
-                        selectedPlayerTheme == PlayerTheme.POCKET_FLIP)
+                        selectedPlayerTheme == PlayerTheme.POCKET_FLIP ||
+                        selectedPlayerTheme == PlayerTheme.POCKET_CASSETTE)
     )
 
     if (isPlayerExpanded && currentSong != null) {
