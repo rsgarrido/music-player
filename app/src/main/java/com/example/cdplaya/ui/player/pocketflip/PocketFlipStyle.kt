@@ -43,6 +43,8 @@ internal object PocketFlipColors {
     val button = Color(0xFF2A2B31)
     val buttonPressed = Color(0xFF18191D)
     val buttonShadow = Color(0xFF541923)
+    val buttonCenter = Color(0xFF202126)
+    val buttonHighlight = Color(0xFF4B4D55)
     val buttonIcon = Color(0xFFDADADF)
     val buttonActive = Color(0xFFB6C880)
     val buttonActiveIcon = Color(0xFF20231D)
@@ -54,7 +56,41 @@ internal object PocketFlipColors {
     val utilityPressed = Color(0xFF521923)
     val utilityIcon = Color(0xFFF7D8DB)
     val speaker = Color(0xFF48151D)
+    val speakerHighlight = Color(0xFFBD5260)
+    val controlWell = Color(0xFF741F2B)
+    val controlGroove = Color(0xFF5B1822)
+    val engravedText = Color(0xFFC66C76)
+    val screw = Color(0xFF7D2732)
+    val screwSlot = Color(0xFF48131B)
 }
+
+internal fun Modifier.pocketFlipRoundButtonFinish(isPressed: Boolean): Modifier =
+    drawWithContent {
+        drawContent()
+        val inset = 1.dp.toPx()
+        drawCircle(
+            color = if (isPressed) Color(0xFF210B14) else Color(0xFF7D3651),
+            radius = size.minDimension / 2f - inset,
+            center = center,
+            style = Stroke(width = if (isPressed) 1.dp.toPx() else 2.dp.toPx())
+        )
+    }
+
+internal fun Modifier.pocketFlipUtilitySwitchFinish(isPressed: Boolean): Modifier =
+    drawWithContent {
+        drawContent()
+        val inset = 1.dp.toPx()
+        drawRoundRect(
+            color = if (isPressed) Color(0xFF310E16) else Color(0xFF9D4250),
+            topLeft = Offset(inset, inset),
+            size = androidx.compose.ui.geometry.Size(
+                width = size.width - inset * 2f,
+                height = size.height - inset * 2f
+            ),
+            cornerRadius = CornerRadius(size.height / 2f),
+            style = Stroke(width = 1.dp.toPx())
+        )
+    }
 
 internal fun Modifier.pocketFlipShellFinish(): Modifier =
     background(
