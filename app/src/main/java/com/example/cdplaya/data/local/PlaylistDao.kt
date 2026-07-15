@@ -7,6 +7,12 @@ import androidx.room.Query
 @Dao
 interface PlaylistDao {
 
+    @Query("SELECT * FROM playlists ORDER BY createdAt ASC, playlistId ASC")
+    suspend fun getAllPlaylistEntities(): List<PlaylistEntity>
+
+    @Query("SELECT * FROM playlist_songs ORDER BY playlistId ASC, position ASC")
+    suspend fun getAllPlaylistSongEntities(): List<PlaylistSongEntity>
+
     @Query(
         """
         SELECT 
@@ -93,6 +99,12 @@ interface PlaylistDao {
 
     @Query("DELETE FROM playlist_songs WHERE playlistSongId = :playlistSongId")
     suspend fun deletePlaylistSong(playlistSongId: Long)
+
+    @Query("DELETE FROM playlist_songs")
+    suspend fun deleteAllPlaylistSongs()
+
+    @Query("DELETE FROM playlists")
+    suspend fun deleteAllPlaylists()
 
     @Query("SELECT COALESCE(MAX(position), -1) FROM playlist_songs WHERE playlistId = :playlistId")
     suspend fun getLastPositionForPlaylist(playlistId: Long): Int

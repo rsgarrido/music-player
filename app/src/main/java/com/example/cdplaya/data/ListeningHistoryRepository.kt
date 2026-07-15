@@ -1,5 +1,6 @@
 package com.example.cdplaya.data
 
+import com.example.cdplaya.data.backup.BackupListeningHistoryEntry
 import com.example.cdplaya.data.local.SongPlayStatsDao
 import com.example.cdplaya.data.local.SongPlayStatsEntity
 import kotlin.math.max
@@ -12,6 +13,46 @@ class ListeningHistoryRepository(
         return songPlayStatsDao.getRecentlyPlayed().map { entity ->
             entity.toListeningHistoryEntry()
         }
+    }
+
+    suspend fun getListeningHistoryForBackup(): List<BackupListeningHistoryEntry> {
+        return songPlayStatsDao.getRecentlyPlayed().map { stats ->
+            BackupListeningHistoryEntry(
+                songKey = stats.songKey,
+                title = stats.title,
+                artist = stats.artist,
+                album = stats.album,
+                duration = stats.duration,
+                playCount = stats.playCount,
+                firstPlayedAt = stats.firstPlayedAt,
+                lastPlayedAt = stats.lastPlayedAt
+            )
+        }
+    }
+
+    suspend fun restoreListeningHistoryFromBackup(
+        listeningHistory: List<BackupListeningHistoryEntry>
+    ) {
+        songPlayStatsDao.deleteAllStats()
+
+        if (listeningHistory.isEmpty()) {
+            return
+        }
+
+        songPlayStatsDao.insertOrReplaceStats(
+            listeningHistory.map { stats ->
+                SongPlayStatsEntity(
+                    songKey = stats.songKey,
+                    title = stats.title,
+                    artist = stats.artist,
+                    album = stats.album,
+                    duration = stats.duration,
+                    playCount = stats.playCount,
+                    firstPlayedAt = stats.firstPlayedAt,
+                    lastPlayedAt = stats.lastPlayedAt
+                )
+            }
+        )
     }
 
     suspend fun getMostPlayed(): List<ListeningHistoryEntry> {

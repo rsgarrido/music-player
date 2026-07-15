@@ -11,14 +11,23 @@ class PlayerThemePreferences(
     )
 
     fun getSelectedPlayerTheme(): PlayerTheme {
-        return PlayerTheme.fromId(
-            preferences.getString(KEY_SELECTED_PLAYER_THEME, null)
-        )
+        return PlayerTheme.fromId(getSelectedPlayerThemeId())
     }
 
     fun saveSelectedPlayerTheme(playerTheme: PlayerTheme) {
+        saveSelectedPlayerThemeId(playerTheme.id)
+    }
+
+    fun getSelectedPlayerThemeId(): String {
+        return preferences.getString(
+            KEY_SELECTED_PLAYER_THEME,
+            PlayerTheme.DEFAULT.id
+        ) ?: PlayerTheme.DEFAULT.id
+    }
+
+    fun saveSelectedPlayerThemeId(themeId: String) {
         preferences.edit()
-            .putString(KEY_SELECTED_PLAYER_THEME, playerTheme.id)
+            .putString(KEY_SELECTED_PLAYER_THEME, themeId)
             .apply()
     }
 

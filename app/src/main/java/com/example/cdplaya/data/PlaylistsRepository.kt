@@ -1,5 +1,7 @@
 package com.example.cdplaya.data
 
+import com.example.cdplaya.data.backup.BackupPlaylist
+import com.example.cdplaya.data.backup.BackupPlaylistSong
 import com.example.cdplaya.data.local.PlaylistDao
 import com.example.cdplaya.data.local.PlaylistEntity
 import com.example.cdplaya.data.local.PlaylistSongEntity
@@ -15,6 +17,72 @@ class PlaylistsRepository(
                 name = playlist.name,
                 songCount = playlist.songCount
             )
+        }
+    }
+
+    suspend fun getPlaylistsForBackup(): List<BackupPlaylist> {
+        val songsByPlaylistId = playlistDao.getAllPlaylistSongEntities()
+            .groupBy { playlistSong -> playlistSong.playlistId }
+
+        return playlistDao.getAllPlaylistEntities().map { playlist ->
+            BackupPlaylist(
+                name = playlist.name,
+                createdAt = playlist.createdAt,
+                updatedAt = playlist.updatedAt,
+                songs = songsByPlaylistId[playlist.playlistId]
+                    .orEmpty()
+                    .map { playlistSong ->
+                        BackupPlaylistSong(
+                            songKey = playlistSong.songKey,
+                            position = playlistSong.position,
+                            title = playlistSong.title,
+                            artist = playlistSong.artist,
+                            album = playlistSong.album,
+                            duration = playlistSong.duration,
+                            addedAt = playlistSong.addedAt
+                        )
+                    }
+            )
+        }
+    }
+
+    suspend fun restorePlaylistsFromBackup(playlists: List<BackupPlaylist>) {
+        playlistDao.deleteAllPlaylistSongs()
+        playlistDao.deleteAllPlaylists()
+
+        val restoredNames = mutableListOf<String>()
+
+        playlists.forEach { playlist ->
+            val uniqueName = uniquePlaylistName(
+                preferredName = playlist.name,
+                existingNames = restoredNames
+            )
+            restoredNames += uniqueName
+
+            val newPlaylistId = playlistDao.insertPlaylist(
+                PlaylistEntity(
+                    name = uniqueName,
+                    createdAt = playlist.createdAt,
+                    updatedAt = playlist.updatedAt
+                )
+            )
+
+            if (playlist.songs.isNotEmpty()) {
+                playlistDao.insertPlaylistSongs(
+                    playlist.songs.map { playlistSong ->
+                        PlaylistSongEntity(
+                            playlistId = newPlaylistId,
+                            songKey = playlistSong.songKey,
+                            position = playlistSong.position,
+                            title = playlistSong.title,
+                            artist = playlistSong.artist,
+                            album = playlistSong.album,
+                            duration = playlistSong.duration,
+                            addedAt = playlistSong.addedAt
+                        )
+                    }
+                )
+            }
         }
     }
 

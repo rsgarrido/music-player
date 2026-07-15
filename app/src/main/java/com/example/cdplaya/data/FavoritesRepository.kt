@@ -1,5 +1,6 @@
 package com.example.cdplaya.data
 
+import com.example.cdplaya.data.backup.BackupFavoriteSong
 import com.example.cdplaya.data.local.FavoriteSongDao
 import com.example.cdplaya.data.local.FavoriteSongEntity
 
@@ -8,6 +9,40 @@ class FavoritesRepository(
 ) {
     suspend fun getFavoriteSongKeys(): Set<String> {
         return favoriteSongDao.getFavoriteSongKeys().toSet()
+    }
+
+    suspend fun getFavoritesForBackup(): List<BackupFavoriteSong> {
+        return favoriteSongDao.getAllFavorites().map { favorite ->
+            BackupFavoriteSong(
+                songKey = favorite.songKey,
+                title = favorite.title,
+                artist = favorite.artist,
+                album = favorite.album,
+                duration = favorite.duration,
+                createdAt = favorite.createdAt
+            )
+        }
+    }
+
+    suspend fun restoreFavoritesFromBackup(favorites: List<BackupFavoriteSong>) {
+        favoriteSongDao.deleteAllFavorites()
+
+        if (favorites.isEmpty()) {
+            return
+        }
+
+        favoriteSongDao.insertFavorites(
+            favorites.map { favorite ->
+                FavoriteSongEntity(
+                    songKey = favorite.songKey,
+                    title = favorite.title,
+                    artist = favorite.artist,
+                    album = favorite.album,
+                    duration = favorite.duration,
+                    createdAt = favorite.createdAt
+                )
+            }
+        )
     }
 
     suspend fun addFavorite(song: Song) {
