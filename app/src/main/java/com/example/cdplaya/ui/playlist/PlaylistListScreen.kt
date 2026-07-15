@@ -34,6 +34,7 @@ fun PlaylistListScreen(
     onPlaylistClick: (Playlist) -> Unit,
     onRenamePlaylistClick: (Playlist, String) -> Unit,
     onDeletePlaylistClick: (Playlist) -> Unit,
+    onExportPlaylistClick: (Playlist) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var playlistPendingRename by remember {
@@ -117,6 +118,16 @@ fun PlaylistListScreen(
                                     onClick = {
                                         isMenuExpanded = false
                                         playlistPendingRename = playlist
+                                    }
+                                )
+
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(text = "Export as M3U8")
+                                    },
+                                    onClick = {
+                                        isMenuExpanded = false
+                                        onExportPlaylistClick(playlist)
                                     }
                                 )
 

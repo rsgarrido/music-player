@@ -1,6 +1,7 @@
 package com.example.cdplaya.controller
 
 import android.content.Context
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +22,9 @@ import com.example.cdplaya.data.PlaylistsRepository
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.data.local.AppDatabase
+import com.example.cdplaya.data.playlistfile.M3uExportResult
+import com.example.cdplaya.data.playlistfile.PlaylistFileRepository
+import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.PlaybackLibraryBridge
 import kotlinx.coroutines.CoroutineScope
@@ -43,6 +47,7 @@ class LibraryController(
         appDatabase.songPlayStatsDao()
     )
     private val libraryCacheRepository = LibraryCacheRepository(appDatabase.cachedSongDao())
+    private val playlistFileRepository = PlaylistFileRepository(applicationContext)
 
     var songs by mutableStateOf<List<Song>>(emptyList())
         private set
@@ -253,6 +258,48 @@ class LibraryController(
         coroutineScope.launch {
             selectedPlaylistName = playlist.name
             selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(playlist.playlistId)
+        }
+    }
+
+    fun preparePlaylistExport(
+        playlist: Playlist,
+        onPrepared: (Result<PreparedPlaylistExport>) -> Unit
+    ) {
+        coroutineScope.launch {
+            val result = runCatching {
+                val playlistSongs = playlistsRepository.getPlaylistSongs(playlist.playlistId)
+                val songsByStableKey = songs.associateBy { song ->
+                    song.stableKey()
+                }
+                val exportableSongs = playlistSongs.mapNotNull { playlistSong ->
+                    songsByStableKey[playlistSong.songKey]
+                }
+
+                PreparedPlaylistExport(
+                    playlistName = playlist.name,
+                    songs = exportableSongs,
+                    unavailableSongCount = playlistSongs.size - exportableSongs.size
+                )
+            }
+
+            onPrepared(result)
+        }
+    }
+
+    fun exportM3uPlaylist(
+        uri: Uri,
+        songs: List<Song>,
+        onExported: (Result<M3uExportResult>) -> Unit
+    ) {
+        coroutineScope.launch {
+            val result = runCatching {
+                playlistFileRepository.exportM3uPlaylist(
+                    uri = uri,
+                    songs = songs
+                )
+            }
+
+            onExported(result)
         }
     }
 

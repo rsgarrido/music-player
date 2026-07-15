@@ -20,6 +20,7 @@ fun PlaylistsTabContent(
     onCreatePlaylistClick: () -> Unit,
     onPlaylistClick: (Playlist) -> Unit,
     onDeletePlaylistClick: (Playlist) -> Unit,
+    onExportPlaylistClick: (Playlist) -> Unit,
     onBackFromPlaylist: () -> Unit,
     onPlaySongsClick: (List<Song>, Boolean) -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
@@ -39,6 +40,7 @@ fun PlaylistsTabContent(
             onCreatePlaylistClick = onCreatePlaylistClick,
             onPlaylistClick = onPlaylistClick,
             onDeletePlaylistClick = onDeletePlaylistClick,
+            onExportPlaylistClick = onExportPlaylistClick,
             onRenamePlaylistClick = onRenamePlaylistClick,
             modifier = modifier
         )
