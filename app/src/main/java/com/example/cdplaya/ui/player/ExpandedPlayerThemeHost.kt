@@ -5,6 +5,7 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
 
@@ -101,6 +102,27 @@ fun ExpandedPlayerThemeHost(
 
         PlayerTheme.POCKET_FLIP -> {
             PocketFlipExpandedPlayer(
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                isShuffleEnabled = isShuffleEnabled,
+                repeatMode = repeatMode,
+                currentPosition = currentPosition,
+                duration = duration,
+                isCurrentSongFavorite = isCurrentSongFavorite,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onSeekChange = onSeekChange,
+                onShuffleClick = onShuffleClick,
+                onRepeatClick = onRepeatClick,
+                onCollapseClick = onCollapseClick,
+                onOpenUpNextClick = onOpenUpNextClick,
+                onToggleFavoriteClick = onToggleFavoriteClick
+            )
+        }
+
+        PlayerTheme.POCKET_CASSETTE -> {
+            PocketCassetteExpandedPlayer(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,

@@ -22,6 +22,11 @@ enum class PlayerTheme(
     POCKET_FLIP(
         id = "pocket_flip",
         displayName = "Pocket Flip"
+    ),
+
+    POCKET_CASSETTE(
+        id = "pocket_cassette",
+        displayName = "Pocket Cassette"
     );
 
     companion object {
