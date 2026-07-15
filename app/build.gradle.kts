@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
 
@@ -64,6 +65,7 @@ dependencies {
 
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation(libs.jaudiotagger)
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
     testImplementation("org.mockito:mockito-core:5.12.0")
     androidTestImplementation(platform(libs.androidx.compose.bom))
