@@ -67,30 +67,38 @@ internal fun PocketFlipDisplayHalf(
     ) {
         PocketFlipDisplayHeader(isPlaying = isPlaying, compact = compact)
 
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .clip(RoundedCornerShape(screenRadius))
                 .background(PocketFlipColors.display)
                 .pocketFlipLcdFrameFinish(screenRadius)
-                .pocketFlipScreenFinish()
-                .padding(if (compact) 9.dp else 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(if (compact) 7.dp else 9.dp),
-            verticalAlignment = Alignment.CenterVertically
         ) {
-            PocketFlipArtwork(
-                song = currentSong,
-                compact = compact,
-                modifier = Modifier.size(if (compact) 104.dp else 116.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(if (compact) 9.dp else 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(if (compact) 7.dp else 9.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                PocketFlipArtwork(
+                    song = currentSong,
+                    compact = compact,
+                    modifier = Modifier.size(if (compact) 104.dp else 116.dp)
+                )
 
-            PocketFlipMetadata(
-                currentSong = currentSong,
-                isPlaying = isPlaying,
-                compact = compact,
-                modifier = Modifier.weight(1f)
-            )
+                PocketFlipMetadata(
+                    currentSong = currentSong,
+                    isPlaying = isPlaying,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    compact = compact,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            PocketFlipLcdOverlay(modifier = Modifier.fillMaxSize())
         }
 
         PocketFlipSeekBar(
@@ -246,6 +254,8 @@ private fun PocketFlipArtwork(
 private fun PocketFlipMetadata(
     currentSong: Song?,
     isPlaying: Boolean,
+    currentPosition: Int,
+    duration: Int,
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -253,57 +263,55 @@ private fun PocketFlipMetadata(
         modifier = modifier
             .fillMaxHeight()
             .padding(vertical = 2.dp),
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(
+        PocketFlipLcdStatusRow(
+            currentSong = currentSong,
+            isPlaying = isPlaying,
+            currentPosition = currentPosition,
+            duration = duration,
+            compact = compact
+        )
+
+        Column(
             modifier = Modifier
-                .background(PocketFlipColors.lcdBand, RoundedCornerShape(2.dp))
-                .padding(horizontal = 5.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
+                .weight(1f),
+            verticalArrangement = Arrangement.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(4.dp)
-                    .background(PocketFlipColors.screenAccent, RoundedCornerShape(1.dp))
-            )
-            Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = if (isPlaying) "PLAY" else "PAUSE",
-                color = PocketFlipColors.screenAccent,
+                text = currentSong?.title ?: "No track loaded",
+                color = PocketFlipColors.screenText,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
+                fontSize = if (compact) 13.sp else 14.sp,
+                lineHeight = if (compact) 16.sp else 17.sp,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(if (compact) 2.dp else 3.dp))
+            Text(
+                text = currentSong?.artist?.ifBlank { "Unknown artist" } ?: "",
+                color = PocketFlipColors.screenText,
+                fontFamily = FontFamily.Monospace,
+                fontSize = if (compact) 9.sp else 10.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = currentSong?.album?.ifBlank { "Unknown album" } ?: "",
+                color = PocketFlipColors.screenTextMuted,
+                fontFamily = FontFamily.Monospace,
                 fontSize = if (compact) 8.sp else 9.sp,
-                letterSpacing = 0.8.sp,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
-        Spacer(modifier = Modifier.height(if (compact) 5.dp else 7.dp))
-        Text(
-            text = currentSong?.title ?: "No track loaded",
-            color = PocketFlipColors.screenText,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 14.sp else 15.sp,
-            lineHeight = if (compact) 17.sp else 18.sp,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = currentSong?.artist?.ifBlank { "Unknown artist" } ?: "",
-            color = PocketFlipColors.screenText,
-            fontFamily = FontFamily.Monospace,
-            fontSize = if (compact) 10.sp else 12.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = currentSong?.album?.ifBlank { "Unknown album" } ?: "",
-            color = PocketFlipColors.screenTextMuted,
-            fontFamily = FontFamily.Monospace,
-            fontSize = if (compact) 9.sp else 11.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+
+        PocketFlipLcdMeter(
+            currentSong = currentSong,
+            isPlaying = isPlaying,
+            compact = compact
         )
     }
 }

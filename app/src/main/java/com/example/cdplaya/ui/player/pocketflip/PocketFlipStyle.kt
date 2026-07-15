@@ -34,6 +34,9 @@ internal object PocketFlipColors {
     val bezelTextMuted = Color(0xFF777A76)
     val display = Color(0xFF263029)
     val lcdBand = Color(0xFF172019)
+    val lcdTint = Color(0x058FC479)
+    val lcdGrid = Color(0x0D0A100C)
+    val lcdScanline = Color(0x16040805)
     val artworkWell = Color(0xFF111713)
     val screenText = Color(0xFFE0E7D8)
     val screenTextMuted = Color(0xFF9CA99A)
@@ -206,21 +209,6 @@ internal fun Modifier.pocketFlipArtworkFrameFinish(): Modifier =
             style = Stroke(width = 1.dp.toPx())
         )
     }
-
-internal fun Modifier.pocketFlipScreenFinish(): Modifier = drawWithContent {
-    drawContent()
-    val scanlineGap = 4.dp.toPx()
-    var y = scanlineGap
-    while (y < size.height) {
-        drawLine(
-            color = Color.Black.copy(alpha = 0.03f),
-            start = Offset(0f, y),
-            end = Offset(size.width, y),
-            strokeWidth = 1f
-        )
-        y += scanlineGap
-    }
-}
 
 @Composable
 internal fun PocketFlipHinge(compact: Boolean) {
