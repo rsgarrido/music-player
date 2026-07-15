@@ -1,6 +1,9 @@
 package com.example.cdplaya.ui.player.pocketflip
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,14 +20,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.progressBarRangeInfo
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,13 +54,16 @@ internal fun PocketFlipDisplayHalf(
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val bezelRadius = if (compact) 18.dp else 22.dp
+    val screenRadius = if (compact) 6.dp else 8.dp
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(if (compact) 22.dp else 28.dp))
-            .pocketFlipBezelFinish(if (compact) 22.dp else 28.dp)
+            .clip(RoundedCornerShape(bezelRadius))
+            .pocketFlipBezelFinish(bezelRadius)
             .padding(if (compact) 10.dp else 14.dp),
-        verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 9.dp)
+        verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)
     ) {
         PocketFlipDisplayHeader(isPlaying = isPlaying, compact = compact)
 
@@ -57,11 +71,12 @@ internal fun PocketFlipDisplayHalf(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .clip(RoundedCornerShape(if (compact) 10.dp else 14.dp))
+                .clip(RoundedCornerShape(screenRadius))
                 .background(PocketFlipColors.display)
+                .pocketFlipLcdFrameFinish(screenRadius)
                 .pocketFlipScreenFinish()
-                .padding(if (compact) 10.dp else 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 14.dp),
+                .padding(if (compact) 9.dp else 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (compact) 9.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             PocketFlipArtwork(
@@ -98,6 +113,8 @@ private fun PocketFlipDisplayHeader(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        PocketFlipBezelScrew()
+        Spacer(modifier = Modifier.width(if (compact) 6.dp else 8.dp))
         Box(
             modifier = Modifier
                 .size(if (compact) 7.dp else 8.dp)
@@ -106,38 +123,91 @@ private fun PocketFlipDisplayHeader(
                     if (isPlaying) PocketFlipColors.statusOn else PocketFlipColors.statusIdle
                 )
         )
-        Spacer(modifier = Modifier.width(7.dp))
+        Spacer(modifier = Modifier.width(5.dp))
+        Text(
+            text = "PWR",
+            color = PocketFlipColors.bezelTextMuted,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            fontSize = 8.sp,
+            letterSpacing = 0.6.sp
+        )
+        Spacer(modifier = Modifier.width(if (compact) 7.dp else 10.dp))
         Text(
             text = "POCKET FLIP // AUDIO",
             color = PocketFlipColors.bezelText,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 10.sp else 11.sp,
-            letterSpacing = 0.8.sp
+            fontSize = if (compact) 9.sp else 10.sp,
+            letterSpacing = 0.7.sp,
+            maxLines = 1
         )
         Spacer(modifier = Modifier.weight(1f))
         PocketFlipBattery(compact = compact)
+        Spacer(modifier = Modifier.width(if (compact) 6.dp else 8.dp))
+        PocketFlipBezelScrew(reverseSlot = true)
     }
 }
 
 @Composable
 private fun PocketFlipBattery(compact: Boolean) {
-    Row(
-        modifier = Modifier
-            .clip(RoundedCornerShape(3.dp))
-            .background(PocketFlipColors.display)
-            .padding(horizontal = 5.dp, vertical = 3.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Canvas(
+        modifier = Modifier.size(
+            width = if (compact) 29.dp else 33.dp,
+            height = if (compact) 12.dp else 14.dp
+        )
     ) {
-        repeat(3) {
-            Box(
-                modifier = Modifier
-                    .width(if (compact) 4.dp else 5.dp)
-                    .height(if (compact) 7.dp else 8.dp)
-                    .background(PocketFlipColors.screenAccent)
+        val capWidth = 2.dp.toPx()
+        val bodyWidth = size.width - capWidth - 1.dp.toPx()
+        val corner = CornerRadius(2.dp.toPx())
+        drawRoundRect(
+            color = PocketFlipColors.bezelTextMuted,
+            topLeft = Offset.Zero,
+            size = Size(bodyWidth, size.height),
+            cornerRadius = corner,
+            style = Stroke(width = 1.dp.toPx())
+        )
+        drawRoundRect(
+            color = PocketFlipColors.bezelTextMuted,
+            topLeft = Offset(bodyWidth + 1.dp.toPx(), size.height * 0.3f),
+            size = Size(capWidth, size.height * 0.4f),
+            cornerRadius = CornerRadius(1.dp.toPx())
+        )
+        val gap = 2.dp.toPx()
+        val segmentWidth = (bodyWidth - gap * 4f) / 3f
+        repeat(3) { index ->
+            drawRect(
+                color = PocketFlipColors.screenAccent,
+                topLeft = Offset(
+                    x = gap + index * (segmentWidth + gap),
+                    y = gap
+                ),
+                size = Size(segmentWidth, size.height - gap * 2f)
             )
         }
+    }
+}
+
+@Composable
+private fun PocketFlipBezelScrew(reverseSlot: Boolean = false) {
+    Canvas(modifier = Modifier.size(9.dp)) {
+        drawCircle(color = Color(0xFF08080A), radius = size.minDimension / 2f)
+        drawCircle(color = Color(0xFF303036), radius = size.minDimension * 0.35f)
+        val slot = size.minDimension * 0.19f
+        drawLine(
+            color = Color(0xFF0C0C0E),
+            start = if (reverseSlot) {
+                center + Offset(-slot, slot)
+            } else {
+                center + Offset(-slot, -slot)
+            },
+            end = if (reverseSlot) {
+                center + Offset(slot, -slot)
+            } else {
+                center + Offset(slot, slot)
+            },
+            strokeWidth = 1.dp.toPx()
+        )
     }
 }
 
@@ -149,8 +219,9 @@ private fun PocketFlipArtwork(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(if (compact) 7.dp else 9.dp))
-            .background(PocketFlipColors.artworkWell),
+            .clip(RoundedCornerShape(if (compact) 3.dp else 4.dp))
+            .background(PocketFlipColors.artworkWell)
+            .pocketFlipArtworkFrameFinish(),
         contentAlignment = Alignment.Center
     ) {
         if (song?.albumArtUri != null) {
@@ -158,7 +229,9 @@ private fun PocketFlipArtwork(
                 model = song.albumArtUri,
                 contentDescription = "Current album artwork",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(3.dp)
             )
         } else {
             Icon(
@@ -182,23 +255,36 @@ private fun PocketFlipMetadata(
         modifier = modifier.fillMaxHeight(),
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = if (isPlaying) "NOW PLAYING" else "PLAYBACK PAUSED",
-            color = PocketFlipColors.screenAccent,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 9.sp else 10.sp,
-            letterSpacing = 0.7.sp,
-            maxLines = 1
-        )
-        Spacer(modifier = Modifier.height(if (compact) 5.dp else 8.dp))
+        Row(
+            modifier = Modifier
+                .background(PocketFlipColors.lcdBand, RoundedCornerShape(2.dp))
+                .padding(horizontal = 5.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(4.dp)
+                    .background(PocketFlipColors.screenAccent, RoundedCornerShape(1.dp))
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = if (isPlaying) "PLAY" else "PAUSE",
+                color = PocketFlipColors.screenAccent,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = if (compact) 8.sp else 9.sp,
+                letterSpacing = 0.8.sp,
+                maxLines = 1
+            )
+        }
+        Spacer(modifier = Modifier.height(if (compact) 5.dp else 7.dp))
         Text(
             text = currentSong?.title ?: "No track loaded",
             color = PocketFlipColors.screenText,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 15.sp else 18.sp,
-            lineHeight = if (compact) 18.sp else 21.sp,
+            fontSize = if (compact) 14.sp else 17.sp,
+            lineHeight = if (compact) 17.sp else 20.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
@@ -207,7 +293,7 @@ private fun PocketFlipMetadata(
             text = currentSong?.artist?.ifBlank { "Unknown artist" } ?: "",
             color = PocketFlipColors.screenText,
             fontFamily = FontFamily.Monospace,
-            fontSize = if (compact) 11.sp else 12.sp,
+            fontSize = if (compact) 10.sp else 12.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -215,7 +301,7 @@ private fun PocketFlipMetadata(
             text = currentSong?.album?.ifBlank { "Unknown album" } ?: "",
             color = PocketFlipColors.screenTextMuted,
             fontFamily = FontFamily.Monospace,
-            fontSize = if (compact) 10.sp else 11.sp,
+            fontSize = if (compact) 9.sp else 11.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -231,28 +317,109 @@ private fun PocketFlipSeekBar(
 ) {
     val safeDuration = duration.coerceAtLeast(1)
     val safePosition = currentPosition.coerceIn(0, safeDuration)
+    val progress = safePosition.toFloat() / safeDuration.toFloat()
 
     Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-        Slider(
-            value = safePosition.toFloat(),
-            onValueChange = { value -> onSeekChange(value.toInt()) },
-            valueRange = 0f..safeDuration.toFloat(),
-            colors = SliderDefaults.colors(
-                thumbColor = PocketFlipColors.screenAccent,
-                activeTrackColor = PocketFlipColors.screenAccent,
-                inactiveTrackColor = PocketFlipColors.seekInactive
-            ),
+        Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (compact) 24.dp else 28.dp)
-        )
+                .height(if (compact) 38.dp else 42.dp)
+                .semantics {
+                    progressBarRangeInfo = ProgressBarRangeInfo(
+                        current = safePosition.toFloat(),
+                        range = 0f..safeDuration.toFloat()
+                    )
+                    setProgress { target ->
+                        onSeekChange(target.coerceIn(0f, safeDuration.toFloat()).toInt())
+                        true
+                    }
+                }
+                .pointerInput(safeDuration) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        fun seekTo(x: Float) {
+                            val fraction = (x / size.width.toFloat()).coerceIn(0f, 1f)
+                            onSeekChange((fraction * safeDuration).toInt())
+                        }
+
+                        seekTo(down.position.x)
+                        var pressed = true
+                        while (pressed) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            pressed = change.pressed
+                            if (pressed) {
+                                seekTo(change.position.x)
+                                change.consume()
+                            }
+                        }
+                    }
+                }
+        ) {
+            val housingHeight = if (compact) 15.dp.toPx() else 17.dp.toPx()
+            val housingTop = (size.height - housingHeight) / 2f
+            val inset = 4.dp.toPx()
+            val segmentGap = 2.dp.toPx()
+            val segmentCount = 18
+            val usableWidth = size.width - inset * 2f
+            val segmentWidth = (usableWidth - segmentGap * (segmentCount - 1)) / segmentCount
+
+            drawRoundRect(
+                color = PocketFlipColors.seekHousing,
+                topLeft = Offset(0f, housingTop),
+                size = Size(size.width, housingHeight),
+                cornerRadius = CornerRadius(3.dp.toPx())
+            )
+            repeat(segmentCount) { index ->
+                val segmentProgress = (index + 1).toFloat() / segmentCount
+                drawRect(
+                    color = if (segmentProgress <= progress) {
+                        PocketFlipColors.screenAccent
+                    } else {
+                        PocketFlipColors.seekInactive
+                    },
+                    topLeft = Offset(
+                        x = inset + index * (segmentWidth + segmentGap),
+                        y = housingTop + 4.dp.toPx()
+                    ),
+                    size = Size(segmentWidth, housingHeight - 8.dp.toPx())
+                )
+            }
+
+            val thumbWidth = 7.dp.toPx()
+            val thumbHeight = housingHeight + 8.dp.toPx()
+            val thumbX = (progress * size.width - thumbWidth / 2f)
+                .coerceIn(0f, size.width - thumbWidth)
+            drawRoundRect(
+                color = PocketFlipColors.seekThumb,
+                topLeft = Offset(thumbX, (size.height - thumbHeight) / 2f),
+                size = Size(thumbWidth, thumbHeight),
+                cornerRadius = CornerRadius(1.dp.toPx())
+            )
+            drawLine(
+                color = PocketFlipColors.seekThumbHighlight,
+                start = Offset(thumbX + 1.dp.toPx(), (size.height - thumbHeight) / 2f),
+                end = Offset(thumbX + 1.dp.toPx(), (size.height + thumbHeight) / 2f),
+                strokeWidth = 1.dp.toPx()
+            )
+        }
+
         Row(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = formatPocketFlipTime(safePosition),
                 color = PocketFlipColors.bezelText,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
-                fontSize = if (compact) 10.sp else 11.sp
+                fontSize = if (compact) 9.sp else 10.sp
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = "TRACK POSITION",
+                color = PocketFlipColors.bezelTextMuted,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 8.sp,
+                letterSpacing = 0.6.sp
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
@@ -260,7 +427,7 @@ private fun PocketFlipSeekBar(
                 color = PocketFlipColors.bezelText,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
-                fontSize = if (compact) 10.sp else 11.sp
+                fontSize = if (compact) 9.sp else 10.sp
             )
         }
     }

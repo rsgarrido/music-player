@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -30,12 +31,17 @@ internal object PocketFlipColors {
     val shellText = Color(0xFFF5C7CB)
     val bezel = Color(0xFF17171B)
     val bezelText = Color(0xFFC7C9C4)
+    val bezelTextMuted = Color(0xFF777A76)
     val display = Color(0xFF263029)
+    val lcdBand = Color(0xFF172019)
     val artworkWell = Color(0xFF111713)
     val screenText = Color(0xFFE0E7D8)
     val screenTextMuted = Color(0xFF9CA99A)
     val screenAccent = Color(0xFFA5C980)
     val seekInactive = Color(0xFF4A544B)
+    val seekHousing = Color(0xFF080A09)
+    val seekThumb = Color(0xFFC7C9C4)
+    val seekThumbHighlight = Color(0xFFF0F1EC)
     val statusOn = Color(0xFF8DD663)
     val statusIdle = Color(0xFF715257)
     val hinge = Color(0xFF6B1E29)
@@ -138,13 +144,51 @@ internal fun Modifier.pocketFlipBezelFinish(cornerRadius: Dp): Modifier =
         )
     }
 
+internal fun Modifier.pocketFlipLcdFrameFinish(cornerRadius: Dp): Modifier =
+    drawWithContent {
+        drawContent()
+        val outerInset = 1.dp.toPx()
+        drawRoundRect(
+            color = Color(0xFF050706),
+            topLeft = Offset(outerInset, outerInset),
+            size = androidx.compose.ui.geometry.Size(
+                width = size.width - outerInset * 2f,
+                height = size.height - outerInset * 2f
+            ),
+            cornerRadius = CornerRadius(cornerRadius.toPx()),
+            style = Stroke(width = 2.dp.toPx())
+        )
+        drawLine(
+            color = Color(0xFF566159),
+            start = Offset(cornerRadius.toPx(), 3.dp.toPx()),
+            end = Offset(size.width - cornerRadius.toPx(), 3.dp.toPx()),
+            strokeWidth = 1.dp.toPx()
+        )
+    }
+
+internal fun Modifier.pocketFlipArtworkFrameFinish(): Modifier =
+    drawWithContent {
+        drawContent()
+        val inset = 1.dp.toPx()
+        drawRoundRect(
+            color = Color(0xFF667065),
+            topLeft = Offset(inset, inset),
+            size = androidx.compose.ui.geometry.Size(
+                width = size.width - inset * 2f,
+                height = size.height - inset * 2f
+            ),
+            cornerRadius = CornerRadius(3.dp.toPx()),
+            style = Stroke(width = 1.dp.toPx())
+        )
+    }
+
 internal fun Modifier.pocketFlipScreenFinish(): Modifier = drawWithContent {
     drawContent()
     val scanlineGap = 4.dp.toPx()
     var y = scanlineGap
     while (y < size.height) {
         drawLine(
-            color = Color.Black.copy(alpha = 0.045f),
+            color = Color.Black.copy(alpha = 0.03f),
             start = Offset(0f, y),
             end = Offset(size.width, y),
             strokeWidth = 1f
@@ -155,41 +199,57 @@ internal fun Modifier.pocketFlipScreenFinish(): Modifier = drawWithContent {
 
 @Composable
 internal fun PocketFlipHinge(compact: Boolean) {
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(if (compact) 18.dp else 22.dp)
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFF8C2B37), PocketFlipColors.hinge, Color(0xFF4F1720))
-                ),
-                RoundedCornerShape(50)
-            )
-            .padding(horizontal = if (compact) 8.dp else 10.dp),
-        contentAlignment = Alignment.Center
+            .height(if (compact) 20.dp else 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            PocketFlipHingeCap(compact = compact)
-            PocketFlipHingeCap(compact = compact)
-        }
+        PocketFlipHingeSegment(
+            modifier = Modifier.weight(0.22f),
+            compact = compact
+        )
+        PocketFlipHingeSegment(
+            modifier = Modifier.weight(0.56f),
+            compact = compact,
+            centerGroove = true
+        )
+        PocketFlipHingeSegment(
+            modifier = Modifier.weight(0.22f),
+            compact = compact
+        )
     }
 }
 
 @Composable
-private fun PocketFlipHingeCap(compact: Boolean) {
+private fun PocketFlipHingeSegment(
+    compact: Boolean,
+    modifier: Modifier = Modifier,
+    centerGroove: Boolean = false
+) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth(0.24f)
-            .height(if (compact) 8.dp else 10.dp)
+        modifier = modifier
+            .height(if (compact) 16.dp else 20.dp)
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF4D2027), PocketFlipColors.hingeCap)
+                    listOf(
+                        Color(0xFFB13B47),
+                        PocketFlipColors.hinge,
+                        PocketFlipColors.hingeCap
+                    )
                 ),
-                CircleShape
+                RoundedCornerShape(50)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (centerGroove) {
+            Box(
+                modifier = Modifier
+                    .width(2.dp)
+                    .height(if (compact) 11.dp else 14.dp)
+                    .background(PocketFlipColors.hingeCap, CircleShape)
             )
-    )
+        }
+    }
 }

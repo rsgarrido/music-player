@@ -448,7 +448,7 @@ private fun PocketFlipUtilitySwitch(
     Column(
         modifier = Modifier
             .width(if (compact) 78.dp else 88.dp)
-            .height(if (compact) 46.dp else 50.dp)
+            .height(if (compact) 48.dp else 52.dp)
             .semantics {
                 this.contentDescription = contentDescription
                 role = Role.Button
