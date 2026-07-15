@@ -52,14 +52,17 @@ internal object PocketFlipColors {
     val buttonCenter = Color(0xFF202126)
     val buttonHighlight = Color(0xFF4B4D55)
     val buttonIcon = Color(0xFFDADADF)
-    val buttonActive = Color(0xFFB6C880)
-    val buttonActiveIcon = Color(0xFF20231D)
+    val buttonActiveIcon = Color(0xFFA6CE87)
+    val modeGlow = Color(0x293E7C52)
+    val modeLamp = Color(0xFF82C66B)
     val action = Color(0xFF4B1A2E)
     val actionActive = Color(0xFF6D203C)
     val actionPressed = Color(0xFF35101F)
     val actionIcon = Color(0xFFF7DFE8)
-    val utility = Color(0xFF70232F)
-    val utilityPressed = Color(0xFF521923)
+    val utility = Color(0xFF321318)
+    val utilityPressed = Color(0xFF1E0A0E)
+    val utilityLabel = Color(0xFFF0B1B8)
+    val utilityEdge = Color(0xFF9E4B56)
     val utilityIcon = Color(0xFFF7D8DB)
     val speaker = Color(0xFF48151D)
     val speakerHighlight = Color(0xFFBD5260)
@@ -87,7 +90,7 @@ internal fun Modifier.pocketFlipUtilitySwitchFinish(isPressed: Boolean): Modifie
         drawContent()
         val inset = 1.dp.toPx()
         drawRoundRect(
-            color = if (isPressed) Color(0xFF310E16) else Color(0xFF9D4250),
+            color = if (isPressed) PocketFlipColors.utilityPressed else PocketFlipColors.utilityEdge,
             topLeft = Offset(inset, inset),
             size = androidx.compose.ui.geometry.Size(
                 width = size.width - inset * 2f,

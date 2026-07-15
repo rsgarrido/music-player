@@ -76,7 +76,7 @@ internal fun PocketFlipDisplayHalf(
                 .pocketFlipLcdFrameFinish(screenRadius)
                 .pocketFlipScreenFinish()
                 .padding(if (compact) 9.dp else 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(if (compact) 9.dp else 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (compact) 7.dp else 9.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             PocketFlipArtwork(
@@ -84,14 +84,14 @@ internal fun PocketFlipDisplayHalf(
                 compact = compact,
                 modifier = Modifier
                     .fillMaxHeight()
-                    .weight(if (compact) 0.42f else 0.46f)
+                    .weight(if (compact) 0.37f else 0.40f)
             )
 
             PocketFlipMetadata(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 compact = compact,
-                modifier = Modifier.weight(if (compact) 0.58f else 0.54f)
+                modifier = Modifier.weight(if (compact) 0.63f else 0.60f)
             )
         }
 
@@ -228,10 +228,10 @@ private fun PocketFlipArtwork(
             AsyncImage(
                 model = song.albumArtUri,
                 contentDescription = "Current album artwork",
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(3.dp)
+                    .padding(if (compact) 4.dp else 5.dp)
             )
         } else {
             Icon(
@@ -252,7 +252,9 @@ private fun PocketFlipMetadata(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.fillMaxHeight(),
+        modifier = modifier
+            .fillMaxHeight()
+            .padding(vertical = 2.dp),
         verticalArrangement = Arrangement.Center
     ) {
         Row(
@@ -283,8 +285,8 @@ private fun PocketFlipMetadata(
             color = PocketFlipColors.screenText,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 14.sp else 17.sp,
-            lineHeight = if (compact) 17.sp else 20.sp,
+            fontSize = if (compact) 14.sp else 16.sp,
+            lineHeight = if (compact) 17.sp else 19.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )

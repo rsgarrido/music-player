@@ -39,7 +39,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -255,16 +254,10 @@ private fun PocketFlipPadHitTarget(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
-    val overlay = when {
-        isPressed -> PocketFlipColors.buttonPressed.copy(alpha = 0.78f)
-        active -> PocketFlipColors.buttonActive.copy(alpha = 0.72f)
-        else -> Color.Transparent
-    }
 
     Box(
         modifier = modifier
             .size(size)
-            .background(overlay, RoundedCornerShape(12.dp))
             .semantics {
                 this.contentDescription = contentDescription
                 role = Role.Button
@@ -274,9 +267,36 @@ private fun PocketFlipPadHitTarget(
                 indication = null,
                 role = Role.Button,
                 onClick = onClick
-            ),
+        ),
         contentAlignment = Alignment.Center
     ) {
+        Canvas(modifier = Modifier.matchParentSize()) {
+            if (isPressed) {
+                drawCircle(
+                    color = PocketFlipColors.buttonPressed.copy(alpha = 0.58f),
+                    radius = drawContext.size.minDimension * 0.31f,
+                    center = center
+                )
+            }
+            if (active) {
+                drawCircle(
+                    color = PocketFlipColors.modeGlow,
+                    radius = drawContext.size.minDimension * 0.29f,
+                    center = center
+                )
+                val lampCenter = Offset(center.x, drawContext.size.height * 0.78f)
+                drawCircle(
+                    color = PocketFlipColors.modeLamp.copy(alpha = 0.38f),
+                    radius = 4.dp.toPx(),
+                    center = lampCenter
+                )
+                drawCircle(
+                    color = PocketFlipColors.modeLamp,
+                    radius = 2.dp.toPx(),
+                    center = lampCenter
+                )
+            }
+        }
         Icon(
             imageVector = icon,
             contentDescription = null,
@@ -409,7 +429,7 @@ private fun PocketFlipRoundAction(
         }
         Text(
             text = label,
-            color = PocketFlipColors.engravedText,
+            color = PocketFlipColors.utilityLabel,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
             fontSize = 8.sp,
@@ -475,8 +495,8 @@ private fun PocketFlipUtilitySwitch(
             modifier = Modifier
                 .offset(y = if (isPressed) 2.dp else 0.dp)
                 .size(
-                    width = if (compact) 46.dp else 52.dp,
-                    height = if (compact) 15.dp else 17.dp
+                    width = if (compact) 48.dp else 54.dp,
+                    height = if (compact) 17.dp else 19.dp
                 )
                 .background(
                     if (isPressed) {
