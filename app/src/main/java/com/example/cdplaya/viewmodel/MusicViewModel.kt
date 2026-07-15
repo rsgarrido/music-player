@@ -1,6 +1,7 @@
 package com.example.cdplaya.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -17,6 +18,9 @@ import com.example.cdplaya.data.PlayerThemePreferences
 import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
+import com.example.cdplaya.data.playlistfile.M3uExportResult
+import com.example.cdplaya.data.playlistfile.PlaylistImportResult
+import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.player.replaygain.ReplayGainPreferences
@@ -239,6 +243,38 @@ class MusicViewModel(
 
     fun loadSelectedPlaylist(playlist: Playlist) {
         libraryController.loadSelectedPlaylist(playlist)
+    }
+
+    fun preparePlaylistExport(
+        playlist: Playlist,
+        onPrepared: (Result<PreparedPlaylistExport>) -> Unit
+    ) {
+        libraryController.preparePlaylistExport(
+            playlist = playlist,
+            onPrepared = onPrepared
+        )
+    }
+
+    fun exportM3uPlaylist(
+        uri: Uri,
+        songs: List<Song>,
+        onExported: (Result<M3uExportResult>) -> Unit
+    ) {
+        libraryController.exportM3uPlaylist(
+            uri = uri,
+            songs = songs,
+            onExported = onExported
+        )
+    }
+
+    fun importM3uPlaylist(
+        uri: Uri,
+        onImported: (Result<PlaylistImportResult>) -> Unit
+    ) {
+        libraryController.importM3uPlaylist(
+            uri = uri,
+            onImported = onImported
+        )
     }
 
     fun addSongToPlaylist(
