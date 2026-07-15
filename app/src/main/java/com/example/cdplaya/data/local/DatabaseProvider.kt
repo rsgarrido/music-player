@@ -17,7 +17,12 @@ object DatabaseProvider {
                 AppDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(
+                    MIGRATION_1_2,
+                    MIGRATION_2_3,
+                    MIGRATION_3_4,
+                    MIGRATION_4_5
+                )
                 .build()
                 .also { database ->
                     instance = database
@@ -102,6 +107,38 @@ object DatabaseProvider {
 
             db.execSQL(
                 "CREATE INDEX IF NOT EXISTS `index_song_play_stats_playCount` ON `song_play_stats` (`playCount`)"
+            )
+        }
+    }
+
+    private val MIGRATION_4_5 = object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+            CREATE TABLE IF NOT EXISTS `cached_songs` (
+                `mediaStoreId` INTEGER NOT NULL,
+                `title` TEXT NOT NULL,
+                `artist` TEXT NOT NULL,
+                `album` TEXT NOT NULL,
+                `trackNumber` INTEGER NOT NULL,
+                `duration` INTEGER NOT NULL,
+                `uriString` TEXT NOT NULL,
+                `filePath` TEXT NOT NULL,
+                `folderPath` TEXT NOT NULL,
+                `albumArtUriString` TEXT,
+                `albumArtist` TEXT NOT NULL,
+                `cachedAt` INTEGER NOT NULL,
+                PRIMARY KEY(`mediaStoreId`)
+            )
+            """.trimIndent()
+            )
+
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_cached_songs_folderPath` ON `cached_songs` (`folderPath`)"
+            )
+
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_cached_songs_title` ON `cached_songs` (`title`)"
             )
         }
     }

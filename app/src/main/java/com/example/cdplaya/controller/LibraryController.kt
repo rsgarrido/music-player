@@ -11,6 +11,8 @@ import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.LibraryPreferences
 import com.example.cdplaya.data.ListeningHistoryEntry
 import com.example.cdplaya.data.ListeningHistoryRepository
+import com.example.cdplaya.data.LibraryCacheRepository
+import com.example.cdplaya.data.MusicLibraryData
 import com.example.cdplaya.data.stableKey
 import com.example.cdplaya.data.MusicRepository
 import com.example.cdplaya.data.Playlist
@@ -40,6 +42,7 @@ class LibraryController(
     private val listeningHistoryRepository = ListeningHistoryRepository(
         appDatabase.songPlayStatsDao()
     )
+    private val libraryCacheRepository = LibraryCacheRepository(appDatabase.cachedSongDao())
 
     var songs by mutableStateOf<List<Song>>(emptyList())
         private set
@@ -75,21 +78,31 @@ class LibraryController(
     fun loadSongs() {
         coroutineScope.launch {
             val savedSelectedFolders = libraryPreferences.getSelectedFolders()
-
-            val libraryData = withContext(Dispatchers.IO) {
-                val repository = MusicRepository(applicationContext)
-                repository.getLibraryData(savedSelectedFolders)
-            }
-
             selectedLibraryFolders = savedSelectedFolders
 
-            libraryFolders.clear()
-            libraryFolders.addAll(libraryData.libraryFolders)
+            val hasCachedSongs = withContext(Dispatchers.IO) {
+                libraryCacheRepository.hasCachedSongs()
+            }
 
-            songs = libraryData.songs
-            PlaybackLibraryBridge.updateSongs(songs)
-            refreshListeningHistory()
-            playbackController.setLibrarySongs(songs)
+            if (hasCachedSongs) {
+                val cachedLibraryData = withContext(Dispatchers.IO) {
+                    libraryCacheRepository.getCachedLibraryData(savedSelectedFolders)
+                }
+
+                publishLibraryData(
+                    libraryData = cachedLibraryData,
+                    reconcilePlayback = false
+                )
+            }
+
+            val freshLibraryData = withContext(Dispatchers.IO) {
+                scanFreshLibraryAndUpdateCache(savedSelectedFolders)
+            }
+
+            publishLibraryData(
+                libraryData = freshLibraryData,
+                reconcilePlayback = hasCachedSongs
+            )
         }
     }
 
@@ -150,8 +163,7 @@ class LibraryController(
             }
 
             val libraryData = withContext(Dispatchers.IO) {
-                val repository = MusicRepository(applicationContext)
-                repository.getLibraryData(selectedLibraryFolders)
+                scanFreshLibraryAndUpdateCache(selectedLibraryFolders)
             }
 
             favoriteSongKeys = updatedFavoriteSongKeys
@@ -160,14 +172,6 @@ class LibraryController(
             if (updatedSelectedPlaylistSongs != null) {
                 selectedPlaylistSongs = updatedSelectedPlaylistSongs
             }
-
-            libraryFolders.clear()
-            libraryFolders.addAll(libraryData.libraryFolders)
-
-            songs = libraryData.songs
-            PlaybackLibraryBridge.updateSongs(songs)
-            refreshListeningHistory()
-            playbackController.handleLibrarySongsChanged(songs)
         }
     }
 
@@ -345,19 +349,66 @@ class LibraryController(
 
     private fun reloadSongsAfterFolderChange() {
         coroutineScope.launch {
-            val libraryData = withContext(Dispatchers.IO) {
-                val repository = MusicRepository(applicationContext)
-                repository.getLibraryData(selectedLibraryFolders)
+            val hasCachedSongs = withContext(Dispatchers.IO) {
+                libraryCacheRepository.hasCachedSongs()
             }
 
-            libraryFolders.clear()
-            libraryFolders.addAll(libraryData.libraryFolders)
+            if (hasCachedSongs) {
+                val cachedLibraryData = withContext(Dispatchers.IO) {
+                    libraryCacheRepository.getCachedLibraryData(selectedLibraryFolders)
+                }
 
-            songs = libraryData.songs
-            PlaybackLibraryBridge.updateSongs(songs)
-            refreshListeningHistory()
-            playbackController.handleLibrarySongsChanged(songs)
+                publishLibraryData(
+                    libraryData = cachedLibraryData,
+                    reconcilePlayback = true
+                )
+            }
+
+            val freshLibraryData = withContext(Dispatchers.IO) {
+                scanFreshLibraryAndUpdateCache(selectedLibraryFolders)
+            }
+
+            publishLibraryData(
+                libraryData = freshLibraryData,
+                reconcilePlayback = true
+            )
         }
+    }
+
+    private fun publishLibraryData(
+        libraryData: MusicLibraryData,
+        reconcilePlayback: Boolean
+    ) {
+        libraryFolders.clear()
+        libraryFolders.addAll(libraryData.libraryFolders)
+
+        songs = libraryData.songs
+        PlaybackLibraryBridge.updateSongs(songs)
+        refreshListeningHistory()
+
+        if (reconcilePlayback) {
+            playbackController.handleLibrarySongsChanged(songs)
+        } else {
+            playbackController.setLibrarySongs(songs)
+        }
+    }
+
+    private suspend fun scanFreshLibraryAndUpdateCache(
+        selectedFolders: Set<String>
+    ): MusicLibraryData {
+        val repository = MusicRepository(applicationContext)
+        val hadCachedSongs = libraryCacheRepository.hasCachedSongs()
+
+        val freshAllSongsLibraryData = repository.getLibraryData()
+
+        val shouldReplaceCache =
+            freshAllSongsLibraryData.songs.isNotEmpty() || !hadCachedSongs
+
+        if (shouldReplaceCache) {
+            libraryCacheRepository.replaceCachedSongs(freshAllSongsLibraryData.songs)
+        }
+
+        return libraryCacheRepository.getCachedLibraryData(selectedFolders)
     }
 
     private fun loadFavoriteSongKeys() {
