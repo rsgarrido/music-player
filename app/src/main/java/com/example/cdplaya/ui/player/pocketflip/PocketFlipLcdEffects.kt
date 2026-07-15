@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,8 +38,6 @@ import kotlin.math.sin
 internal fun PocketFlipLcdStatusRow(
     currentSong: Song?,
     isPlaying: Boolean,
-    currentPosition: Int,
-    duration: Int,
     compact: Boolean
 ) {
     val fileType = remember(currentSong?.filePath) {
@@ -51,47 +50,57 @@ internal fun PocketFlipLcdStatusRow(
     }
 
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(PocketFlipColors.lcdBand, RoundedCornerShape(2.dp))
-            .padding(horizontal = 4.dp, vertical = 2.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
+        PocketFlipStatusChip(
             text = if (isPlaying) "PLAY" else "PAUSE",
-            color = PocketFlipColors.screenAccent,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 7.sp else 8.sp,
-            letterSpacing = 0.6.sp
+            active = isPlaying,
+            compact = compact
         )
-        Spacer(modifier = Modifier.weight(1f))
-        Text(
-            text = fileType ?: "LOCAL AUDIO",
-            color = PocketFlipColors.screenTextMuted,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 7.sp else 8.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(modifier = Modifier.weight(1f))
-        Text(
-            text = "${formatLcdTime(currentPosition)}/${formatLcdTime(duration)}",
-            color = PocketFlipColors.screenText,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 7.sp else 8.sp,
-            maxLines = 1
-        )
+        Spacer(modifier = Modifier.width(3.dp))
+        if (fileType != null) {
+            PocketFlipStatusChip(
+                text = "FORMAT $fileType",
+                compact = compact
+            )
+            Spacer(modifier = Modifier.width(3.dp))
+        }
+        PocketFlipStatusChip(text = "LOCAL", compact = compact)
     }
+}
+
+@Composable
+private fun PocketFlipStatusChip(
+    text: String,
+    compact: Boolean,
+    active: Boolean = false
+) {
+    Text(
+        text = text,
+        color = if (active) {
+            PocketFlipColors.screenAccent
+        } else {
+            PocketFlipColors.screenTextMuted
+        },
+        fontFamily = FontFamily.Monospace,
+        fontWeight = FontWeight.Bold,
+        fontSize = if (compact) 7.sp else 8.sp,
+        letterSpacing = 0.4.sp,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier
+            .background(PocketFlipColors.lcdBand, RoundedCornerShape(2.dp))
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+    )
 }
 
 @Composable
 internal fun PocketFlipLcdMeter(
     currentSong: Song?,
     isPlaying: Boolean,
-    compact: Boolean
+    compact: Boolean,
+    modifier: Modifier = Modifier
 ) {
     val songKey = remember(currentSong?.id, currentSong?.title, currentSong?.artist) {
         buildMeterKey(currentSong)
@@ -111,7 +120,7 @@ internal fun PocketFlipLcdMeter(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(PocketFlipColors.lcdBand, RoundedCornerShape(2.dp))
             .padding(horizontal = 4.dp, vertical = 2.dp),
@@ -147,7 +156,7 @@ internal fun PocketFlipLcdMeter(
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(if (compact) 13.dp else 16.dp)
+                .height(if (compact) 17.dp else 21.dp)
         ) {
             val animatedPhase = phase.value
             val firstLevel = meterLevel(songKey, channel = 0, phase = animatedPhase)
@@ -166,6 +175,17 @@ internal fun PocketFlipLcdMeter(
 internal fun PocketFlipLcdOverlay(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
         drawRect(color = PocketFlipColors.lcdTint)
+        drawRect(
+            brush = Brush.radialGradient(
+                colorStops = arrayOf(
+                    0f to PocketFlipColors.lcdGlow,
+                    0.72f to Color.Transparent,
+                    1f to Color.Transparent
+                ),
+                center = center,
+                radius = size.maxDimension * 0.68f
+            )
+        )
 
         val pixelStep = 5.dp.toPx()
         var x = pixelStep
@@ -195,8 +215,26 @@ internal fun PocketFlipLcdOverlay(modifier: Modifier = Modifier) {
             brush = Brush.radialGradient(
                 colorStops = arrayOf(
                     0f to Color.Transparent,
+                    0.58f to Color.Transparent,
+                    1f to Color.Black.copy(alpha = 0.20f)
+                ),
+                center = center,
+                radius = size.maxDimension * 0.72f
+            )
+        )
+    }
+}
+
+@Composable
+internal fun PocketFlipArtworkLcdTreatment(modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        drawRect(color = PocketFlipColors.artworkLcdTint)
+        drawRect(
+            brush = Brush.radialGradient(
+                colorStops = arrayOf(
+                    0f to Color.Transparent,
                     0.68f to Color.Transparent,
-                    1f to Color.Black.copy(alpha = 0.14f)
+                    1f to Color.Black.copy(alpha = 0.12f)
                 ),
                 center = center,
                 radius = size.maxDimension * 0.72f
@@ -210,7 +248,7 @@ private fun DrawScope.drawSegmentRow(
     top: Float,
     height: Float
 ) {
-    val segmentCount = 15
+    val segmentCount = 24
     val gap = 1.dp.toPx()
     val segmentWidth = (size.width - gap * (segmentCount - 1)) / segmentCount
     val litSegments = (level.coerceIn(0f, 1f) * segmentCount).toInt()
@@ -244,11 +282,4 @@ private fun buildMeterKey(song: Song?): Int {
     result = 31 * result + song.title.hashCode()
     result = 31 * result + song.artist.hashCode()
     return result
-}
-
-private fun formatLcdTime(milliseconds: Int): String {
-    val totalSeconds = (milliseconds / 1_000).coerceAtLeast(0)
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return "$minutes:${seconds.toString().padStart(2, '0')}"
 }

@@ -75,26 +75,38 @@ internal fun PocketFlipDisplayHalf(
                 .background(PocketFlipColors.display)
                 .pocketFlipLcdFrameFinish(screenRadius)
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(if (compact) 9.dp else 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(if (compact) 7.dp else 9.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 6.dp)
             ) {
-                PocketFlipArtwork(
-                    song = currentSong,
-                    compact = compact,
-                    modifier = Modifier.size(if (compact) 104.dp else 116.dp)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(if (compact) 7.dp else 9.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PocketFlipArtwork(
+                        song = currentSong,
+                        compact = compact,
+                        modifier = Modifier.size(if (compact) 104.dp else 116.dp)
+                    )
 
-                PocketFlipMetadata(
+                    PocketFlipMetadata(
+                        currentSong = currentSong,
+                        isPlaying = isPlaying,
+                        compact = compact,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                PocketFlipLcdMeter(
                     currentSong = currentSong,
                     isPlaying = isPlaying,
-                    currentPosition = currentPosition,
-                    duration = duration,
                     compact = compact,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
@@ -239,6 +251,11 @@ private fun PocketFlipArtwork(
                     .fillMaxSize()
                     .padding(if (compact) 4.dp else 5.dp)
             )
+            PocketFlipArtworkLcdTreatment(
+                modifier = Modifier
+                    .matchParentSize()
+                    .padding(if (compact) 4.dp else 5.dp)
+            )
         } else {
             Icon(
                 imageVector = Icons.Filled.Album,
@@ -254,8 +271,6 @@ private fun PocketFlipArtwork(
 private fun PocketFlipMetadata(
     currentSong: Song?,
     isPlaying: Boolean,
-    currentPosition: Int,
-    duration: Int,
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -268,8 +283,6 @@ private fun PocketFlipMetadata(
         PocketFlipLcdStatusRow(
             currentSong = currentSong,
             isPlaying = isPlaying,
-            currentPosition = currentPosition,
-            duration = duration,
             compact = compact
         )
 
@@ -308,11 +321,6 @@ private fun PocketFlipMetadata(
             )
         }
 
-        PocketFlipLcdMeter(
-            currentSong = currentSong,
-            isPlaying = isPlaying,
-            compact = compact
-        )
     }
 }
 
