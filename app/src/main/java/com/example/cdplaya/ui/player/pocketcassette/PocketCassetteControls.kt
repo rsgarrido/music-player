@@ -3,6 +3,7 @@ package com.example.cdplaya.ui.player.pocketcassette
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -79,6 +80,13 @@ internal fun PocketCassetteControls(
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
+    fun seekBy(milliseconds: Int) {
+        val target = currentPosition.toLong() + milliseconds
+        val upperBound = if (duration > 0) duration.toLong() else Int.MAX_VALUE.toLong()
+        val clampedTarget = target.coerceIn(0L, upperBound)
+        onSeekChange(clampedTarget.toInt())
+    }
+
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(if (compact) 7.dp else 10.dp)
@@ -97,8 +105,10 @@ internal fun PocketCassetteControls(
             PocketCassetteMechanicalButton(
                 icon = Icons.Filled.SkipPrevious,
                 label = "REW / PREV",
-                contentDescription = "Previous track",
+                contentDescription = "Previous track. Hold to seek backward 10 seconds",
                 onClick = onPreviousClick,
+                onLongClick = { seekBy(-10_000) },
+                longClickLabel = "Seek backward 10 seconds",
                 compact = compact,
                 modifier = Modifier.weight(1f)
             )
@@ -114,8 +124,10 @@ internal fun PocketCassetteControls(
             PocketCassetteMechanicalButton(
                 icon = Icons.Filled.SkipNext,
                 label = "NEXT / FWD",
-                contentDescription = "Next track",
+                contentDescription = "Next track. Hold to seek forward 10 seconds",
                 onClick = onNextClick,
+                onLongClick = { seekBy(10_000) },
+                longClickLabel = "Seek forward 10 seconds",
                 compact = compact,
                 modifier = Modifier.weight(1f)
             )
@@ -181,7 +193,9 @@ private fun PocketCassetteMechanicalButton(
     onClick: () -> Unit,
     compact: Boolean,
     modifier: Modifier = Modifier,
-    accent: Boolean = false
+    accent: Boolean = false,
+    onLongClick: (() -> Unit)? = null,
+    longClickLabel: String? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -204,11 +218,13 @@ private fun PocketCassetteMechanicalButton(
                 shape = shape
             )
             .pocketCassetteBevel(radius = 5.dp, pressed = isPressed)
-            .clickable(
+            .combinedClickable(
                 interactionSource = interactionSource,
                 indication = null,
                 role = Role.Button,
                 onClickLabel = contentDescription,
+                onLongClickLabel = longClickLabel,
+                onLongClick = onLongClick,
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center
