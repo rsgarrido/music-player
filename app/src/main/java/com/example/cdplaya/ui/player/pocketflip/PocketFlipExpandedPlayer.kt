@@ -1,6 +1,5 @@
 package com.example.cdplaya.ui.player.pocketflip
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -37,7 +36,7 @@ fun PocketFlipExpandedPlayer(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(PocketFlipColors.shell)
+            .pocketFlipShellFinish()
             .padding(
                 horizontal = if (compact) 10.dp else 16.dp,
                 vertical = if (compact) 10.dp else 16.dp

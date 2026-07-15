@@ -47,7 +47,7 @@ internal fun PocketFlipDisplayHalf(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(if (compact) 22.dp else 28.dp))
-            .background(PocketFlipColors.bezel)
+            .pocketFlipBezelFinish(if (compact) 22.dp else 28.dp)
             .padding(if (compact) 10.dp else 14.dp),
         verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 9.dp)
     ) {
@@ -59,6 +59,7 @@ internal fun PocketFlipDisplayHalf(
                 .weight(1f)
                 .clip(RoundedCornerShape(if (compact) 10.dp else 14.dp))
                 .background(PocketFlipColors.display)
+                .pocketFlipScreenFinish()
                 .padding(if (compact) 10.dp else 14.dp),
             horizontalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 14.dp),
             verticalAlignment = Alignment.CenterVertically

@@ -1,6 +1,8 @@
 package com.example.cdplaya.ui.player.pocketflip
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,13 +14,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -30,10 +33,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -92,12 +95,14 @@ internal fun PocketFlipControlHalf(
             )
         }
 
+        PocketFlipSpeakerGrille(compact = compact)
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(if (compact) 8.dp else 12.dp)
         ) {
             PocketFlipUtilityButton(
-                icon = Icons.Filled.List,
+                icon = Icons.AutoMirrored.Filled.List,
                 label = "UP NEXT",
                 contentDescription = "Open up next queue",
                 onClick = onOpenUpNextClick,
@@ -228,13 +233,23 @@ private fun PocketFlipPadButton(
     modifier: Modifier = Modifier,
     active: Boolean = false
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
     Surface(
         onClick = onClick,
-        modifier = modifier.size(size),
+        modifier = modifier
+            .offset(y = if (isPressed) 2.dp else 0.dp)
+            .size(size),
         shape = RoundedCornerShape(13.dp),
-        color = if (active) PocketFlipColors.buttonActive else PocketFlipColors.button,
+        color = when {
+            isPressed -> PocketFlipColors.buttonPressed
+            active -> PocketFlipColors.buttonActive
+            else -> PocketFlipColors.button
+        },
         contentColor = if (active) PocketFlipColors.buttonActiveIcon else PocketFlipColors.buttonIcon,
-        shadowElevation = 4.dp
+        shadowElevation = if (isPressed) 1.dp else 4.dp,
+        interactionSource = interactionSource
     ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
@@ -255,14 +270,24 @@ private fun PocketFlipRoundAction(
     onClick: () -> Unit,
     active: Boolean = false
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Surface(
             onClick = onClick,
-            modifier = Modifier.size(size),
+            modifier = Modifier
+                .offset(y = if (isPressed) 2.dp else 0.dp)
+                .size(size),
             shape = CircleShape,
-            color = if (active) PocketFlipColors.actionActive else PocketFlipColors.action,
+            color = when {
+                isPressed -> PocketFlipColors.actionPressed
+                active -> PocketFlipColors.actionActive
+                else -> PocketFlipColors.action
+            },
             contentColor = PocketFlipColors.actionIcon,
-            shadowElevation = 5.dp
+            shadowElevation = if (isPressed) 1.dp else 5.dp,
+            interactionSource = interactionSource
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
@@ -293,13 +318,19 @@ private fun PocketFlipUtilityButton(
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
     Surface(
         onClick = onClick,
-        modifier = modifier.height(if (compact) 46.dp else 52.dp),
+        modifier = modifier
+            .offset(y = if (isPressed) 2.dp else 0.dp)
+            .height(if (compact) 46.dp else 52.dp),
         shape = RoundedCornerShape(50),
-        color = PocketFlipColors.utility,
+        color = if (isPressed) PocketFlipColors.utilityPressed else PocketFlipColors.utility,
         contentColor = PocketFlipColors.utilityIcon,
-        shadowElevation = 3.dp
+        shadowElevation = if (isPressed) 1.dp else 3.dp,
+        interactionSource = interactionSource
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -318,6 +349,26 @@ private fun PocketFlipUtilityButton(
                 fontWeight = FontWeight.Bold,
                 fontSize = if (compact) 10.sp else 11.sp,
                 letterSpacing = 0.7.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun PocketFlipSpeakerGrille(compact: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = if (compact) 4.dp else 6.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(7) { index ->
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = 3.dp)
+                    .size(if (index == 3) 5.dp else 4.dp)
+                    .background(PocketFlipColors.speaker, CircleShape)
             )
         }
     }
