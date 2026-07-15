@@ -17,6 +17,11 @@ enum class PlayerTheme(
     RETRO_RACK(
         id = "retro_rack",
         displayName = "Retro Rack"
+    ),
+
+    POCKET_FLIP(
+        id = "pocket_flip",
+        displayName = "Pocket Flip"
     );
 
     companion object {
