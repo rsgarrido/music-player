@@ -3,6 +3,7 @@ package com.example.cdplaya.data
 import com.example.cdplaya.data.local.PlaylistDao
 import com.example.cdplaya.data.local.PlaylistEntity
 import com.example.cdplaya.data.local.PlaylistSongEntity
+import java.util.Locale
 
 class PlaylistsRepository(
     private val playlistDao: PlaylistDao
@@ -37,30 +38,67 @@ class PlaylistsRepository(
     }
 
     suspend fun createPlaylist(name: String): Boolean {
+        return createPlaylistReturningId(name) != null
+    }
+
+    suspend fun createPlaylistReturningId(name: String): Long? {
         val trimmedName = name.trim()
 
         if (trimmedName.isBlank()) {
-            return false
+            return null
         }
 
         val playlistNameAlreadyExists =
             playlistDao.countPlaylistsWithName(trimmedName) > 0
 
         if (playlistNameAlreadyExists) {
-            return false
+            return null
         }
 
         val now = System.currentTimeMillis()
 
-        playlistDao.insertPlaylist(
+        return playlistDao.insertPlaylist(
             PlaylistEntity(
                 name = trimmedName,
                 createdAt = now,
                 updatedAt = now
             )
         )
+    }
 
-        return true
+    suspend fun createPlaylistWithUniqueName(
+        preferredName: String,
+        songs: List<Song>
+    ): Playlist {
+        require(songs.isNotEmpty()) {
+            "Cannot create an imported playlist without songs."
+        }
+
+        val uniqueName = uniquePlaylistName(
+            preferredName = preferredName,
+            existingNames = getPlaylists().map { playlist ->
+                playlist.name
+            }
+        )
+        val playlistId = checkNotNull(createPlaylistReturningId(uniqueName)) {
+            "Unable to create imported playlist."
+        }
+
+        try {
+            addSongsToPlaylist(
+                playlistId = playlistId,
+                songs = songs
+            )
+        } catch (exception: Exception) {
+            playlistDao.deletePlaylist(playlistId)
+            throw exception
+        }
+
+        return Playlist(
+            playlistId = playlistId,
+            name = uniqueName,
+            songCount = songs.size
+        )
     }
 
     suspend fun renamePlaylist(
@@ -246,5 +284,31 @@ class PlaylistsRepository(
             album = newAlbum,
             duration = originalSong.duration
         )
+    }
+}
+
+internal fun uniquePlaylistName(
+    preferredName: String,
+    existingNames: Collection<String>
+): String {
+    val baseName = preferredName.trim().ifBlank { "Imported Playlist" }
+    val lowercaseExistingNames = existingNames.mapTo(mutableSetOf()) { name ->
+        name.trim().lowercase(Locale.ROOT)
+    }
+
+    if (baseName.lowercase(Locale.ROOT) !in lowercaseExistingNames) {
+        return baseName
+    }
+
+    var suffix = 2
+
+    while (true) {
+        val candidate = "$baseName ($suffix)"
+
+        if (candidate.lowercase(Locale.ROOT) !in lowercaseExistingNames) {
+            return candidate
+        }
+
+        suffix += 1
     }
 }

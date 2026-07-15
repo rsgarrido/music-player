@@ -80,6 +80,7 @@ fun MusicScreen(
     onRenamePlaylistClick: (Playlist, String) -> Unit,
     onDeletePlaylistClick: (Playlist) -> Unit,
     onExportPlaylistClick: (Playlist) -> Unit,
+    onImportPlaylistClick: () -> Unit,
     onPlaylistSelected: (Playlist) -> Unit,
     onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
     onAddSongsToPlaylistClick: (Playlist, List<Song>) -> Unit,
@@ -402,6 +403,7 @@ fun MusicScreen(
                 },
                 onDeletePlaylistClick = onDeletePlaylistClick,
                 onExportPlaylistClick = onExportPlaylistClick,
+                onImportPlaylistClick = onImportPlaylistClick,
                 onBackFromPlaylist = {
                     selectedPlaylistId = null
                 },

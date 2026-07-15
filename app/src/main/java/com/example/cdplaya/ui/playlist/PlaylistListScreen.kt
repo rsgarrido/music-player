@@ -16,6 +16,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +36,7 @@ fun PlaylistListScreen(
     onRenamePlaylistClick: (Playlist, String) -> Unit,
     onDeletePlaylistClick: (Playlist) -> Unit,
     onExportPlaylistClick: (Playlist) -> Unit,
+    onImportPlaylistClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var playlistPendingRename by remember {
@@ -63,6 +65,19 @@ fun PlaylistListScreen(
                 text = "Create Playlist",
                 modifier = Modifier.padding(start = 8.dp)
             )
+        }
+
+        OutlinedButton(
+            onClick = onImportPlaylistClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = 16.dp,
+                    end = 16.dp,
+                    bottom = 16.dp
+                )
+        ) {
+            Text(text = "Import M3U")
         }
 
         if (playlists.isEmpty()) {

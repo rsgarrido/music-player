@@ -24,7 +24,9 @@ import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.playlistfile.M3uExportResult
 import com.example.cdplaya.data.playlistfile.PlaylistFileRepository
+import com.example.cdplaya.data.playlistfile.PlaylistImportResult
 import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
+import com.example.cdplaya.data.playlistfile.defaultImportedPlaylistName
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.PlaybackLibraryBridge
 import kotlinx.coroutines.CoroutineScope
@@ -300,6 +302,45 @@ class LibraryController(
             }
 
             onExported(result)
+        }
+    }
+
+    fun importM3uPlaylist(
+        uri: Uri,
+        onImported: (Result<PlaylistImportResult>) -> Unit
+    ) {
+        coroutineScope.launch {
+            val result = runCatching {
+                val fileImportResult = playlistFileRepository.importM3uPlaylist(
+                    uri = uri,
+                    librarySongs = songs
+                )
+
+                if (fileImportResult.matchedSongs.isEmpty()) {
+                    PlaylistImportResult(
+                        playlistName = null,
+                        importedSongCount = 0,
+                        unmatchedEntryCount = fileImportResult.unmatchedEntryCount
+                    )
+                } else {
+                    val importedPlaylist = playlistsRepository.createPlaylistWithUniqueName(
+                        preferredName = defaultImportedPlaylistName(
+                            fileImportResult.sourceDisplayName
+                        ),
+                        songs = fileImportResult.matchedSongs
+                    )
+
+                    playlists = playlistsRepository.getPlaylists()
+
+                    PlaylistImportResult(
+                        playlistName = importedPlaylist.name,
+                        importedSongCount = fileImportResult.matchedSongCount,
+                        unmatchedEntryCount = fileImportResult.unmatchedEntryCount
+                    )
+                }
+            }
+
+            onImported(result)
         }
     }
 

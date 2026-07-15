@@ -19,6 +19,7 @@ import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
 import com.example.cdplaya.data.playlistfile.M3uExportResult
+import com.example.cdplaya.data.playlistfile.PlaylistImportResult
 import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.replaygain.ReplayGainMode
@@ -263,6 +264,16 @@ class MusicViewModel(
             uri = uri,
             songs = songs,
             onExported = onExported
+        )
+    }
+
+    fun importM3uPlaylist(
+        uri: Uri,
+        onImported: (Result<PlaylistImportResult>) -> Unit
+    ) {
+        libraryController.importM3uPlaylist(
+            uri = uri,
+            onImported = onImported
         )
     }
 
