@@ -85,6 +85,28 @@ internal fun Modifier.pocketFlipRoundButtonFinish(isPressed: Boolean): Modifier 
         )
     }
 
+internal fun Modifier.pocketFlipActionPlateFinish(): Modifier =
+    drawWithContent {
+        drawContent()
+        val inset = 1.dp.toPx()
+        drawRoundRect(
+            color = PocketFlipColors.controlGroove,
+            topLeft = Offset(inset, inset),
+            size = androidx.compose.ui.geometry.Size(
+                width = size.width - inset * 2f,
+                height = size.height - inset * 2f
+            ),
+            cornerRadius = CornerRadius(size.height / 2f),
+            style = Stroke(width = 2.dp.toPx())
+        )
+        drawLine(
+            color = PocketFlipColors.shellHighlight.copy(alpha = 0.18f),
+            start = Offset(size.height * 0.32f, 2.dp.toPx()),
+            end = Offset(size.width - size.height * 0.32f, 2.dp.toPx()),
+            strokeWidth = 1.dp.toPx()
+        )
+    }
+
 internal fun Modifier.pocketFlipUtilitySwitchFinish(isPressed: Boolean): Modifier =
     drawWithContent {
         drawContent()

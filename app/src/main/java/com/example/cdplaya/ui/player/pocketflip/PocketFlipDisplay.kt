@@ -82,16 +82,14 @@ internal fun PocketFlipDisplayHalf(
             PocketFlipArtwork(
                 song = currentSong,
                 compact = compact,
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .weight(if (compact) 0.37f else 0.40f)
+                modifier = Modifier.size(if (compact) 104.dp else 116.dp)
             )
 
             PocketFlipMetadata(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 compact = compact,
-                modifier = Modifier.weight(if (compact) 0.63f else 0.60f)
+                modifier = Modifier.weight(1f)
             )
         }
 
@@ -285,8 +283,8 @@ private fun PocketFlipMetadata(
             color = PocketFlipColors.screenText,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 14.sp else 16.sp,
-            lineHeight = if (compact) 17.sp else 19.sp,
+            fontSize = if (compact) 14.sp else 15.sp,
+            lineHeight = if (compact) 17.sp else 18.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )

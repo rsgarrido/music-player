@@ -321,48 +321,52 @@ private fun PocketFlipActionCluster(
 ) {
     Box(
         modifier = Modifier.size(
-            width = if (compact) 126.dp else 140.dp,
-            height = if (compact) 116.dp else 128.dp
-        )
+            width = if (compact) 136.dp else 148.dp,
+            height = if (compact) 96.dp else 104.dp
+        ),
+        contentAlignment = Alignment.Center
     ) {
         Box(
             modifier = Modifier
-                .align(Alignment.Center)
                 .size(
-                    width = if (compact) 116.dp else 128.dp,
-                    height = if (compact) 68.dp else 76.dp
+                    width = if (compact) 134.dp else 146.dp,
+                    height = if (compact) 86.dp else 92.dp
                 )
                 .background(
                     PocketFlipColors.controlWell,
                     RoundedCornerShape(50)
                 )
+                .pocketFlipActionPlateFinish()
         )
 
-        PocketFlipRoundAction(
-            icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-            label = if (isPlaying) "PAUSE" else "PLAY",
-            contentDescription = if (isPlaying) "Pause" else "Play",
-            faceSize = if (compact) 50.dp else 56.dp,
-            onClick = onPlayPauseClick,
-            modifier = Modifier.align(Alignment.TopStart)
-        )
-        PocketFlipRoundAction(
-            icon = if (isCurrentSongFavorite) {
-                Icons.Filled.Favorite
-            } else {
-                Icons.Filled.FavoriteBorder
-            },
-            label = "FAV",
-            contentDescription = if (isCurrentSongFavorite) {
-                "Remove from favorites"
-            } else {
-                "Add to favorites"
-            },
-            faceSize = if (compact) 48.dp else 54.dp,
-            active = isCurrentSongFavorite,
-            onClick = { currentSong?.let(onToggleFavoriteClick) },
-            modifier = Modifier.align(Alignment.BottomEnd)
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(if (compact) 0.dp else 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            PocketFlipRoundAction(
+                icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                label = if (isPlaying) "PAUSE" else "PLAY",
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                faceSize = if (compact) 48.dp else 52.dp,
+                onClick = onPlayPauseClick
+            )
+            PocketFlipRoundAction(
+                icon = if (isCurrentSongFavorite) {
+                    Icons.Filled.Favorite
+                } else {
+                    Icons.Filled.FavoriteBorder
+                },
+                label = "FAV",
+                contentDescription = if (isCurrentSongFavorite) {
+                    "Remove from favorites"
+                } else {
+                    "Add to favorites"
+                },
+                faceSize = if (compact) 48.dp else 52.dp,
+                active = isCurrentSongFavorite,
+                onClick = { currentSong?.let(onToggleFavoriteClick) }
+            )
+        }
     }
 }
 
