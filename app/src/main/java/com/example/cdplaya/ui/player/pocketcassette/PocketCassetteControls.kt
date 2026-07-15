@@ -35,8 +35,13 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -59,6 +64,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import kotlinx.coroutines.delay
+
+private const val TransportSeekStepMillis = 2_000
+private const val TransportSeekRepeatMillis = 300L
 
 @Composable
 internal fun PocketCassetteControls(
@@ -80,11 +89,12 @@ internal fun PocketCassetteControls(
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
-    fun seekBy(milliseconds: Int) {
-        val target = currentPosition.toLong() + milliseconds
+    var rewindTarget by remember(currentSong?.id) { mutableIntStateOf(currentPosition) }
+    var forwardTarget by remember(currentSong?.id) { mutableIntStateOf(currentPosition) }
+
+    fun clampSeekTarget(target: Long): Int {
         val upperBound = if (duration > 0) duration.toLong() else Int.MAX_VALUE.toLong()
-        val clampedTarget = target.coerceIn(0L, upperBound)
-        onSeekChange(clampedTarget.toInt())
+        return target.coerceIn(0L, upperBound).toInt()
     }
 
     Column(
@@ -105,10 +115,16 @@ internal fun PocketCassetteControls(
             PocketCassetteMechanicalButton(
                 icon = Icons.Filled.SkipPrevious,
                 label = "REW / PREV",
-                contentDescription = "Previous track. Hold to seek backward 10 seconds",
+                contentDescription = "Previous track. Hold to seek backward",
                 onClick = onPreviousClick,
-                onLongClick = { seekBy(-10_000) },
-                longClickLabel = "Seek backward 10 seconds",
+                onLongPressStart = { rewindTarget = currentPosition },
+                onLongPressRepeat = {
+                    rewindTarget = clampSeekTarget(
+                        rewindTarget.toLong() - TransportSeekStepMillis
+                    )
+                    onSeekChange(rewindTarget)
+                },
+                longClickLabel = "Seek backward while held",
                 compact = compact,
                 modifier = Modifier.weight(1f)
             )
@@ -124,10 +140,16 @@ internal fun PocketCassetteControls(
             PocketCassetteMechanicalButton(
                 icon = Icons.Filled.SkipNext,
                 label = "NEXT / FWD",
-                contentDescription = "Next track. Hold to seek forward 10 seconds",
+                contentDescription = "Next track. Hold to seek forward",
                 onClick = onNextClick,
-                onLongClick = { seekBy(10_000) },
-                longClickLabel = "Seek forward 10 seconds",
+                onLongPressStart = { forwardTarget = currentPosition },
+                onLongPressRepeat = {
+                    forwardTarget = clampSeekTarget(
+                        forwardTarget.toLong() + TransportSeekStepMillis
+                    )
+                    onSeekChange(forwardTarget)
+                },
+                longClickLabel = "Seek forward while held",
                 compact = compact,
                 modifier = Modifier.weight(1f)
             )
@@ -194,12 +216,27 @@ private fun PocketCassetteMechanicalButton(
     compact: Boolean,
     modifier: Modifier = Modifier,
     accent: Boolean = false,
-    onLongClick: (() -> Unit)? = null,
+    onLongPressStart: (() -> Unit)? = null,
+    onLongPressRepeat: (() -> Unit)? = null,
     longClickLabel: String? = null
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    var repeatLongPress by remember { mutableStateOf(false) }
+    val currentLongPressStart by rememberUpdatedState(onLongPressStart)
+    val currentLongPressRepeat by rememberUpdatedState(onLongPressRepeat)
     val shape = RoundedCornerShape(5.dp)
+
+    LaunchedEffect(isPressed, repeatLongPress) {
+        if (!isPressed) {
+            repeatLongPress = false
+        } else if (repeatLongPress) {
+            while (true) {
+                currentLongPressRepeat?.invoke()
+                delay(TransportSeekRepeatMillis)
+            }
+        }
+    }
 
     Box(
         modifier = modifier
@@ -224,7 +261,14 @@ private fun PocketCassetteMechanicalButton(
                 role = Role.Button,
                 onClickLabel = contentDescription,
                 onLongClickLabel = longClickLabel,
-                onLongClick = onLongClick,
+                onLongClick = if (onLongPressRepeat != null) {
+                    {
+                        currentLongPressStart?.invoke()
+                        repeatLongPress = true
+                    }
+                } else {
+                    null
+                },
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center

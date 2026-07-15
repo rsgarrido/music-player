@@ -23,6 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -340,6 +341,15 @@ private fun PocketCassetteTrackLabel(
         modifier = modifier
             .fillMaxWidth()
             .background(Color(0xE0192328))
+            .drawWithContent {
+                drawContent()
+                drawLine(
+                    color = PocketCassetteColors.windowText.copy(alpha = 0.28f),
+                    start = Offset.Zero,
+                    end = Offset(size.width, 0f),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
             .padding(
                 horizontal = if (compact) 8.dp else 11.dp,
                 vertical = if (compact) 5.dp else 7.dp
