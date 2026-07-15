@@ -4,11 +4,9 @@ import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
-import android.util.Log
 import org.jaudiotagger.audio.AudioFileIO
 import java.io.File
 import java.security.MessageDigest
-import kotlin.system.measureTimeMillis
 
 data class MusicLibraryData(
     val songs: List<Song>,
@@ -16,48 +14,20 @@ data class MusicLibraryData(
 )
 
 class MusicRepository(private val context: Context) {
-
-    private var embeddedArtworkCacheHitCount = 0
-    private var embeddedArtworkNoArtworkCacheHitCount = 0
-    private var embeddedArtworkTagReadCount = 0
-    private var albumArtistTagReadCount = 0
-
     fun getLibraryData(selectedFolders: Set<String> = emptySet()): MusicLibraryData {
-        resetPerformanceCounters()
+        val allSongs = getAllSongs()
 
-        var allSongs = emptyList<Song>()
-        var filteredSongs = emptyList<Song>()
-        var libraryFolders = emptyList<LibraryFolder>()
-
-        val totalLoadTimeMs = measureTimeMillis {
-            allSongs = getAllSongs()
-
-            filteredSongs = if (selectedFolders.isEmpty()) {
-                allSongs
-            } else {
-                allSongs.filter { song ->
-                    selectedFolders.contains(song.folderPath)
-                }
+        val filteredSongs = if (selectedFolders.isEmpty()) {
+            allSongs
+        } else {
+            allSongs.filter { song ->
+                selectedFolders.contains(song.folderPath)
             }
-
-            libraryFolders = buildLibraryFolders(allSongs)
         }
-
-        Log.d(
-            PERFORMANCE_LOG_TAG,
-            "Library load finished: total=${totalLoadTimeMs}ms, " +
-                    "allSongs=${allSongs.size}, " +
-                    "filteredSongs=${filteredSongs.size}, " +
-                    "folders=${libraryFolders.size}, " +
-                    "embeddedArtworkCacheHits=$embeddedArtworkCacheHitCount, " +
-                    "embeddedArtworkNoArtworkCacheHits=$embeddedArtworkNoArtworkCacheHitCount, " +
-                    "embeddedArtworkTagReads=$embeddedArtworkTagReadCount, " +
-                    "albumArtistTagReads=$albumArtistTagReadCount"
-        )
 
         return MusicLibraryData(
             songs = filteredSongs,
-            libraryFolders = libraryFolders
+            libraryFolders = buildLibraryFolders(allSongs)
         )
     }
 
@@ -92,17 +62,7 @@ class MusicRepository(private val context: Context) {
     private fun getAllSongs(): List<Song> {
         val songs = mutableListOf<Song>()
 
-        var albumArtByFolder = emptyMap<String, Uri>()
-
-        val folderArtworkLoadTimeMs = measureTimeMillis {
-            albumArtByFolder = getAlbumArtByFolder()
-        }
-
-        Log.d(
-            PERFORMANCE_LOG_TAG,
-            "Folder artwork scan finished: ${folderArtworkLoadTimeMs}ms, " +
-                    "folderArtworkCount=${albumArtByFolder.size}"
-        )
+        val albumArtByFolder = getAlbumArtByFolder()
 
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 
@@ -128,67 +88,58 @@ class MusicRepository(private val context: Context) {
             sortOrder
         )
 
-        val mediaStoreReadTimeMs = measureTimeMillis {
-            query?.use { cursor ->
-                val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-                val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-                val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-                val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
-                val trackColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
-                val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
-                val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+        query?.use { cursor ->
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+            val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
+            val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
+            val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+            val trackColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
+            val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
+            val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
 
-                while (cursor.moveToNext()) {
-                    val id = cursor.getLong(idColumn)
-                    val title = cursor.getString(titleColumn) ?: "Unknown Title"
-                    val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
-                    val album = cursor.getString(albumColumn) ?: "Unknown Album"
-                    val duration = cursor.getLong(durationColumn)
-                    val filePath = cursor.getString(dataColumn) ?: ""
-                    val trackNumber = cursor.getInt(trackColumn)
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idColumn)
+                val title = cursor.getString(titleColumn) ?: "Unknown Title"
+                val artist = cursor.getString(artistColumn) ?: "Unknown Artist"
+                val album = cursor.getString(albumColumn) ?: "Unknown Album"
+                val duration = cursor.getLong(durationColumn)
+                val filePath = cursor.getString(dataColumn) ?: ""
+                val trackNumber = cursor.getInt(trackColumn)
 
-                    val folderPath = File(filePath).parent ?: ""
+                val folderPath = File(filePath).parent ?: ""
 
-                    if (folderPath.isBlank()) {
-                        continue
-                    }
-
-                    val uri = ContentUris.withAppendedId(
-                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                        id
-                    )
-
-                    val albumArtUri =
-                        getEmbeddedAlbumArtUri(filePath) ?: albumArtByFolder[folderPath]
-
-                    val albumArtist = ""
-
-                    val song = Song(
-                        id = id,
-                        title = title,
-                        artist = artist,
-                        album = album,
-                        trackNumber = trackNumber,
-                        duration = duration,
-                        uri = uri,
-                        filePath = filePath,
-                        folderPath = folderPath,
-                        albumArtUri = albumArtUri,
-                        albumArtist = albumArtist
-                    )
-
-                    songs.add(song)
+                if (folderPath.isBlank()) {
+                    continue
                 }
+
+                val uri = ContentUris.withAppendedId(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    id
+                )
+
+                val albumArtUri =
+                    getEmbeddedAlbumArtUri(filePath) ?: albumArtByFolder[folderPath]
+
+                val albumArtist = ""
+
+                val song = Song(
+                    id = id,
+                    title = title,
+                    artist = artist,
+                    album = album,
+                    trackNumber = trackNumber,
+                    duration = duration,
+                    uri = uri,
+                    filePath = filePath,
+                    folderPath = folderPath,
+                    albumArtUri = albumArtUri,
+                    albumArtist = albumArtist
+                )
+
+                songs.add(song)
             }
         }
-
-        Log.d(
-            PERFORMANCE_LOG_TAG,
-            "MediaStore song read finished: ${mediaStoreReadTimeMs}ms, " +
-                    "songCount=${songs.size}"
-        )
-
-        return songs
+    return songs
     }
 
     private fun getAlbumArtByFolder(): Map<String, Uri> {
@@ -266,17 +217,14 @@ class MusicRepository(private val context: Context) {
             audioFile = audioFile,
             cacheDirectory = cacheDirectory
         )?.let { cachedArtworkUri ->
-            embeddedArtworkCacheHitCount += 1
             return cachedArtworkUri
         }
 
         if (hasNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)) {
-            embeddedArtworkNoArtworkCacheHitCount += 1
             return null
         }
 
         return try {
-            embeddedArtworkTagReadCount += 1
 
             val tag = AudioFileIO.read(audioFile).tag
 
@@ -356,7 +304,6 @@ class MusicRepository(private val context: Context) {
         return "${buildEmbeddedArtworkCacheKey(audioFile)}.no_artwork"
     }
 
-
     private fun findCachedEmbeddedArtworkUri(
         audioFile: File,
         cacheDirectory: File
@@ -434,15 +381,7 @@ class MusicRepository(private val context: Context) {
         }
     }
 
-    private fun resetPerformanceCounters() {
-        embeddedArtworkCacheHitCount = 0
-        embeddedArtworkNoArtworkCacheHitCount = 0
-        embeddedArtworkTagReadCount = 0
-        albumArtistTagReadCount = 0
-    }
-
     companion object {
         private const val EMBEDDED_ARTWORK_CACHE_DIRECTORY = "embedded_album_art"
-        private const val PERFORMANCE_LOG_TAG = "MusicRepository"
     }
 }
