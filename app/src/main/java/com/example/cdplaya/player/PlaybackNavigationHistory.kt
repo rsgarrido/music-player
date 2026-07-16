@@ -7,6 +7,10 @@ class PlaybackNavigationHistory {
     private val nextSongs = mutableListOf<Song>()
 
     fun addPreviousSong(song: Song) {
+        if (previousSongs.lastOrNull()?.id == song.id) {
+            return
+        }
+
         previousSongs.add(song)
     }
 

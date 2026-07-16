@@ -2,7 +2,9 @@ package com.example.cdplaya.player
 
 import com.example.cdplaya.data.Song
 
-class UpcomingPlaylistBuilder {
+class UpcomingPlaylistBuilder(
+    private val shuffleSongs: (List<Song>) -> List<Song> = { songs -> songs.shuffled() }
+) {
 
     fun buildUpcomingPlaylistAfterCurrent(
         startSong: Song,
@@ -24,6 +26,7 @@ class UpcomingPlaylistBuilder {
         val startIndex = playbackSourceSongs.indexOfFirst { song ->
             song.id == startSong.id
         }
+        var shouldCreateNewShuffleCycle = false
 
         val songsAfterCurrent = when {
             startIndex == -1 -> {
@@ -44,6 +47,7 @@ class UpcomingPlaylistBuilder {
                     repeatMode == RepeatMode.ALL &&
                     playbackSourceSongs.size > 1
                 ) {
+                    shouldCreateNewShuffleCycle = true
                     playbackSourceSongs.filter { song ->
                         song.id != startSong.id
                     }
@@ -66,11 +70,12 @@ class UpcomingPlaylistBuilder {
                     startIndex != -1 &&
                     (
                             !preserveExistingShuffleOrder ||
-                                    currentUpcomingSongs.isEmpty() && repeatMode == RepeatMode.ALL
+                                    currentUpcomingSongs.isEmpty() && repeatMode == RepeatMode.ALL ||
+                                    shouldCreateNewShuffleCycle
                             )
 
         val orderedRemainingSongs = if (shouldCreateNewShuffleOrder) {
-            remainingContextSongs.shuffled()
+            shuffleSongs(remainingContextSongs)
         } else {
             remainingContextSongs
         }

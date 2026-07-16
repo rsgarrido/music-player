@@ -173,7 +173,9 @@ class PlaybackController(
 
         playSelectedSong(
             song = songToPlay,
-            playbackContext = playbackContext
+            playbackContext = playbackContext,
+            addCurrentToHistory = false,
+            clearForwardHistory = false
         )
     }
 
@@ -185,33 +187,24 @@ class PlaybackController(
     ) {
         val previousSong = currentSong
 
-        if (addCurrentToHistory && previousSong != null && previousSong.id != song.id) {
-            playbackNavigationHistory.addPreviousSong(previousSong)
-        }
+        if (playbackContext != null) {
+            playbackNavigationHistory.clearAll()
+        } else {
+            if (addCurrentToHistory && previousSong != null && previousSong.id != song.id) {
+                playbackNavigationHistory.addPreviousSong(previousSong)
+            }
 
-        if (clearForwardHistory) {
-            playbackNavigationHistory.clearForwardHistory()
+            if (clearForwardHistory) {
+                playbackNavigationHistory.clearForwardHistory()
+            }
         }
 
         playbackContextSongs = playbackContext ?: getPlaybackSourceSongs()
 
-        musicPlayer.playSong(
+        startSongPlayback(
             song = song,
             playlist = buildPlaybackPlaylist(song)
         )
-
-        currentSong = song
-        playbackHistoryRecorder.resetForNewSong()
-        isPlaying = true
-        currentPosition = 0
-        duration = song.duration.toInt()
-
-        musicPlayer.setShuffleEnabled(isShuffleEnabled)
-        musicPlayer.setRepeatMode(repeatMode)
-        applyReplayGainForCurrentSong()
-
-        startProgressUpdates()
-        savePlayerState()
     }
 
     fun togglePlayPause() {
@@ -231,11 +224,16 @@ class PlaybackController(
     }
 
     fun skipToPrevious() {
-        musicPlayer.skipToPrevious()
+        if (musicPlayer.getCurrentPosition() > PREVIOUS_RESTART_THRESHOLD_MS) {
+            seekTo(0)
+            return
+        }
+
+        playPreviousSong()
     }
 
     fun skipToNext() {
-        musicPlayer.skipToNext()
+        playNextSong()
     }
 
     fun seekTo(position: Int) {
@@ -448,15 +446,15 @@ class PlaybackController(
             return
         }
 
-        if (repeatMode == RepeatMode.ONE) {
-            currentSong?.let { song ->
-                playSelectedSong(
-                    song = song,
-                    playbackContext = playbackSourceSongs,
-                    addCurrentToHistory = false,
-                    clearForwardHistory = false
-                )
-            }
+        val nextHistorySong = playbackNavigationHistory.popNextSong()
+
+        if (nextHistorySong != null) {
+            playNavigationSong(
+                song = nextHistorySong,
+                orderedUpcomingSongs = upcomingSongs.removeFirstMatching(nextHistorySong),
+                addCurrentToHistory = true,
+                clearForwardHistory = false
+            )
             return
         }
 
@@ -464,81 +462,72 @@ class PlaybackController(
             return
         }
 
-        val nextSong = if (isShuffleEnabled) {
-            playbackNavigationHistory.popNextSong()
-                ?: getRandomSongExceptCurrent(playbackSourceSongs)
-        } else {
-            val currentIndex = playbackSourceSongs.indexOfFirst { song ->
-                song.id == currentSong?.id
-            }
+        val nextUpcomingSong = upcomingSongs.firstOrNull()
 
-            val nextIndex = if (currentIndex == -1 || currentIndex == playbackSourceSongs.lastIndex) {
-                0
-            } else {
-                currentIndex + 1
-            }
-
-            playbackSourceSongs[nextIndex]
+        if (nextUpcomingSong != null) {
+            playNavigationSong(
+                song = nextUpcomingSong,
+                orderedUpcomingSongs = upcomingSongs.drop(1),
+                addCurrentToHistory = true,
+                clearForwardHistory = true
+            )
+            return
         }
 
-        playSelectedSong(
-            song = nextSong,
-            playbackContext = playbackSourceSongs
+        if (repeatMode != RepeatMode.ALL) {
+            return
+        }
+
+        val repeatedUpcomingSongs = refreshUpcomingSongs(
+            startSong = currentSong ?: return,
+            preserveExistingShuffleOrder = false
+        )
+
+        val repeatedNextSong = repeatedUpcomingSongs.firstOrNull()
+
+        if (repeatedNextSong == null) {
+            currentSong?.let { song ->
+                playNavigationSong(
+                    song = song,
+                    orderedUpcomingSongs = emptyList(),
+                    addCurrentToHistory = false,
+                    clearForwardHistory = false
+                )
+            }
+            return
+        }
+
+        playNavigationSong(
+            song = repeatedNextSong,
+            orderedUpcomingSongs = repeatedUpcomingSongs.drop(1),
+            addCurrentToHistory = true,
+            clearForwardHistory = true
         )
     }
 
     private fun playPreviousSong() {
-        val playbackSourceSongs = getPlaybackSourceSongs()
+        val departedSong = currentSong ?: return
+        val previousSong = playbackNavigationHistory
+            .popPreviousSongAndPushCurrent(departedSong)
+            ?: return
 
-        if (playbackSourceSongs.isEmpty()) {
-            return
-        }
-
-        val previousSong = if (isShuffleEnabled) {
-            playbackNavigationHistory.popPreviousSongAndPushCurrent(currentSong)
-                ?: run {
-                    val currentIndex = playbackSourceSongs.indexOfFirst { song ->
-                        song.id == currentSong?.id
-                    }
-
-                    val previousIndex = if (currentIndex <= 0) {
-                        playbackSourceSongs.lastIndex
-                    } else {
-                        currentIndex - 1
-                    }
-
-                    playbackSourceSongs[previousIndex]
-                }
-        } else {
-            val currentIndex = playbackSourceSongs.indexOfFirst { song ->
-                song.id == currentSong?.id
-            }
-
-            val previousIndex = if (currentIndex <= 0) {
-                playbackSourceSongs.lastIndex
-            } else {
-                currentIndex - 1
-            }
-
-            playbackSourceSongs[previousIndex]
-        }
-
-        playSelectedSong(
+        playNavigationSong(
             song = previousSong,
-            playbackContext = playbackSourceSongs,
+            orderedUpcomingSongs = listOf(departedSong) + upcomingSongs,
             addCurrentToHistory = false,
             clearForwardHistory = false
         )
     }
 
     private fun playNextQueuedSong(): Boolean {
-        val playbackSourceSongs = getPlaybackSourceSongs()
         val nextQueuedSong = playbackQueueManager.removeNextQueuedSong()
             ?: return false
 
-        playSelectedSong(
+        playNavigationSong(
             song = nextQueuedSong,
-            playbackContext = playbackSourceSongs
+            orderedUpcomingSongs = upcomingSongs.removeFirstMatching(nextQueuedSong),
+            addCurrentToHistory = true,
+            clearForwardHistory = true
         )
 
         savePlayerState()
@@ -552,9 +541,9 @@ class PlaybackController(
         when (repeatMode) {
             RepeatMode.ONE -> {
                 currentSong?.let { song ->
-                    playSelectedSong(
+                    playNavigationSong(
                         song = song,
-                        playbackContext = playbackSourceSongs,
+                        orderedUpcomingSongs = upcomingSongs,
                         addCurrentToHistory = false,
                         clearForwardHistory = false
                     )
@@ -597,6 +586,11 @@ class PlaybackController(
             return
         }
 
+        currentSong?.let { previousSong ->
+            playbackNavigationHistory.addPreviousSong(previousSong)
+            playbackNavigationHistory.clearForwardHistory()
+        }
+
         currentSong = newSong
         playbackHistoryRecorder.resetForNewSong()
         currentPosition = musicPlayer.getCurrentPosition()
@@ -614,18 +608,6 @@ class PlaybackController(
         savePlayerState()
     }
 
-    private fun getRandomSongExceptCurrent(playbackSourceSongs: List<Song>): Song {
-        val availableSongs = playbackSourceSongs.filter { song ->
-            song.id != currentSong?.id
-        }
-
-        return if (availableSongs.isNotEmpty()) {
-            availableSongs[Random.nextInt(availableSongs.size)]
-        } else {
-            playbackSourceSongs.first()
-        }
-    }
-
     private fun startProgressUpdates() {
         progressHandler.removeCallbacks(progressRunnable)
         progressHandler.post(progressRunnable)
@@ -638,6 +620,65 @@ class PlaybackController(
         )
 
         return listOf(startSong) + refreshedUpcomingSongs
+    }
+
+    private fun playNavigationSong(
+        song: Song,
+        orderedUpcomingSongs: List<Song>,
+        addCurrentToHistory: Boolean,
+        clearForwardHistory: Boolean
+    ) {
+        val previousSong = currentSong
+
+        if (addCurrentToHistory && previousSong != null && previousSong.id != song.id) {
+            playbackNavigationHistory.addPreviousSong(previousSong)
+        }
+
+        if (clearForwardHistory) {
+            playbackNavigationHistory.clearForwardHistory()
+        }
+
+        upcomingSongs = orderedUpcomingSongs
+
+        startSongPlayback(
+            song = song,
+            playlist = listOf(song) + orderedUpcomingSongs
+        )
+    }
+
+    private fun startSongPlayback(
+        song: Song,
+        playlist: List<Song>
+    ) {
+        currentSong = song
+        playbackHistoryRecorder.resetForNewSong()
+        isPlaying = true
+        currentPosition = 0
+        duration = song.duration.toInt()
+
+        musicPlayer.playSong(
+            song = song,
+            playlist = playlist
+        )
+
+        musicPlayer.setShuffleEnabled(isShuffleEnabled)
+        musicPlayer.setRepeatMode(repeatMode)
+        applyReplayGainForCurrentSong()
+
+        startProgressUpdates()
+        savePlayerState()
+    }
+
+    private fun List<Song>.removeFirstMatching(song: Song): List<Song> {
+        val matchingIndex = indexOfFirst { candidate ->
+            candidate.id == song.id
+        }
+
+        if (matchingIndex == -1) {
+            return this
+        }
+
+        return take(matchingIndex) + drop(matchingIndex + 1)
     }
 
     private fun refreshUpcomingSongs(
@@ -759,5 +800,9 @@ class PlaybackController(
         } else {
             librarySongs
         }
+    }
+
+    companion object {
+        private const val PREVIOUS_RESTART_THRESHOLD_MS = 3_000
     }
 }
