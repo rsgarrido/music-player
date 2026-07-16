@@ -4,19 +4,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.theme.darken
 import com.example.cdplaya.ui.player.theme.lighten
 
-internal fun Modifier.rackBevel(pressed: Boolean = false): Modifier = drawWithContent {
+@Composable
+internal fun Modifier.rackBevel(pressed: Boolean = false): Modifier {
+    val colors = LocalRetroRackPalette.current
+    return drawWithContent {
     drawContent()
     val stroke = 1f
-    val topLeft = if (pressed) RackShadow else RackHighlight
-    val bottomRight = if (pressed) RackHighlight else RackShadow
+    val topLeft = if (pressed) colors.rackShadow else colors.rackHighlight
+    val bottomRight = if (pressed) colors.rackHighlight else colors.rackShadow
     drawLine(topLeft, Offset.Zero, Offset(size.width, 0f), stroke)
     drawLine(topLeft, Offset.Zero, Offset(0f, size.height), stroke)
     drawLine(bottomRight, Offset(0f, size.height), Offset(size.width, size.height), stroke)
     drawLine(bottomRight, Offset(size.width, 0f), Offset(size.width, size.height), stroke)
+    }
 }
 
 internal val RetroRackDefaultTokens = PlayerThemeTokens(
@@ -55,18 +61,25 @@ internal class RetroRackPalette private constructor(tokens: PlayerThemeTokens) {
 
 internal val RetroRackDefaultPalette = RetroRackPalette.from(RetroRackDefaultTokens)
 
-internal val RackBackground = RetroRackDefaultPalette.rackBackground
-internal val PanelDark = RetroRackDefaultPalette.panelDark
-internal val PanelHeader = RetroRackDefaultPalette.panelHeader
-internal val PanelHeaderEnd = RetroRackDefaultPalette.panelHeaderEnd
-internal val DisplayBlack = RetroRackDefaultPalette.displayBlack
-internal val LcdGreen = RetroRackDefaultPalette.lcdGreen
-internal val LcdGreenDim = RetroRackDefaultPalette.lcdGreenDim
-internal val ControlSilver = RetroRackDefaultPalette.controlSilver
-internal val ButtonFace = RetroRackDefaultPalette.buttonFace
-internal val ButtonPressed = RetroRackDefaultPalette.buttonPressed
-internal val ActiveButton = RetroRackDefaultPalette.activeButton
-internal val SelectedRow = RetroRackDefaultPalette.selectedRow
-internal val RackHighlight = RetroRackDefaultPalette.rackHighlight
-internal val RackShadow = RetroRackDefaultPalette.rackShadow
-internal val InactiveTrack = RetroRackDefaultPalette.inactiveTrack
+internal val LocalRetroRackPalette = staticCompositionLocalOf {
+    RetroRackDefaultPalette
+}
+
+internal val RetroRackColors: RetroRackPalette
+    @Composable get() = LocalRetroRackPalette.current
+
+internal val RackBackground @Composable get() = RetroRackColors.rackBackground
+internal val PanelDark @Composable get() = RetroRackColors.panelDark
+internal val PanelHeader @Composable get() = RetroRackColors.panelHeader
+internal val PanelHeaderEnd @Composable get() = RetroRackColors.panelHeaderEnd
+internal val DisplayBlack @Composable get() = RetroRackColors.displayBlack
+internal val LcdGreen @Composable get() = RetroRackColors.lcdGreen
+internal val LcdGreenDim @Composable get() = RetroRackColors.lcdGreenDim
+internal val ControlSilver @Composable get() = RetroRackColors.controlSilver
+internal val ButtonFace @Composable get() = RetroRackColors.buttonFace
+internal val ButtonPressed @Composable get() = RetroRackColors.buttonPressed
+internal val ActiveButton @Composable get() = RetroRackColors.activeButton
+internal val SelectedRow @Composable get() = RetroRackColors.selectedRow
+internal val RackHighlight @Composable get() = RetroRackColors.rackHighlight
+internal val RackShadow @Composable get() = RetroRackColors.rackShadow
+internal val InactiveTrack @Composable get() = RetroRackColors.inactiveTrack

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -105,7 +106,12 @@ internal class PocketFlipPalette private constructor(tokens: PlayerThemeTokens) 
 internal val PocketFlipDefaultPalette = PocketFlipPalette.from(PocketFlipDefaultTokens)
 
 // Kept as the call-site name for this staged migration; its value is now a derived palette.
-internal val PocketFlipColors = PocketFlipDefaultPalette
+internal val LocalPocketFlipPalette = staticCompositionLocalOf {
+    PocketFlipDefaultPalette
+}
+
+internal val PocketFlipColors: PocketFlipPalette
+    @Composable get() = LocalPocketFlipPalette.current
 
 private object PocketFlipDecorativeColors {
     val shellTop = Color(0xFFB3414C)
@@ -136,12 +142,14 @@ internal fun Modifier.pocketFlipRoundButtonFinish(isPressed: Boolean): Modifier 
         )
     }
 
-internal fun Modifier.pocketFlipActionPlateFinish(): Modifier =
-    drawWithContent {
+@Composable
+internal fun Modifier.pocketFlipActionPlateFinish(): Modifier {
+    val colors = PocketFlipColors
+    return drawWithContent {
         drawContent()
         val inset = 1.dp.toPx()
         drawRoundRect(
-            color = PocketFlipColors.controlGroove,
+            color = colors.controlGroove,
             topLeft = Offset(inset, inset),
             size = androidx.compose.ui.geometry.Size(
                 width = size.width - inset * 2f,
@@ -151,13 +159,16 @@ internal fun Modifier.pocketFlipActionPlateFinish(): Modifier =
             style = Stroke(width = 1.5.dp.toPx())
         )
     }
+}
 
-internal fun Modifier.pocketFlipUtilitySwitchFinish(isPressed: Boolean): Modifier =
-    drawWithContent {
+@Composable
+internal fun Modifier.pocketFlipUtilitySwitchFinish(isPressed: Boolean): Modifier {
+    val colors = PocketFlipColors
+    return drawWithContent {
         drawContent()
         val inset = 1.dp.toPx()
         drawRoundRect(
-            color = if (isPressed) PocketFlipColors.utilityPressed else PocketFlipColors.utilityEdge,
+            color = if (isPressed) colors.utilityPressed else colors.utilityEdge,
             topLeft = Offset(inset, inset),
             size = androidx.compose.ui.geometry.Size(
                 width = size.width - inset * 2f,
@@ -167,37 +178,43 @@ internal fun Modifier.pocketFlipUtilitySwitchFinish(isPressed: Boolean): Modifie
             style = Stroke(width = 1.dp.toPx())
         )
     }
+}
 
-internal fun Modifier.pocketFlipShellFinish(): Modifier =
-    background(
+@Composable
+internal fun Modifier.pocketFlipShellFinish(): Modifier {
+    val colors = PocketFlipColors
+    return background(
         brush = Brush.verticalGradient(
             colors = listOf(
-                PocketFlipColors.shellTop,
-                PocketFlipColors.shell,
-                PocketFlipColors.shellBottom
+                colors.shellTop,
+                colors.shell,
+                colors.shellBottom
             )
         )
     ).drawWithContent {
         drawContent()
         val edge = 1.dp.toPx()
         drawLine(
-            color = PocketFlipColors.shellHighlight,
+            color = colors.shellHighlight,
             start = Offset(0f, edge),
             end = Offset(size.width, edge),
             strokeWidth = edge
         )
         drawLine(
-            color = PocketFlipColors.shellShadow,
+            color = colors.shellShadow,
             start = Offset(0f, size.height - edge),
             end = Offset(size.width, size.height - edge),
             strokeWidth = edge
         )
     }
+}
 
-internal fun Modifier.pocketFlipBezelFinish(cornerRadius: Dp): Modifier =
-    background(
+@Composable
+internal fun Modifier.pocketFlipBezelFinish(cornerRadius: Dp): Modifier {
+    val colors = PocketFlipColors
+    return background(
         brush = Brush.verticalGradient(
-            colors = listOf(Color(0xFF24242A), PocketFlipColors.bezel)
+            colors = listOf(Color(0xFF24242A), colors.bezel)
         )
     ).drawWithContent {
         drawContent()
@@ -213,6 +230,7 @@ internal fun Modifier.pocketFlipBezelFinish(cornerRadius: Dp): Modifier =
             strokeWidth = 1.dp.toPx()
         )
     }
+}
 
 internal fun Modifier.pocketFlipLcdFrameFinish(cornerRadius: Dp): Modifier =
     drawWithContent {

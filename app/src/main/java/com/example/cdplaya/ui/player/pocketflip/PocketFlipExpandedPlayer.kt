@@ -5,11 +5,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 
 @Composable
 fun PocketFlipExpandedPlayer(
@@ -28,11 +31,14 @@ fun PocketFlipExpandedPlayer(
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit
+    onToggleFavoriteClick: (Song) -> Unit,
+    tokens: PlayerThemeTokens = PocketFlipDefaultTokens
 ) {
+    val palette = remember(tokens) { PocketFlipPalette.from(tokens) }
     val configuration = LocalConfiguration.current
     val compact = configuration.screenHeightDp < 700 || configuration.screenWidthDp < 360
 
+    CompositionLocalProvider(LocalPocketFlipPalette provides palette) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -72,5 +78,6 @@ fun PocketFlipExpandedPlayer(
             compact = compact,
             modifier = Modifier.weight(if (compact) 0.46f else 0.43f)
         )
+    }
     }
 }

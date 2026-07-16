@@ -51,6 +51,7 @@ internal fun PocketCassetteWindow(
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val colors = PocketCassetteColors
     val reelRotation = remember { Animatable(0f) }
     val playbackProgress = if (duration > 0) {
         (currentPosition.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
@@ -158,7 +159,7 @@ internal fun PocketCassetteWindow(
 
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     drawRoundRect(
-                        color = PocketCassetteColors.windowEdge,
+                        color = colors.windowEdge,
                         style = Stroke(width = 2.dp.toPx())
                     )
                     drawLine(
@@ -180,6 +181,7 @@ private fun PocketCassetteMechanism(
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val colors = PocketCassetteColors
     Canvas(modifier = modifier) {
         val leftCenter = Offset(size.width * 0.29f, size.height * 0.44f)
         val rightCenter = Offset(size.width * 0.71f, size.height * 0.44f)
@@ -195,7 +197,7 @@ private fun PocketCassetteMechanism(
                 (fullTapeRadius - emptyTapeRadius) * playbackProgress
 
         drawLine(
-            color = PocketCassetteColors.tape,
+            color = colors.tape,
             start = Offset(
                 leftCenter.x - leftTapeRadius * 0.88f,
                 leftCenter.y + leftTapeRadius * 0.58f
@@ -204,13 +206,13 @@ private fun PocketCassetteMechanism(
             strokeWidth = 3.dp.toPx()
         )
         drawLine(
-            color = PocketCassetteColors.tape,
+            color = colors.tape,
             start = Offset(leftCenter.x - radius * 0.32f, rollerY),
             end = Offset(rightCenter.x + radius * 0.32f, rollerY),
             strokeWidth = 3.dp.toPx()
         )
         drawLine(
-            color = PocketCassetteColors.tape,
+            color = colors.tape,
             start = Offset(rightCenter.x + radius * 0.32f, rollerY),
             end = Offset(
                 rightCenter.x + rightTapeRadius * 0.88f,
@@ -224,12 +226,12 @@ private fun PocketCassetteMechanism(
             Offset(rightCenter.x + radius * 0.28f, rollerY)
         ).forEach { rollerCenter ->
             drawCircle(
-                color = PocketCassetteColors.reelHub,
+                color = colors.reelHub,
                 radius = rollerRadius,
                 center = rollerCenter
             )
             drawCircle(
-                color = PocketCassetteColors.reel,
+                color = colors.reel,
                 radius = rollerRadius,
                 center = rollerCenter,
                 style = Stroke(width = 1.dp.toPx())
@@ -240,23 +242,25 @@ private fun PocketCassetteMechanism(
             center = leftCenter,
             radius = radius,
             tapeRadius = leftTapeRadius,
-            rotation = rotation
+            rotation = rotation,
+            colors = colors
         )
         drawReel(
             center = rightCenter,
             radius = radius,
             tapeRadius = rightTapeRadius,
-            rotation = rotation
+            rotation = rotation,
+            colors = colors
         )
 
         val headWidth = radius * 0.52f
         drawRect(
-            color = PocketCassetteColors.reelHub,
+            color = colors.reelHub,
             topLeft = Offset(size.width / 2f - headWidth / 2f, rollerY - radius * 0.08f),
             size = Size(headWidth, radius * 0.18f)
         )
         drawLine(
-            color = PocketCassetteColors.orange.copy(alpha = 0.72f),
+            color = colors.orange.copy(alpha = 0.72f),
             start = Offset(size.width / 2f - headWidth * 0.35f, rollerY + radius * 0.02f),
             end = Offset(size.width / 2f + headWidth * 0.35f, rollerY + radius * 0.02f),
             strokeWidth = 1.dp.toPx()
@@ -268,7 +272,8 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawReel(
     center: Offset,
     radius: Float,
     tapeRadius: Float,
-    rotation: Float
+    rotation: Float,
+    colors: PocketCassettePalette
 ) {
     drawCircle(
         color = Color.Black.copy(alpha = 0.58f),
@@ -276,7 +281,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawReel(
         center = center
     )
     drawCircle(
-        color = PocketCassetteColors.tape.copy(alpha = 0.9f),
+        color = colors.tape.copy(alpha = 0.9f),
         radius = tapeRadius,
         center = center
     )
@@ -287,18 +292,18 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawReel(
         style = Stroke(width = 1.dp.toPx())
     )
     drawCircle(
-        color = PocketCassetteColors.reel.copy(alpha = 0.24f),
+        color = colors.reel.copy(alpha = 0.24f),
         radius = radius,
         center = center
     )
     drawCircle(
-        color = PocketCassetteColors.reel,
+        color = colors.reel,
         radius = radius,
         center = center,
         style = Stroke(width = 2.dp.toPx())
     )
     drawCircle(
-        color = PocketCassetteColors.reelHub,
+        color = colors.reelHub,
         radius = radius * 0.31f,
         center = center
     )
@@ -309,7 +314,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawReel(
             val startRadius = radius * 0.37f
             val endRadius = radius * 0.78f
             drawLine(
-                color = PocketCassetteColors.reel,
+                color = colors.reel,
                 start = Offset(
                     x = center.x + cos(angle).toFloat() * startRadius,
                     y = center.y + sin(angle).toFloat() * startRadius
@@ -323,7 +328,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawReel(
         }
     }
     drawCircle(
-        color = PocketCassetteColors.window,
+        color = colors.window,
         radius = radius * 0.13f,
         center = center
     )
@@ -337,6 +342,7 @@ private fun PocketCassetteTrackLabel(
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val colors = PocketCassetteColors
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -344,7 +350,7 @@ private fun PocketCassetteTrackLabel(
             .drawWithContent {
                 drawContent()
                 drawLine(
-                    color = PocketCassetteColors.windowText.copy(alpha = 0.28f),
+                    color = colors.windowText.copy(alpha = 0.28f),
                     start = Offset.Zero,
                     end = Offset(size.width, 0f),
                     strokeWidth = 1.dp.toPx()

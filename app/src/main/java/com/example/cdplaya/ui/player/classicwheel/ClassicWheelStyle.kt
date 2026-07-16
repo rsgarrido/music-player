@@ -1,6 +1,8 @@
 package com.example.cdplaya.ui.player.classicwheel
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.theme.darken
 import com.example.cdplaya.ui.player.theme.lighten
@@ -35,7 +37,12 @@ internal class ClassicWheelPalette private constructor(tokens: PlayerThemeTokens
 internal val ClassicWheelDefaultPalette =
     ClassicWheelPalette.from(ClassicWheelDefaultTokens)
 
-internal val ClassicWheelColors = ClassicWheelDefaultPalette
+internal val LocalClassicWheelPalette = staticCompositionLocalOf {
+    ClassicWheelDefaultPalette
+}
+
+internal val ClassicWheelColors: ClassicWheelPalette
+    @Composable get() = LocalClassicWheelPalette.current
 
 private object ClassicWheelDecorativeColors {
     // Kept stable so physical-device customization does not recolor the display UI.

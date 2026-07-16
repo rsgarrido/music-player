@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -72,7 +73,12 @@ internal val PocketCassetteDefaultPalette =
     PocketCassettePalette.from(PocketCassetteDefaultTokens)
 
 // Kept as the call-site name for this staged migration; its value is now a derived palette.
-internal val PocketCassetteColors = PocketCassetteDefaultPalette
+internal val LocalPocketCassettePalette = staticCompositionLocalOf {
+    PocketCassetteDefaultPalette
+}
+
+internal val PocketCassetteColors: PocketCassettePalette
+    @Composable get() = LocalPocketCassettePalette.current
 
 private object PocketCassetteDecorativeColors {
     val tape = Color(0xFF4B2F24)
@@ -81,17 +87,19 @@ private object PocketCassetteDecorativeColors {
     val statusGreen = Color(0xFF8EBA72)
 }
 
-internal fun Modifier.pocketCassetteShellFinish(): Modifier =
-    background(
+@Composable
+internal fun Modifier.pocketCassetteShellFinish(): Modifier {
+    val colors = PocketCassetteColors
+    return background(
         brush = Brush.horizontalGradient(
             colorStops = arrayOf(
-                0f to PocketCassetteColors.silverDark,
-                0.025f to PocketCassetteColors.silverLight,
-                0.22f to PocketCassetteColors.silver,
-                0.52f to PocketCassetteColors.silverLight,
-                0.78f to PocketCassetteColors.silverMid,
-                0.975f to PocketCassetteColors.silverLight,
-                1f to PocketCassetteColors.silverDark
+                0f to colors.silverDark,
+                0.025f to colors.silverLight,
+                0.22f to colors.silver,
+                0.52f to colors.silverLight,
+                0.78f to colors.silverMid,
+                0.975f to colors.silverLight,
+                1f to colors.silverDark
             )
         )
     ).drawWithContent {
@@ -112,7 +120,7 @@ internal fun Modifier.pocketCassetteShellFinish(): Modifier =
             y += 3.dp.toPx()
         }
         drawLine(
-            color = PocketCassetteColors.highlight,
+            color = colors.highlight,
             start = Offset(hairline, 0f),
             end = Offset(hairline, size.height),
             strokeWidth = hairline
@@ -124,14 +132,17 @@ internal fun Modifier.pocketCassetteShellFinish(): Modifier =
             strokeWidth = hairline
         )
     }
+}
 
-internal fun Modifier.pocketCassetteBluePanelFinish(radius: Dp): Modifier =
-    background(
+@Composable
+internal fun Modifier.pocketCassetteBluePanelFinish(radius: Dp): Modifier {
+    val colors = PocketCassetteColors
+    return background(
         brush = Brush.verticalGradient(
             colors = listOf(
-                PocketCassetteColors.blueLight,
-                PocketCassetteColors.blue,
-                PocketCassetteColors.blueDark
+                colors.blueLight,
+                colors.blue,
+                colors.blueDark
             )
         ),
         shape = RoundedCornerShape(radius)
@@ -155,15 +166,19 @@ internal fun Modifier.pocketCassetteBluePanelFinish(radius: Dp): Modifier =
             strokeWidth = 1.dp.toPx()
         )
     }
+}
 
+@Composable
 internal fun Modifier.pocketCassetteBevel(
     radius: Dp,
     pressed: Boolean = false
-): Modifier = drawWithContent {
+): Modifier {
+    val colors = PocketCassetteColors
+    return drawWithContent {
     drawContent()
     val inset = 1.dp.toPx()
     drawRoundRect(
-        color = if (pressed) PocketCassetteColors.buttonEdge else Color.White.copy(alpha = 0.25f),
+        color = if (pressed) colors.buttonEdge else Color.White.copy(alpha = 0.25f),
         topLeft = Offset(inset, inset),
         size = androidx.compose.ui.geometry.Size(
             width = size.width - inset * 2,
@@ -178,6 +193,7 @@ internal fun Modifier.pocketCassetteBevel(
         end = Offset(size.width - radius.toPx(), size.height - inset),
         strokeWidth = 1.5.dp.toPx()
     )
+    }
 }
 
 @Composable
@@ -185,13 +201,14 @@ internal fun PocketCassetteScrew(
     modifier: Modifier = Modifier,
     size: Dp = 12.dp
 ) {
+    val colors = PocketCassetteColors
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.matchParentSize()) {
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        PocketCassetteColors.silverLight,
-                        PocketCassetteColors.silverDark
+                        colors.silverLight,
+                        colors.silverDark
                     )
                 )
             )
@@ -200,7 +217,7 @@ internal fun PocketCassetteScrew(
                 style = Stroke(width = 1.dp.toPx())
             )
             drawLine(
-                color = PocketCassetteColors.shellInk.copy(alpha = 0.75f),
+                color = colors.shellInk.copy(alpha = 0.75f),
                 start = Offset(this.size.width * 0.25f, this.size.height * 0.56f),
                 end = Offset(this.size.width * 0.75f, this.size.height * 0.44f),
                 strokeWidth = 1.dp.toPx()

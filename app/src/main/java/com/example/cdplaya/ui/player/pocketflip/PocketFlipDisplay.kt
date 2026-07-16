@@ -169,6 +169,7 @@ private fun PocketFlipDisplayHeader(
 
 @Composable
 private fun PocketFlipBattery(compact: Boolean) {
+    val colors = PocketFlipColors
     Canvas(
         modifier = Modifier.size(
             width = if (compact) 29.dp else 33.dp,
@@ -179,14 +180,14 @@ private fun PocketFlipBattery(compact: Boolean) {
         val bodyWidth = size.width - capWidth - 1.dp.toPx()
         val corner = CornerRadius(2.dp.toPx())
         drawRoundRect(
-            color = PocketFlipColors.bezelTextMuted,
+            color = colors.bezelTextMuted,
             topLeft = Offset.Zero,
             size = Size(bodyWidth, size.height),
             cornerRadius = corner,
             style = Stroke(width = 1.dp.toPx())
         )
         drawRoundRect(
-            color = PocketFlipColors.bezelTextMuted,
+            color = colors.bezelTextMuted,
             topLeft = Offset(bodyWidth + 1.dp.toPx(), size.height * 0.3f),
             size = Size(capWidth, size.height * 0.4f),
             cornerRadius = CornerRadius(1.dp.toPx())
@@ -195,7 +196,7 @@ private fun PocketFlipBattery(compact: Boolean) {
         val segmentWidth = (bodyWidth - gap * 4f) / 3f
         repeat(3) { index ->
             drawRect(
-                color = PocketFlipColors.screenAccent,
+                color = colors.screenAccent,
                 topLeft = Offset(
                     x = gap + index * (segmentWidth + gap),
                     y = gap
@@ -331,6 +332,7 @@ private fun PocketFlipSeekBar(
     onSeekChange: (Int) -> Unit,
     compact: Boolean
 ) {
+    val colors = PocketFlipColors
     val safeDuration = duration.coerceAtLeast(1)
     val safePosition = currentPosition.coerceIn(0, safeDuration)
     val progress = safePosition.toFloat() / safeDuration.toFloat()
@@ -381,7 +383,7 @@ private fun PocketFlipSeekBar(
             val segmentWidth = (usableWidth - segmentGap * (segmentCount - 1)) / segmentCount
 
             drawRoundRect(
-                color = PocketFlipColors.seekHousing,
+                color = colors.seekHousing,
                 topLeft = Offset(0f, housingTop),
                 size = Size(size.width, housingHeight),
                 cornerRadius = CornerRadius(3.dp.toPx())
@@ -390,9 +392,9 @@ private fun PocketFlipSeekBar(
                 val segmentProgress = (index + 1).toFloat() / segmentCount
                 drawRect(
                     color = if (segmentProgress <= progress) {
-                        PocketFlipColors.screenAccent
+                        colors.screenAccent
                     } else {
-                        PocketFlipColors.seekInactive
+                        colors.seekInactive
                     },
                     topLeft = Offset(
                         x = inset + index * (segmentWidth + segmentGap),
@@ -407,13 +409,13 @@ private fun PocketFlipSeekBar(
             val thumbX = (progress * size.width - thumbWidth / 2f)
                 .coerceIn(0f, size.width - thumbWidth)
             drawRoundRect(
-                color = PocketFlipColors.seekThumb,
+                color = colors.seekThumb,
                 topLeft = Offset(thumbX, (size.height - thumbHeight) / 2f),
                 size = Size(thumbWidth, thumbHeight),
                 cornerRadius = CornerRadius(1.dp.toPx())
             )
             drawLine(
-                color = PocketFlipColors.seekThumbHighlight,
+                color = colors.seekThumbHighlight,
                 start = Offset(thumbX + 1.dp.toPx(), (size.height - thumbHeight) / 2f),
                 end = Offset(thumbX + 1.dp.toPx(), (size.height + thumbHeight) / 2f),
                 strokeWidth = 1.dp.toPx()

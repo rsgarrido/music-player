@@ -102,6 +102,7 @@ internal fun PocketFlipLcdMeter(
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val colors = PocketFlipColors
     val songKey = remember(currentSong?.id, currentSong?.title, currentSong?.artist) {
         buildMeterKey(currentSong)
     }
@@ -122,7 +123,7 @@ internal fun PocketFlipLcdMeter(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(PocketFlipColors.lcdBand, RoundedCornerShape(2.dp))
+            .background(colors.lcdBand, RoundedCornerShape(2.dp))
             .padding(horizontal = 4.dp, vertical = 2.dp),
         verticalArrangement = Arrangement.spacedBy(1.dp)
     ) {
@@ -132,7 +133,7 @@ internal fun PocketFlipLcdMeter(
         ) {
             Text(
                 text = "TRACK DATA",
-                color = PocketFlipColors.screenTextMuted,
+                color = colors.screenTextMuted,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
                 fontSize = 7.sp,
@@ -142,9 +143,9 @@ internal fun PocketFlipLcdMeter(
             Text(
                 text = if (isPlaying) "RUN" else "HOLD",
                 color = if (isPlaying) {
-                    PocketFlipColors.screenAccent
+                    colors.screenAccent
                 } else {
-                    PocketFlipColors.screenTextMuted
+                    colors.screenTextMuted
                 },
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
@@ -161,11 +162,17 @@ internal fun PocketFlipLcdMeter(
             val animatedPhase = phase.value
             val firstLevel = meterLevel(songKey, channel = 0, phase = animatedPhase)
             val secondLevel = meterLevel(songKey, channel = 1, phase = animatedPhase)
-            drawSegmentRow(level = firstLevel, top = 0f, height = size.height * 0.42f)
+            drawSegmentRow(
+                level = firstLevel,
+                top = 0f,
+                height = size.height * 0.42f,
+                colors = colors
+            )
             drawSegmentRow(
                 level = secondLevel,
                 top = size.height * 0.58f,
-                height = size.height * 0.42f
+                height = size.height * 0.42f,
+                colors = colors
             )
         }
     }
@@ -173,12 +180,13 @@ internal fun PocketFlipLcdMeter(
 
 @Composable
 internal fun PocketFlipLcdOverlay(modifier: Modifier = Modifier) {
+    val colors = PocketFlipColors
     Canvas(modifier = modifier) {
-        drawRect(color = PocketFlipColors.lcdTint)
+        drawRect(color = colors.lcdTint)
         drawRect(
             brush = Brush.radialGradient(
                 colorStops = arrayOf(
-                    0f to PocketFlipColors.lcdGlow,
+                    0f to colors.lcdGlow,
                     0.72f to Color.Transparent,
                     1f to Color.Transparent
                 ),
@@ -191,7 +199,7 @@ internal fun PocketFlipLcdOverlay(modifier: Modifier = Modifier) {
         var x = pixelStep
         while (x < size.width) {
             drawLine(
-                color = PocketFlipColors.lcdGrid,
+                color = colors.lcdGrid,
                 start = Offset(x, 0f),
                 end = Offset(x, size.height),
                 strokeWidth = 1f
@@ -203,7 +211,7 @@ internal fun PocketFlipLcdOverlay(modifier: Modifier = Modifier) {
         var y = scanlineStep
         while (y < size.height) {
             drawLine(
-                color = PocketFlipColors.lcdScanline,
+                color = colors.lcdScanline,
                 start = Offset(0f, y),
                 end = Offset(size.width, y),
                 strokeWidth = 1f
@@ -227,8 +235,9 @@ internal fun PocketFlipLcdOverlay(modifier: Modifier = Modifier) {
 
 @Composable
 internal fun PocketFlipArtworkLcdTreatment(modifier: Modifier = Modifier) {
+    val colors = PocketFlipColors
     Canvas(modifier = modifier) {
-        drawRect(color = PocketFlipColors.artworkLcdTint)
+        drawRect(color = colors.artworkLcdTint)
         drawRect(
             brush = Brush.radialGradient(
                 colorStops = arrayOf(
@@ -246,7 +255,8 @@ internal fun PocketFlipArtworkLcdTreatment(modifier: Modifier = Modifier) {
 private fun DrawScope.drawSegmentRow(
     level: Float,
     top: Float,
-    height: Float
+    height: Float,
+    colors: PocketFlipPalette
 ) {
     val segmentCount = 24
     val gap = 1.dp.toPx()
@@ -256,9 +266,9 @@ private fun DrawScope.drawSegmentRow(
     repeat(segmentCount) { index ->
         drawRect(
             color = if (index < litSegments) {
-                PocketFlipColors.screenAccent.copy(alpha = 0.86f)
+                colors.screenAccent.copy(alpha = 0.86f)
             } else {
-                PocketFlipColors.seekInactive.copy(alpha = 0.48f)
+                colors.seekInactive.copy(alpha = 0.48f)
             },
             topLeft = Offset(index * (segmentWidth + gap), top),
             size = Size(segmentWidth, height)
