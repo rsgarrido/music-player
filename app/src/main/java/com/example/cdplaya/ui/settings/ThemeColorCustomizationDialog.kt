@@ -1,7 +1,6 @@
 package com.example.cdplaya.ui.settings
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -28,7 +26,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.ui.player.theme.PlayerThemeColorPreset
@@ -133,22 +130,33 @@ private fun ThemeColorOptionRow(
             }
         }
 
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 10.dp)
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(top = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            presets.forEach { preset ->
-                ColorSwatchButton(
-                    preset = preset,
-                    optionName = option.displayName,
-                    isSelected = preset.color == currentColor,
-                    onClick = {
-                        onColorSelected(preset.color)
+            presets.chunked(SWATCHES_PER_ROW).forEach { rowPresets ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rowPresets.forEach { preset ->
+                        ColorSwatchButton(
+                            preset = preset,
+                            optionName = option.displayName,
+                            isSelected = preset.color == currentColor,
+                            onClick = {
+                                onColorSelected(preset.color)
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
                     }
-                )
+
+                    repeat(SWATCHES_PER_ROW - rowPresets.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
     }
@@ -159,10 +167,11 @@ private fun ColorSwatchButton(
     preset: PlayerThemeColorPreset,
     optionName: String,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = Modifier.width(58.dp),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Surface(
@@ -190,8 +199,7 @@ private fun ColorSwatchButton(
         Text(
             text = preset.name,
             style = MaterialTheme.typography.labelSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            maxLines = 2,
             textAlign = TextAlign.Center
         )
     }
@@ -204,3 +212,5 @@ private fun PlayerThemeTokens.colorFor(field: PlayerThemeTokenField): Color? = w
     PlayerThemeTokenField.DISPLAY_TEXT -> displayTextColor
     PlayerThemeTokenField.SECONDARY_ACCENT -> secondaryAccentColor
 }
+
+private const val SWATCHES_PER_ROW = 3
