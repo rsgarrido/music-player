@@ -55,14 +55,14 @@ fun ClassicWheelAlbumCarouselDisplay(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .background(Color(0xFFF7F7F2))
+                .background(ClassicWheelColors.screenBackground)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = "No albums found",
-                color = Color.Black,
+                color = ClassicWheelColors.screenText,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -71,7 +71,7 @@ fun ClassicWheelAlbumCarouselDisplay(
 
             Text(
                 text = "Check your library",
-                color = Color.DarkGray,
+                color = ClassicWheelColors.screenTextMuted,
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -91,7 +91,7 @@ fun ClassicWheelAlbumCarouselDisplay(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF7F7F2))
+            .background(ClassicWheelColors.screenBackground)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -242,7 +242,7 @@ fun ClassicWheelAlbumCarouselDisplay(
 
         Text(
             text = selectedItem.title,
-            color = Color.Black,
+            color = ClassicWheelColors.screenText,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
@@ -252,7 +252,7 @@ fun ClassicWheelAlbumCarouselDisplay(
 
         Text(
             text = selectedItem.artist,
-            color = Color.DarkGray,
+            color = ClassicWheelColors.screenTextMuted,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

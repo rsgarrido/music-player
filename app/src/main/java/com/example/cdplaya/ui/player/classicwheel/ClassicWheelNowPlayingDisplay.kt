@@ -99,7 +99,7 @@ fun ClassicWheelNowPlayingDisplay(
                 Text(
                     text = currentSong?.title?.ifBlank { "Unknown Title" }
                         ?: "No song selected",
-                    color = Color.Black,
+                    color = ClassicWheelColors.screenText,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
@@ -111,7 +111,7 @@ fun ClassicWheelNowPlayingDisplay(
                 Text(
                     text = currentSong?.artist?.ifBlank { "Unknown Artist" }
                         ?: "Choose a song",
-                    color = Color.Black,
+                    color = ClassicWheelColors.screenText,
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -120,7 +120,7 @@ fun ClassicWheelNowPlayingDisplay(
                 Text(
                     text = currentSong?.album?.ifBlank { "Unknown Album" }
                         ?: "",
-                    color = Color.DarkGray,
+                    color = ClassicWheelColors.screenTextMuted,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -139,9 +139,9 @@ fun ClassicWheelNowPlayingDisplay(
                             imageVector = Icons.Filled.Shuffle,
                             contentDescription = "Shuffle",
                             tint = if (isShuffleEnabled) {
-                                Color(0xFF2F80D8)
+                                ClassicWheelColors.selectionAccent
                             } else {
-                                Color.Black
+                                ClassicWheelColors.screenText
                             },
                             modifier = Modifier.size(28.dp)
                         )
@@ -159,9 +159,9 @@ fun ClassicWheelNowPlayingDisplay(
                             },
                             contentDescription = "Repeat",
                             tint = if (repeatMode == RepeatMode.OFF) {
-                                Color.Black
+                                ClassicWheelColors.screenText
                             } else {
-                                Color(0xFF2F80D8)
+                                ClassicWheelColors.selectionAccent
                             },
                             modifier = Modifier.size(28.dp)
                         )
@@ -184,9 +184,9 @@ fun ClassicWheelNowPlayingDisplay(
                             },
                             contentDescription = "Favorite",
                             tint = if (isCurrentSongFavorite) {
-                                Color(0xFF2F80D8)
+                                ClassicWheelColors.selectionAccent
                             } else {
-                                Color.Black
+                                ClassicWheelColors.screenText
                             },
                             modifier = Modifier.size(28.dp)
                         )
@@ -199,7 +199,7 @@ fun ClassicWheelNowPlayingDisplay(
                         Icon(
                             imageVector = Icons.Filled.QueueMusic,
                             contentDescription = "Up Next",
-                            tint = Color.Black,
+                            tint = ClassicWheelColors.screenText,
                             modifier = Modifier.size(28.dp)
                         )
                     }
@@ -210,7 +210,7 @@ fun ClassicWheelNowPlayingDisplay(
                         isShuffleEnabled = isShuffleEnabled,
                         repeatMode = repeatMode
                     ),
-                    color = Color.DarkGray,
+                    color = ClassicWheelColors.screenTextMuted,
                     style = MaterialTheme.typography.labelLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -264,7 +264,7 @@ private fun ClassicWheelProgress(
     ) {
         Text(
             text = formatTime(clampedPosition),
-            color = Color.Black,
+            color = ClassicWheelColors.screenText,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
         )
@@ -296,7 +296,7 @@ private fun ClassicWheelProgress(
 
         Text(
             text = "-${formatTime((safeDuration - clampedPosition).coerceAtLeast(0))}",
-            color = Color.Black,
+            color = ClassicWheelColors.screenText,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
         )
@@ -319,7 +319,7 @@ private fun ClassicWheelVolumeProgress(
     ) {
         Text(
             text = "Volume",
-            color = Color.Black,
+            color = ClassicWheelColors.screenText,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
         )
@@ -338,7 +338,7 @@ private fun ClassicWheelVolumeProgress(
 
         Text(
             text = "$volumePercent%",
-            color = Color.Black,
+            color = ClassicWheelColors.screenText,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
         )

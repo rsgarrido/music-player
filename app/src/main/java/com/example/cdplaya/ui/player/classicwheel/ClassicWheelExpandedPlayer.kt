@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
@@ -51,7 +50,7 @@ fun ClassicWheelExpandedPlayer(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF1EDE0))
+            .background(ClassicWheelColors.shell)
             .padding(horizontal = 14.dp, vertical = 16.dp)
     ) {
         val menuState = remember {

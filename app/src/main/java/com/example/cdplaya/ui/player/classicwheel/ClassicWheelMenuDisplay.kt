@@ -67,15 +67,15 @@ private fun ClassicWheelMenuRow(
     isSelected: Boolean
 ) {
     val backgroundColor = if (isSelected) {
-        Color(0xFF2F80D8)
+        ClassicWheelColors.selectionAccent
     } else {
         Color.Transparent
     }
 
     val contentColor = if (isSelected) {
-        Color.White
+        ClassicWheelColors.selectionContent
     } else {
-        Color.Black
+        ClassicWheelColors.screenText
     }
 
     Row(
