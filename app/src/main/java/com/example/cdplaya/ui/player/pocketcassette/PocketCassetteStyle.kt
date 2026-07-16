@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -16,46 +17,89 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.theme.darken
+import com.example.cdplaya.ui.player.theme.lighten
+import com.example.cdplaya.ui.player.theme.withAlpha
 
-internal object PocketCassetteColors {
-    val silverLight = Color(0xFFE4E6E5)
-    val silver = Color(0xFFB9BEC0)
-    val silverMid = Color(0xFF969EA1)
-    val silverDark = Color(0xFF5F686C)
-    val shellInk = Color(0xFF263034)
-    val blueLight = Color(0xFF6D8EAA)
-    val blue = Color(0xFF456D8E)
-    val blueDark = Color(0xFF294B67)
-    val window = Color(0xFF080B0D)
-    val windowEdge = Color(0xFF172127)
-    val windowText = Color(0xFFE1E6E4)
-    val windowTextMuted = Color(0xFFA5B0B0)
+internal val PocketCassetteDefaultTokens = PlayerThemeTokens(
+    shellColor = Color(0xFFB9BEC0),
+    accentColor = Color(0xFF456D8E),
+    displayBackgroundColor = Color(0xFF080B0D),
+    displayTextColor = Color(0xFFE1E6E4),
+    secondaryAccentColor = Color(0xFFE56C36)
+)
+
+internal class PocketCassettePalette private constructor(tokens: PlayerThemeTokens) {
+    private val shell = tokens.shellColor
+    private val accent = tokens.accentColor
+    private val displayBackground = tokens.displayBackgroundColor
+    private val displayText = tokens.displayTextColor
+    private val warmAccent = tokens.secondaryAccentColor ?: accent
+
+    val silverLight = shell.lighten(0.606f)
+    val silver = shell
+    val silverMid = shell.darken(0.173f)
+    val silverDark = shell.darken(0.458f)
+    val shellInk = shell.darken(0.756f)
+    val blueLight = accent.lighten(0.225f)
+    val blue = accent
+    val blueDark = accent.darken(0.304f)
+    val window = displayBackground
+    val windowEdge = displayBackground.lighten(0.086f)
+    val windowText = displayText
+    val windowTextMuted = displayText.darken(0.243f)
+    val tape = PocketCassetteDecorativeColors.tape
+    val reel = PocketCassetteDecorativeColors.reel
+    val reelHub = PocketCassetteDecorativeColors.reelHub
+    val button = displayBackground.lighten(0.128f)
+    val buttonTop = displayBackground.lighten(0.286f)
+    val buttonPressed = displayBackground.lighten(0.056f)
+    val buttonEdge = displayBackground.lighten(0.020f)
+    val buttonIcon = displayText.lighten(0.488f)
+    val buttonActive = warmAccent.lighten(0.026f)
+    val orange = warmAccent
+    val statusGreen = PocketCassetteDecorativeColors.statusGreen
+    val seam = shell.darken(0.411f)
+    val highlight = shell.lighten(1f).withAlpha(0.75f)
+
+    companion object {
+        fun from(tokens: PlayerThemeTokens): PocketCassettePalette =
+            PocketCassettePalette(tokens)
+    }
+}
+
+internal val PocketCassetteDefaultPalette =
+    PocketCassettePalette.from(PocketCassetteDefaultTokens)
+
+// Kept as the call-site name for this staged migration; its value is now a derived palette.
+internal val LocalPocketCassettePalette = staticCompositionLocalOf {
+    PocketCassetteDefaultPalette
+}
+
+internal val PocketCassetteColors: PocketCassettePalette
+    @Composable get() = LocalPocketCassettePalette.current
+
+private object PocketCassetteDecorativeColors {
     val tape = Color(0xFF4B2F24)
     val reel = Color(0xFFD2D6D4)
     val reelHub = Color(0xFF6D7678)
-    val button = Color(0xFF252B2E)
-    val buttonTop = Color(0xFF4A5256)
-    val buttonPressed = Color(0xFF15191B)
-    val buttonEdge = Color(0xFF0D1012)
-    val buttonIcon = Color(0xFFF0F2F1)
-    val buttonActive = Color(0xFFE36E3D)
-    val orange = Color(0xFFE56C36)
     val statusGreen = Color(0xFF8EBA72)
-    val seam = Color(0xFF687175)
-    val highlight = Color(0xBFFFFFFF)
 }
 
-internal fun Modifier.pocketCassetteShellFinish(): Modifier =
-    background(
+@Composable
+internal fun Modifier.pocketCassetteShellFinish(): Modifier {
+    val colors = PocketCassetteColors
+    return background(
         brush = Brush.horizontalGradient(
             colorStops = arrayOf(
-                0f to PocketCassetteColors.silverDark,
-                0.025f to PocketCassetteColors.silverLight,
-                0.22f to PocketCassetteColors.silver,
-                0.52f to PocketCassetteColors.silverLight,
-                0.78f to PocketCassetteColors.silverMid,
-                0.975f to PocketCassetteColors.silverLight,
-                1f to PocketCassetteColors.silverDark
+                0f to colors.silverDark,
+                0.025f to colors.silverLight,
+                0.22f to colors.silver,
+                0.52f to colors.silverLight,
+                0.78f to colors.silverMid,
+                0.975f to colors.silverLight,
+                1f to colors.silverDark
             )
         )
     ).drawWithContent {
@@ -76,7 +120,7 @@ internal fun Modifier.pocketCassetteShellFinish(): Modifier =
             y += 3.dp.toPx()
         }
         drawLine(
-            color = PocketCassetteColors.highlight,
+            color = colors.highlight,
             start = Offset(hairline, 0f),
             end = Offset(hairline, size.height),
             strokeWidth = hairline
@@ -88,14 +132,17 @@ internal fun Modifier.pocketCassetteShellFinish(): Modifier =
             strokeWidth = hairline
         )
     }
+}
 
-internal fun Modifier.pocketCassetteBluePanelFinish(radius: Dp): Modifier =
-    background(
+@Composable
+internal fun Modifier.pocketCassetteBluePanelFinish(radius: Dp): Modifier {
+    val colors = PocketCassetteColors
+    return background(
         brush = Brush.verticalGradient(
             colors = listOf(
-                PocketCassetteColors.blueLight,
-                PocketCassetteColors.blue,
-                PocketCassetteColors.blueDark
+                colors.blueLight,
+                colors.blue,
+                colors.blueDark
             )
         ),
         shape = RoundedCornerShape(radius)
@@ -119,15 +166,19 @@ internal fun Modifier.pocketCassetteBluePanelFinish(radius: Dp): Modifier =
             strokeWidth = 1.dp.toPx()
         )
     }
+}
 
+@Composable
 internal fun Modifier.pocketCassetteBevel(
     radius: Dp,
     pressed: Boolean = false
-): Modifier = drawWithContent {
+): Modifier {
+    val colors = PocketCassetteColors
+    return drawWithContent {
     drawContent()
     val inset = 1.dp.toPx()
     drawRoundRect(
-        color = if (pressed) PocketCassetteColors.buttonEdge else Color.White.copy(alpha = 0.25f),
+        color = if (pressed) colors.buttonEdge else Color.White.copy(alpha = 0.25f),
         topLeft = Offset(inset, inset),
         size = androidx.compose.ui.geometry.Size(
             width = size.width - inset * 2,
@@ -142,6 +193,7 @@ internal fun Modifier.pocketCassetteBevel(
         end = Offset(size.width - radius.toPx(), size.height - inset),
         strokeWidth = 1.5.dp.toPx()
     )
+    }
 }
 
 @Composable
@@ -149,13 +201,14 @@ internal fun PocketCassetteScrew(
     modifier: Modifier = Modifier,
     size: Dp = 12.dp
 ) {
+    val colors = PocketCassetteColors
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier.matchParentSize()) {
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        PocketCassetteColors.silverLight,
-                        PocketCassetteColors.silverDark
+                        colors.silverLight,
+                        colors.silverDark
                     )
                 )
             )
@@ -164,7 +217,7 @@ internal fun PocketCassetteScrew(
                 style = Stroke(width = 1.dp.toPx())
             )
             drawLine(
-                color = PocketCassetteColors.shellInk.copy(alpha = 0.75f),
+                color = colors.shellInk.copy(alpha = 0.75f),
                 start = Offset(this.size.width * 0.25f, this.size.height * 0.56f),
                 end = Offset(this.size.width * 0.75f, this.size.height * 0.44f),
                 strokeWidth = 1.dp.toPx()

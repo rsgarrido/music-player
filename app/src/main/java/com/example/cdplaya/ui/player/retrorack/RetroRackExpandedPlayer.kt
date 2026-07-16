@@ -41,6 +41,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -61,6 +62,7 @@ import androidx.compose.ui.platform.LocalDensity
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import kotlin.math.sin
 
 @Composable
@@ -82,8 +84,10 @@ fun RetroRackExpandedPlayer(
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
-    onSongClick: (Song, List<Song>) -> Unit
+    onSongClick: (Song, List<Song>) -> Unit,
+    tokens: PlayerThemeTokens = RetroRackDefaultTokens
 ) {
+    val palette = remember(tokens) { RetroRackPalette.from(tokens) }
     val playbackContext = listOfNotNull(currentSong) + upcomingSongs
     val configuration = LocalConfiguration.current
     val compact = configuration.screenHeightDp < 700 || configuration.screenWidthDp < 360
@@ -108,6 +112,7 @@ fun RetroRackExpandedPlayer(
         )
     }
 
+    CompositionLocalProvider(LocalRetroRackPalette provides palette) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -184,6 +189,7 @@ fun RetroRackExpandedPlayer(
                 onSongClick = onSongClick
             )
         }
+    }
     }
 }
 
@@ -293,7 +299,7 @@ private fun MainDeck(
             colors = SliderDefaults.colors(
                 thumbColor = ControlSilver,
                 activeTrackColor = LcdGreen,
-                inactiveTrackColor = Color(0xFF30343A)
+                inactiveTrackColor = InactiveTrack
             ),
             modifier = Modifier
                 .fillMaxWidth()

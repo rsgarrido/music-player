@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.sp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 
 @Composable
 fun PocketCassetteExpandedPlayer(
@@ -56,8 +58,11 @@ fun PocketCassetteExpandedPlayer(
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit
+    onToggleFavoriteClick: (Song) -> Unit,
+    tokens: PlayerThemeTokens = PocketCassetteDefaultTokens
 ) {
+    val palette = remember(tokens) { PocketCassettePalette.from(tokens) }
+    CompositionLocalProvider(LocalPocketCassettePalette provides palette) {
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
@@ -110,6 +115,7 @@ fun PocketCassetteExpandedPlayer(
 
             PocketCassetteLowerSeam(compact = compact)
         }
+    }
     }
 }
 
@@ -166,12 +172,13 @@ private fun PocketCassetteDeviceHeader(
 
 @Composable
 private fun PocketCassetteStatusLamp(isPlaying: Boolean, compact: Boolean) {
+    val colors = PocketCassetteColors
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.padding(end = if (compact) 5.dp else 8.dp)
     ) {
         Canvas(modifier = Modifier.size(if (compact) 8.dp else 9.dp)) {
-            drawCircle(color = if (isPlaying) PocketCassetteColors.statusGreen else Color(0xFF6C5B50))
+            drawCircle(color = if (isPlaying) colors.statusGreen else Color(0xFF6C5B50))
             drawCircle(
                 color = Color.White.copy(alpha = 0.34f),
                 radius = size.minDimension * 0.22f,
@@ -190,6 +197,7 @@ private fun PocketCassetteStatusLamp(isPlaying: Boolean, compact: Boolean) {
 
 @Composable
 private fun PocketCassetteBattery(compact: Boolean) {
+    val colors = PocketCassetteColors
     Canvas(
         modifier = Modifier.size(
             width = if (compact) 26.dp else 30.dp,
@@ -198,18 +206,18 @@ private fun PocketCassetteBattery(compact: Boolean) {
     ) {
         val terminalWidth = 2.dp.toPx()
         drawRoundRect(
-            color = PocketCassetteColors.shellInk,
+            color = colors.shellInk,
             topLeft = Offset(0f, 1.dp.toPx()),
             size = androidx.compose.ui.geometry.Size(size.width - terminalWidth, size.height - 2.dp.toPx()),
             style = Stroke(width = 1.dp.toPx())
         )
         drawRect(
-            color = PocketCassetteColors.shellInk,
+            color = colors.shellInk,
             topLeft = Offset(size.width - terminalWidth, size.height * 0.34f),
             size = androidx.compose.ui.geometry.Size(terminalWidth, size.height * 0.32f)
         )
         drawRect(
-            color = PocketCassetteColors.orange,
+            color = colors.orange,
             topLeft = Offset(3.dp.toPx(), 4.dp.toPx()),
             size = androidx.compose.ui.geometry.Size(
                 width = size.width - terminalWidth - 6.dp.toPx(),
@@ -259,6 +267,7 @@ private fun PocketCassetteCloseButton(
 
 @Composable
 private fun PocketCassetteLowerSeam(compact: Boolean) {
+    val colors = PocketCassetteColors
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -271,7 +280,7 @@ private fun PocketCassetteLowerSeam(compact: Boolean) {
                 .padding(horizontal = 8.dp)
         ) {
             drawLine(
-                color = PocketCassetteColors.seam,
+                color = colors.seam,
                 start = Offset(0f, size.height / 2f),
                 end = Offset(size.width, size.height / 2f),
                 strokeWidth = 1.dp.toPx()

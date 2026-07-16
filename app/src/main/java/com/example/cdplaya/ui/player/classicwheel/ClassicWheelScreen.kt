@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -55,14 +54,14 @@ fun ClassicWheelScreen(
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        color = Color.Black,
+        color = ClassicWheelColors.screenBezel,
         shadowElevation = 6.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(5.dp)
-                .background(Color(0xFFF7F7F2))
+                .background(ClassicWheelColors.screenBackground)
         ) {
             ClassicScreenStatusBar(
                 title = buildClassicWheelStatusTitle(menuState.currentScreen),
@@ -154,13 +153,13 @@ private fun ClassicScreenStatusBar(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFE4E4E0))
+            .background(ClassicWheelColors.statusBarBackground)
             .padding(horizontal = 8.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = title,
-            color = Color.Black,
+            color = ClassicWheelColors.screenText,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.SansSerif,
@@ -174,7 +173,7 @@ private fun ClassicScreenStatusBar(
             Icon(
                 imageVector = Icons.Filled.KeyboardArrowDown,
                 contentDescription = "Collapse player",
-                tint = Color.Black
+                tint = ClassicWheelColors.screenText
             )
         }
 

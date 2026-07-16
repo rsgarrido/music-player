@@ -184,6 +184,7 @@ private fun PocketFlipDirectionPad(
 
 @Composable
 private fun PocketFlipPadBody(modifier: Modifier = Modifier) {
+    val colors = PocketFlipColors
     Canvas(modifier = modifier) {
         val wellRadius = size.minDimension * 0.46f
         val thickness = size.minDimension * 0.31f
@@ -191,28 +192,28 @@ private fun PocketFlipPadBody(modifier: Modifier = Modifier) {
         val corner = CornerRadius(size.minDimension * 0.07f)
         val horizontalTop = (size.height - thickness) / 2f
         val verticalLeft = (size.width - thickness) / 2f
-        val bodyColor = PocketFlipColors.button
+        val bodyColor = colors.button
 
         drawCircle(
-            color = PocketFlipColors.controlWell,
+            color = colors.controlWell,
             radius = wellRadius,
             center = center
         )
         drawCircle(
-            color = PocketFlipColors.controlGroove,
+            color = colors.controlGroove,
             radius = wellRadius,
             center = center,
             style = Stroke(width = 2.dp.toPx())
         )
 
         drawRoundRect(
-            color = PocketFlipColors.buttonShadow,
+            color = colors.buttonShadow,
             topLeft = Offset(armInset, horizontalTop + 3.dp.toPx()),
             size = Size(size.width - armInset * 2f, thickness),
             cornerRadius = corner
         )
         drawRoundRect(
-            color = PocketFlipColors.buttonShadow,
+            color = colors.buttonShadow,
             topLeft = Offset(verticalLeft, armInset + 3.dp.toPx()),
             size = Size(thickness, size.height - armInset * 2f),
             cornerRadius = corner
@@ -230,12 +231,12 @@ private fun PocketFlipPadBody(modifier: Modifier = Modifier) {
             cornerRadius = corner
         )
         drawCircle(
-            color = PocketFlipColors.buttonCenter,
+            color = colors.buttonCenter,
             radius = thickness * 0.33f,
             center = center
         )
         drawLine(
-            color = PocketFlipColors.buttonHighlight,
+            color = colors.buttonHighlight,
             start = Offset(armInset + corner.x, horizontalTop + 1.dp.toPx()),
             end = Offset(size.width - armInset - corner.x, horizontalTop + 1.dp.toPx()),
             strokeWidth = 1.dp.toPx()
@@ -252,6 +253,7 @@ private fun PocketFlipPadHitTarget(
     modifier: Modifier = Modifier,
     active: Boolean = false
 ) {
+    val colors = PocketFlipColors
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -273,25 +275,25 @@ private fun PocketFlipPadHitTarget(
         Canvas(modifier = Modifier.matchParentSize()) {
             if (isPressed) {
                 drawCircle(
-                    color = PocketFlipColors.buttonPressed.copy(alpha = 0.58f),
+                    color = colors.buttonPressed.copy(alpha = 0.58f),
                     radius = drawContext.size.minDimension * 0.31f,
                     center = center
                 )
             }
             if (active) {
                 drawCircle(
-                    color = PocketFlipColors.modeGlow,
+                    color = colors.modeGlow,
                     radius = drawContext.size.minDimension * 0.29f,
                     center = center
                 )
                 val lampCenter = Offset(center.x, drawContext.size.height * 0.78f)
                 drawCircle(
-                    color = PocketFlipColors.modeLamp.copy(alpha = 0.38f),
+                    color = colors.modeLamp.copy(alpha = 0.38f),
                     radius = 4.dp.toPx(),
                     center = lampCenter
                 )
                 drawCircle(
-                    color = PocketFlipColors.modeLamp,
+                    color = colors.modeLamp,
                     radius = 2.dp.toPx(),
                     center = lampCenter
                 )
@@ -522,6 +524,7 @@ private fun PocketFlipUtilitySwitch(
 
 @Composable
 private fun PocketFlipSpeakerGrille(compact: Boolean) {
+    val colors = PocketFlipColors
     val width = if (compact) 58.dp else 68.dp
     val height = if (compact) 21.dp else 24.dp
     val holes = listOf(
@@ -541,12 +544,12 @@ private fun PocketFlipSpeakerGrille(compact: Boolean) {
         val radius = if (compact) 1.7.dp.toPx() else 2.dp.toPx()
         holes.forEach { (x, y) ->
             drawCircle(
-                color = PocketFlipColors.speakerHighlight,
+                color = colors.speakerHighlight,
                 radius = radius,
                 center = Offset(size.width * x, size.height * y + 1.dp.toPx())
             )
             drawCircle(
-                color = PocketFlipColors.speaker,
+                color = colors.speaker,
                 radius = radius,
                 center = Offset(size.width * x, size.height * y)
             )
@@ -556,21 +559,22 @@ private fun PocketFlipSpeakerGrille(compact: Boolean) {
 
 @Composable
 private fun PocketFlipScrew(reverseSlot: Boolean = false) {
+    val colors = PocketFlipColors
     Canvas(modifier = Modifier.size(13.dp)) {
         val radius = size.minDimension / 2f
         drawCircle(
-            color = PocketFlipColors.shellShadow,
+            color = colors.shellShadow,
             radius = radius,
             center = center + Offset(0f, 1.dp.toPx())
         )
         drawCircle(
-            color = PocketFlipColors.screw,
+            color = colors.screw,
             radius = radius * 0.82f,
             center = center
         )
         val slotOffset = radius * 0.32f
         drawLine(
-            color = PocketFlipColors.screwSlot,
+            color = colors.screwSlot,
             start = if (reverseSlot) {
                 center + Offset(-slotOffset, slotOffset)
             } else {

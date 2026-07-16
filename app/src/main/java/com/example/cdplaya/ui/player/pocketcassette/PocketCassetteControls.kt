@@ -357,6 +357,7 @@ private fun PocketCassetteSeekSlot(
     onSeekChange: (Int) -> Unit,
     compact: Boolean
 ) {
+    val colors = PocketCassetteColors
     val safeDuration = duration.coerceAtLeast(1)
     val safePosition = currentPosition.coerceIn(0, safeDuration)
     val progress = safePosition.toFloat() / safeDuration.toFloat()
@@ -435,13 +436,13 @@ private fun PocketCassetteSeekSlot(
             val trackWidth = size.width - inset * 2
 
             drawRoundRect(
-                color = PocketCassetteColors.buttonEdge,
+                color = colors.buttonEdge,
                 topLeft = Offset(0f, slotTop),
                 size = Size(size.width, slotHeight),
                 cornerRadius = CornerRadius(slotHeight / 2f)
             )
             drawRoundRect(
-                color = PocketCassetteColors.orange.copy(alpha = 0.9f),
+                color = colors.orange.copy(alpha = 0.9f),
                 topLeft = Offset(inset, slotTop + 4.dp.toPx()),
                 size = Size(trackWidth * progress, slotHeight - 8.dp.toPx()),
                 cornerRadius = CornerRadius(2.dp.toPx())
@@ -454,9 +455,9 @@ private fun PocketCassetteSeekSlot(
             drawRoundRect(
                 brush = Brush.horizontalGradient(
                     colors = listOf(
-                        PocketCassetteColors.silverDark,
-                        PocketCassetteColors.silverLight,
-                        PocketCassetteColors.silverMid
+                        colors.silverDark,
+                        colors.silverLight,
+                        colors.silverMid
                     )
                 ),
                 topLeft = Offset(thumbX, (size.height - thumbHeight) / 2f),
@@ -464,7 +465,7 @@ private fun PocketCassetteSeekSlot(
                 cornerRadius = CornerRadius(2.dp.toPx())
             )
             drawLine(
-                color = PocketCassetteColors.shellInk.copy(alpha = 0.72f),
+                color = colors.shellInk.copy(alpha = 0.72f),
                 start = Offset(thumbX + thumbWidth / 2f, (size.height - thumbHeight) / 2f + 3.dp.toPx()),
                 end = Offset(thumbX + thumbWidth / 2f, (size.height + thumbHeight) / 2f - 3.dp.toPx()),
                 strokeWidth = 1.dp.toPx()

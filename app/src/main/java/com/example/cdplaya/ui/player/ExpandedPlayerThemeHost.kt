@@ -8,6 +8,7 @@ import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
 import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
+import com.example.cdplaya.ui.player.theme.defaultTokens
 
 @Composable
 fun ExpandedPlayerThemeHost(
@@ -32,6 +33,8 @@ fun ExpandedPlayerThemeHost(
     upcomingSongs: List<Song>,
     onSongClick: (Song, List<Song>) -> Unit
 ) {
+    val tokens = selectedPlayerTheme.defaultTokens()
+
     when (selectedPlayerTheme) {
         PlayerTheme.DEFAULT -> {
             DefaultExpandedPlayer(
@@ -73,7 +76,8 @@ fun ExpandedPlayerThemeHost(
                 onOpenUpNextClick = onOpenUpNextClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 songs = songs,
-                onSongClick = onSongClick
+                onSongClick = onSongClick,
+                tokens = tokens
             )
         }
 
@@ -96,7 +100,8 @@ fun ExpandedPlayerThemeHost(
                 onCollapseClick = onCollapseClick,
                 onOpenUpNextClick = onOpenUpNextClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
-                onSongClick = onSongClick
+                onSongClick = onSongClick,
+                tokens = tokens
             )
         }
 
@@ -117,7 +122,8 @@ fun ExpandedPlayerThemeHost(
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseClick,
                 onOpenUpNextClick = onOpenUpNextClick,
-                onToggleFavoriteClick = onToggleFavoriteClick
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                tokens = tokens
             )
         }
 
@@ -138,7 +144,8 @@ fun ExpandedPlayerThemeHost(
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseClick,
                 onOpenUpNextClick = onOpenUpNextClick,
-                onToggleFavoriteClick = onToggleFavoriteClick
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                tokens = tokens
             )
         }
     }

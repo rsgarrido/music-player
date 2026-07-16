@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -115,13 +114,13 @@ fun ClassicControlWheel(
         Surface(
             modifier = Modifier.fillMaxSize(),
             shape = CircleShape,
-            color = Color(0xFFC8C6BC),
+            color = ClassicWheelColors.wheel,
             shadowElevation = 6.dp
         ) {}
 
         Text(
             text = "MENU",
-            color = Color.White,
+            color = ClassicWheelColors.wheelContent,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             modifier = Modifier
@@ -142,7 +141,7 @@ fun ClassicControlWheel(
             Icon(
                 imageVector = Icons.Filled.SkipPrevious,
                 contentDescription = "Previous",
-                tint = Color.White,
+                tint = ClassicWheelColors.wheelContent,
                 modifier = Modifier.size(42.dp)
             )
         }
@@ -157,7 +156,7 @@ fun ClassicControlWheel(
             Icon(
                 imageVector = Icons.Filled.SkipNext,
                 contentDescription = "Next",
-                tint = Color.White,
+                tint = ClassicWheelColors.wheelContent,
                 modifier = Modifier.size(42.dp)
             )
         }
@@ -180,7 +179,7 @@ fun ClassicControlWheel(
                 } else {
                     "Play"
                 },
-                tint = Color.White,
+                tint = ClassicWheelColors.wheelContent,
                 modifier = Modifier.size(42.dp)
             )
         }
@@ -192,7 +191,7 @@ fun ClassicControlWheel(
                     onCenterClick()
                 },
             shape = CircleShape,
-            color = Color(0xFFF1EDE0),
+            color = ClassicWheelColors.centerButton,
             shadowElevation = 4.dp
         ) {}
     }
