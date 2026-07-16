@@ -16,33 +16,69 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.theme.darken
+import com.example.cdplaya.ui.player.theme.lighten
+import com.example.cdplaya.ui.player.theme.withAlpha
 
-internal object PocketCassetteColors {
-    val silverLight = Color(0xFFE4E6E5)
-    val silver = Color(0xFFB9BEC0)
-    val silverMid = Color(0xFF969EA1)
-    val silverDark = Color(0xFF5F686C)
-    val shellInk = Color(0xFF263034)
-    val blueLight = Color(0xFF6D8EAA)
-    val blue = Color(0xFF456D8E)
-    val blueDark = Color(0xFF294B67)
-    val window = Color(0xFF080B0D)
-    val windowEdge = Color(0xFF172127)
-    val windowText = Color(0xFFE1E6E4)
-    val windowTextMuted = Color(0xFFA5B0B0)
+internal val PocketCassetteDefaultTokens = PlayerThemeTokens(
+    shellColor = Color(0xFFB9BEC0),
+    accentColor = Color(0xFF456D8E),
+    displayBackgroundColor = Color(0xFF080B0D),
+    displayTextColor = Color(0xFFE1E6E4),
+    secondaryAccentColor = Color(0xFFE56C36)
+)
+
+internal class PocketCassettePalette private constructor(tokens: PlayerThemeTokens) {
+    private val shell = tokens.shellColor
+    private val accent = tokens.accentColor
+    private val displayBackground = tokens.displayBackgroundColor
+    private val displayText = tokens.displayTextColor
+    private val warmAccent = tokens.secondaryAccentColor ?: accent
+
+    val silverLight = shell.lighten(0.606f)
+    val silver = shell
+    val silverMid = shell.darken(0.173f)
+    val silverDark = shell.darken(0.458f)
+    val shellInk = shell.darken(0.756f)
+    val blueLight = accent.lighten(0.225f)
+    val blue = accent
+    val blueDark = accent.darken(0.304f)
+    val window = displayBackground
+    val windowEdge = displayBackground.lighten(0.086f)
+    val windowText = displayText
+    val windowTextMuted = displayText.darken(0.243f)
+    val tape = PocketCassetteDecorativeColors.tape
+    val reel = PocketCassetteDecorativeColors.reel
+    val reelHub = PocketCassetteDecorativeColors.reelHub
+    val button = displayBackground.lighten(0.128f)
+    val buttonTop = displayBackground.lighten(0.286f)
+    val buttonPressed = displayBackground.lighten(0.056f)
+    val buttonEdge = displayBackground.lighten(0.020f)
+    val buttonIcon = displayText.lighten(0.488f)
+    val buttonActive = warmAccent.lighten(0.026f)
+    val orange = warmAccent
+    val statusGreen = PocketCassetteDecorativeColors.statusGreen
+    val seam = shell.darken(0.411f)
+    val highlight = shell.lighten(1f).withAlpha(0.75f)
+
+    companion object {
+        fun from(tokens: PlayerThemeTokens): PocketCassettePalette =
+            PocketCassettePalette(tokens)
+    }
+}
+
+internal val PocketCassetteDefaultPalette =
+    PocketCassettePalette.from(PocketCassetteDefaultTokens)
+
+// Kept as the call-site name for this staged migration; its value is now a derived palette.
+internal val PocketCassetteColors = PocketCassetteDefaultPalette
+
+private object PocketCassetteDecorativeColors {
     val tape = Color(0xFF4B2F24)
     val reel = Color(0xFFD2D6D4)
     val reelHub = Color(0xFF6D7678)
-    val button = Color(0xFF252B2E)
-    val buttonTop = Color(0xFF4A5256)
-    val buttonPressed = Color(0xFF15191B)
-    val buttonEdge = Color(0xFF0D1012)
-    val buttonIcon = Color(0xFFF0F2F1)
-    val buttonActive = Color(0xFFE36E3D)
-    val orange = Color(0xFFE56C36)
     val statusGreen = Color(0xFF8EBA72)
-    val seam = Color(0xFF687175)
-    val highlight = Color(0xBFFFFFFF)
 }
 
 internal fun Modifier.pocketCassetteShellFinish(): Modifier =
