@@ -21,62 +21,107 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.theme.darken
+import com.example.cdplaya.ui.player.theme.lighten
+import com.example.cdplaya.ui.player.theme.withAlpha
 
-internal object PocketFlipColors {
+internal val PocketFlipDefaultTokens = PlayerThemeTokens(
+    shellColor = Color(0xFF982E3B),
+    accentColor = Color(0xFFA5C980),
+    displayBackgroundColor = Color(0xFF263029),
+    displayTextColor = Color(0xFFE0E7D8),
+    secondaryAccentColor = Color(0xFF6D203C)
+)
+
+internal class PocketFlipPalette private constructor(tokens: PlayerThemeTokens) {
+    private val shellBase = tokens.shellColor
+    private val accent = tokens.accentColor
+    private val displayBackground = tokens.displayBackgroundColor
+    private val displayText = tokens.displayTextColor
+    private val secondaryAccent = tokens.secondaryAccentColor ?: shellBase.darken(0.28f)
+    private val controlSurface = PocketFlipDecorativeColors.controlSurface
+
+    val shellTop = PocketFlipDecorativeColors.shellTop
+    val shell = shellBase
+    val shellBottom = shellBase.darken(0.23f)
+    val shellHighlight = PocketFlipDecorativeColors.shellHighlight
+    val shellShadow = shellBase.darken(0.90f).withAlpha(0.40f)
+    val shellText = PocketFlipDecorativeColors.shellText
+    val bezel = controlSurface.darken(0.455f)
+    val bezelText = displayText.darken(0.112f)
+    val bezelTextMuted = displayText.darken(0.465f)
+    val display = displayBackground
+    val lcdBand = displayBackground.darken(0.367f)
+    val lcdTint = accent.darken(0.04f).withAlpha(0.047f)
+    val lcdGlow = accent.lighten(0.09f).withAlpha(0.059f)
+    val lcdGrid = displayBackground.darken(0.66f).withAlpha(0.078f)
+    val lcdScanline = displayBackground.darken(0.84f).withAlpha(0.133f)
+    val artworkWell = displayBackground.darken(0.534f)
+    val artworkLcdTint = displayBackground.darken(0.50f).withAlpha(0.125f)
+    val screenText = displayText
+    val screenTextMuted = displayText.darken(0.286f)
+    val screenAccent = accent
+    val seekInactive = displayBackground.lighten(0.166f)
+    val seekHousing = displayBackground.darken(0.788f)
+    val seekThumb = displayText.darken(0.112f)
+    val seekThumbHighlight = displayText.lighten(0.496f)
+    val statusOn = PocketFlipDecorativeColors.statusOn
+    val statusIdle = PocketFlipDecorativeColors.statusIdle
+    val hinge = shellBase.darken(0.301f)
+    val hingeCap = shellBase.darken(0.655f)
+    val button = controlSurface
+    val buttonPressed = controlSurface.darken(0.417f)
+    val buttonShadow = shellBase.darken(0.443f)
+    val buttonCenter = controlSurface.darken(0.231f)
+    val buttonHighlight = controlSurface.lighten(0.163f)
+    val buttonIcon = controlSurface.lighten(0.832f)
+    val buttonActiveIcon = accent.lighten(0.046f)
+    val modeGlow = PocketFlipDecorativeColors.modeGlow
+    val modeLamp = PocketFlipDecorativeColors.modeLamp
+    val action = secondaryAccent.darken(0.287f)
+    val actionActive = secondaryAccent
+    val actionPressed = secondaryAccent.darken(0.506f)
+    val actionIcon = PocketFlipDecorativeColors.actionIcon
+    val utility = secondaryAccent.darken(0.546f)
+    val utilityPressed = secondaryAccent.darken(0.732f)
+    val utilityLabel = PocketFlipDecorativeColors.utilityLabel
+    val utilityEdge = PocketFlipDecorativeColors.utilityEdge
+    val utilityIcon = PocketFlipDecorativeColors.utilityIcon
+    val speaker = shellBase.darken(0.525f)
+    val speakerHighlight = PocketFlipDecorativeColors.speakerHighlight
+    val controlWell = shellBase.darken(0.248f)
+    val controlGroove = shellBase.darken(0.410f)
+    val controlMark = shellBase.darken(0.323f)
+    val engravedText = PocketFlipDecorativeColors.engravedText
+    val screw = shellBase.darken(0.173f)
+    val screwSlot = shellBase.darken(0.533f)
+
+    companion object {
+        fun from(tokens: PlayerThemeTokens): PocketFlipPalette = PocketFlipPalette(tokens)
+    }
+}
+
+internal val PocketFlipDefaultPalette = PocketFlipPalette.from(PocketFlipDefaultTokens)
+
+// Kept as the call-site name for this staged migration; its value is now a derived palette.
+internal val PocketFlipColors = PocketFlipDefaultPalette
+
+private object PocketFlipDecorativeColors {
     val shellTop = Color(0xFFB3414C)
-    val shell = Color(0xFF982E3B)
-    val shellBottom = Color(0xFF76212D)
     val shellHighlight = Color(0x66FFD9DC)
-    val shellShadow = Color(0x660F0709)
     val shellText = Color(0xFFF5C7CB)
-    val bezel = Color(0xFF17171B)
-    val bezelText = Color(0xFFC7C9C4)
-    val bezelTextMuted = Color(0xFF777A76)
-    val display = Color(0xFF263029)
-    val lcdBand = Color(0xFF172019)
-    val lcdTint = Color(0x0C8FC479)
-    val lcdGlow = Color(0x0FA7D78D)
-    val lcdGrid = Color(0x140A100C)
-    val lcdScanline = Color(0x22040805)
-    val artworkWell = Color(0xFF111713)
-    val artworkLcdTint = Color(0x20102015)
-    val screenText = Color(0xFFE0E7D8)
-    val screenTextMuted = Color(0xFF9CA99A)
-    val screenAccent = Color(0xFFA5C980)
-    val seekInactive = Color(0xFF4A544B)
-    val seekHousing = Color(0xFF080A09)
-    val seekThumb = Color(0xFFC7C9C4)
-    val seekThumbHighlight = Color(0xFFF0F1EC)
+    val controlSurface = Color(0xFF2A2B31)
     val statusOn = Color(0xFF8DD663)
     val statusIdle = Color(0xFF715257)
-    val hinge = Color(0xFF6B1E29)
-    val hingeCap = Color(0xFF321318)
-    val button = Color(0xFF2A2B31)
-    val buttonPressed = Color(0xFF18191D)
-    val buttonShadow = Color(0xFF541923)
-    val buttonCenter = Color(0xFF202126)
-    val buttonHighlight = Color(0xFF4B4D55)
-    val buttonIcon = Color(0xFFDADADF)
-    val buttonActiveIcon = Color(0xFFA6CE87)
     val modeGlow = Color(0x293E7C52)
     val modeLamp = Color(0xFF82C66B)
-    val action = Color(0xFF4B1A2E)
-    val actionActive = Color(0xFF6D203C)
-    val actionPressed = Color(0xFF35101F)
     val actionIcon = Color(0xFFF7DFE8)
-    val utility = Color(0xFF321318)
-    val utilityPressed = Color(0xFF1E0A0E)
     val utilityLabel = Color(0xFFF0B1B8)
     val utilityEdge = Color(0xFF9E4B56)
     val utilityIcon = Color(0xFFF7D8DB)
-    val speaker = Color(0xFF48151D)
     val speakerHighlight = Color(0xFFBD5260)
-    val controlWell = Color(0xFF741F2B)
-    val controlGroove = Color(0xFF5B1822)
-    val controlMark = Color(0xFF681D27)
     val engravedText = Color(0xFFC66C76)
-    val screw = Color(0xFF7D2732)
-    val screwSlot = Color(0xFF48131B)
 }
 
 internal fun Modifier.pocketFlipRoundButtonFinish(isPressed: Boolean): Modifier =
