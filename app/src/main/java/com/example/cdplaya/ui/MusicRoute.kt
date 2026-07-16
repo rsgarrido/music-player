@@ -6,6 +6,8 @@ import androidx.compose.ui.Modifier
 import com.example.cdplaya.viewmodel.MusicViewModel
 import com.example.cdplaya.ui.playlist.rememberPlaylistExportActions
 import com.example.cdplaya.ui.playlist.rememberPlaylistImportActions
+import com.example.cdplaya.ui.settings.rememberBackupExportActions
+import com.example.cdplaya.ui.settings.rememberBackupRestoreActions
 
 @Composable
 fun MusicRoute(
@@ -24,6 +26,16 @@ fun MusicRoute(
     val playlistImportActions = rememberPlaylistImportActions(
         snackbarHostState = snackbarHostState,
         onImport = musicViewModel::importM3uPlaylist
+    )
+    val backupExportActions = rememberBackupExportActions(
+        snackbarHostState = snackbarHostState,
+        onExport = musicViewModel::exportBackup
+    )
+    val backupRestoreActions = rememberBackupRestoreActions(
+        snackbarHostState = snackbarHostState,
+        onRead = musicViewModel::readBackupFromUri,
+        onSummarize = musicViewModel::summarizeBackupRestore,
+        onRestore = musicViewModel::restoreBackup
     )
 
     MusicScreen(
@@ -139,6 +151,8 @@ fun MusicRoute(
         },
         onExportPlaylistClick = playlistExportActions.exportPlaylist,
         onImportPlaylistClick = playlistImportActions.importPlaylist,
+        onExportBackupClick = backupExportActions.exportBackup,
+        onRestoreBackupClick = backupRestoreActions.restoreBackup,
         onPlaylistSelected = { playlist ->
             musicViewModel.loadSelectedPlaylist(playlist)
         },

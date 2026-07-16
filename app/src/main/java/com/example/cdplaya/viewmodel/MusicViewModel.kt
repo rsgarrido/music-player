@@ -16,6 +16,11 @@ import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.PlayerThemePreferences
 import com.example.cdplaya.data.ListeningHistoryRepository
+import com.example.cdplaya.data.backup.AppBackup
+import com.example.cdplaya.data.backup.BackupExportResult
+import com.example.cdplaya.data.backup.BackupRepository
+import com.example.cdplaya.data.backup.BackupRestoreResult
+import com.example.cdplaya.data.backup.BackupRestoreSummary
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
 import com.example.cdplaya.data.playlistfile.M3uExportResult
@@ -24,6 +29,7 @@ import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.player.replaygain.ReplayGainPreferences
+import kotlinx.coroutines.launch
 
 class MusicViewModel(
     application: Application
@@ -74,6 +80,16 @@ class MusicViewModel(
         appDatabase = appDatabase,
         playbackController = playbackController,
         coroutineScope = viewModelScope
+    )
+
+    private val backupRepository = BackupRepository(
+        context = appContext,
+        favoritesRepository = libraryController.favoritesRepository,
+        playlistsRepository = libraryController.playlistsRepository,
+        listeningHistoryRepository = libraryController.listeningHistoryRepository,
+        libraryPreferences = libraryController.libraryPreferences,
+        playerThemePreferences = playerThemePreferences,
+        replayGainPreferences = replayGainPreferences
     )
 
     init {
@@ -275,6 +291,57 @@ class MusicViewModel(
             uri = uri,
             onImported = onImported
         )
+    }
+
+    fun exportBackup(
+        uri: Uri,
+        onExported: (Result<BackupExportResult>) -> Unit
+    ) {
+        viewModelScope.launch {
+            onExported(
+                runCatching {
+                    backupRepository.writeBackupToUri(uri)
+                }
+            )
+        }
+    }
+
+    fun readBackupFromUri(
+        uri: Uri,
+        onRead: (Result<AppBackup>) -> Unit
+    ) {
+        viewModelScope.launch {
+            onRead(
+                runCatching {
+                    backupRepository.readBackupFromUri(uri)
+                }
+            )
+        }
+    }
+
+    fun summarizeBackupRestore(backup: AppBackup): BackupRestoreSummary {
+        return backupRepository.summarizeRestore(backup)
+    }
+
+    fun restoreBackup(
+        backup: AppBackup,
+        onRestored: (Result<BackupRestoreResult>) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = runCatching {
+                val restoreResult = backupRepository.restoreBackup(backup)
+
+                libraryController.refreshAfterBackupRestore()
+
+                selectedPlayerTheme = playerThemePreferences.getSelectedPlayerTheme()
+                selectedReplayGainMode = replayGainPreferences.getReplayGainMode()
+                playbackController.setReplayGainMode(selectedReplayGainMode)
+
+                restoreResult
+            }
+
+            onRestored(result)
+        }
     }
 
     fun addSongToPlaylist(

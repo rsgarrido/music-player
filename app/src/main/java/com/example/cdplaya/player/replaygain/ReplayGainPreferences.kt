@@ -11,26 +11,28 @@ class ReplayGainPreferences(
     )
 
     fun getReplayGainMode(): ReplayGainMode {
-        val savedModeName = preferences.getString(
-            REPLAY_GAIN_MODE_KEY,
-            ReplayGainMode.OFF.name
-        )
-
-        return savedModeName
-            ?.let { modeName ->
-                runCatching {
-                    ReplayGainMode.valueOf(modeName)
-                }.getOrNull()
-            }
-            ?: ReplayGainMode.OFF
+        return runCatching {
+            ReplayGainMode.valueOf(getReplayGainModeName())
+        }.getOrDefault(ReplayGainMode.OFF)
     }
 
     fun setReplayGainMode(replayGainMode: ReplayGainMode) {
+        setReplayGainModeName(replayGainMode.name)
+    }
+
+    fun getReplayGainModeName(): String {
+        return preferences.getString(
+            REPLAY_GAIN_MODE_KEY,
+            ReplayGainMode.OFF.name
+        ) ?: ReplayGainMode.OFF.name
+    }
+
+    fun setReplayGainModeName(modeName: String) {
         preferences
             .edit()
             .putString(
                 REPLAY_GAIN_MODE_KEY,
-                replayGainMode.name
+                modeName
             )
             .apply()
     }

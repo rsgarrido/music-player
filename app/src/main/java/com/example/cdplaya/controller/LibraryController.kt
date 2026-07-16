@@ -42,10 +42,10 @@ class LibraryController(
 ) {
     private val applicationContext = context.applicationContext
 
-    private val libraryPreferences = LibraryPreferences(applicationContext)
-    private val favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
-    private val playlistsRepository = PlaylistsRepository(appDatabase.playlistDao())
-    private val listeningHistoryRepository = ListeningHistoryRepository(
+    internal val libraryPreferences = LibraryPreferences(applicationContext)
+    internal val favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
+    internal val playlistsRepository = PlaylistsRepository(appDatabase.playlistDao())
+    internal val listeningHistoryRepository = ListeningHistoryRepository(
         appDatabase.songPlayStatsDao()
     )
     private val libraryCacheRepository = LibraryCacheRepository(appDatabase.cachedSongDao())
@@ -435,6 +435,32 @@ class LibraryController(
         }
     }
 
+    internal suspend fun refreshAfterBackupRestore() {
+        val restoredData = withContext(Dispatchers.IO) {
+            BackupRestoredUserData(
+                selectedLibraryFolders = libraryPreferences.getSelectedFolders(),
+                favoriteSongKeys = favoritesRepository.getFavoriteSongKeys(),
+                playlists = playlistsRepository.getPlaylists(),
+                recentlyPlayed = listeningHistoryRepository.getRecentlyPlayed(),
+                mostPlayed = listeningHistoryRepository.getMostPlayed()
+            )
+        }
+        val folderSelectionChanged =
+            selectedLibraryFolders != restoredData.selectedLibraryFolders
+
+        selectedLibraryFolders = restoredData.selectedLibraryFolders
+        favoriteSongKeys = restoredData.favoriteSongKeys
+        playlists = restoredData.playlists
+        selectedPlaylistName = "Playlist"
+        selectedPlaylistSongs = emptyList()
+        recentlyPlayedSongs = mapListeningHistoryEntriesToSongs(restoredData.recentlyPlayed)
+        mostPlayedSongs = mapListeningHistoryEntriesToSongs(restoredData.mostPlayed)
+
+        if (folderSelectionChanged) {
+            reloadSongsAfterFolderChange()
+        }
+    }
+
     private fun reloadSongsAfterFolderChange() {
         coroutineScope.launch {
             val hasCachedSongs = withContext(Dispatchers.IO) {
@@ -523,3 +549,11 @@ class LibraryController(
         }
     }
 }
+
+private data class BackupRestoredUserData(
+    val selectedLibraryFolders: Set<String>,
+    val favoriteSongKeys: Set<String>,
+    val playlists: List<Playlist>,
+    val recentlyPlayed: List<ListeningHistoryEntry>,
+    val mostPlayed: List<ListeningHistoryEntry>
+)

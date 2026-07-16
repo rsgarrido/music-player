@@ -81,6 +81,8 @@ fun MusicScreen(
     onDeletePlaylistClick: (Playlist) -> Unit,
     onExportPlaylistClick: (Playlist) -> Unit,
     onImportPlaylistClick: () -> Unit,
+    onExportBackupClick: () -> Unit,
+    onRestoreBackupClick: () -> Unit,
     onPlaylistSelected: (Playlist) -> Unit,
     onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
     onAddSongsToPlaylistClick: (Playlist, List<Song>) -> Unit,
@@ -326,6 +328,8 @@ fun MusicScreen(
                     isSettingsScreenVisible = false
                     isFolderScreenVisible = true
                 },
+                onExportBackupClick = onExportBackupClick,
+                onRestoreBackupClick = onRestoreBackupClick,
                 onLibraryFolderToggle = onLibraryFolderToggle,
                 onSelectAllLibraryFolders = onSelectAllLibraryFolders,
                 onClearSelectedLibraryFolders = onClearSelectedLibraryFolders,
