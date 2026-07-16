@@ -14,6 +14,21 @@ class AppBackupJsonTest {
     }
 
     @Test
+    fun encodeBackup_includesAllBackupSections() {
+        val encoded = AppBackupJson.encodeBackup(emptyBackup())
+
+        listOf(
+            "schemaVersion",
+            "favorites",
+            "playlists",
+            "listeningHistory",
+            "preferences"
+        ).forEach { key ->
+            assertTrue("Missing JSON key: $key", encoded.contains("\"$key\""))
+        }
+    }
+
+    @Test
     fun decodeBackup_decodesValidBackupAndIgnoresUnknownKeys() {
         val decoded = AppBackupJson.decodeBackup(
             """

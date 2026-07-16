@@ -42,10 +42,10 @@ class LibraryController(
 ) {
     private val applicationContext = context.applicationContext
 
-    private val libraryPreferences = LibraryPreferences(applicationContext)
-    private val favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
-    private val playlistsRepository = PlaylistsRepository(appDatabase.playlistDao())
-    private val listeningHistoryRepository = ListeningHistoryRepository(
+    internal val libraryPreferences = LibraryPreferences(applicationContext)
+    internal val favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
+    internal val playlistsRepository = PlaylistsRepository(appDatabase.playlistDao())
+    internal val listeningHistoryRepository = ListeningHistoryRepository(
         appDatabase.songPlayStatsDao()
     )
     private val libraryCacheRepository = LibraryCacheRepository(appDatabase.cachedSongDao())

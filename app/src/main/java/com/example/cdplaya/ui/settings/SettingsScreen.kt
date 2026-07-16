@@ -1,11 +1,13 @@
 package com.example.cdplaya.ui.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -37,6 +39,7 @@ fun SettingsScreen(
     selectedFolderCount: Int,
     onBackClick: () -> Unit,
     onLibraryFoldersClick: () -> Unit,
+    onExportBackupClick: () -> Unit,
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
     onSleepTimerClick: () -> Unit,
@@ -61,7 +64,9 @@ fun SettingsScreen(
     }
 
     Column(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
     ) {
         Row(
             modifier = Modifier
@@ -108,6 +113,30 @@ fun SettingsScreen(
             },
             supportingContent = {
                 Text(text = "$totalSongCount song(s) in your current library")
+            }
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+
+        SettingsSectionTitle(text = "Backup and Restore")
+
+        ListItem(
+            headlineContent = {
+                Text(text = "Export Backup")
+            },
+            supportingContent = {
+                Text(text = "Save favorites, playlists, history, and preferences as JSON.")
+            },
+            trailingContent = {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    contentDescription = "Export backup"
+                )
+            },
+            modifier = Modifier.clickable {
+                onExportBackupClick()
             }
         )
 
