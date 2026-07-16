@@ -196,6 +196,8 @@ fun MusicRoute(
         onPlayerThemeSelected = { playerTheme ->
             musicViewModel.selectPlayerTheme(playerTheme)
         },
+        onUpdatePlayerThemeTokenOverride = musicViewModel::updatePlayerThemeTokenOverride,
+        onResetPlayerThemeTokenOverrides = musicViewModel::resetPlayerThemeTokenOverrides,
         selectedReplayGainMode = musicViewModel.selectedReplayGainMode,
         onReplayGainModeSelected = { replayGainMode ->
             musicViewModel.selectReplayGainMode(replayGainMode)
