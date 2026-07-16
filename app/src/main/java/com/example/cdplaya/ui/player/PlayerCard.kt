@@ -4,65 +4,41 @@ import android.R
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material.icons.filled.RepeatOne
-import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
-import com.example.cdplaya.ui.formatDuration
+import com.example.cdplaya.ui.player.modern.ModernExpandedPlayer
 import kotlin.math.abs
 
 @Composable
@@ -98,24 +74,24 @@ fun PlayerCard(
     )
 
     if (isExpanded) {
-        ImmersiveExpandedPlayerContent(
+        ModernExpandedPlayer(
             currentSong = currentSong,
             isPlaying = isPlaying,
-            albumArtSize = albumArtSize,
-            currentPosition = currentPosition,
-            duration = duration,
             isShuffleEnabled = isShuffleEnabled,
             repeatMode = repeatMode,
-            onShuffleClick = onShuffleClick,
-            onRepeatClick = onRepeatClick,
+            currentPosition = currentPosition,
+            duration = duration,
+            isCurrentSongFavorite = isCurrentSongFavorite,
             onPlayPauseClick = onPlayPauseClick,
             onPreviousClick = onPreviousClick,
             onNextClick = onNextClick,
             onSeekChange = onSeekChange,
+            onShuffleClick = onShuffleClick,
+            onRepeatClick = onRepeatClick,
             onCollapseClick = onCollapseClick,
             onOpenUpNextClick = onOpenUpNextClick,
-            isCurrentSongFavorite = isCurrentSongFavorite,
             onToggleFavoriteClick = onToggleFavoriteClick,
+            albumArtSize = albumArtSize,
             modifier = modifier
         )
     } else {
@@ -225,345 +201,6 @@ private fun MiniPlayerCard(
                     contentDescription = "Expand player"
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun ImmersiveExpandedPlayerContent(
-    currentSong: Song,
-    isPlaying: Boolean,
-    albumArtSize: Dp,
-    currentPosition: Int,
-    duration: Int,
-    isShuffleEnabled: Boolean,
-    repeatMode: RepeatMode,
-    onShuffleClick: () -> Unit,
-    onRepeatClick: () -> Unit,
-    onPlayPauseClick: () -> Unit,
-    onPreviousClick: () -> Unit,
-    onNextClick: () -> Unit,
-    onSeekChange: (Int) -> Unit,
-    onCollapseClick: () -> Unit,
-    onOpenUpNextClick: () -> Unit,
-    isCurrentSongFavorite: Boolean,
-    onToggleFavoriteClick: (Song) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val safeDuration = duration.coerceAtLeast(1)
-    val safePosition = currentPosition.coerceIn(0, safeDuration)
-
-    BoxWithConstraints(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .playerSwipeGestures(
-                onSwipeDown = onCollapseClick,
-                onSwipeLeft = onNextClick,
-                onSwipeRight = onPreviousClick
-            )
-    ) {
-        val foregroundAlbumArtSize = minOf(
-            albumArtSize,
-            maxWidth - 48.dp,
-            maxHeight * 0.34f
-        )
-
-        AsyncImage(
-            model = currentSong.albumArtUri,
-            contentDescription = null,
-            modifier = Modifier
-                .matchParentSize()
-                .blur(42.dp),
-            contentScale = ContentScale.Crop,
-            error = painterResource(R.drawable.ic_media_play),
-            placeholder = painterResource(R.drawable.ic_media_play)
-        )
-
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(Color.Black.copy(alpha = 0.58f))
-        )
-
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.88f),
-                            Color.Black.copy(alpha = 0.34f),
-                            Color.Black.copy(alpha = 0.92f)
-                        )
-                    )
-                )
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = onCollapseClick) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = "Collapse player",
-                        tint = Color.White
-                    )
-                }
-
-                Text(
-                    text = "Now Playing",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
-            IconButton(
-                onClick = {
-                    onToggleFavoriteClick(currentSong)
-                }
-            ) {
-                Icon(
-                    imageVector = if (isCurrentSongFavorite) {
-                        Icons.Filled.Favorite
-                    } else {
-                        Icons.Filled.FavoriteBorder
-                    },
-                    contentDescription = if (isCurrentSongFavorite) {
-                        "Remove from favorites"
-                    } else {
-                        "Add to favorites"
-                    },
-                    tint = if (isCurrentSongFavorite) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        Color.White
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Card(
-                modifier = Modifier.size(foregroundAlbumArtSize),
-                shape = RoundedCornerShape(30.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 18.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Black.copy(alpha = 0.20f)
-                )
-            ) {
-                AsyncImage(
-                    model = currentSong.albumArtUri,
-                    contentDescription = "Album art for ${currentSong.title}",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                    error = painterResource(R.drawable.ic_media_play),
-                    placeholder = painterResource(R.drawable.ic_media_play)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    text = currentSong.title.ifBlank { "Unknown Title" },
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    maxLines = 2
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                Text(
-                    text = currentSong.artist.ifBlank { "Unknown Artist" },
-                    style = MaterialTheme.typography.titleMedium,
-                    color = Color.White.copy(alpha = 0.88f),
-                    maxLines = 1
-                )
-
-                Spacer(modifier = Modifier.height(3.dp))
-
-                Text(
-                    text = currentSong.album.ifBlank { "Unknown Album" },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.68f),
-                    maxLines = 1
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Slider(
-                value = safePosition.toFloat(),
-                onValueChange = { newPosition ->
-                    onSeekChange(newPosition.toInt())
-                },
-                valueRange = 0f..safeDuration.toFloat(),
-                colors = SliderDefaults.colors(
-                    thumbColor = Color.White,
-                    activeTrackColor = Color.White,
-                    inactiveTrackColor = Color.White.copy(alpha = 0.22f)
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = formatDuration(safePosition),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.72f)
-                )
-
-                Text(
-                    text = formatDuration(duration),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.72f)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(18.dp))
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                PlayerModeIconButton(
-                    isActive = isShuffleEnabled,
-                    onClick = onShuffleClick
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Shuffle,
-                        contentDescription = if (isShuffleEnabled) "Shuffle on" else "Shuffle off",
-                        tint = if (isShuffleEnabled) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            Color.White.copy(alpha = 0.74f)
-                        }
-                    )
-                }
-
-                IconButton(onClick = onPreviousClick) {
-                    Icon(
-                        imageVector = Icons.Filled.SkipPrevious,
-                        contentDescription = "Previous song",
-                        tint = Color.White,
-                        modifier = Modifier.size(38.dp)
-                    )
-                }
-
-                Surface(
-                    onClick = onPlayPauseClick,
-                    modifier = Modifier.size(82.dp),
-                    shape = CircleShape,
-                    color = Color.White,
-                    contentColor = Color.Black,
-                    shadowElevation = 14.dp
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (isPlaying) {
-                                Icons.Filled.Pause
-                            } else {
-                                Icons.Filled.PlayArrow
-                            },
-                            contentDescription = if (isPlaying) "Pause" else "Play",
-                            modifier = Modifier.size(50.dp)
-                        )
-                    }
-                }
-
-                IconButton(onClick = onNextClick) {
-                    Icon(
-                        imageVector = Icons.Filled.SkipNext,
-                        contentDescription = "Next song",
-                        tint = Color.White,
-                        modifier = Modifier.size(38.dp)
-                    )
-                }
-
-                PlayerModeIconButton(
-                    isActive = repeatMode != RepeatMode.OFF,
-                    onClick = onRepeatClick
-                ) {
-                    Icon(
-                        imageVector = if (repeatMode == RepeatMode.ONE) {
-                            Icons.Filled.RepeatOne
-                        } else {
-                            Icons.Filled.Repeat
-                        },
-                        contentDescription = when (repeatMode) {
-                            RepeatMode.OFF -> "Repeat off"
-                            RepeatMode.ALL -> "Repeat all"
-                            RepeatMode.ONE -> "Repeat one"
-                        },
-                        tint = if (repeatMode == RepeatMode.OFF) {
-                            Color.White.copy(alpha = 0.74f)
-                        } else {
-                            MaterialTheme.colorScheme.onPrimary
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Button(
-                onClick = onOpenUpNextClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White.copy(alpha = 0.18f),
-                    contentColor = Color.White
-                )
-            ) {
-                Text(text = "Up Next")
-            }
-        }
-    }
-}
-
-@Composable
-private fun PlayerModeIconButton(
-    isActive: Boolean,
-    onClick: () -> Unit,
-    icon: @Composable () -> Unit
-) {
-    val backgroundColor = if (isActive) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        Color.White.copy(alpha = 0.10f)
-    }
-
-    Box(
-        modifier = Modifier
-            .size(48.dp)
-            .clip(CircleShape)
-            .background(backgroundColor),
-        contentAlignment = Alignment.Center
-    ) {
-        IconButton(onClick = onClick) {
-            icon()
         }
     }
 }
