@@ -293,7 +293,7 @@ private fun MainDeck(
             colors = SliderDefaults.colors(
                 thumbColor = ControlSilver,
                 activeTrackColor = LcdGreen,
-                inactiveTrackColor = Color(0xFF30343A)
+                inactiveTrackColor = InactiveTrack
             ),
             modifier = Modifier
                 .fillMaxWidth()
