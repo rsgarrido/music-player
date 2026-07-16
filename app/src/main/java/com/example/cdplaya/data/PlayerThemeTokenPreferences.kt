@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.toArgb
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenOverrides
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.theme.applyOverrides
+import com.example.cdplaya.ui.player.theme.customizationOptions
 import com.example.cdplaya.ui.player.theme.defaultTokens
 
 class PlayerThemeTokenPreferences internal constructor(
@@ -30,7 +31,12 @@ class PlayerThemeTokenPreferences internal constructor(
     }
 
     fun getTokens(playerTheme: PlayerTheme): PlayerThemeTokens {
-        return playerTheme.defaultTokens().applyOverrides(getOverrides(playerTheme))
+        val defaultTokens = playerTheme.defaultTokens()
+        return if (playerTheme.customizationOptions().isEmpty()) {
+            defaultTokens
+        } else {
+            defaultTokens.applyOverrides(getOverrides(playerTheme))
+        }
     }
 
     fun saveOverrides(

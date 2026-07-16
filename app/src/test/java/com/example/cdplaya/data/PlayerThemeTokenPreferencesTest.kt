@@ -27,6 +27,10 @@ class PlayerThemeTokenPreferencesTest {
         preferences.saveOverrides(PlayerTheme.CLASSIC_WHEEL, overrides)
 
         assertEquals(overrides, preferences.getOverrides(PlayerTheme.CLASSIC_WHEEL))
+        assertEquals(
+            PlayerTheme.CLASSIC_WHEEL.defaultTokens().applyOverrides(overrides),
+            preferences.getTokens(PlayerTheme.CLASSIC_WHEEL)
+        )
         assertEquals("#FFAABBCC", harness.values["classic_wheel.shell"])
         assertEquals("#80112233", harness.values["classic_wheel.secondary_accent"])
     }
@@ -67,7 +71,22 @@ class PlayerThemeTokenPreferencesTest {
         preferences.clearOverrides(PlayerTheme.CLASSIC_WHEEL)
 
         assertEquals(PlayerThemeTokenOverrides(), preferences.getOverrides(PlayerTheme.CLASSIC_WHEEL))
+        assertEquals(
+            PlayerTheme.CLASSIC_WHEEL.defaultTokens(),
+            preferences.getTokens(PlayerTheme.CLASSIC_WHEEL)
+        )
         assertEquals(flipOverrides, preferences.getOverrides(PlayerTheme.POCKET_FLIP))
+    }
+
+    @Test
+    fun getTokens_defaultThemeIgnoresStoredOverrides() {
+        val preferences = PlayerThemeTokenPreferences(SharedPreferencesHarness().preferences)
+        preferences.saveOverrides(
+            PlayerTheme.DEFAULT,
+            PlayerThemeTokenOverrides(shellColor = Color.Red)
+        )
+
+        assertEquals(PlayerTheme.DEFAULT.defaultTokens(), preferences.getTokens(PlayerTheme.DEFAULT))
     }
 
     @Test

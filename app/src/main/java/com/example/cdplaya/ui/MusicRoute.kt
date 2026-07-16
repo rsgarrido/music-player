@@ -192,6 +192,7 @@ fun MusicRoute(
             musicViewModel.cancelSleepTimer()
         },
         selectedPlayerTheme = musicViewModel.selectedPlayerTheme,
+        selectedPlayerThemeTokens = musicViewModel.selectedPlayerThemeTokens,
         onPlayerThemeSelected = { playerTheme ->
             musicViewModel.selectPlayerTheme(playerTheme)
         },

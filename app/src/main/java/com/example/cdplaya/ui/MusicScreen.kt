@@ -26,6 +26,7 @@ import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.playlist.rememberPlaylistSnackbarActions
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.queue.rememberQueueSnackbarActions
 import com.example.cdplaya.ui.tageditor.DiscardTagChangesDialog
 import com.example.cdplaya.ui.tageditor.TagEditorScreen
@@ -96,6 +97,7 @@ fun MusicScreen(
     onCancelSleepTimerClick: () -> Unit,
     recentlyPlayedSongs: List<Song>,
     selectedPlayerTheme: PlayerTheme,
+    selectedPlayerThemeTokens: PlayerThemeTokens,
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
@@ -514,6 +516,7 @@ fun MusicScreen(
                     isSleepTimerDialogVisible = false
                 },
                 selectedPlayerTheme = selectedPlayerTheme,
+                selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                 songs = songs,
                 onSongClick = onSongClick
             )
