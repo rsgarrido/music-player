@@ -40,6 +40,7 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     onLibraryFoldersClick: () -> Unit,
     onExportBackupClick: () -> Unit,
+    onRestoreBackupClick: () -> Unit,
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
     onSleepTimerClick: () -> Unit,
@@ -137,6 +138,24 @@ fun SettingsScreen(
             },
             modifier = Modifier.clickable {
                 onExportBackupClick()
+            }
+        )
+
+        ListItem(
+            headlineContent = {
+                Text(text = "Restore Backup")
+            },
+            supportingContent = {
+                Text(text = "Replace app data from a CDPlaya backup JSON file.")
+            },
+            trailingContent = {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    contentDescription = "Restore backup"
+                )
+            },
+            modifier = Modifier.clickable {
+                onRestoreBackupClick()
             }
         )
 

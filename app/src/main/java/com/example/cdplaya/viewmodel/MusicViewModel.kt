@@ -16,8 +16,11 @@ import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.PlayerThemePreferences
 import com.example.cdplaya.data.ListeningHistoryRepository
+import com.example.cdplaya.data.backup.AppBackup
 import com.example.cdplaya.data.backup.BackupExportResult
 import com.example.cdplaya.data.backup.BackupRepository
+import com.example.cdplaya.data.backup.BackupRestoreResult
+import com.example.cdplaya.data.backup.BackupRestoreSummary
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
 import com.example.cdplaya.data.playlistfile.M3uExportResult
@@ -300,6 +303,44 @@ class MusicViewModel(
                     backupRepository.writeBackupToUri(uri)
                 }
             )
+        }
+    }
+
+    fun readBackupFromUri(
+        uri: Uri,
+        onRead: (Result<AppBackup>) -> Unit
+    ) {
+        viewModelScope.launch {
+            onRead(
+                runCatching {
+                    backupRepository.readBackupFromUri(uri)
+                }
+            )
+        }
+    }
+
+    fun summarizeBackupRestore(backup: AppBackup): BackupRestoreSummary {
+        return backupRepository.summarizeRestore(backup)
+    }
+
+    fun restoreBackup(
+        backup: AppBackup,
+        onRestored: (Result<BackupRestoreResult>) -> Unit
+    ) {
+        viewModelScope.launch {
+            val result = runCatching {
+                val restoreResult = backupRepository.restoreBackup(backup)
+
+                libraryController.refreshAfterBackupRestore()
+
+                selectedPlayerTheme = playerThemePreferences.getSelectedPlayerTheme()
+                selectedReplayGainMode = replayGainPreferences.getReplayGainMode()
+                playbackController.setReplayGainMode(selectedReplayGainMode)
+
+                restoreResult
+            }
+
+            onRestored(result)
         }
     }
 

@@ -435,6 +435,32 @@ class LibraryController(
         }
     }
 
+    internal suspend fun refreshAfterBackupRestore() {
+        val restoredData = withContext(Dispatchers.IO) {
+            BackupRestoredUserData(
+                selectedLibraryFolders = libraryPreferences.getSelectedFolders(),
+                favoriteSongKeys = favoritesRepository.getFavoriteSongKeys(),
+                playlists = playlistsRepository.getPlaylists(),
+                recentlyPlayed = listeningHistoryRepository.getRecentlyPlayed(),
+                mostPlayed = listeningHistoryRepository.getMostPlayed()
+            )
+        }
+        val folderSelectionChanged =
+            selectedLibraryFolders != restoredData.selectedLibraryFolders
+
+        selectedLibraryFolders = restoredData.selectedLibraryFolders
+        favoriteSongKeys = restoredData.favoriteSongKeys
+        playlists = restoredData.playlists
+        selectedPlaylistName = "Playlist"
+        selectedPlaylistSongs = emptyList()
+        recentlyPlayedSongs = mapListeningHistoryEntriesToSongs(restoredData.recentlyPlayed)
+        mostPlayedSongs = mapListeningHistoryEntriesToSongs(restoredData.mostPlayed)
+
+        if (folderSelectionChanged) {
+            reloadSongsAfterFolderChange()
+        }
+    }
+
     private fun reloadSongsAfterFolderChange() {
         coroutineScope.launch {
             val hasCachedSongs = withContext(Dispatchers.IO) {
@@ -523,3 +549,11 @@ class LibraryController(
         }
     }
 }
+
+private data class BackupRestoredUserData(
+    val selectedLibraryFolders: Set<String>,
+    val favoriteSongKeys: Set<String>,
+    val playlists: List<Playlist>,
+    val recentlyPlayed: List<ListeningHistoryEntry>,
+    val mostPlayed: List<ListeningHistoryEntry>
+)
