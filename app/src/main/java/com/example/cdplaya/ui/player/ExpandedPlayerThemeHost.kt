@@ -8,11 +8,12 @@ import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
 import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
-import com.example.cdplaya.ui.player.theme.defaultTokens
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 
 @Composable
 fun ExpandedPlayerThemeHost(
     selectedPlayerTheme: PlayerTheme,
+    tokens: PlayerThemeTokens,
     currentSong: Song?,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
@@ -33,8 +34,6 @@ fun ExpandedPlayerThemeHost(
     upcomingSongs: List<Song>,
     onSongClick: (Song, List<Song>) -> Unit
 ) {
-    val tokens = selectedPlayerTheme.defaultTokens()
-
     when (selectedPlayerTheme) {
         PlayerTheme.DEFAULT -> {
             DefaultExpandedPlayer(

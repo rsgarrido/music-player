@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cdplaya.controller.LibraryController
@@ -15,6 +16,7 @@ import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.PlayerThemePreferences
+import com.example.cdplaya.data.PlayerThemeTokenPreferences
 import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.backup.AppBackup
 import com.example.cdplaya.data.backup.BackupExportResult
@@ -29,6 +31,10 @@ import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.player.replaygain.ReplayGainPreferences
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokenOverrides
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.theme.customizationOptions
 import kotlinx.coroutines.launch
 
 class MusicViewModel(
@@ -41,16 +47,75 @@ class MusicViewModel(
 
     private val playerThemePreferences = PlayerThemePreferences(appContext)
 
+    private val playerThemeTokenPreferences = PlayerThemeTokenPreferences(appContext)
+
     private val replayGainPreferences = ReplayGainPreferences(appContext)
 
-    var selectedPlayerTheme by mutableStateOf(
+    private var selectedPlayerThemeState by mutableStateOf(
         playerThemePreferences.getSelectedPlayerTheme()
     )
+
+    var selectedPlayerThemeTokens by mutableStateOf(
+        playerThemeTokenPreferences.getTokens(selectedPlayerThemeState)
+    )
         private set
+
+    var selectedPlayerTheme: PlayerTheme
+        get() = selectedPlayerThemeState
+        private set(value) {
+            selectedPlayerThemeState = value
+            selectedPlayerThemeTokens = playerThemeTokenPreferences.getTokens(value)
+        }
 
     fun selectPlayerTheme(playerTheme: PlayerTheme) {
         selectedPlayerTheme = playerTheme
         playerThemePreferences.saveSelectedPlayerTheme(playerTheme)
+    }
+
+    fun updatePlayerThemeTokenOverride(
+        playerTheme: PlayerTheme,
+        field: PlayerThemeTokenField,
+        color: Color
+    ) {
+        if (playerTheme.customizationOptions().none { option -> option.field == field }) {
+            return
+        }
+
+        val currentOverrides = playerThemeTokenPreferences.getOverrides(playerTheme)
+        val updatedOverrides = when (field) {
+            PlayerThemeTokenField.SHELL -> currentOverrides.copy(shellColor = color)
+            PlayerThemeTokenField.ACCENT -> currentOverrides.copy(accentColor = color)
+            PlayerThemeTokenField.DISPLAY_BACKGROUND -> {
+                currentOverrides.copy(displayBackgroundColor = color)
+            }
+
+            PlayerThemeTokenField.DISPLAY_TEXT -> currentOverrides.copy(displayTextColor = color)
+            PlayerThemeTokenField.SECONDARY_ACCENT -> {
+                currentOverrides.copy(secondaryAccentColor = color)
+            }
+        }
+
+        playerThemeTokenPreferences.saveOverrides(playerTheme, updatedOverrides)
+        refreshSelectedPlayerThemeTokens(playerTheme)
+    }
+
+    fun resetPlayerThemeTokenOverrides(playerTheme: PlayerTheme) {
+        playerThemeTokenPreferences.clearOverrides(playerTheme)
+        refreshSelectedPlayerThemeTokens(playerTheme)
+    }
+
+    fun getPlayerThemeTokenOverrides(playerTheme: PlayerTheme): PlayerThemeTokenOverrides {
+        return if (playerTheme.customizationOptions().isEmpty()) {
+            PlayerThemeTokenOverrides()
+        } else {
+            playerThemeTokenPreferences.getOverrides(playerTheme)
+        }
+    }
+
+    private fun refreshSelectedPlayerThemeTokens(playerTheme: PlayerTheme) {
+        if (selectedPlayerTheme == playerTheme) {
+            selectedPlayerThemeTokens = playerThemeTokenPreferences.getTokens(playerTheme)
+        }
     }
 
     var selectedReplayGainMode by mutableStateOf(

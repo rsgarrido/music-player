@@ -192,9 +192,12 @@ fun MusicRoute(
             musicViewModel.cancelSleepTimer()
         },
         selectedPlayerTheme = musicViewModel.selectedPlayerTheme,
+        selectedPlayerThemeTokens = musicViewModel.selectedPlayerThemeTokens,
         onPlayerThemeSelected = { playerTheme ->
             musicViewModel.selectPlayerTheme(playerTheme)
         },
+        onUpdatePlayerThemeTokenOverride = musicViewModel::updatePlayerThemeTokenOverride,
+        onResetPlayerThemeTokenOverrides = musicViewModel::resetPlayerThemeTokenOverrides,
         selectedReplayGainMode = musicViewModel.selectedReplayGainMode,
         onReplayGainModeSelected = { replayGainMode ->
             musicViewModel.selectReplayGainMode(replayGainMode)

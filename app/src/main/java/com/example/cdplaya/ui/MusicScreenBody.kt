@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.PlayerTheme
@@ -20,6 +21,8 @@ import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.library.MusicLibraryContent
 import com.example.cdplaya.ui.queue.QueueSnackbarActions
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.settings.SettingsScreen
 
 @Composable
@@ -108,7 +111,10 @@ fun MusicScreenBody(
     recentlyPlayedSongs: List<Song>,
     mostPlayedSongs: List<Song>,
     selectedPlayerTheme: PlayerTheme,
+    selectedPlayerThemeTokens: PlayerThemeTokens,
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
+    onUpdatePlayerThemeTokenOverride: (PlayerTheme, PlayerThemeTokenField, Color) -> Unit,
+    onResetPlayerThemeTokenOverrides: (PlayerTheme) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     modifier: Modifier = Modifier
@@ -139,7 +145,10 @@ fun MusicScreenBody(
                 sleepTimerDisplayText = sleepTimerDisplayText,
                 onSleepTimerClick = onSleepTimerClick,
                 selectedPlayerTheme = selectedPlayerTheme,
+                selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                 onPlayerThemeSelected = onPlayerThemeSelected,
+                onUpdatePlayerThemeTokenOverride = onUpdatePlayerThemeTokenOverride,
+                onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
                 selectedReplayGainMode = selectedReplayGainMode,
                 onReplayGainModeSelected = onReplayGainModeSelected,
                 modifier = modifier.fillMaxSize()

@@ -17,6 +17,7 @@ import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.ExpandedPlayerThemeHost
 import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.playlist.AddToPlaylistDialog
 import com.example.cdplaya.ui.playlist.PlaylistNameDialog
 import com.example.cdplaya.ui.queue.QueueScreen
@@ -68,7 +69,8 @@ fun MusicScreenOverlays(
     onStartSleepTimerClick: (Int) -> Unit,
     onCancelSleepTimerClick: () -> Unit,
     onDismissSleepTimerDialog: () -> Unit,
-    selectedPlayerTheme: PlayerTheme
+    selectedPlayerTheme: PlayerTheme,
+    selectedPlayerThemeTokens: PlayerThemeTokens
 ) {
 
     ImmersiveSystemBarsEffect(
@@ -90,6 +92,7 @@ fun MusicScreenOverlays(
         ) {
             ExpandedPlayerThemeHost(
                 selectedPlayerTheme = selectedPlayerTheme,
+                tokens = selectedPlayerThemeTokens,
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,

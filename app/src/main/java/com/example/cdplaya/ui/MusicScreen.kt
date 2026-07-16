@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import android.net.Uri
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.LibraryFolder
@@ -26,6 +27,8 @@ import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.playlist.rememberPlaylistSnackbarActions
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.queue.rememberQueueSnackbarActions
 import com.example.cdplaya.ui.tageditor.DiscardTagChangesDialog
 import com.example.cdplaya.ui.tageditor.TagEditorScreen
@@ -96,7 +99,10 @@ fun MusicScreen(
     onCancelSleepTimerClick: () -> Unit,
     recentlyPlayedSongs: List<Song>,
     selectedPlayerTheme: PlayerTheme,
+    selectedPlayerThemeTokens: PlayerThemeTokens,
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
+    onUpdatePlayerThemeTokenOverride: (PlayerTheme, PlayerThemeTokenField, Color) -> Unit,
+    onResetPlayerThemeTokenOverrides: (PlayerTheme) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     mostPlayedSongs: List<Song>
@@ -431,7 +437,10 @@ fun MusicScreen(
                 recentlyPlayedSongs = recentlyPlayedSongs,
                 mostPlayedSongs = mostPlayedSongs,
                 selectedPlayerTheme = selectedPlayerTheme,
+                selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                 onPlayerThemeSelected = onPlayerThemeSelected,
+                onUpdatePlayerThemeTokenOverride = onUpdatePlayerThemeTokenOverride,
+                onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
                 selectedReplayGainMode = selectedReplayGainMode,
                 onReplayGainModeSelected = onReplayGainModeSelected,
                 modifier = Modifier.fillMaxSize()
@@ -514,6 +523,7 @@ fun MusicScreen(
                     isSleepTimerDialogVisible = false
                 },
                 selectedPlayerTheme = selectedPlayerTheme,
+                selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                 songs = songs,
                 onSongClick = onSongClick
             )

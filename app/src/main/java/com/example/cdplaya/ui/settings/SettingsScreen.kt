@@ -27,10 +27,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.theme.customizationOptions
 
 @Composable
 fun SettingsScreen(
@@ -45,7 +49,10 @@ fun SettingsScreen(
     sleepTimerDisplayText: String,
     onSleepTimerClick: () -> Unit,
     selectedPlayerTheme: PlayerTheme,
+    selectedPlayerThemeTokens: PlayerThemeTokens,
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
+    onUpdatePlayerThemeTokenOverride: (PlayerTheme, PlayerThemeTokenField, Color) -> Unit,
+    onResetPlayerThemeTokenOverrides: (PlayerTheme) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     modifier: Modifier = Modifier
@@ -57,6 +64,12 @@ fun SettingsScreen(
     var isReplayGainDialogVisible by remember {
         mutableStateOf(false)
     }
+
+    var isThemeCustomizationDialogVisible by remember {
+        mutableStateOf(false)
+    }
+
+    val themeCustomizationOptions = selectedPlayerTheme.customizationOptions()
 
     val folderSelectionText = if (selectedFolderCount == 0) {
         "All folders • $availableFolderCount available"
@@ -222,6 +235,26 @@ fun SettingsScreen(
             }
         )
 
+        if (themeCustomizationOptions.isNotEmpty()) {
+            ListItem(
+                headlineContent = {
+                    Text(text = "Customize theme colors")
+                },
+                supportingContent = {
+                    Text(text = "Choose preset colors for ${selectedPlayerTheme.displayName}")
+                },
+                trailingContent = {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowRight,
+                        contentDescription = "Customize theme colors"
+                    )
+                },
+                modifier = Modifier.clickable {
+                    isThemeCustomizationDialogVisible = true
+                }
+            )
+        }
+
         if (isReplayGainDialogVisible) {
             AlertDialog(
                 onDismissRequest = {
@@ -318,6 +351,22 @@ fun SettingsScreen(
                     ) {
                         Text(text = "Close")
                     }
+                }
+            )
+        }
+
+        if (isThemeCustomizationDialogVisible && themeCustomizationOptions.isNotEmpty()) {
+            ThemeColorCustomizationDialog(
+                playerTheme = selectedPlayerTheme,
+                tokens = selectedPlayerThemeTokens,
+                onColorSelected = { field, color ->
+                    onUpdatePlayerThemeTokenOverride(selectedPlayerTheme, field, color)
+                },
+                onReset = {
+                    onResetPlayerThemeTokenOverrides(selectedPlayerTheme)
+                },
+                onDismiss = {
+                    isThemeCustomizationDialogVisible = false
                 }
             )
         }
