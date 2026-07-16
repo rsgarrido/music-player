@@ -5,6 +5,7 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
+import com.example.cdplaya.ui.player.modern.ModernExpandedPlayer
 import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
@@ -36,7 +37,7 @@ fun ExpandedPlayerThemeHost(
 ) {
     when (selectedPlayerTheme) {
         PlayerTheme.DEFAULT -> {
-            DefaultExpandedPlayer(
+            ModernExpandedPlayer(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
@@ -148,45 +149,4 @@ fun ExpandedPlayerThemeHost(
             )
         }
     }
-}
-
-@Composable
-private fun DefaultExpandedPlayer(
-    currentSong: Song?,
-    isPlaying: Boolean,
-    isShuffleEnabled: Boolean,
-    repeatMode: RepeatMode,
-    currentPosition: Int,
-    duration: Int,
-    isCurrentSongFavorite: Boolean,
-    onPlayPauseClick: () -> Unit,
-    onPreviousClick: () -> Unit,
-    onNextClick: () -> Unit,
-    onSeekChange: (Int) -> Unit,
-    onShuffleClick: () -> Unit,
-    onRepeatClick: () -> Unit,
-    onCollapseClick: () -> Unit,
-    onOpenUpNextClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit
-) {
-    PlayerCard(
-        currentSong = currentSong,
-        isPlaying = isPlaying,
-        isExpanded = true,
-        isShuffleEnabled = isShuffleEnabled,
-        repeatMode = repeatMode,
-        currentPosition = currentPosition,
-        duration = duration,
-        onPlayPauseClick = onPlayPauseClick,
-        onPreviousClick = onPreviousClick,
-        onNextClick = onNextClick,
-        onSeekChange = onSeekChange,
-        onShuffleClick = onShuffleClick,
-        onRepeatClick = onRepeatClick,
-        onExpandClick = {},
-        onCollapseClick = onCollapseClick,
-        onOpenUpNextClick = onOpenUpNextClick,
-        isCurrentSongFavorite = isCurrentSongFavorite,
-        onToggleFavoriteClick = onToggleFavoriteClick
-    )
 }
