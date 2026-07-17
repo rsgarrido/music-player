@@ -115,7 +115,7 @@ fun HomeFavoritesCard(
 
                 Text(
                     text = when (favoriteCount) {
-                        0 -> "Songs you favorite will appear here"
+                        0 -> "Songs you love will appear here"
                         1 -> "1 saved song"
                         else -> "$favoriteCount saved songs"
                     },
