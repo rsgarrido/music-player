@@ -513,6 +513,13 @@ fun MusicScreen(
                 onShowExpandedUpNextSheet = {
                     isExpandedUpNextSheetVisible = true
                 },
+                onShowExpandedSleepTimer = {
+                    isSleepTimerDialogVisible = true
+                },
+                onShowExpandedMore = {
+                    isPlayerExpanded = false
+                    isSettingsScreenVisible = true
+                },
                 onDismissExpandedUpNextSheet = {
                     isExpandedUpNextSheetVisible = false
                 },

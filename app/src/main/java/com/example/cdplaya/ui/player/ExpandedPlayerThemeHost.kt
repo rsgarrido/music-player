@@ -30,6 +30,8 @@ fun ExpandedPlayerThemeHost(
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
+    onOpenSleepTimerClick: () -> Unit,
+    onOpenMoreClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     songs: List<Song>,
     upcomingSongs: List<Song>,
@@ -148,5 +150,6 @@ fun ExpandedPlayerThemeHost(
                 tokens = tokens
             )
         }
+
     }
 }
