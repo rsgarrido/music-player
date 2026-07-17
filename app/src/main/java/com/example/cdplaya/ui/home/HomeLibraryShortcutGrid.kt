@@ -82,14 +82,14 @@ private fun LibraryShortcutCard(
 ) {
     Card(
         onClick = onClick,
-        modifier = modifier.heightIn(min = 88.dp),
+        modifier = modifier.heightIn(min = 76.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.Start
         ) {
             Icon(
