@@ -1,6 +1,9 @@
 package com.example.cdplaya.ui.player.modern
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -12,11 +15,14 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
-import com.example.cdplaya.ui.player.playerSwipeGestures
+import com.example.cdplaya.ui.player.expandedPlayerHorizontalSwipeGestures
+import com.example.cdplaya.ui.player.rememberExpandedPlayerDragState
 
 @Composable
 fun ModernExpandedPlayer(
@@ -45,12 +51,28 @@ fun ModernExpandedPlayer(
         return
     }
 
+    val dragState = rememberExpandedPlayerDragState(onCollapseClick)
+    val verticalDragState = rememberDraggableState { deltaY ->
+        dragState.dragBy(deltaY)
+    }
+
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(style.backgroundColor)
-            .playerSwipeGestures(
-                onSwipeDown = onCollapseClick,
+            .onSizeChanged { size ->
+                dragState.updateContainerHeight(size.height)
+            }
+            .graphicsLayer {
+                translationY = dragState.offsetY
+            }
+            .draggable(
+                state = verticalDragState,
+                orientation = Orientation.Vertical,
+                onDragStarted = { dragState.startDrag() },
+                onDragStopped = { velocityY -> dragState.settle(velocityY) }
+            )
+            .expandedPlayerHorizontalSwipeGestures(
                 onSwipeLeft = onNextClick,
                 onSwipeRight = onPreviousClick
             )
