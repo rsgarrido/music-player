@@ -27,6 +27,10 @@ import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.navigation.MainDestination
+import com.example.cdplaya.ui.navigation.PlaybackLaunchContext
+import com.example.cdplaya.ui.navigation.capturePlaybackLaunchContext
+import com.example.cdplaya.ui.navigation.playbackLaunchContextSaver
+import com.example.cdplaya.ui.navigation.withValidDetails
 import com.example.cdplaya.ui.playlist.rememberPlaylistSnackbarActions
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -112,6 +116,11 @@ fun MusicScreen(
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
     var mainDestination by rememberSaveable { mutableStateOf(MainDestination.HOME) }
     var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
+    var playbackLaunchContext by rememberSaveable(
+        stateSaver = playbackLaunchContextSaver
+    ) {
+        mutableStateOf<PlaybackLaunchContext>(PlaybackLaunchContext.Home)
+    }
     var isSettingsScreenVisible by rememberSaveable { mutableStateOf(false) }
     var isExpandedUpNextSheetVisible by rememberSaveable { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
@@ -194,6 +203,76 @@ fun MusicScreen(
         }
     }
 
+    fun recordPlaybackLaunchContext() {
+        playbackLaunchContext = capturePlaybackLaunchContext(
+            mainDestination = mainDestination,
+            selectedLibraryTab = selectedLibraryTab,
+            selectedAlbumFolderPath = selectedAlbumFolderPath,
+            selectedArtistName = selectedArtistName,
+            selectedPlaylistId = selectedPlaylistId,
+            searchQuery = searchQuery
+        )
+    }
+
+    fun restorePlaybackLaunchContext() {
+        val validContext = playbackLaunchContext.withValidDetails(
+            albumFolderPaths = songs.mapTo(mutableSetOf()) { song -> song.folderPath },
+            artistNames = songs.mapTo(mutableSetOf()) { song ->
+                song.artist.ifBlank { "Unknown Artist" }
+            },
+            playlistIds = playlists.mapTo(mutableSetOf()) { playlist -> playlist.playlistId }
+        )
+
+        isPlayerExpanded = false
+        selectedArtistName = null
+        selectedAlbumFolderPath = null
+        selectedPlaylistId = null
+
+        when (validContext) {
+            PlaybackLaunchContext.Home -> {
+                mainDestination = MainDestination.HOME
+            }
+
+            is PlaybackLaunchContext.LibrarySection -> {
+                selectedLibraryTab = validContext.tab
+                searchQuery = ""
+                mainDestination = MainDestination.LIBRARY
+            }
+
+            is PlaybackLaunchContext.AlbumDetail -> {
+                selectedLibraryTab = LibraryTab.ALBUMS
+                selectedAlbumFolderPath = validContext.folderPath
+                searchQuery = ""
+                mainDestination = MainDestination.LIBRARY
+            }
+
+            is PlaybackLaunchContext.ArtistDetail -> {
+                selectedLibraryTab = LibraryTab.ARTISTS
+                selectedArtistName = validContext.artistName
+                searchQuery = ""
+                mainDestination = MainDestination.LIBRARY
+            }
+
+            is PlaybackLaunchContext.PlaylistDetail -> {
+                selectedLibraryTab = LibraryTab.PLAYLISTS
+                playlists.firstOrNull { playlist ->
+                    playlist.playlistId == validContext.playlistId
+                }?.let { playlist ->
+                    selectedPlaylistId = playlist.playlistId
+                    onPlaylistSelected(playlist)
+                }
+                searchQuery = ""
+                mainDestination = MainDestination.LIBRARY
+            }
+
+            is PlaybackLaunchContext.Search -> {
+                selectedLibraryTab = LibraryTab.SONGS
+                searchQuery = validContext.query
+                mainDestination = MainDestination.LIBRARY
+            }
+        }
+    }
+
     BackHandler(
         enabled = songPendingTagEdit != null ||
                 isExpandedUpNextSheetVisible ||
@@ -215,7 +294,7 @@ fun MusicScreen(
             }
 
             isPlayerExpanded -> {
-                isPlayerExpanded = false
+                restorePlaybackLaunchContext()
             }
 
             isFolderScreenVisible -> {
@@ -389,8 +468,14 @@ fun MusicScreen(
                     selectedPlaylistId = null
                     mainDestination = MainDestination.LIBRARY
                 },
-                onSongClick = onSongClick,
-                onPlaySongsClick = onPlaySongsClick,
+                onSongClick = { song, playbackContext ->
+                    recordPlaybackLaunchContext()
+                    onSongClick(song, playbackContext)
+                },
+                onPlaySongsClick = { playbackContext, shuffle ->
+                    recordPlaybackLaunchContext()
+                    onPlaySongsClick(playbackContext, shuffle)
+                },
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
@@ -504,7 +589,7 @@ fun MusicScreen(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseExpandedPlayer = {
-                    isPlayerExpanded = false
+                    restorePlaybackLaunchContext()
                 },
                 onShowExpandedUpNextSheet = {
                     isExpandedUpNextSheetVisible = true
@@ -513,7 +598,7 @@ fun MusicScreen(
                     isSleepTimerDialogVisible = true
                 },
                 onShowExpandedMore = {
-                    isPlayerExpanded = false
+                    restorePlaybackLaunchContext()
                     isSettingsScreenVisible = true
                 },
                 onDismissExpandedUpNextSheet = {
