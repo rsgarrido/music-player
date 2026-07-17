@@ -174,18 +174,18 @@ fun MusicScreenBody(
                 targetState = mainDestination,
                 transitionSpec = {
                     if (targetState == MainDestination.LIBRARY) {
-                        (fadeIn(tween(220)) +
-                                slideInHorizontally(tween(220)) { width -> width / 12 })
+                        (fadeIn(tween(170)) +
+                                slideInHorizontally(tween(180)) { width -> width / 18 })
                             .togetherWith(
-                                fadeOut(tween(160)) +
-                                        slideOutHorizontally(tween(180)) { width -> -width / 16 }
+                                fadeOut(tween(120)) +
+                                        slideOutHorizontally(tween(150)) { width -> -width / 24 }
                             )
                     } else {
-                        (fadeIn(tween(220)) +
-                                slideInHorizontally(tween(220)) { width -> -width / 12 })
+                        (fadeIn(tween(170)) +
+                                slideInHorizontally(tween(180)) { width -> -width / 18 })
                             .togetherWith(
-                                fadeOut(tween(160)) +
-                                        slideOutHorizontally(tween(180)) { width -> width / 16 }
+                                fadeOut(tween(120)) +
+                                        slideOutHorizontally(tween(150)) { width -> width / 24 }
                             )
                     }
                 },
