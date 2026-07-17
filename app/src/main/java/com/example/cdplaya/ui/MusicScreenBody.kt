@@ -1,6 +1,14 @@
 package com.example.cdplaya.ui
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -162,7 +170,28 @@ fun MusicScreenBody(
         }
 
         else -> {
-            if (mainDestination == MainDestination.HOME) {
+            AnimatedContent(
+                targetState = mainDestination,
+                transitionSpec = {
+                    if (targetState == MainDestination.LIBRARY) {
+                        (fadeIn(tween(170)) +
+                                slideInHorizontally(tween(180)) { width -> width / 18 })
+                            .togetherWith(
+                                fadeOut(tween(120)) +
+                                        slideOutHorizontally(tween(150)) { width -> -width / 24 }
+                            )
+                    } else {
+                        (fadeIn(tween(170)) +
+                                slideInHorizontally(tween(180)) { width -> -width / 18 })
+                            .togetherWith(
+                                fadeOut(tween(120)) +
+                                        slideOutHorizontally(tween(150)) { width -> width / 24 }
+                            )
+                    }
+                },
+                label = "appShellDestination"
+            ) { destination ->
+                if (destination == MainDestination.HOME) {
                 HomeScreen(
                     permissionGranted = permissionGranted,
                     showContinueListening = currentSong != null && !isPlayerExpanded,
@@ -201,10 +230,11 @@ fun MusicScreenBody(
                         )
                     }
                 )
-            } else {
-                Column(
+                } else {
+                    Column(
                     modifier = modifier
                         .fillMaxSize()
+                        .background(appShellBackgroundBrush())
                         .animateContentSize()
                 ) {
                     MusicScreenHeader(
@@ -320,6 +350,7 @@ fun MusicScreenBody(
                             mostPlayedSongs = mostPlayedSongs,
                             modifier = Modifier.weight(1f)
                         )
+                    }
                     }
                 }
             }
