@@ -22,7 +22,6 @@ import com.example.cdplaya.ui.library.LibrarySearchBar
 import com.example.cdplaya.ui.library.LibrarySortDropdown
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
-import com.example.cdplaya.ui.library.LibraryTabs
 import com.example.cdplaya.ui.player.PlayerCard
 import com.example.cdplaya.ui.player.SleepTimerStatusBanner
 
@@ -130,18 +129,12 @@ fun LibraryChromeControls(
     selectedArtistSortOption: LibrarySortOption,
     selectedAlbumSortOption: LibrarySortOption,
     selectedFavoriteSortOption: LibrarySortOption,
-    onTabSelected: (LibraryTab) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onSongSortOptionSelected: (LibrarySortOption) -> Unit,
     onArtistSortOptionSelected: (LibrarySortOption) -> Unit,
     onAlbumSortOptionSelected: (LibrarySortOption) -> Unit,
     onFavoriteSortOptionSelected: (LibrarySortOption) -> Unit
 ) {
-    LibraryTabs(
-        selectedTab = selectedLibraryTab,
-        onTabSelected = onTabSelected
-    )
-
     if (selectedLibraryTab != LibraryTab.QUEUE) {
         LibrarySearchBar(
             searchQuery = searchQuery,

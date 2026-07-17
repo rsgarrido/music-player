@@ -72,7 +72,6 @@ fun MusicScreenBody(
     onLibraryFolderToggle: (String) -> Unit,
     onSelectAllLibraryFolders: () -> Unit,
     onClearSelectedLibraryFolders: () -> Unit,
-    onTabSelected: (LibraryTab) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onSongSortOptionSelected: (LibrarySortOption) -> Unit,
     onArtistSortOptionSelected: (LibrarySortOption) -> Unit,
@@ -201,7 +200,7 @@ fun MusicScreenBody(
                         .animateContentSize()
                 ) {
                     MusicScreenHeader(
-                        title = "Library",
+                        title = selectedLibraryTab.title,
                         onBackClick = onHomeClick,
                         onSettingsClick = onSettingsClick
                     )
@@ -245,7 +244,6 @@ fun MusicScreenBody(
                             selectedArtistSortOption = selectedArtistSortOption,
                             selectedAlbumSortOption = selectedAlbumSortOption,
                             selectedFavoriteSortOption = selectedFavoriteSortOption,
-                            onTabSelected = onTabSelected,
                             onSearchQueryChange = onSearchQueryChange,
                             onSongSortOptionSelected = onSongSortOptionSelected,
                             onArtistSortOptionSelected = onArtistSortOptionSelected,

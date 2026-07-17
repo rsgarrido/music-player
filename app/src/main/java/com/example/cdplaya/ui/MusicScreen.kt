@@ -327,10 +327,12 @@ fun MusicScreen(
                     isSettingsScreenVisible = true
                 },
                 onHomeClick = {
-                    selectedArtistName = null
-                    selectedAlbumFolderPath = null
-                    selectedPlaylistId = null
-                    mainDestination = MainDestination.HOME
+                    when {
+                        selectedArtistName != null -> selectedArtistName = null
+                        selectedAlbumFolderPath != null -> selectedAlbumFolderPath = null
+                        selectedPlaylistId != null -> selectedPlaylistId = null
+                        else -> mainDestination = MainDestination.HOME
+                    }
                 },
                 onOpenLibrary = { tab ->
                     selectedLibraryTab = tab
@@ -362,12 +364,6 @@ fun MusicScreen(
                 onLibraryFolderToggle = onLibraryFolderToggle,
                 onSelectAllLibraryFolders = onSelectAllLibraryFolders,
                 onClearSelectedLibraryFolders = onClearSelectedLibraryFolders,
-                onTabSelected = { tab ->
-                    selectedLibraryTab = tab
-                    selectedArtistName = null
-                    selectedAlbumFolderPath = null
-                    selectedPlaylistId = null
-                },
                 onSearchQueryChange = { query ->
                     searchQuery = query
                 },
