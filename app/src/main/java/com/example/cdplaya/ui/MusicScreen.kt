@@ -12,8 +12,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import android.net.Uri
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.LibraryFolder
@@ -328,6 +330,16 @@ fun MusicScreen(
         modifier = modifier.fillMaxSize()
     ) {
         val selectedSongForTagEdit = songPendingTagEdit
+        val shouldShowBottomMiniPlayer = currentSong != null &&
+                !isPlayerExpanded &&
+                !isFolderScreenVisible &&
+                !isSettingsScreenVisible &&
+                selectedSongForTagEdit == null
+        val bottomContentPadding = when {
+            !shouldShowBottomMiniPlayer -> 24.dp
+            isSleepTimerActive -> 176.dp
+            else -> 96.dp
+        }
 
         if (selectedSongForTagEdit != null) {
             val initialEditableTags = remember(
@@ -548,7 +560,43 @@ fun MusicScreen(
                 onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
                 selectedReplayGainMode = selectedReplayGainMode,
                 onReplayGainModeSelected = onReplayGainModeSelected,
+                bottomContentPadding = bottomContentPadding,
                 modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        if (shouldShowBottomMiniPlayer) {
+            MiniPlayerSection(
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                isShuffleEnabled = isShuffleEnabled,
+                repeatMode = repeatMode,
+                currentPosition = currentPosition,
+                duration = duration,
+                favoriteSongKeys = favoriteSongKeys,
+                onPlayPauseClick = onPlayPauseClick,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick,
+                onSeekChange = onSeekChange,
+                onShuffleClick = onShuffleClick,
+                onRepeatClick = onRepeatClick,
+                onExpandClick = {
+                    isPlayerExpanded = true
+                },
+                onOpenUpNextClick = {
+                    selectedLibraryTab = LibraryTab.QUEUE
+                    selectedArtistName = null
+                    selectedAlbumFolderPath = null
+                    selectedPlaylistId = null
+                    mainDestination = MainDestination.LIBRARY
+                },
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                isSleepTimerActive = isSleepTimerActive,
+                sleepTimerDisplayText = sleepTimerDisplayText,
+                onSleepTimerClick = {
+                    isSleepTimerDialogVisible = true
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
 

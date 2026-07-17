@@ -202,7 +202,8 @@ fun MusicLibraryContent(
         LibraryTab.RECENTLY_PLAYED -> {
             if (recentlyPlayedSongs.isEmpty()) {
                 EmptyHistoryMessage(
-                    message = "No recently played songs yet."
+                    message = "No recently played songs yet.",
+                    modifier = modifier
                 )
             } else {
                 SongList(
@@ -215,7 +216,8 @@ fun MusicLibraryContent(
                     onAddToQueueClick = onAddToQueueClick,
                     onToggleFavoriteClick = onToggleFavoriteClick,
                     onAddToPlaylistClick = onAddToPlaylistClick,
-                    onEditSongTagsClick = onEditSongTagsClick
+                    onEditSongTagsClick = onEditSongTagsClick,
+                    modifier = modifier
                 )
             }
         }
@@ -223,7 +225,8 @@ fun MusicLibraryContent(
         LibraryTab.MOST_PLAYED -> {
             if (mostPlayedSongs.isEmpty()) {
                 EmptyHistoryMessage(
-                    message = "No most played songs yet."
+                    message = "No most played songs yet.",
+                    modifier = modifier
                 )
             } else {
                 SongList(
@@ -236,7 +239,8 @@ fun MusicLibraryContent(
                     onAddToQueueClick = onAddToQueueClick,
                     onToggleFavoriteClick = onToggleFavoriteClick,
                     onAddToPlaylistClick = onAddToPlaylistClick,
-                    onEditSongTagsClick = onEditSongTagsClick
+                    onEditSongTagsClick = onEditSongTagsClick,
+                    modifier = modifier
                 )
             }
         }

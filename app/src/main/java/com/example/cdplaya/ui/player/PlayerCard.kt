@@ -18,11 +18,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -72,7 +69,7 @@ fun PlayerCard(
     }
 
     val albumArtSize by animateDpAsState(
-        targetValue = if (isExpanded) 292.dp else 56.dp,
+        targetValue = if (isExpanded) 292.dp else 52.dp,
         animationSpec = tween(durationMillis = 300),
         label = "albumArtSize"
     )
@@ -132,7 +129,6 @@ private fun MiniPlayerCard(
                 animationSpec = tween(durationMillis = 300)
             )
             .playerSwipeGestures(
-                onSwipeDown = onExpandClick,
                 onSwipeLeft = onNextClick,
                 onSwipeRight = onPreviousClick
             ),
@@ -153,7 +149,7 @@ private fun MiniPlayerCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(12.dp),
+                    .padding(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
             AsyncImage(
@@ -185,13 +181,6 @@ private fun MiniPlayerCard(
                 )
             }
 
-            IconButton(onClick = onPreviousClick) {
-                Icon(
-                    imageVector = Icons.Filled.SkipPrevious,
-                    contentDescription = "Previous song"
-                )
-            }
-
             IconButton(onClick = onPlayPauseClick) {
                 Icon(
                     imageVector = if (isPlaying) {
@@ -203,19 +192,6 @@ private fun MiniPlayerCard(
                 )
             }
 
-            IconButton(onClick = onNextClick) {
-                Icon(
-                    imageVector = Icons.Filled.SkipNext,
-                    contentDescription = "Next song"
-                )
-            }
-
-            IconButton(onClick = onExpandClick) {
-                Icon(
-                    imageVector = Icons.Filled.ExpandMore,
-                    contentDescription = "Expand player"
-                )
-            }
             }
         }
     }
