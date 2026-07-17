@@ -16,10 +16,12 @@ import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.ui.home.HomeScreen
 import com.example.cdplaya.ui.library.FolderSelectionScreen
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.library.MusicLibraryContent
+import com.example.cdplaya.ui.navigation.MainDestination
 import com.example.cdplaya.ui.queue.QueueSnackbarActions
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -43,6 +45,7 @@ fun MusicScreenBody(
     playlists: List<Playlist>,
     selectedPlaylistName: String,
     selectedPlaylistSongs: List<PlaylistSong>,
+    mainDestination: MainDestination,
     selectedLibraryTab: LibraryTab,
     selectedArtistName: String?,
     selectedAlbumFolderPath: String?,
@@ -58,6 +61,9 @@ fun MusicScreenBody(
     isSettingsScreenVisible: Boolean,
     queueSnackbarActions: QueueSnackbarActions,
     onSettingsClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    onOpenLibrary: (LibraryTab) -> Unit,
+    onSearchClick: () -> Unit,
     onFolderBackClick: () -> Unit,
     onSettingsBackClick: () -> Unit,
     onLibraryFoldersClick: () -> Unit,
@@ -156,22 +162,15 @@ fun MusicScreenBody(
         }
 
         else -> {
-            Column(
-                modifier = modifier
-                    .fillMaxSize()
-                    .animateContentSize()
-            ) {
-                MusicScreenHeader(
-                    onSettingsClick = onSettingsClick
-                )
-
-                if (!permissionGranted) {
-                    Text(
-                        text = "Audio and image permissions are needed to show your music.",
-                        modifier = Modifier.padding(16.dp)
-                    )
-                } else {
-                    if (!isPlayerExpanded) {
+            if (mainDestination == MainDestination.HOME) {
+                HomeScreen(
+                    permissionGranted = permissionGranted,
+                    showContinueListening = currentSong != null && !isPlayerExpanded,
+                    onSettingsClick = onSettingsClick,
+                    onOpenLibrary = onOpenLibrary,
+                    onSearchClick = onSearchClick,
+                    modifier = modifier,
+                    continueListeningContent = {
                         MiniPlayerSection(
                             currentSong = currentSong,
                             isPlaying = isPlaying,
@@ -194,85 +193,128 @@ fun MusicScreenBody(
                             onSleepTimerClick = onSleepTimerClick
                         )
                     }
-
-                    LibraryChromeControls(
-                        selectedLibraryTab = selectedLibraryTab,
-                        selectedArtistName = selectedArtistName,
-                        selectedAlbumFolderPath = selectedAlbumFolderPath,
-                        searchQuery = searchQuery,
-                        selectedSongSortOption = selectedSongSortOption,
-                        selectedArtistSortOption = selectedArtistSortOption,
-                        selectedAlbumSortOption = selectedAlbumSortOption,
-                        selectedFavoriteSortOption = selectedFavoriteSortOption,
-                        onTabSelected = onTabSelected,
-                        onSearchQueryChange = onSearchQueryChange,
-                        onSongSortOptionSelected = onSongSortOptionSelected,
-                        onArtistSortOptionSelected = onArtistSortOptionSelected,
-                        onAlbumSortOptionSelected = onAlbumSortOptionSelected,
-                        onFavoriteSortOptionSelected = onFavoriteSortOptionSelected
+                )
+            } else {
+                Column(
+                    modifier = modifier
+                        .fillMaxSize()
+                        .animateContentSize()
+                ) {
+                    MusicScreenHeader(
+                        title = "Library",
+                        onBackClick = onHomeClick,
+                        onSettingsClick = onSettingsClick
                     )
 
-                    MusicLibraryContent(
-                        selectedLibraryTab = selectedLibraryTab,
-                        songs = songs,
-                        searchQuery = searchQuery,
-                        selectedSongSortOption = selectedSongSortOption,
-                        selectedArtistSortOption = selectedArtistSortOption,
-                        selectedAlbumSortOption = selectedAlbumSortOption,
-                        selectedFavoriteSortOption = selectedFavoriteSortOption,
-                        selectedArtistName = selectedArtistName,
-                        selectedAlbumFolderPath = selectedAlbumFolderPath,
-                        selectedPlaylistId = selectedPlaylistId,
-                        playlists = playlists,
-                        selectedPlaylistName = selectedPlaylistName,
-                        selectedPlaylistSongs = selectedPlaylistSongs,
-                        currentSong = currentSong,
-                        recentlyAddedSongIds = recentlyAddedSongIds,
-                        favoriteSongKeys = favoriteSongKeys,
-                        queuedSongs = queuedSongs,
-                        upcomingSongs = upcomingSongs,
-                        isShuffleEnabled = isShuffleEnabled,
-                        onSongClick = onSongClick,
-                        onPlaySongsClick = onPlaySongsClick,
-                        onPlayNextClick = { song ->
-                            queueSnackbarActions.playNext(song)
-                        },
-                        onAddToQueueClick = { song ->
-                            queueSnackbarActions.addToQueue(song)
-                        },
-                        onPlayNextSongsClick = { label, songsToAdd ->
-                            queueSnackbarActions.playNextSongs(label, songsToAdd)
-                        },
-                        onAddSongsToQueueClick = { label, songsToAdd ->
-                            queueSnackbarActions.addSongsToQueue(label, songsToAdd)
-                        },
-                        onToggleFavoriteClick = onToggleFavoriteClick,
-                        onAddToPlaylistClick = onAddToPlaylistClick,
-                        onArtistSelected = onArtistSelected,
-                        onBackFromArtist = onBackFromArtist,
-                        onAlbumSelected = onAlbumSelected,
-                        onBackFromAlbum = onBackFromAlbum,
-                        onBackFromQueue = onBackFromQueue,
-                        onRemoveFromQueueClick = onRemoveFromQueueClick,
-                        onMoveQueueItemUpClick = onMoveQueueItemUpClick,
-                        onMoveQueueItemDownClick = onMoveQueueItemDownClick,
-                        onClearQueueClick = onClearQueueClick,
-                        onCreatePlaylistClick = onCreatePlaylistClick,
-                        onRenamePlaylistClick = onRenamePlaylistClick,
-                        onPlaylistClick = onPlaylistClick,
-                        onDeletePlaylistClick = onDeletePlaylistClick,
-                        onExportPlaylistClick = onExportPlaylistClick,
-                        onImportPlaylistClick = onImportPlaylistClick,
-                        onBackFromPlaylist = onBackFromPlaylist,
-                        onRemovePlaylistSongClick = onRemovePlaylistSongClick,
-                        onMovePlaylistSongUpClick = onMovePlaylistSongUpClick,
-                        onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
-                        onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
-                        onEditSongTagsClick = onEditSongTagsClick,
-                        recentlyPlayedSongs = recentlyPlayedSongs,
-                        mostPlayedSongs = mostPlayedSongs,
-                        modifier = Modifier.weight(1f)
-                    )
+                    if (!permissionGranted) {
+                        Text(
+                            text = "Audio and image permissions are needed to show your music.",
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        if (!isPlayerExpanded) {
+                            MiniPlayerSection(
+                                currentSong = currentSong,
+                                isPlaying = isPlaying,
+                                isShuffleEnabled = isShuffleEnabled,
+                                repeatMode = repeatMode,
+                                currentPosition = currentPosition,
+                                duration = duration,
+                                favoriteSongKeys = favoriteSongKeys,
+                                onPlayPauseClick = onPlayPauseClick,
+                                onPreviousClick = onPreviousClick,
+                                onNextClick = onNextClick,
+                                onSeekChange = onSeekChange,
+                                onShuffleClick = onShuffleClick,
+                                onRepeatClick = onRepeatClick,
+                                onExpandClick = onExpandPlayerClick,
+                                onOpenUpNextClick = onMiniPlayerUpNextClick,
+                                onToggleFavoriteClick = onToggleFavoriteClick,
+                                isSleepTimerActive = isSleepTimerActive,
+                                sleepTimerDisplayText = sleepTimerDisplayText,
+                                onSleepTimerClick = onSleepTimerClick
+                            )
+                        }
+
+                        LibraryChromeControls(
+                            selectedLibraryTab = selectedLibraryTab,
+                            selectedArtistName = selectedArtistName,
+                            selectedAlbumFolderPath = selectedAlbumFolderPath,
+                            searchQuery = searchQuery,
+                            selectedSongSortOption = selectedSongSortOption,
+                            selectedArtistSortOption = selectedArtistSortOption,
+                            selectedAlbumSortOption = selectedAlbumSortOption,
+                            selectedFavoriteSortOption = selectedFavoriteSortOption,
+                            onTabSelected = onTabSelected,
+                            onSearchQueryChange = onSearchQueryChange,
+                            onSongSortOptionSelected = onSongSortOptionSelected,
+                            onArtistSortOptionSelected = onArtistSortOptionSelected,
+                            onAlbumSortOptionSelected = onAlbumSortOptionSelected,
+                            onFavoriteSortOptionSelected = onFavoriteSortOptionSelected
+                        )
+
+                        MusicLibraryContent(
+                            selectedLibraryTab = selectedLibraryTab,
+                            songs = songs,
+                            searchQuery = searchQuery,
+                            selectedSongSortOption = selectedSongSortOption,
+                            selectedArtistSortOption = selectedArtistSortOption,
+                            selectedAlbumSortOption = selectedAlbumSortOption,
+                            selectedFavoriteSortOption = selectedFavoriteSortOption,
+                            selectedArtistName = selectedArtistName,
+                            selectedAlbumFolderPath = selectedAlbumFolderPath,
+                            selectedPlaylistId = selectedPlaylistId,
+                            playlists = playlists,
+                            selectedPlaylistName = selectedPlaylistName,
+                            selectedPlaylistSongs = selectedPlaylistSongs,
+                            currentSong = currentSong,
+                            recentlyAddedSongIds = recentlyAddedSongIds,
+                            favoriteSongKeys = favoriteSongKeys,
+                            queuedSongs = queuedSongs,
+                            upcomingSongs = upcomingSongs,
+                            isShuffleEnabled = isShuffleEnabled,
+                            onSongClick = onSongClick,
+                            onPlaySongsClick = onPlaySongsClick,
+                            onPlayNextClick = { song ->
+                                queueSnackbarActions.playNext(song)
+                            },
+                            onAddToQueueClick = { song ->
+                                queueSnackbarActions.addToQueue(song)
+                            },
+                            onPlayNextSongsClick = { label, songsToAdd ->
+                                queueSnackbarActions.playNextSongs(label, songsToAdd)
+                            },
+                            onAddSongsToQueueClick = { label, songsToAdd ->
+                                queueSnackbarActions.addSongsToQueue(label, songsToAdd)
+                            },
+                            onToggleFavoriteClick = onToggleFavoriteClick,
+                            onAddToPlaylistClick = onAddToPlaylistClick,
+                            onArtistSelected = onArtistSelected,
+                            onBackFromArtist = onBackFromArtist,
+                            onAlbumSelected = onAlbumSelected,
+                            onBackFromAlbum = onBackFromAlbum,
+                            onBackFromQueue = onBackFromQueue,
+                            onRemoveFromQueueClick = onRemoveFromQueueClick,
+                            onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+                            onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+                            onClearQueueClick = onClearQueueClick,
+                            onCreatePlaylistClick = onCreatePlaylistClick,
+                            onRenamePlaylistClick = onRenamePlaylistClick,
+                            onPlaylistClick = onPlaylistClick,
+                            onDeletePlaylistClick = onDeletePlaylistClick,
+                            onExportPlaylistClick = onExportPlaylistClick,
+                            onImportPlaylistClick = onImportPlaylistClick,
+                            onBackFromPlaylist = onBackFromPlaylist,
+                            onRemovePlaylistSongClick = onRemovePlaylistSongClick,
+                            onMovePlaylistSongUpClick = onMovePlaylistSongUpClick,
+                            onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
+                            onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
+                            onEditSongTagsClick = onEditSongTagsClick,
+                            recentlyPlayedSongs = recentlyPlayedSongs,
+                            mostPlayedSongs = mostPlayedSongs,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
             }
         }

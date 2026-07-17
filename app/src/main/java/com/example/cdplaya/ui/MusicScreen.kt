@@ -26,6 +26,7 @@ import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
+import com.example.cdplaya.ui.navigation.MainDestination
 import com.example.cdplaya.ui.playlist.rememberPlaylistSnackbarActions
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -109,6 +110,7 @@ fun MusicScreen(
 ) {
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
+    var mainDestination by rememberSaveable { mutableStateOf(MainDestination.HOME) }
     var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
     var isSettingsScreenVisible by rememberSaveable { mutableStateOf(false) }
     var isExpandedUpNextSheetVisible by rememberSaveable { mutableStateOf(false) }
@@ -200,8 +202,8 @@ fun MusicScreen(
                 isSettingsScreenVisible ||
                 selectedArtistName != null ||
                 selectedAlbumFolderPath != null ||
-                selectedLibraryTab == LibraryTab.QUEUE ||
-                selectedPlaylistId != null
+                selectedPlaylistId != null ||
+                mainDestination == MainDestination.LIBRARY
     ) {
         when {
             songPendingTagEdit != null -> {
@@ -237,8 +239,8 @@ fun MusicScreen(
                 selectedPlaylistId = null
             }
 
-            selectedLibraryTab == LibraryTab.QUEUE -> {
-                selectedLibraryTab = LibraryTab.SONGS
+            mainDestination == MainDestination.LIBRARY -> {
+                mainDestination = MainDestination.HOME
             }
         }
     }
@@ -306,6 +308,7 @@ fun MusicScreen(
                 playlists = playlists,
                 selectedPlaylistName = selectedPlaylistName,
                 selectedPlaylistSongs = selectedPlaylistSongs,
+                mainDestination = mainDestination,
                 selectedLibraryTab = selectedLibraryTab,
                 selectedArtistName = selectedArtistName,
                 selectedAlbumFolderPath = selectedAlbumFolderPath,
@@ -322,6 +325,26 @@ fun MusicScreen(
                 queueSnackbarActions = queueSnackbarActions,
                 onSettingsClick = {
                     isSettingsScreenVisible = true
+                },
+                onHomeClick = {
+                    selectedArtistName = null
+                    selectedAlbumFolderPath = null
+                    selectedPlaylistId = null
+                    mainDestination = MainDestination.HOME
+                },
+                onOpenLibrary = { tab ->
+                    selectedLibraryTab = tab
+                    selectedArtistName = null
+                    selectedAlbumFolderPath = null
+                    selectedPlaylistId = null
+                    mainDestination = MainDestination.LIBRARY
+                },
+                onSearchClick = {
+                    selectedLibraryTab = LibraryTab.SONGS
+                    selectedArtistName = null
+                    selectedAlbumFolderPath = null
+                    selectedPlaylistId = null
+                    mainDestination = MainDestination.LIBRARY
                 },
                 onFolderBackClick = {
                     isFolderScreenVisible = false
@@ -368,6 +391,7 @@ fun MusicScreen(
                     selectedArtistName = null
                     selectedAlbumFolderPath = null
                     selectedPlaylistId = null
+                    mainDestination = MainDestination.LIBRARY
                 },
                 onSongClick = onSongClick,
                 onPlaySongsClick = onPlaySongsClick,
@@ -397,7 +421,7 @@ fun MusicScreen(
                     selectedAlbumFolderPath = null
                 },
                 onBackFromQueue = {
-                    selectedLibraryTab = LibraryTab.SONGS
+                    mainDestination = MainDestination.HOME
                 },
                 onRemoveFromQueueClick = onRemoveFromQueueClick,
                 onMoveQueueItemUpClick = onMoveQueueItemUpClick,
