@@ -27,6 +27,9 @@ import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.navigation.MainDestination
+import com.example.cdplaya.ui.navigation.PlaybackLaunchContext
+import com.example.cdplaya.ui.navigation.capturePlaybackLaunchContext
+import com.example.cdplaya.ui.navigation.playbackLaunchContextSaver
 import com.example.cdplaya.ui.playlist.rememberPlaylistSnackbarActions
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -112,6 +115,11 @@ fun MusicScreen(
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
     var mainDestination by rememberSaveable { mutableStateOf(MainDestination.HOME) }
     var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
+    var playbackLaunchContext by rememberSaveable(
+        stateSaver = playbackLaunchContextSaver
+    ) {
+        mutableStateOf<PlaybackLaunchContext>(PlaybackLaunchContext.Home)
+    }
     var isSettingsScreenVisible by rememberSaveable { mutableStateOf(false) }
     var isExpandedUpNextSheetVisible by rememberSaveable { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
@@ -192,6 +200,17 @@ fun MusicScreen(
             hasUnsavedTagChanges = false
             selectedArtworkUriForTagEdit = null
         }
+    }
+
+    fun recordPlaybackLaunchContext() {
+        playbackLaunchContext = capturePlaybackLaunchContext(
+            mainDestination = mainDestination,
+            selectedLibraryTab = selectedLibraryTab,
+            selectedAlbumFolderPath = selectedAlbumFolderPath,
+            selectedArtistName = selectedArtistName,
+            selectedPlaylistId = selectedPlaylistId,
+            searchQuery = searchQuery
+        )
     }
 
     BackHandler(
@@ -389,8 +408,14 @@ fun MusicScreen(
                     selectedPlaylistId = null
                     mainDestination = MainDestination.LIBRARY
                 },
-                onSongClick = onSongClick,
-                onPlaySongsClick = onPlaySongsClick,
+                onSongClick = { song, playbackContext ->
+                    recordPlaybackLaunchContext()
+                    onSongClick(song, playbackContext)
+                },
+                onPlaySongsClick = { playbackContext, shuffle ->
+                    recordPlaybackLaunchContext()
+                    onPlaySongsClick(playbackContext, shuffle)
+                },
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
