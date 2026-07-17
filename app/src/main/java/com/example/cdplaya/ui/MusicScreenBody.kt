@@ -14,6 +14,7 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.home.HomeScreen
@@ -165,9 +166,16 @@ fun MusicScreenBody(
                 HomeScreen(
                     permissionGranted = permissionGranted,
                     showContinueListening = currentSong != null && !isPlayerExpanded,
+                    recentlyPlayedSongs = recentlyPlayedSongs,
+                    favoriteSongCount = songs.count { song ->
+                        song.favoriteKey() in favoriteSongKeys
+                    },
                     onSettingsClick = onSettingsClick,
                     onOpenLibrary = onOpenLibrary,
                     onSearchClick = onSearchClick,
+                    onRecentlyPlayedSongClick = { song ->
+                        onSongClick(song, recentlyPlayedSongs)
+                    },
                     modifier = modifier,
                     continueListeningContent = {
                         MiniPlayerSection(

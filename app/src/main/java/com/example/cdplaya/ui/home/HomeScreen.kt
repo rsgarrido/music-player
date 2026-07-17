@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.MusicScreenHeader
 import com.example.cdplaya.ui.library.LibraryTab
 
@@ -24,9 +25,12 @@ import com.example.cdplaya.ui.library.LibraryTab
 fun HomeScreen(
     permissionGranted: Boolean,
     showContinueListening: Boolean,
+    recentlyPlayedSongs: List<Song>,
+    favoriteSongCount: Int,
     onSettingsClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
     onSearchClick: () -> Unit,
+    onRecentlyPlayedSongClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
     continueListeningContent: @Composable () -> Unit = {}
 ) {
@@ -63,6 +67,28 @@ fun HomeScreen(
             item {
                 continueListeningContent()
             }
+        }
+
+        if (recentlyPlayedSongs.isNotEmpty()) {
+            item {
+                HomeRecentlyPlayedShelf(
+                    songs = recentlyPlayedSongs.take(8),
+                    onSeeAllClick = {
+                        onOpenLibrary(LibraryTab.RECENTLY_PLAYED)
+                    },
+                    onSongClick = onRecentlyPlayedSongClick
+                )
+            }
+        }
+
+        item {
+            HomeFavoritesCard(
+                favoriteCount = favoriteSongCount,
+                onClick = {
+                    onOpenLibrary(LibraryTab.FAVORITES)
+                },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
 
         item {
