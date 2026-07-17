@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
-import com.example.cdplaya.ui.library.LibraryCategorySelector
 import com.example.cdplaya.ui.library.LibrarySearchBar
 import com.example.cdplaya.ui.library.LibrarySortDropdown
 import com.example.cdplaya.ui.library.LibrarySortOption
@@ -130,18 +129,12 @@ fun LibraryChromeControls(
     selectedArtistSortOption: LibrarySortOption,
     selectedAlbumSortOption: LibrarySortOption,
     selectedFavoriteSortOption: LibrarySortOption,
-    onTabSelected: (LibraryTab) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onSongSortOptionSelected: (LibrarySortOption) -> Unit,
     onArtistSortOptionSelected: (LibrarySortOption) -> Unit,
     onAlbumSortOptionSelected: (LibrarySortOption) -> Unit,
     onFavoriteSortOptionSelected: (LibrarySortOption) -> Unit
 ) {
-    LibraryCategorySelector(
-        selectedCategory = selectedLibraryTab,
-        onCategorySelected = onTabSelected
-    )
-
     if (selectedLibraryTab != LibraryTab.QUEUE) {
         LibrarySearchBar(
             searchQuery = searchQuery,

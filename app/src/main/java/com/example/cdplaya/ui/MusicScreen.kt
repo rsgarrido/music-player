@@ -111,6 +111,7 @@ fun MusicScreen(
     var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
     var mainDestination by rememberSaveable { mutableStateOf(MainDestination.HOME) }
+    var isLibraryOverviewVisible by rememberSaveable { mutableStateOf(false) }
     var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
     var isSettingsScreenVisible by rememberSaveable { mutableStateOf(false) }
     var isExpandedUpNextSheetVisible by rememberSaveable { mutableStateOf(false) }
@@ -240,7 +241,11 @@ fun MusicScreen(
             }
 
             mainDestination == MainDestination.LIBRARY -> {
-                mainDestination = MainDestination.HOME
+                if (isLibraryOverviewVisible) {
+                    mainDestination = MainDestination.HOME
+                } else {
+                    isLibraryOverviewVisible = true
+                }
             }
         }
     }
@@ -309,6 +314,7 @@ fun MusicScreen(
                 selectedPlaylistName = selectedPlaylistName,
                 selectedPlaylistSongs = selectedPlaylistSongs,
                 mainDestination = mainDestination,
+                isLibraryOverviewVisible = isLibraryOverviewVisible,
                 selectedLibraryTab = selectedLibraryTab,
                 selectedArtistName = selectedArtistName,
                 selectedAlbumFolderPath = selectedAlbumFolderPath,
@@ -326,14 +332,19 @@ fun MusicScreen(
                 onSettingsClick = {
                     isSettingsScreenVisible = true
                 },
-                onHomeClick = {
+                onLibraryBackClick = {
                     selectedArtistName = null
                     selectedAlbumFolderPath = null
                     selectedPlaylistId = null
-                    mainDestination = MainDestination.HOME
+                    if (isLibraryOverviewVisible) {
+                        mainDestination = MainDestination.HOME
+                    } else {
+                        isLibraryOverviewVisible = true
+                    }
                 },
                 onOpenLibrary = { tab ->
                     selectedLibraryTab = tab
+                    isLibraryOverviewVisible = false
                     selectedArtistName = null
                     selectedAlbumFolderPath = null
                     selectedPlaylistId = null
@@ -341,6 +352,7 @@ fun MusicScreen(
                 },
                 onSearchClick = {
                     selectedLibraryTab = LibraryTab.SONGS
+                    isLibraryOverviewVisible = false
                     selectedArtistName = null
                     selectedAlbumFolderPath = null
                     selectedPlaylistId = null
@@ -364,6 +376,7 @@ fun MusicScreen(
                 onClearSelectedLibraryFolders = onClearSelectedLibraryFolders,
                 onTabSelected = { tab ->
                     selectedLibraryTab = tab
+                    isLibraryOverviewVisible = false
                     selectedArtistName = null
                     selectedAlbumFolderPath = null
                     selectedPlaylistId = null
@@ -388,6 +401,7 @@ fun MusicScreen(
                 },
                 onMiniPlayerUpNextClick = {
                     selectedLibraryTab = LibraryTab.QUEUE
+                    isLibraryOverviewVisible = false
                     selectedArtistName = null
                     selectedAlbumFolderPath = null
                     selectedPlaylistId = null
@@ -421,7 +435,7 @@ fun MusicScreen(
                     selectedAlbumFolderPath = null
                 },
                 onBackFromQueue = {
-                    mainDestination = MainDestination.HOME
+                    isLibraryOverviewVisible = true
                 },
                 onRemoveFromQueueClick = onRemoveFromQueueClick,
                 onMoveQueueItemUpClick = onMoveQueueItemUpClick,
