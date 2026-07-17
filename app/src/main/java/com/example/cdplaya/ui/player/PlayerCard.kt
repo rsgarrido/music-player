@@ -1,7 +1,11 @@
 package com.example.cdplaya.ui.player
 
 import android.R
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -138,15 +142,23 @@ private fun MiniPlayerCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        AnimatedContent(
+            targetState = currentSong,
+            transitionSpec = {
+                fadeIn(tween(180)).togetherWith(fadeOut(tween(120)))
+            },
+            contentKey = { song -> song.id },
+            label = "miniPlayerSong"
+        ) { displayedSong ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             AsyncImage(
-                model = currentSong.albumArtUri,
-                contentDescription = "Album art for ${currentSong.title}",
+                model = displayedSong.albumArtUri,
+                contentDescription = "Album art for ${displayedSong.title}",
                 modifier = Modifier
                     .size(albumArtSize)
                     .clip(RoundedCornerShape(10.dp)),
@@ -161,13 +173,13 @@ private fun MiniPlayerCard(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = currentSong.title.ifBlank { "Unknown Title" },
+                    text = displayedSong.title.ifBlank { "Unknown Title" },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1
                 )
 
                 Text(
-                    text = currentSong.artist.ifBlank { "Unknown Artist" },
+                    text = displayedSong.artist.ifBlank { "Unknown Artist" },
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1
                 )
@@ -203,6 +215,7 @@ private fun MiniPlayerCard(
                     imageVector = Icons.Filled.ExpandMore,
                     contentDescription = "Expand player"
                 )
+            }
             }
         }
     }
