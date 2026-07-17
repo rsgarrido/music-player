@@ -19,8 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -76,14 +74,11 @@ fun HomeFavoritesCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    PressableHomeCard(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        pressedContainerColor = MaterialTheme.colorScheme.primaryContainer
     ) {
         Row(
             modifier = Modifier
@@ -160,14 +155,10 @@ private fun HomeSongShelfItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    PressableHomeCard(
         onClick = onClick,
         modifier = modifier.width(142.dp),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = MaterialTheme.shapes.extraLarge
     ) {
         Column(
             modifier = Modifier.padding(8.dp),

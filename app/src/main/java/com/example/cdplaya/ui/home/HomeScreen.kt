@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -131,16 +129,13 @@ fun HomeScreen(
         }
 
         item {
-            Card(
+            PressableHomeCard(
                 onClick = onSearchClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 shape = MaterialTheme.shapes.extraLarge,
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                pressedContainerColor = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Row(
                     modifier = Modifier
