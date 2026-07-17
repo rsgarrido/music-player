@@ -112,7 +112,6 @@ fun PlayerTheme.colorPresetsFor(
             preset("Blue", 0xFF4C7FAE),
             preset("Cyan", 0xFF43A5A5)
         )
-
         else -> emptyList()
     }
 }

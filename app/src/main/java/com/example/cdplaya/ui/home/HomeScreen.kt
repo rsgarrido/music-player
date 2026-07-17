@@ -1,0 +1,110 @@
+package com.example.cdplaya.ui.home
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.example.cdplaya.ui.MusicScreenHeader
+import com.example.cdplaya.ui.library.LibraryTab
+
+@Composable
+fun HomeScreen(
+    permissionGranted: Boolean,
+    showContinueListening: Boolean,
+    onSettingsClick: () -> Unit,
+    onOpenLibrary: (LibraryTab) -> Unit,
+    onSearchClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    continueListeningContent: @Composable () -> Unit = {}
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            MusicScreenHeader(
+                title = "CDPlaya",
+                onSettingsClick = onSettingsClick
+            )
+        }
+
+        if (!permissionGranted) {
+            item {
+                Text(
+                    text = "Audio and image permissions are needed to show your music.",
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        if (showContinueListening) {
+            item {
+                HomeSectionHeader(
+                    text = "Continue listening",
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
+
+            item {
+                continueListeningContent()
+            }
+        }
+
+        item {
+            HomeSectionHeader(
+                text = "Browse Library",
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
+        item {
+            HomeLibraryShortcutGrid(
+                onOpenLibrary = onOpenLibrary,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
+        item {
+            Card(
+                onClick = onSearchClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+
+                    Text(
+                        text = "Search",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+            }
+        }
+    }
+}
