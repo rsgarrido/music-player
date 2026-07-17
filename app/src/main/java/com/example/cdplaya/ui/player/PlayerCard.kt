@@ -2,9 +2,10 @@ package com.example.cdplaya.ui.player
 
 import android.R
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -20,14 +21,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -120,65 +123,84 @@ private fun MiniPlayerCard(
     onExpandClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    var isNextTransition by remember { mutableStateOf(true) }
+
+    Surface(
         onClick = onExpandClick,
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .animateContentSize(
-                animationSpec = tween(durationMillis = 300)
-            )
+            .padding(horizontal = 12.dp, vertical = 6.dp)
             .playerSwipeGestures(
-                onSwipeLeft = onNextClick,
-                onSwipeRight = onPreviousClick
+                onSwipeLeft = {
+                    isNextTransition = true
+                    onNextClick()
+                },
+                onSwipeRight = {
+                    isNextTransition = false
+                    onPreviousClick()
+                }
             ),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        tonalElevation = 3.dp,
+        shadowElevation = 4.dp
     ) {
-        AnimatedContent(
-            targetState = currentSong,
-            transitionSpec = {
-                fadeIn(tween(180)).togetherWith(fadeOut(tween(120)))
-            },
-            contentKey = { song -> song.id },
-            label = "miniPlayerSong"
-        ) { displayedSong ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-            AsyncImage(
-                model = displayedSong.albumArtUri,
-                contentDescription = "Album art for ${displayedSong.title}",
-                modifier = Modifier
-                    .size(albumArtSize)
-                    .clip(RoundedCornerShape(10.dp)),
-                contentScale = ContentScale.Crop,
-                error = painterResource(R.drawable.ic_media_play),
-                placeholder = painterResource(R.drawable.ic_media_play)
-            )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AnimatedContent(
+                targetState = currentSong,
+                transitionSpec = {
+                    val enterDirection = if (isNextTransition) 1 else -1
+                    val exitDirection = -enterDirection
 
-            Spacer(modifier = Modifier.width(12.dp))
+                    (slideInHorizontally(tween(190)) { width ->
+                        enterDirection * width / 3
+                    } + fadeIn(tween(160))).togetherWith(
+                        slideOutHorizontally(tween(170)) { width ->
+                            exitDirection * width / 3
+                        } + fadeOut(tween(140))
+                    )
+                },
+                contentKey = { song -> song.id },
+                modifier = Modifier.weight(1f),
+                label = "miniPlayerSong"
+            ) { displayedSong ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AsyncImage(
+                        model = displayedSong.albumArtUri,
+                        contentDescription = "Album art for ${displayedSong.title}",
+                        modifier = Modifier
+                            .size(albumArtSize)
+                            .clip(RoundedCornerShape(10.dp)),
+                        contentScale = ContentScale.Crop,
+                        error = painterResource(R.drawable.ic_media_play),
+                        placeholder = painterResource(R.drawable.ic_media_play)
+                    )
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = displayedSong.title.ifBlank { "Unknown Title" },
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1
-                )
+                    Spacer(modifier = Modifier.width(12.dp))
 
-                Text(
-                    text = displayedSong.artist.ifBlank { "Unknown Artist" },
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1
-                )
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = displayedSong.title.ifBlank { "Unknown Title" },
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1
+                        )
+
+                        Text(
+                            text = displayedSong.artist.ifBlank { "Unknown Artist" },
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1
+                        )
+                    }
+                }
             }
 
             IconButton(onClick = onPlayPauseClick) {
@@ -190,8 +212,6 @@ private fun MiniPlayerCard(
                     },
                     contentDescription = if (isPlaying) "Pause" else "Play"
                 )
-            }
-
             }
         }
     }
