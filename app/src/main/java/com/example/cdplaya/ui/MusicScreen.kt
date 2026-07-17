@@ -30,6 +30,7 @@ import com.example.cdplaya.ui.navigation.MainDestination
 import com.example.cdplaya.ui.navigation.PlaybackLaunchContext
 import com.example.cdplaya.ui.navigation.capturePlaybackLaunchContext
 import com.example.cdplaya.ui.navigation.playbackLaunchContextSaver
+import com.example.cdplaya.ui.navigation.withValidDetails
 import com.example.cdplaya.ui.playlist.rememberPlaylistSnackbarActions
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -213,6 +214,65 @@ fun MusicScreen(
         )
     }
 
+    fun restorePlaybackLaunchContext() {
+        val validContext = playbackLaunchContext.withValidDetails(
+            albumFolderPaths = songs.mapTo(mutableSetOf()) { song -> song.folderPath },
+            artistNames = songs.mapTo(mutableSetOf()) { song ->
+                song.artist.ifBlank { "Unknown Artist" }
+            },
+            playlistIds = playlists.mapTo(mutableSetOf()) { playlist -> playlist.playlistId }
+        )
+
+        isPlayerExpanded = false
+        selectedArtistName = null
+        selectedAlbumFolderPath = null
+        selectedPlaylistId = null
+
+        when (validContext) {
+            PlaybackLaunchContext.Home -> {
+                mainDestination = MainDestination.HOME
+            }
+
+            is PlaybackLaunchContext.LibrarySection -> {
+                selectedLibraryTab = validContext.tab
+                searchQuery = ""
+                mainDestination = MainDestination.LIBRARY
+            }
+
+            is PlaybackLaunchContext.AlbumDetail -> {
+                selectedLibraryTab = LibraryTab.ALBUMS
+                selectedAlbumFolderPath = validContext.folderPath
+                searchQuery = ""
+                mainDestination = MainDestination.LIBRARY
+            }
+
+            is PlaybackLaunchContext.ArtistDetail -> {
+                selectedLibraryTab = LibraryTab.ARTISTS
+                selectedArtistName = validContext.artistName
+                searchQuery = ""
+                mainDestination = MainDestination.LIBRARY
+            }
+
+            is PlaybackLaunchContext.PlaylistDetail -> {
+                selectedLibraryTab = LibraryTab.PLAYLISTS
+                playlists.firstOrNull { playlist ->
+                    playlist.playlistId == validContext.playlistId
+                }?.let { playlist ->
+                    selectedPlaylistId = playlist.playlistId
+                    onPlaylistSelected(playlist)
+                }
+                searchQuery = ""
+                mainDestination = MainDestination.LIBRARY
+            }
+
+            is PlaybackLaunchContext.Search -> {
+                selectedLibraryTab = LibraryTab.SONGS
+                searchQuery = validContext.query
+                mainDestination = MainDestination.LIBRARY
+            }
+        }
+    }
+
     BackHandler(
         enabled = songPendingTagEdit != null ||
                 isExpandedUpNextSheetVisible ||
@@ -234,7 +294,7 @@ fun MusicScreen(
             }
 
             isPlayerExpanded -> {
-                isPlayerExpanded = false
+                restorePlaybackLaunchContext()
             }
 
             isFolderScreenVisible -> {
@@ -529,7 +589,7 @@ fun MusicScreen(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseExpandedPlayer = {
-                    isPlayerExpanded = false
+                    restorePlaybackLaunchContext()
                 },
                 onShowExpandedUpNextSheet = {
                     isExpandedUpNextSheetVisible = true
@@ -538,7 +598,7 @@ fun MusicScreen(
                     isSleepTimerDialogVisible = true
                 },
                 onShowExpandedMore = {
-                    isPlayerExpanded = false
+                    restorePlaybackLaunchContext()
                     isSettingsScreenVisible = true
                 },
                 onDismissExpandedUpNextSheet = {
