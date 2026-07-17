@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -205,6 +206,7 @@ fun MusicScreenBody(
                 Column(
                     modifier = modifier
                         .fillMaxSize()
+                        .background(appShellBackgroundBrush())
                         .animateContentSize()
                 ) {
                     MusicScreenHeader(
