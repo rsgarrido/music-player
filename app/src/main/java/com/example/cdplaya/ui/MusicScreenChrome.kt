@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,6 +28,8 @@ import com.example.cdplaya.ui.player.SleepTimerStatusBanner
 
 @Composable
 fun MusicScreenHeader(
+    title: String = "CDPlaya",
+    onBackClick: (() -> Unit)? = null,
     onSettingsClick: () -> Unit
 ) {
     Row(
@@ -36,10 +39,23 @@ fun MusicScreenHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = "CDPlaya",
-            style = MaterialTheme.typography.headlineMedium
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (onBackClick != null) {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back to Home"
+                    )
+                }
+            }
+
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineMedium
+            )
+        }
 
         IconButton(
             onClick = onSettingsClick
