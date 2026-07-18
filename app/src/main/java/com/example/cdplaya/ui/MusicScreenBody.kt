@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.LibraryFolder
 import com.example.cdplaya.data.PlayerTheme
@@ -131,6 +132,7 @@ fun MusicScreenBody(
     onResetPlayerThemeTokenOverrides: (PlayerTheme) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
+    bottomContentPadding: Dp = 24.dp,
     modifier: Modifier = Modifier
 ) {
     when {
@@ -194,7 +196,6 @@ fun MusicScreenBody(
                 if (destination == MainDestination.HOME) {
                 HomeScreen(
                     permissionGranted = permissionGranted,
-                    showContinueListening = currentSong != null && !isPlayerExpanded,
                     recentlyPlayedSongs = recentlyPlayedSongs,
                     favoriteSongCount = songs.count { song ->
                         song.favoriteKey() in favoriteSongKeys
@@ -206,29 +207,7 @@ fun MusicScreenBody(
                         onSongClick(song, recentlyPlayedSongs)
                     },
                     modifier = modifier,
-                    continueListeningContent = {
-                        MiniPlayerSection(
-                            currentSong = currentSong,
-                            isPlaying = isPlaying,
-                            isShuffleEnabled = isShuffleEnabled,
-                            repeatMode = repeatMode,
-                            currentPosition = currentPosition,
-                            duration = duration,
-                            favoriteSongKeys = favoriteSongKeys,
-                            onPlayPauseClick = onPlayPauseClick,
-                            onPreviousClick = onPreviousClick,
-                            onNextClick = onNextClick,
-                            onSeekChange = onSeekChange,
-                            onShuffleClick = onShuffleClick,
-                            onRepeatClick = onRepeatClick,
-                            onExpandClick = onExpandPlayerClick,
-                            onOpenUpNextClick = onMiniPlayerUpNextClick,
-                            onToggleFavoriteClick = onToggleFavoriteClick,
-                            isSleepTimerActive = isSleepTimerActive,
-                            sleepTimerDisplayText = sleepTimerDisplayText,
-                            onSleepTimerClick = onSleepTimerClick
-                        )
-                    }
+                    bottomContentPadding = bottomContentPadding
                 )
                 } else {
                     Column(
@@ -249,30 +228,6 @@ fun MusicScreenBody(
                             modifier = Modifier.padding(16.dp)
                         )
                     } else {
-                        if (!isPlayerExpanded) {
-                            MiniPlayerSection(
-                                currentSong = currentSong,
-                                isPlaying = isPlaying,
-                                isShuffleEnabled = isShuffleEnabled,
-                                repeatMode = repeatMode,
-                                currentPosition = currentPosition,
-                                duration = duration,
-                                favoriteSongKeys = favoriteSongKeys,
-                                onPlayPauseClick = onPlayPauseClick,
-                                onPreviousClick = onPreviousClick,
-                                onNextClick = onNextClick,
-                                onSeekChange = onSeekChange,
-                                onShuffleClick = onShuffleClick,
-                                onRepeatClick = onRepeatClick,
-                                onExpandClick = onExpandPlayerClick,
-                                onOpenUpNextClick = onMiniPlayerUpNextClick,
-                                onToggleFavoriteClick = onToggleFavoriteClick,
-                                isSleepTimerActive = isSleepTimerActive,
-                                sleepTimerDisplayText = sleepTimerDisplayText,
-                                onSleepTimerClick = onSleepTimerClick
-                            )
-                        }
-
                         LibraryChromeControls(
                             selectedLibraryTab = selectedLibraryTab,
                             selectedArtistName = selectedArtistName,
@@ -348,7 +303,9 @@ fun MusicScreenBody(
                             onEditSongTagsClick = onEditSongTagsClick,
                             recentlyPlayedSongs = recentlyPlayedSongs,
                             mostPlayedSongs = mostPlayedSongs,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(bottom = bottomContentPadding)
                         )
                     }
                     }

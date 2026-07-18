@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.MusicScreenHeader
@@ -25,7 +26,6 @@ import com.example.cdplaya.ui.library.LibraryTab
 @Composable
 fun HomeScreen(
     permissionGranted: Boolean,
-    showContinueListening: Boolean,
     recentlyPlayedSongs: List<Song>,
     favoriteSongCount: Int,
     onSettingsClick: () -> Unit,
@@ -33,13 +33,13 @@ fun HomeScreen(
     onSearchClick: () -> Unit,
     onRecentlyPlayedSongClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
-    continueListeningContent: @Composable () -> Unit = {}
+    bottomContentPadding: Dp = 24.dp
 ) {
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .background(appShellBackgroundBrush()),
-        contentPadding = PaddingValues(bottom = 24.dp),
+        contentPadding = PaddingValues(bottom = bottomContentPadding),
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
         item {
@@ -56,19 +56,6 @@ fun HomeScreen(
                     modifier = Modifier.padding(horizontal = 16.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-        }
-
-        if (showContinueListening) {
-            item {
-                HomeSectionHeader(
-                    text = "Continue listening",
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-            }
-
-            item {
-                continueListeningContent()
             }
         }
 

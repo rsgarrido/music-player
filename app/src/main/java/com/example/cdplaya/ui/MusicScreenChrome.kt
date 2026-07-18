@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -90,36 +91,39 @@ fun MiniPlayerSection(
     onToggleFavoriteClick: (Song) -> Unit,
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
-    onSleepTimerClick: () -> Unit
+    onSleepTimerClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    SleepTimerStatusBanner(
-        isSleepTimerActive = isSleepTimerActive,
-        sleepTimerDisplayText = sleepTimerDisplayText,
-        onSleepTimerClick = onSleepTimerClick
-    )
+    Column(modifier = modifier) {
+        SleepTimerStatusBanner(
+            isSleepTimerActive = isSleepTimerActive,
+            sleepTimerDisplayText = sleepTimerDisplayText,
+            onSleepTimerClick = onSleepTimerClick
+        )
 
-    PlayerCard(
-        currentSong = currentSong,
-        isPlaying = isPlaying,
-        isExpanded = false,
-        isShuffleEnabled = isShuffleEnabled,
-        repeatMode = repeatMode,
-        currentPosition = currentPosition,
-        duration = duration,
-        onPlayPauseClick = onPlayPauseClick,
-        onPreviousClick = onPreviousClick,
-        onNextClick = onNextClick,
-        onSeekChange = onSeekChange,
-        onShuffleClick = onShuffleClick,
-        onRepeatClick = onRepeatClick,
-        onExpandClick = onExpandClick,
-        onCollapseClick = {},
-        onOpenUpNextClick = onOpenUpNextClick,
-        isCurrentSongFavorite = currentSong?.let { song ->
-            song.favoriteKey() in favoriteSongKeys
-        } == true,
-        onToggleFavoriteClick = onToggleFavoriteClick
-    )
+        PlayerCard(
+            currentSong = currentSong,
+            isPlaying = isPlaying,
+            isExpanded = false,
+            isShuffleEnabled = isShuffleEnabled,
+            repeatMode = repeatMode,
+            currentPosition = currentPosition,
+            duration = duration,
+            onPlayPauseClick = onPlayPauseClick,
+            onPreviousClick = onPreviousClick,
+            onNextClick = onNextClick,
+            onSeekChange = onSeekChange,
+            onShuffleClick = onShuffleClick,
+            onRepeatClick = onRepeatClick,
+            onExpandClick = onExpandClick,
+            onCollapseClick = {},
+            onOpenUpNextClick = onOpenUpNextClick,
+            isCurrentSongFavorite = currentSong?.let { song ->
+                song.favoriteKey() in favoriteSongKeys
+            } == true,
+            onToggleFavoriteClick = onToggleFavoriteClick
+        )
+    }
 }
 
 @Composable
