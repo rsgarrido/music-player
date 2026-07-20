@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -71,12 +72,14 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.navigationBarsPadding()
                             )
                         }
-                    ) {
+                    ) { contentPadding ->
                         MusicRoute(
                             musicViewModel = musicViewModel,
                             permissionGranted = permissionGranted,
                             snackbarHostState = snackbarHostState,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(contentPadding)
                         )
                     }
                 }
