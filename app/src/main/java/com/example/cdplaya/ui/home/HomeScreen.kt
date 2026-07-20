@@ -2,6 +2,7 @@ package com.example.cdplaya.ui.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,7 +29,10 @@ import com.example.cdplaya.ui.library.LibraryTab
 fun HomeScreen(
     permissionGranted: Boolean,
     recentlyPlayedSongs: List<Song>,
-    favoriteSongCount: Int,
+    songCount: Int,
+    albumCount: Int,
+    artistCount: Int,
+    playlistCount: Int,
     onSettingsClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
     onSearchClick: () -> Unit,
@@ -42,13 +46,27 @@ fun HomeScreen(
             .background(appShellBackgroundBrush())
             .statusBarsPadding(),
         contentPadding = PaddingValues(bottom = bottomContentPadding),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            MusicScreenHeader(
-                title = "CDPlaya",
-                onSettingsClick = onSettingsClick
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                MusicScreenHeader(
+                    title = "CDPlaya",
+                    onSettingsClick = onSettingsClick
+                )
+
+                Text(
+                    text = buildLibrarySummary(
+                        songCount = songCount,
+                        albumCount = albumCount,
+                        artistCount = artistCount,
+                        playlistCount = playlistCount
+                    ),
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
 
         if (!permissionGranted) {
@@ -74,27 +92,28 @@ fun HomeScreen(
         }
 
         item {
-            HomeFavoritesCard(
-                favoriteCount = favoriteSongCount,
-                onClick = {
-                    onOpenLibrary(LibraryTab.FAVORITES)
-                },
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                HomeSectionHeader(
+                    text = "Your Library",
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+
+                HomeLibraryShortcutGrid(
+                    onOpenLibrary = onOpenLibrary,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
         }
 
         item {
-            HomeSectionHeader(
-                text = "Browse Library",
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-        }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                HomeSectionHeader(
+                    text = "More",
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
 
-        item {
-            HomeLibraryShortcutGrid(
-                onOpenLibrary = onOpenLibrary,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+                HomeSecondaryShortcutRow(onOpenLibrary = onOpenLibrary)
+            }
         }
 
         item {
@@ -127,4 +146,23 @@ fun HomeScreen(
             }
         }
     }
+}
+
+private fun buildLibrarySummary(
+    songCount: Int,
+    albumCount: Int,
+    artistCount: Int,
+    playlistCount: Int
+): String {
+    return listOf(
+        libraryCountLabel(songCount, "song"),
+        libraryCountLabel(albumCount, "album"),
+        libraryCountLabel(artistCount, "artist"),
+        libraryCountLabel(playlistCount, "playlist")
+    ).joinToString(separator = " \u2022 ")
+}
+
+private fun libraryCountLabel(count: Int, singularLabel: String): String {
+    val label = if (count == 1) singularLabel else "${singularLabel}s"
+    return "$count $label"
 }

@@ -25,7 +25,6 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.home.HomeScreen
@@ -205,9 +204,16 @@ fun MusicScreenBody(
                 HomeScreen(
                     permissionGranted = permissionGranted,
                     recentlyPlayedSongs = recentlyPlayedSongs,
-                    favoriteSongCount = songs.count { song ->
-                        song.favoriteKey() in favoriteSongKeys
-                    },
+                    songCount = songs.size,
+                    albumCount = songs
+                        .mapTo(mutableSetOf()) { song -> song.folderPath }
+                        .size,
+                    artistCount = songs
+                        .mapTo(mutableSetOf()) { song ->
+                            song.artist.ifBlank { "Unknown Artist" }
+                        }
+                        .size,
+                    playlistCount = playlists.size,
                     onSettingsClick = onSettingsClick,
                     onOpenLibrary = onOpenLibrary,
                     onSearchClick = onSearchClick,
