@@ -2,6 +2,8 @@ package com.example.cdplaya.ui.playlist
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
@@ -33,6 +35,7 @@ fun PlaylistsTabContent(
     onMovePlaylistSongUpClick: (PlaylistSong) -> Unit,
     onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     if (selectedPlaylistId == null) {
@@ -44,6 +47,7 @@ fun PlaylistsTabContent(
             onExportPlaylistClick = onExportPlaylistClick,
             onImportPlaylistClick = onImportPlaylistClick,
             onRenamePlaylistClick = onRenamePlaylistClick,
+            bottomContentPadding = bottomContentPadding,
             modifier = modifier
         )
     } else {
@@ -75,6 +79,7 @@ fun PlaylistsTabContent(
             onEditSongTagsClick = onEditSongTagsClick,
             onMovePlaylistSongUpClick = onMovePlaylistSongUpClick,
             onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
+            bottomContentPadding = bottomContentPadding,
             modifier = modifier
         )
     }

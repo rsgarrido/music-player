@@ -2,6 +2,7 @@ package com.example.cdplaya.ui.playlist
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -26,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.example.cdplaya.data.Playlist
 
 @Composable
@@ -37,6 +39,7 @@ fun PlaylistListScreen(
     onDeletePlaylistClick: (Playlist) -> Unit,
     onExportPlaylistClick: (Playlist) -> Unit,
     onImportPlaylistClick: () -> Unit,
+    bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     var playlistPendingRename by remember {
@@ -86,7 +89,10 @@ fun PlaylistListScreen(
                 modifier = Modifier.padding(16.dp)
             )
         } else {
-            LazyColumn {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(bottom = bottomContentPadding)
+            ) {
                 items(
                     items = playlists,
                     key = { playlist -> playlist.playlistId }

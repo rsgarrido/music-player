@@ -141,7 +141,7 @@ private fun MiniPlayerCard(
                 }
             ),
         shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
         tonalElevation = 3.dp,
         shadowElevation = 4.dp
     ) {

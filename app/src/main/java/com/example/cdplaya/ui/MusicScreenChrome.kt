@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -17,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
@@ -33,7 +35,10 @@ fun MusicScreenHeader(
     title: String = "CDPlaya",
     onBackClick: (() -> Unit)? = null,
     onSettingsClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSearchClick: (() -> Unit)? = null,
+    isSearchActive: Boolean = false,
+    sortAction: (@Composable () -> Unit)? = null
 ) {
     Row(
         modifier = modifier
@@ -43,6 +48,7 @@ fun MusicScreenHeader(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (onBackClick != null) {
@@ -58,17 +64,41 @@ fun MusicScreenHeader(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
-        FilledTonalIconButton(
-            onClick = onSettingsClick
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Settings,
-                contentDescription = "Settings"
-            )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (onSearchClick != null) {
+                IconButton(onClick = onSearchClick) {
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        contentDescription = if (isSearchActive) {
+                            "Edit active search"
+                        } else {
+                            "Search library"
+                        },
+                        tint = if (isSearchActive) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onBackground
+                        }
+                    )
+                }
+            }
+
+            sortAction?.invoke()
+
+            FilledTonalIconButton(
+                onClick = onSettingsClick
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Settings"
+                )
+            }
         }
     }
 }
@@ -129,28 +159,34 @@ fun MiniPlayerSection(
 }
 
 @Composable
-fun LibraryChromeControls(
+fun LibrarySearchControl(
     selectedLibraryTab: LibraryTab,
-    selectedArtistName: String?,
-    selectedAlbumFolderPath: String?,
+    isSearchVisible: Boolean,
     searchQuery: String,
-    selectedSongSortOption: LibrarySortOption,
-    selectedArtistSortOption: LibrarySortOption,
-    selectedAlbumSortOption: LibrarySortOption,
-    selectedFavoriteSortOption: LibrarySortOption,
-    onSearchQueryChange: (String) -> Unit,
-    onSongSortOptionSelected: (LibrarySortOption) -> Unit,
-    onArtistSortOptionSelected: (LibrarySortOption) -> Unit,
-    onAlbumSortOptionSelected: (LibrarySortOption) -> Unit,
-    onFavoriteSortOptionSelected: (LibrarySortOption) -> Unit
+    onSearchQueryChange: (String) -> Unit
 ) {
-    if (selectedLibraryTab != LibraryTab.QUEUE) {
+    if (selectedLibraryTab != LibraryTab.QUEUE && isSearchVisible) {
         LibrarySearchBar(
             searchQuery = searchQuery,
             onSearchQueryChange = onSearchQueryChange
         )
     }
+}
 
+@Composable
+fun LibrarySortAction(
+    selectedLibraryTab: LibraryTab,
+    selectedArtistName: String?,
+    selectedAlbumFolderPath: String?,
+    selectedSongSortOption: LibrarySortOption,
+    selectedArtistSortOption: LibrarySortOption,
+    selectedAlbumSortOption: LibrarySortOption,
+    selectedFavoriteSortOption: LibrarySortOption,
+    onSongSortOptionSelected: (LibrarySortOption) -> Unit,
+    onArtistSortOptionSelected: (LibrarySortOption) -> Unit,
+    onAlbumSortOptionSelected: (LibrarySortOption) -> Unit,
+    onFavoriteSortOptionSelected: (LibrarySortOption) -> Unit
+) {
     val shouldShowSortDropdown =
         selectedLibraryTab == LibraryTab.SONGS ||
                 selectedLibraryTab == LibraryTab.FAVORITES ||

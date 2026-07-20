@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
 
@@ -40,6 +41,7 @@ fun PlaylistDetailScreen(
     onMovePlaylistSongUpClick: (PlaylistSong) -> Unit,
     onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -124,6 +126,7 @@ fun PlaylistDetailScreen(
                 onMovePlaylistSongUpClick = onMovePlaylistSongUpClick,
                 onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
                 onEditSongTagsClick = onEditSongTagsClick,
+                bottomContentPadding = bottomContentPadding,
                 modifier = Modifier.weight(1f)
             )
         }

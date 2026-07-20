@@ -3,6 +3,7 @@ package com.example.cdplaya.ui.library
 import android.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,6 +26,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 
@@ -38,7 +40,8 @@ fun ArtistListScreen(
     onArtistAddToQueueClick: (String, List<Song>) -> Unit,
     onArtistAddToPlaylistClick: (String, List<Song>) -> Unit,
     modifier: Modifier = Modifier,
-    sortOption: LibrarySortOption = LibrarySortOption.NAME
+    sortOption: LibrarySortOption = LibrarySortOption.NAME,
+    bottomContentPadding: Dp = 0.dp
 ) {
     val artistGroups = buildLibraryArtistGroups(songs)
 
@@ -61,7 +64,8 @@ fun ArtistListScreen(
     }
 
     LazyColumn(
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = bottomContentPadding)
     ) {
         items(
             items = artists,

@@ -6,6 +6,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
@@ -30,6 +31,7 @@ fun SongsTabContent(
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     val filteredSongs = filterSongsForSearch(
@@ -64,6 +66,7 @@ fun SongsTabContent(
             favoriteSongKeys = favoriteSongKeys,
             onAddToPlaylistClick = onAddToPlaylistClick,
             onEditSongTagsClick = onEditSongTagsClick,
+            bottomContentPadding = bottomContentPadding,
             modifier = modifier
         )
     }
@@ -84,6 +87,7 @@ fun FavoritesTabContent(
     onAddToPlaylistClick: (Song) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     val favoriteSongs = songs.filter { song ->
@@ -135,6 +139,7 @@ fun FavoritesTabContent(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onEditSongTagsClick = onEditSongTagsClick,
+                bottomContentPadding = bottomContentPadding,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -162,6 +167,7 @@ fun ArtistsTabContent(
     onAddToPlaylistClick: (Song) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     val artistSearchSongs = filterSongsByArtistSearch(
@@ -200,6 +206,7 @@ fun ArtistsTabContent(
                 onArtistAddToPlaylistClick = { _, artistSongs ->
                     onAddSongsToPlaylistClick(artistSongs)
                 },
+                bottomContentPadding = bottomContentPadding,
                 modifier = modifier
             )
         }
@@ -247,6 +254,7 @@ fun ArtistsTabContent(
                 onAddSongsToPlaylistClick(displayedArtistSongs)
             },
             onEditSongTagsClick = onEditSongTagsClick,
+            bottomContentPadding = bottomContentPadding,
             modifier = modifier
         )
     }
@@ -273,6 +281,7 @@ fun AlbumsTabContent(
     onAddToPlaylistClick: (Song) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     val albumSearchSongs = filterSongsByAlbumSearch(
@@ -311,6 +320,7 @@ fun AlbumsTabContent(
                 onAlbumAddToPlaylistClick = { _, albumSongs ->
                     onAddSongsToPlaylistClick(albumSongs)
                 },
+                bottomContentPadding = bottomContentPadding,
                 modifier = modifier
             )
         }
@@ -360,6 +370,7 @@ fun AlbumsTabContent(
                 onAddSongsToPlaylistClick(displayedAlbumSongs)
             },
             onEditSongTagsClick = onEditSongTagsClick,
+            bottomContentPadding = bottomContentPadding,
             modifier = modifier
         )
     }
