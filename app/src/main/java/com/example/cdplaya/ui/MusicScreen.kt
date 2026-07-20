@@ -4,7 +4,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -335,7 +340,10 @@ fun MusicScreen(
                 !isFolderScreenVisible &&
                 !isSettingsScreenVisible &&
                 selectedSongForTagEdit == null
-        val bottomContentPadding = when {
+        val navigationBarInset = WindowInsets.navigationBars
+            .asPaddingValues()
+            .calculateBottomPadding()
+        val bottomContentPadding = navigationBarInset + when {
             !shouldShowBottomMiniPlayer -> 24.dp
             isSleepTimerActive -> 176.dp
             else -> 96.dp
@@ -379,7 +387,10 @@ fun MusicScreen(
                 onUnsavedChangesChanged = { hasChanges ->
                     hasUnsavedTagChanges = hasChanges
                 },
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
             )
         } else {
             MusicScreenBody(
@@ -596,7 +607,9 @@ fun MusicScreen(
                 onSleepTimerClick = {
                     isSleepTimerDialogVisible = true
                 },
-                modifier = Modifier.align(Alignment.BottomCenter)
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
             )
         }
 

@@ -11,7 +11,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -144,7 +146,10 @@ fun MusicScreenBody(
                 onFolderToggle = onLibraryFolderToggle,
                 onSelectAllClick = onSelectAllLibraryFolders,
                 onClearSelectionClick = onClearSelectedLibraryFolders,
-                modifier = modifier.fillMaxSize()
+                modifier = modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
             )
         }
 
@@ -167,7 +172,10 @@ fun MusicScreenBody(
                 onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
                 selectedReplayGainMode = selectedReplayGainMode,
                 onReplayGainModeSelected = onReplayGainModeSelected,
-                modifier = modifier.fillMaxSize()
+                modifier = modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
             )
         }
 
@@ -214,6 +222,7 @@ fun MusicScreenBody(
                     modifier = modifier
                         .fillMaxSize()
                         .background(appShellBackgroundBrush())
+                        .statusBarsPadding()
                         .animateContentSize()
                 ) {
                     MusicScreenHeader(

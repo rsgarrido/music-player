@@ -8,8 +8,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -18,7 +21,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.example.cdplaya.ui.MusicRoute
+import com.example.cdplaya.ui.appShellBackgroundBrush
 import com.example.cdplaya.ui.theme.CdplayaTheme
 import com.example.cdplaya.viewmodel.MusicViewModel
 
@@ -51,18 +56,29 @@ class MainActivity : ComponentActivity() {
             CdplayaTheme {
                 val snackbarHostState = remember { SnackbarHostState() }
 
-                Scaffold(
-                    modifier = Modifier.fillMaxSize(),
-                    snackbarHost = {
-                        SnackbarHost(hostState = snackbarHostState)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(appShellBackgroundBrush())
+                ) {
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize(),
+                        containerColor = Color.Transparent,
+                        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                        snackbarHost = {
+                            SnackbarHost(
+                                hostState = snackbarHostState,
+                                modifier = Modifier.navigationBarsPadding()
+                            )
+                        }
+                    ) {
+                        MusicRoute(
+                            musicViewModel = musicViewModel,
+                            permissionGranted = permissionGranted,
+                            snackbarHostState = snackbarHostState,
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
-                ) { innerPadding ->
-                    MusicRoute(
-                        musicViewModel = musicViewModel,
-                        permissionGranted = permissionGranted,
-                        snackbarHostState = snackbarHostState,
-                        modifier = Modifier.padding(innerPadding)
-                    )
                 }
             }
         }
