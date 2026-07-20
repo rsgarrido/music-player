@@ -8,12 +8,17 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -23,7 +28,6 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.home.HomeScreen
@@ -135,6 +139,8 @@ fun MusicScreenBody(
     bottomContentPadding: Dp = 24.dp,
     modifier: Modifier = Modifier
 ) {
+    var isLibrarySearchVisible by rememberSaveable { mutableStateOf(false) }
+
     when {
         isFolderScreenVisible -> {
             FolderSelectionScreen(
@@ -144,7 +150,10 @@ fun MusicScreenBody(
                 onFolderToggle = onLibraryFolderToggle,
                 onSelectAllClick = onSelectAllLibraryFolders,
                 onClearSelectionClick = onClearSelectedLibraryFolders,
-                modifier = modifier.fillMaxSize()
+                modifier = modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
             )
         }
 
@@ -167,7 +176,10 @@ fun MusicScreenBody(
                 onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
                 selectedReplayGainMode = selectedReplayGainMode,
                 onReplayGainModeSelected = onReplayGainModeSelected,
-                modifier = modifier.fillMaxSize()
+                modifier = modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
             )
         }
 
@@ -197,12 +209,25 @@ fun MusicScreenBody(
                 HomeScreen(
                     permissionGranted = permissionGranted,
                     recentlyPlayedSongs = recentlyPlayedSongs,
-                    favoriteSongCount = songs.count { song ->
-                        song.favoriteKey() in favoriteSongKeys
-                    },
+                    songCount = songs.size,
+                    albumCount = songs
+                        .mapTo(mutableSetOf()) { song -> song.folderPath }
+                        .size,
+                    artistCount = songs
+                        .mapTo(mutableSetOf()) { song ->
+                            song.artist.ifBlank { "Unknown Artist" }
+                        }
+                        .size,
+                    playlistCount = playlists.size,
                     onSettingsClick = onSettingsClick,
-                    onOpenLibrary = onOpenLibrary,
-                    onSearchClick = onSearchClick,
+                    onOpenLibrary = { tab ->
+                        isLibrarySearchVisible = false
+                        onOpenLibrary(tab)
+                    },
+                    onSearchClick = {
+                        isLibrarySearchVisible = true
+                        onSearchClick()
+                    },
                     onRecentlyPlayedSongClick = { song ->
                         onSongClick(song, recentlyPlayedSongs)
                     },
@@ -210,16 +235,46 @@ fun MusicScreenBody(
                     bottomContentPadding = bottomContentPadding
                 )
                 } else {
+                    val canSearchLibrary = selectedLibraryTab != LibraryTab.QUEUE
+                    val shouldShowLibrarySearch = canSearchLibrary &&
+                            (isLibrarySearchVisible || searchQuery.isNotBlank())
+
                     Column(
                     modifier = modifier
                         .fillMaxSize()
-                        .background(appShellBackgroundBrush())
                         .animateContentSize()
                 ) {
                     MusicScreenHeader(
                         title = selectedLibraryTab.title,
-                        onBackClick = onHomeClick,
-                        onSettingsClick = onSettingsClick
+                        onBackClick = {
+                            isLibrarySearchVisible = false
+                            onHomeClick()
+                        },
+                        onSettingsClick = onSettingsClick,
+                        modifier = Modifier.statusBarsPadding(),
+                        onSearchClick = if (canSearchLibrary) {
+                            {
+                                isLibrarySearchVisible = !shouldShowLibrarySearch
+                            }
+                        } else {
+                            null
+                        },
+                        isSearchActive = shouldShowLibrarySearch,
+                        sortAction = {
+                            LibrarySortAction(
+                                selectedLibraryTab = selectedLibraryTab,
+                                selectedArtistName = selectedArtistName,
+                                selectedAlbumFolderPath = selectedAlbumFolderPath,
+                                selectedSongSortOption = selectedSongSortOption,
+                                selectedArtistSortOption = selectedArtistSortOption,
+                                selectedAlbumSortOption = selectedAlbumSortOption,
+                                selectedFavoriteSortOption = selectedFavoriteSortOption,
+                                onSongSortOptionSelected = onSongSortOptionSelected,
+                                onArtistSortOptionSelected = onArtistSortOptionSelected,
+                                onAlbumSortOptionSelected = onAlbumSortOptionSelected,
+                                onFavoriteSortOptionSelected = onFavoriteSortOptionSelected
+                            )
+                        }
                     )
 
                     if (!permissionGranted) {
@@ -228,20 +283,11 @@ fun MusicScreenBody(
                             modifier = Modifier.padding(16.dp)
                         )
                     } else {
-                        LibraryChromeControls(
+                        LibrarySearchControl(
                             selectedLibraryTab = selectedLibraryTab,
-                            selectedArtistName = selectedArtistName,
-                            selectedAlbumFolderPath = selectedAlbumFolderPath,
+                            isSearchVisible = shouldShowLibrarySearch,
                             searchQuery = searchQuery,
-                            selectedSongSortOption = selectedSongSortOption,
-                            selectedArtistSortOption = selectedArtistSortOption,
-                            selectedAlbumSortOption = selectedAlbumSortOption,
-                            selectedFavoriteSortOption = selectedFavoriteSortOption,
-                            onSearchQueryChange = onSearchQueryChange,
-                            onSongSortOptionSelected = onSongSortOptionSelected,
-                            onArtistSortOptionSelected = onArtistSortOptionSelected,
-                            onAlbumSortOptionSelected = onAlbumSortOptionSelected,
-                            onFavoriteSortOptionSelected = onFavoriteSortOptionSelected
+                            onSearchQueryChange = onSearchQueryChange
                         )
 
                         MusicLibraryContent(
@@ -303,9 +349,8 @@ fun MusicScreenBody(
                             onEditSongTagsClick = onEditSongTagsClick,
                             recentlyPlayedSongs = recentlyPlayedSongs,
                             mostPlayedSongs = mostPlayedSongs,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(bottom = bottomContentPadding)
+                            bottomContentPadding = bottomContentPadding,
+                            modifier = Modifier.weight(1f)
                         )
                     }
                     }

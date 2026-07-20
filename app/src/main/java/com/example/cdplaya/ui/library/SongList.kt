@@ -4,6 +4,7 @@ import android.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +30,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
@@ -48,10 +50,12 @@ fun SongList(
     onEditSongTagsClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
     showAlbumName: Boolean = false,
-    showTrackNumbers: Boolean = false
+    showTrackNumbers: Boolean = false,
+    bottomContentPadding: Dp = 0.dp
 ) {
     LazyColumn(
-        modifier = modifier
+        modifier = modifier,
+        contentPadding = PaddingValues(bottom = bottomContentPadding)
     ) {
         items(
             items = songs,

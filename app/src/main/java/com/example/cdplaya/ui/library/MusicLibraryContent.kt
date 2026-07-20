@@ -7,6 +7,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
@@ -65,6 +67,7 @@ fun MusicLibraryContent(
     onEditSongTagsClick: (Song) -> Unit,
     recentlyPlayedSongs: List<Song>,
     mostPlayedSongs: List<Song>,
+    bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     when (selectedLibraryTab) {
@@ -82,6 +85,7 @@ fun MusicLibraryContent(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onEditSongTagsClick = onEditSongTagsClick,
+                bottomContentPadding = bottomContentPadding,
                 modifier = modifier
             )
         }
@@ -107,6 +111,7 @@ fun MusicLibraryContent(
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                 onEditSongTagsClick = onEditSongTagsClick,
+                bottomContentPadding = bottomContentPadding,
                 modifier = modifier
             )
         }
@@ -132,6 +137,7 @@ fun MusicLibraryContent(
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                 onEditSongTagsClick = onEditSongTagsClick,
+                bottomContentPadding = bottomContentPadding,
                 modifier = modifier
             )
         }
@@ -151,6 +157,7 @@ fun MusicLibraryContent(
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                 onEditSongTagsClick = onEditSongTagsClick,
+                bottomContentPadding = bottomContentPadding,
                 modifier = modifier
             )
         }
@@ -165,6 +172,7 @@ fun MusicLibraryContent(
                 onMoveQueueItemUpClick = onMoveQueueItemUpClick,
                 onMoveQueueItemDownClick = onMoveQueueItemDownClick,
                 onClearQueueClick = onClearQueueClick,
+                bottomContentPadding = bottomContentPadding,
                 modifier = modifier
             )
         }
@@ -195,6 +203,7 @@ fun MusicLibraryContent(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onRemovePlaylistSongClick = onRemovePlaylistSongClick,
                 onEditSongTagsClick = onEditSongTagsClick,
+                bottomContentPadding = bottomContentPadding,
                 modifier = modifier
             )
         }
@@ -217,6 +226,7 @@ fun MusicLibraryContent(
                     onToggleFavoriteClick = onToggleFavoriteClick,
                     onAddToPlaylistClick = onAddToPlaylistClick,
                     onEditSongTagsClick = onEditSongTagsClick,
+                    bottomContentPadding = bottomContentPadding,
                     modifier = modifier
                 )
             }
@@ -240,6 +250,7 @@ fun MusicLibraryContent(
                     onToggleFavoriteClick = onToggleFavoriteClick,
                     onAddToPlaylistClick = onAddToPlaylistClick,
                     onEditSongTagsClick = onEditSongTagsClick,
+                    bottomContentPadding = bottomContentPadding,
                     modifier = modifier
                 )
             }

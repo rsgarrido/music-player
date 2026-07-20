@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 
@@ -52,6 +53,7 @@ fun SongGroupDetailScreen(
     onAddToPlaylistClick: (Song) -> Unit,
     onAddAllToPlaylistClick: () -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -184,6 +186,7 @@ fun SongGroupDetailScreen(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onEditSongTagsClick = onEditSongTagsClick,
+                bottomContentPadding = bottomContentPadding,
                 modifier = Modifier.weight(1f)
             )
         }
