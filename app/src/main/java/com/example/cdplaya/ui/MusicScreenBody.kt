@@ -8,7 +8,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -227,14 +226,13 @@ fun MusicScreenBody(
                     Column(
                     modifier = modifier
                         .fillMaxSize()
-                        .background(appShellBackgroundBrush())
-                        .statusBarsPadding()
                         .animateContentSize()
                 ) {
                     MusicScreenHeader(
                         title = selectedLibraryTab.title,
                         onBackClick = onHomeClick,
-                        onSettingsClick = onSettingsClick
+                        onSettingsClick = onSettingsClick,
+                        modifier = Modifier.statusBarsPadding()
                     )
 
                     if (!permissionGranted) {

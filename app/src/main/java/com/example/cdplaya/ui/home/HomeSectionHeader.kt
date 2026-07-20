@@ -15,6 +15,7 @@ fun HomeSectionHeader(
         text = text,
         modifier = modifier,
         style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.SemiBold
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onBackground
     )
 }

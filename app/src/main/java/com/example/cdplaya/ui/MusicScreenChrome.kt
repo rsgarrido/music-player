@@ -32,10 +32,11 @@ import com.example.cdplaya.ui.player.SleepTimerStatusBanner
 fun MusicScreenHeader(
     title: String = "CDPlaya",
     onBackClick: (() -> Unit)? = null,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -56,7 +57,8 @@ fun MusicScreenHeader(
             Text(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 

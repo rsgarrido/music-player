@@ -1,6 +1,5 @@
 package com.example.cdplaya.ui.home
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,7 +21,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.MusicScreenHeader
-import com.example.cdplaya.ui.appShellBackgroundBrush
 import com.example.cdplaya.ui.library.LibraryTab
 
 @Composable
@@ -42,9 +40,7 @@ fun HomeScreen(
 ) {
     LazyColumn(
         modifier = modifier
-            .fillMaxSize()
-            .background(appShellBackgroundBrush())
-            .statusBarsPadding(),
+            .fillMaxSize(),
         contentPadding = PaddingValues(bottom = bottomContentPadding),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
@@ -52,7 +48,8 @@ fun HomeScreen(
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 MusicScreenHeader(
                     title = "CDPlaya",
-                    onSettingsClick = onSettingsClick
+                    onSettingsClick = onSettingsClick,
+                    modifier = Modifier.statusBarsPadding()
                 )
 
                 Text(

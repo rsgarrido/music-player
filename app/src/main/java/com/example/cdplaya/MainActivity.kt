@@ -1,28 +1,30 @@
 package com.example.cdplaya
 
 import android.Manifest
+import android.graphics.Color as AndroidColor
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import com.example.cdplaya.ui.MusicRoute
 import com.example.cdplaya.ui.appShellBackgroundBrush
 import com.example.cdplaya.ui.theme.CdplayaTheme
@@ -49,7 +51,17 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        val transparentSystemBarStyle = SystemBarStyle.auto(
+            lightScrim = AndroidColor.TRANSPARENT,
+            darkScrim = AndroidColor.TRANSPARENT
+        )
+        enableEdgeToEdge(
+            statusBarStyle = transparentSystemBarStyle,
+            navigationBarStyle = transparentSystemBarStyle
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+        }
 
         requestAudioPermission()
 
@@ -57,29 +69,26 @@ class MainActivity : ComponentActivity() {
             CdplayaTheme {
                 val snackbarHostState = remember { SnackbarHostState() }
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(appShellBackgroundBrush())
+                CompositionLocalProvider(
+                    LocalContentColor provides MaterialTheme.colorScheme.onBackground
                 ) {
-                    Scaffold(
-                        modifier = Modifier.fillMaxSize(),
-                        containerColor = Color.Transparent,
-                        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-                        snackbarHost = {
-                            SnackbarHost(
-                                hostState = snackbarHostState,
-                                modifier = Modifier.navigationBarsPadding()
-                            )
-                        }
-                    ) { contentPadding ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(appShellBackgroundBrush())
+                    ) {
                         MusicRoute(
                             musicViewModel = musicViewModel,
                             permissionGranted = permissionGranted,
                             snackbarHostState = snackbarHostState,
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                        SnackbarHost(
+                            hostState = snackbarHostState,
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(contentPadding)
+                                .align(Alignment.BottomCenter)
+                                .navigationBarsPadding()
                         )
                     }
                 }
