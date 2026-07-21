@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui.player.modern
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -17,11 +18,13 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.player.RepeatMode
 
@@ -43,7 +46,6 @@ internal fun ModernPlayerControls(
         modifier = Modifier.fillMaxWidth()
     ) {
         ModernPlayerModeIconButton(
-            isActive = isShuffleEnabled,
             onClick = onShuffleClick,
             style = style
         ) {
@@ -51,7 +53,7 @@ internal fun ModernPlayerControls(
                 imageVector = Icons.Filled.Shuffle,
                 contentDescription = if (isShuffleEnabled) "Shuffle on" else "Shuffle off",
                 tint = if (isShuffleEnabled) {
-                    style.onAccentColor
+                    style.accentColor
                 } else {
                     style.inactiveControlColor
                 }
@@ -67,29 +69,11 @@ internal fun ModernPlayerControls(
             )
         }
 
-        Surface(
+        ModernPlayerPlayPauseButton(
+            isPlaying = isPlaying,
             onClick = onPlayPauseClick,
-            modifier = Modifier.size(82.dp),
-            shape = style.primaryControlShape,
-            color = style.contentColor,
-            contentColor = style.backgroundColor,
-            shadowElevation = 14.dp
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isPlaying) {
-                        Icons.Filled.Pause
-                    } else {
-                        Icons.Filled.PlayArrow
-                    },
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    modifier = Modifier.size(50.dp)
-                )
-            }
-        }
+            style = style
+        )
 
         IconButton(onClick = onNextClick) {
             Icon(
@@ -101,7 +85,6 @@ internal fun ModernPlayerControls(
         }
 
         ModernPlayerModeIconButton(
-            isActive = repeatMode != RepeatMode.OFF,
             onClick = onRepeatClick,
             style = style
         ) {
@@ -119,7 +102,7 @@ internal fun ModernPlayerControls(
                 tint = if (repeatMode == RepeatMode.OFF) {
                     style.inactiveControlColor
                 } else {
-                    style.onAccentColor
+                    style.accentColor
                 }
             )
         }
@@ -127,23 +110,64 @@ internal fun ModernPlayerControls(
 }
 
 @Composable
+private fun ModernPlayerPlayPauseButton(
+    isPlaying: Boolean,
+    onClick: () -> Unit,
+    style: ModernPlayerStyle,
+) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(82.dp)
+            .shadow(
+                elevation = 14.dp,
+                shape = style.primaryControlShape,
+                ambientColor = Color.Black.copy(alpha = 0.24f),
+                spotColor = Color.Black.copy(alpha = 0.32f)
+            )
+            .clip(style.primaryControlShape)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        style.primaryControlSurfaceTopColor,
+                        style.primaryControlSurfaceBottomColor
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                color = style.primaryControlSurfaceBorderColor,
+                shape = style.primaryControlShape
+            )
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Icon(
+                imageVector = if (isPlaying) {
+                    Icons.Filled.Pause
+                } else {
+                    Icons.Filled.PlayArrow
+                },
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                tint = style.contentColor,
+                modifier = Modifier.size(50.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun ModernPlayerModeIconButton(
-    isActive: Boolean,
     onClick: () -> Unit,
     style: ModernPlayerStyle,
     icon: @Composable () -> Unit
 ) {
-    val backgroundColor = if (isActive) {
-        style.accentColor
-    } else {
-        style.inactiveControlBackgroundColor
-    }
-
     Box(
         modifier = Modifier
             .size(48.dp)
-            .clip(style.modeControlShape)
-            .background(backgroundColor),
+            .clip(style.modeControlShape),
         contentAlignment = Alignment.Center
     ) {
         IconButton(onClick = onClick) {
