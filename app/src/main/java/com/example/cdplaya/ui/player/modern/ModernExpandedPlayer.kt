@@ -39,6 +39,7 @@ fun ModernExpandedPlayer(
     currentSong: Song?,
     previousPreviewSong: Song? = null,
     nextPreviewSong: Song? = null,
+    artworkTransitionStyle: ModernArtworkTransitionStyle = ModernArtworkTransitionStyle.SLIDE,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,

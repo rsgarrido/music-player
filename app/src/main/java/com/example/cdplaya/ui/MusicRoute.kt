@@ -200,6 +200,10 @@ fun MusicRoute(
         },
         onUpdatePlayerThemeTokenOverride = musicViewModel::updatePlayerThemeTokenOverride,
         onResetPlayerThemeTokenOverrides = musicViewModel::resetPlayerThemeTokenOverrides,
+        selectedModernArtworkTransitionStyle =
+            musicViewModel.selectedModernArtworkTransitionStyle,
+        onModernArtworkTransitionStyleSelected =
+            musicViewModel::selectModernArtworkTransitionStyle,
         selectedReplayGainMode = musicViewModel.selectedReplayGainMode,
         onReplayGainModeSelected = { replayGainMode ->
             musicViewModel.selectReplayGainMode(replayGainMode)

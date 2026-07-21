@@ -6,6 +6,7 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
 import com.example.cdplaya.ui.player.modern.ModernExpandedPlayer
+import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
@@ -18,6 +19,7 @@ fun ExpandedPlayerThemeHost(
     currentSong: Song?,
     previousPreviewSong: Song?,
     nextPreviewSong: Song?,
+    modernArtworkTransitionStyle: ModernArtworkTransitionStyle,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -45,6 +47,7 @@ fun ExpandedPlayerThemeHost(
                 currentSong = currentSong,
                 previousPreviewSong = previousPreviewSong,
                 nextPreviewSong = nextPreviewSong,
+                artworkTransitionStyle = modernArtworkTransitionStyle,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,

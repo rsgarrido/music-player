@@ -18,6 +18,7 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.PlayerThemePreferences
 import com.example.cdplaya.data.PlayerThemeTokenPreferences
 import com.example.cdplaya.data.ListeningHistoryRepository
+import com.example.cdplaya.data.ModernPlayerPreferences
 import com.example.cdplaya.data.backup.AppBackup
 import com.example.cdplaya.data.backup.BackupExportResult
 import com.example.cdplaya.data.backup.BackupRepository
@@ -35,6 +36,7 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenOverrides
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.theme.customizationOptions
+import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import kotlinx.coroutines.launch
 
 class MusicViewModel(
@@ -48,6 +50,8 @@ class MusicViewModel(
     private val playerThemePreferences = PlayerThemePreferences(appContext)
 
     private val playerThemeTokenPreferences = PlayerThemeTokenPreferences(appContext)
+
+    private val modernPlayerPreferences = ModernPlayerPreferences(appContext)
 
     private val replayGainPreferences = ReplayGainPreferences(appContext)
 
@@ -70,6 +74,16 @@ class MusicViewModel(
     fun selectPlayerTheme(playerTheme: PlayerTheme) {
         selectedPlayerTheme = playerTheme
         playerThemePreferences.saveSelectedPlayerTheme(playerTheme)
+    }
+
+    var selectedModernArtworkTransitionStyle by mutableStateOf(
+        modernPlayerPreferences.getArtworkTransitionStyle()
+    )
+        private set
+
+    fun selectModernArtworkTransitionStyle(style: ModernArtworkTransitionStyle) {
+        selectedModernArtworkTransitionStyle = style
+        modernPlayerPreferences.saveArtworkTransitionStyle(style)
     }
 
     fun updatePlayerThemeTokenOverride(
