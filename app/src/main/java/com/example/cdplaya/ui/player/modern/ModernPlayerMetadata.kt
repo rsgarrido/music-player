@@ -65,6 +65,11 @@ internal fun ModernPlayerMetadataCarousel(
                         scaleX = transform.scale
                         scaleY = transform.scale
                         alpha = transform.alpha
+                        rotationY = transform.rotationY
+                        if (transform.rotationY != 0f) {
+                            cameraDistance =
+                                COVER_FLOW_CAMERA_DISTANCE_MULTIPLIER * density
+                        }
                     }
                 )
             }

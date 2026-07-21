@@ -93,9 +93,9 @@ fun ModernExpandedPlayer(
                 carouselState.animateSongChange(
                     direction = transition.direction,
                     durationMillis = if (transition.startedFromDrag) {
-                        130
+                        MODERN_ARTWORK_ACCEPTED_DRAG_DURATION_MILLIS
                     } else {
-                        ModernPlayerDefaults.SongTransitionDurationMillis
+                        MODERN_ARTWORK_BUTTON_TRANSITION_DURATION_MILLIS
                     }
                 )
             }

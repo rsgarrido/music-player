@@ -12,7 +12,8 @@ internal data class ModernArtworkPageTransform(
 internal data class ModernMetadataPageTransform(
     val translationMultiplier: Float,
     val scale: Float = 1f,
-    val alpha: Float
+    val alpha: Float,
+    val rotationY: Float = 0f
 )
 
 internal fun modernArtworkPageTransform(
@@ -120,11 +121,16 @@ internal fun modernMetadataPageTransform(
                 COVER_FLOW_METADATA_ALPHA_REDUCTION * distanceFromCenter
             ModernMetadataPageTransform(
                 translationMultiplier = pageOffset,
+                scale = 1f -
+                    COVER_FLOW_METADATA_SCALE_REDUCTION * distanceFromCenter,
                 alpha = visiblePageAlpha(
                     pageAlpha = pageAlpha,
                     progress = progress,
                     isCurrent = isCurrent
-                )
+                ),
+                rotationY = -pageOffset.coerceIn(-1f, 1f) *
+                    COVER_FLOW_MAX_ROTATION_DEGREES *
+                    COVER_FLOW_METADATA_ROTATION_MULTIPLIER
             )
         }
 
@@ -241,6 +247,7 @@ private fun visiblePageAlpha(
 
 internal const val PARALLAX_METADATA_TRANSLATION_MULTIPLIER = 0.42f
 internal const val COVER_FLOW_MAX_ROTATION_DEGREES = 22f
+internal const val COVER_FLOW_METADATA_ROTATION_MULTIPLIER = 0.40f
 internal const val COVER_FLOW_CAMERA_DISTANCE_MULTIPLIER = 14f
 
 private const val SLIDE_CURRENT_SCALE_REDUCTION = 0.035f
@@ -252,11 +259,12 @@ private const val SLIDE_NEIGHBOR_MAX_ALPHA = 0.9f
 
 private const val DEPTH_SCALE_REDUCTION = 0.20f
 private const val DEPTH_ALPHA_REDUCTION = 0.22f
-private const val DEPTH_METADATA_SCALE_REDUCTION = 0.05f
-private const val DEPTH_METADATA_ALPHA_REDUCTION = 0.30f
+private const val DEPTH_METADATA_SCALE_REDUCTION = 0.08f
+private const val DEPTH_METADATA_ALPHA_REDUCTION = 0.32f
 
 private const val COVER_FLOW_SCALE_REDUCTION = 0.06f
 private const val COVER_FLOW_ALPHA_REDUCTION = 0.15f
+private const val COVER_FLOW_METADATA_SCALE_REDUCTION = 0.035f
 private const val COVER_FLOW_METADATA_ALPHA_REDUCTION = 0.20f
 
 private const val PARALLAX_METADATA_CROSSFADE_MULTIPLIER = 1.35f

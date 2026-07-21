@@ -11,6 +11,13 @@ import org.junit.Test
 class ModernArtworkCarouselStateTest {
 
     @Test
+    fun transitionDurations_keepNavigationVisibleAndSnapBackResponsive() {
+        assertEquals(300, MODERN_ARTWORK_BUTTON_TRANSITION_DURATION_MILLIS)
+        assertEquals(190, MODERN_ARTWORK_ACCEPTED_DRAG_DURATION_MILLIS)
+        assertEquals(180, MODERN_ARTWORK_CANCELLED_DRAG_DURATION_MILLIS)
+    }
+
+    @Test
     fun leftDragPastDistanceThresholdMovesNext() {
         assertEquals(
             ModernCarouselDirection.NEXT,

@@ -28,6 +28,20 @@ class ModernArtworkCarouselTransformsTest {
     }
 
     @Test
+    fun slide_metadataKeepsNaturalTranslationWithoutStyleEffects() {
+        val metadata = modernMetadataPageTransform(
+            style = ModernArtworkTransitionStyle.SLIDE,
+            gestureOffset = -0.5f,
+            restingOffset = 0f,
+            isCurrent = true
+        )
+
+        assertEquals(-0.5f, metadata.translationMultiplier, FLOAT_TOLERANCE)
+        assertEquals(1f, metadata.scale, FLOAT_TOLERANCE)
+        assertEquals(0f, metadata.rotationY, FLOAT_TOLERANCE)
+    }
+
+    @Test
     fun depthScale_reducesScaleAwayFromCenterAndGrowsIncomingPage() {
         val centered = modernArtworkPageTransform(
             style = ModernArtworkTransitionStyle.DEPTH_SCALE,
@@ -64,6 +78,33 @@ class ModernArtworkCarouselTransformsTest {
     }
 
     @Test
+    fun depthScale_metadataScalesAndFadesAwayFromCenter() {
+        val centered = modernMetadataPageTransform(
+            style = ModernArtworkTransitionStyle.DEPTH_SCALE,
+            gestureOffset = 0f,
+            restingOffset = 0f,
+            isCurrent = true
+        )
+        val outgoing = modernMetadataPageTransform(
+            style = ModernArtworkTransitionStyle.DEPTH_SCALE,
+            gestureOffset = -0.75f,
+            restingOffset = 0f,
+            isCurrent = true
+        )
+        val incoming = modernMetadataPageTransform(
+            style = ModernArtworkTransitionStyle.DEPTH_SCALE,
+            gestureOffset = -0.25f,
+            restingOffset = 1f,
+            isCurrent = false
+        )
+
+        assertTrue(outgoing.scale < centered.scale)
+        assertTrue(outgoing.alpha < centered.alpha)
+        assertTrue(incoming.scale < centered.scale)
+        assertTrue(incoming.alpha > 0f)
+    }
+
+    @Test
     fun coverFlow_rotationIsZeroAtCenterAndChangesDirectionAcrossCenter() {
         val centered = modernArtworkPageTransform(
             style = ModernArtworkTransitionStyle.COVER_FLOW,
@@ -92,6 +133,32 @@ class ModernArtworkCarouselTransformsTest {
             FLOAT_TOLERANCE
         )
         assertEquals(-draggedLeft.rotationY, draggedRight.rotationY, FLOAT_TOLERANCE)
+    }
+
+    @Test
+    fun coverFlow_metadataRotatesLessThanArtworkAndScalesAwayFromCenter() {
+        val artwork = modernArtworkPageTransform(
+            style = ModernArtworkTransitionStyle.COVER_FLOW,
+            gestureOffset = -0.75f,
+            restingOffset = 0f,
+            isCurrent = true
+        )
+        val metadata = modernMetadataPageTransform(
+            style = ModernArtworkTransitionStyle.COVER_FLOW,
+            gestureOffset = -0.75f,
+            restingOffset = 0f,
+            isCurrent = true
+        )
+
+        assertTrue(abs(metadata.rotationY) > 0f)
+        assertTrue(abs(metadata.rotationY) < abs(artwork.rotationY))
+        assertEquals(
+            artwork.rotationY * COVER_FLOW_METADATA_ROTATION_MULTIPLIER,
+            metadata.rotationY,
+            FLOAT_TOLERANCE
+        )
+        assertTrue(metadata.scale < 1f)
+        assertTrue(metadata.alpha < 1f)
     }
 
     @Test

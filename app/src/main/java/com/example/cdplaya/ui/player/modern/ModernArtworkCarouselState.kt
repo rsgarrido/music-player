@@ -20,6 +20,9 @@ import kotlin.math.abs
 
 internal const val MODERN_ARTWORK_SWIPE_DISTANCE_THRESHOLD_FRACTION = 0.25f
 internal const val MODERN_ARTWORK_SWIPE_VELOCITY_THRESHOLD_PX_PER_SECOND = 900f
+internal const val MODERN_ARTWORK_BUTTON_TRANSITION_DURATION_MILLIS = 300
+internal const val MODERN_ARTWORK_ACCEPTED_DRAG_DURATION_MILLIS = 190
+internal const val MODERN_ARTWORK_CANCELLED_DRAG_DURATION_MILLIS = 180
 
 internal enum class ModernCarouselDirection {
     PREVIOUS,
@@ -111,7 +114,10 @@ internal class ModernArtworkCarouselState(
         )
         if (direction == ModernCarouselDirection.NONE) {
             settleJob = coroutineScope.launch {
-                animateOffsetTo(targetOffset = 0f, durationMillis = 180)
+                animateOffsetTo(
+                    targetOffset = 0f,
+                    durationMillis = MODERN_ARTWORK_CANCELLED_DRAG_DURATION_MILLIS
+                )
             }
             return
         }
@@ -128,7 +134,10 @@ internal class ModernArtworkCarouselState(
             val pending = pendingTransition
             if (pending?.sourceSongId == sourceSongId && pending.startedFromDrag) {
                 clearPendingTransition()
-                animateOffsetTo(targetOffset = 0f, durationMillis = 180)
+                animateOffsetTo(
+                    targetOffset = 0f,
+                    durationMillis = MODERN_ARTWORK_CANCELLED_DRAG_DURATION_MILLIS
+                )
             }
         }
     }
