@@ -3,19 +3,13 @@ package com.example.cdplaya.ui.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -27,14 +21,15 @@ import com.example.cdplaya.ui.library.LibraryTab
 fun HomeScreen(
     permissionGranted: Boolean,
     recentlyPlayedSongs: List<Song>,
+    favoriteSongs: List<Song>,
     songCount: Int,
     albumCount: Int,
     artistCount: Int,
     playlistCount: Int,
     onSettingsClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
-    onSearchClick: () -> Unit,
     onRecentlyPlayedSongClick: (Song) -> Unit,
+    onFavoriteSongClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
     bottomContentPadding: Dp = 24.dp
 ) {
@@ -88,58 +83,26 @@ fun HomeScreen(
             }
         }
 
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                HomeSectionHeader(
-                    text = "Your Library",
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
-                HomeLibraryShortcutGrid(
-                    onOpenLibrary = onOpenLibrary,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+        if (favoriteSongs.isNotEmpty()) {
+            item {
+                HomeFavoritesShelf(
+                    songs = favoriteSongs.take(8),
+                    onSeeAllClick = {
+                        onOpenLibrary(LibraryTab.FAVORITES)
+                    },
+                    onSongClick = onFavoriteSongClick
                 )
             }
         }
 
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                HomeSectionHeader(
-                    text = "More",
-                    modifier = Modifier.padding(horizontal = 16.dp)
+        if (permissionGranted && recentlyPlayedSongs.isEmpty() && favoriteSongs.isEmpty()) {
+            item {
+                Text(
+                    text = "Choose something from Library to start building your listening history.",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                HomeSecondaryShortcutRow(onOpenLibrary = onOpenLibrary)
-            }
-        }
-
-        item {
-            PressableHomeCard(
-                onClick = onSearchClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                pressedContainerColor = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-
-                    Text(
-                        text = "Search",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
             }
         }
     }

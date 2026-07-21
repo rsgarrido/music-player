@@ -28,6 +28,7 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.home.HomeScreen
@@ -79,7 +80,6 @@ fun MusicScreenBody(
     onSettingsClick: () -> Unit,
     onHomeClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
-    onSearchClick: () -> Unit,
     onFolderBackClick: () -> Unit,
     onSettingsBackClick: () -> Unit,
     onLibraryFoldersClick: () -> Unit,
@@ -219,6 +219,9 @@ fun MusicScreenBody(
                 HomeScreen(
                     permissionGranted = permissionGranted,
                     recentlyPlayedSongs = recentlyPlayedSongs,
+                    favoriteSongs = songs.filter { song ->
+                        song.favoriteKey() in favoriteSongKeys
+                    },
                     songCount = songs.size,
                     albumCount = songs
                         .mapTo(mutableSetOf()) { song -> song.folderPath }
@@ -234,12 +237,16 @@ fun MusicScreenBody(
                         isLibrarySearchVisible = false
                         onOpenLibrary(tab)
                     },
-                    onSearchClick = {
-                        isLibrarySearchVisible = true
-                        onSearchClick()
-                    },
                     onRecentlyPlayedSongClick = { song ->
                         onSongClick(song, recentlyPlayedSongs)
+                    },
+                    onFavoriteSongClick = { song ->
+                        onSongClick(
+                            song,
+                            songs.filter { candidate ->
+                                candidate.favoriteKey() in favoriteSongKeys
+                            }
+                        )
                     },
                     modifier = modifier,
                     bottomContentPadding = bottomContentPadding

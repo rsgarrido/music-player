@@ -458,13 +458,6 @@ fun MusicScreen(
                     selectedPlaylistId = null
                     mainDestination = MainDestination.LIBRARY
                 },
-                onSearchClick = {
-                    selectedLibraryTab = LibraryTab.SONGS
-                    selectedArtistName = null
-                    selectedAlbumFolderPath = null
-                    selectedPlaylistId = null
-                    mainDestination = MainDestination.SEARCH
-                },
                 onFolderBackClick = {
                     isFolderScreenVisible = false
                     isSettingsScreenVisible = true

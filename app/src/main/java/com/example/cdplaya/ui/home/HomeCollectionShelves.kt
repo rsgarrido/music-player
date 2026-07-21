@@ -14,14 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -41,12 +37,45 @@ fun HomeRecentlyPlayedShelf(
     onSongClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    HomeSongShelf(
+        title = "Recently Played",
+        songs = songs,
+        onSeeAllClick = onSeeAllClick,
+        onSongClick = onSongClick,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun HomeFavoritesShelf(
+    songs: List<Song>,
+    onSeeAllClick: () -> Unit,
+    onSongClick: (Song) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    HomeSongShelf(
+        title = "Favorites",
+        songs = songs,
+        onSeeAllClick = onSeeAllClick,
+        onSongClick = onSongClick,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun HomeSongShelf(
+    title: String,
+    songs: List<Song>,
+    onSeeAllClick: () -> Unit,
+    onSongClick: (Song) -> Unit,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         HomeCollectionSectionHeader(
-            title = "Recently Played",
+            title = title,
             onSeeAllClick = onSeeAllClick,
             modifier = Modifier.padding(start = 16.dp, end = 8.dp)
         )
@@ -64,68 +93,6 @@ fun HomeRecentlyPlayedShelf(
                     onClick = { onSongClick(song) }
                 )
             }
-        }
-    }
-}
-
-@Composable
-fun HomeFavoritesCard(
-    favoriteCount: Int,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    PressableHomeCard(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        pressedContainerColor = MaterialTheme.colorScheme.primaryContainer
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Surface(
-                modifier = Modifier.size(44.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Filled.Favorite,
-                        contentDescription = null
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = "Favorites",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                Text(
-                    text = when (favoriteCount) {
-                        0 -> "Songs you love will appear here"
-                        1 -> "1 saved song"
-                        else -> "$favoriteCount saved songs"
-                    },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
