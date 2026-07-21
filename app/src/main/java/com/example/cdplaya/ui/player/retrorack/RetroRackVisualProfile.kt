@@ -6,7 +6,8 @@ internal data class RetroRackVisualProfile(
     val levels: List<Float>,
     val accent: Color,
     val peak: Color,
-    val phaseOffset: Float
+    val phaseOffset: Float,
+    val songSeed: Long
 )
 
 internal fun buildRetroRackVisualProfile(
@@ -40,7 +41,8 @@ internal fun buildRetroRackVisualProfile(
         levels = levels,
         accent = albumColors.accent,
         peak = albumColors.peak,
-        phaseOffset = ((songSeed ushr 24) and 0xFF).toFloat() / 255f * 6.283f
+        phaseOffset = ((songSeed ushr 24) and 0xFF).toFloat() / 255f * 6.283f,
+        songSeed = songSeed
     )
 }
 

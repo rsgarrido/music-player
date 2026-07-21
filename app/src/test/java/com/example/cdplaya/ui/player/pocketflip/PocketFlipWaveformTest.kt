@@ -1,6 +1,6 @@
 package com.example.cdplaya.ui.player.pocketflip
 
-import com.example.cdplaya.ui.player.buildTrackReactiveVisualizerLevels
+import com.example.cdplaya.ui.player.buildRetroMeterLevels
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -14,21 +14,22 @@ class PocketFlipWaveformTest {
     }
 
     @Test
-    fun realWaveform_isMappedAndClampedSafely() {
+    fun waveformEnergy_drivesTwoClampedMeterLines() {
         val levels = buildLevels(listOf(Float.NaN, -1f, 0.25f, 2f))
 
         requireNotNull(levels)
-        assertEquals(POCKET_FLIP_VISUALIZER_COLUMN_COUNT, levels.size)
+        assertEquals(POCKET_FLIP_METER_LINE_COUNT, levels.size)
         assertTrue(levels.all { level -> level.isFinite() && level in 0f..1f })
     }
 
     private fun buildLevels(amplitudes: List<Float>?) =
-        buildTrackReactiveVisualizerLevels(
+        buildRetroMeterLevels(
             amplitudes = amplitudes,
             currentPositionMs = 45_000L,
             durationMs = 180_000L,
-            columnCount = POCKET_FLIP_VISUALIZER_COLUMN_COUNT,
+            columnCount = POCKET_FLIP_METER_LINE_COUNT,
             animationPhase = 0.25f,
-            isPlaying = true
+            isPlaying = true,
+            songSeed = 42L
         )
 }

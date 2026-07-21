@@ -61,7 +61,7 @@ import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.waveform.WaveformData
-import com.example.cdplaya.ui.player.buildTrackReactiveVisualizerLevels
+import com.example.cdplaya.ui.player.buildRetroMeterLevels
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import kotlin.math.sin
 
@@ -395,22 +395,23 @@ private fun DecorativeSpectrum(
             .rackBevel()
             .padding(8.dp)
     ) {
-        val trackReactiveLevels = buildTrackReactiveVisualizerLevels(
+        val meterLevels = buildRetroMeterLevels(
             amplitudes = waveformData?.amplitudes,
             currentPositionMs = currentPosition.toLong(),
             durationMs = duration.toLong(),
             columnCount = profile.levels.size,
             animationPhase = phase.value,
-            isPlaying = isPlaying
+            isPlaying = isPlaying,
+            songSeed = profile.songSeed
         )
-        val displayLevels = trackReactiveLevels ?: profile.levels
+        val displayLevels = meterLevels ?: profile.levels
         val gap = size.width * 0.012f
         val barWidth = (size.width - gap * (displayLevels.size - 1)) / displayLevels.size
         val segmentGap = 2.dp.toPx()
         val segmentHeight = 3.dp.toPx()
         val playbackPhase = (currentPosition / 1_000f) * 0.22f
         displayLevels.forEachIndexed { index, level ->
-            val movement = if (trackReactiveLevels == null && isPlaying) {
+            val movement = if (meterLevels == null && isPlaying) {
                 sin(
                     phase.value * 6.283f * (0.58f + index % 4 * 0.07f) +
                             playbackPhase +

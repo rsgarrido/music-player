@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.waveform.WaveformData
-import com.example.cdplaya.ui.player.buildTrackReactiveVisualizerLevels
+import com.example.cdplaya.ui.player.buildRetroMeterLevels
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -164,75 +164,34 @@ internal fun PocketFlipLcdMeter(
                 .fillMaxWidth()
                 .height(if (compact) 17.dp else 21.dp)
         ) {
-            val visualizerLevels = buildTrackReactiveVisualizerLevels(
+            val meterLevels = buildRetroMeterLevels(
                 amplitudes = waveformData?.amplitudes,
                 currentPositionMs = currentPosition.toLong(),
                 durationMs = duration.toLong(),
-                columnCount = POCKET_FLIP_VISUALIZER_COLUMN_COUNT,
+                columnCount = POCKET_FLIP_METER_LINE_COUNT,
                 animationPhase = phase.value,
-                isPlaying = isPlaying
+                isPlaying = isPlaying,
+                songSeed = songKey.toLong()
             )
-            if (visualizerLevels != null) {
-                drawPocketFlipVisualizer(
-                    levels = visualizerLevels,
-                    colors = colors
-                )
-            } else {
-                val animatedPhase = phase.value
-                val firstLevel = meterLevel(songKey, channel = 0, phase = animatedPhase)
-                val secondLevel = meterLevel(songKey, channel = 1, phase = animatedPhase)
-                drawSegmentRow(
-                    level = firstLevel,
-                    top = 0f,
-                    height = size.height * 0.42f,
-                    colors = colors
-                )
-                drawSegmentRow(
-                    level = secondLevel,
-                    top = size.height * 0.58f,
-                    height = size.height * 0.42f,
-                    colors = colors
-                )
-            }
-        }
-    }
-}
-
-private fun DrawScope.drawPocketFlipVisualizer(
-    levels: List<Float>,
-    colors: PocketFlipPalette
-) {
-    val gap = 1.dp.toPx()
-    val barWidth = ((size.width - gap * (levels.size - 1)) / levels.size)
-        .coerceAtLeast(1f)
-    val centerY = size.height / 2f
-    val segmentHeight = 2.dp.toPx()
-    val segmentGap = 1.dp.toPx()
-    val segmentStep = segmentHeight + segmentGap
-    val maximumSegments = (centerY / segmentStep).toInt().coerceAtLeast(1)
-
-    drawLine(
-        color = colors.seekInactive.copy(alpha = 0.55f),
-        start = Offset(0f, centerY),
-        end = Offset(size.width, centerY),
-        strokeWidth = 1f
-    )
-    levels.forEachIndexed { index, level ->
-        val litSegments = (level.coerceIn(0f, 1f) * maximumSegments)
-            .toInt()
-            .coerceAtLeast(1)
-        repeat(litSegments) { segmentIndex ->
-            val offset = segmentIndex * segmentStep + segmentGap
-            val x = index * (barWidth + gap)
-            drawRect(
-                color = colors.screenAccent.copy(alpha = 0.88f),
-                topLeft = Offset(x, centerY - offset - segmentHeight),
-                size = Size(barWidth, segmentHeight)
+            val firstLevel = meterLevels?.get(0) ?:
+                meterLevel(songKey, channel = 0, phase = phase.value)
+            val secondLevel = meterLevels?.get(1) ?:
+                meterLevel(songKey, channel = 1, phase = phase.value)
+            drawLcdMeterLine(
+                level = firstLevel,
+                animationPhase = phase.value,
+                channel = 0,
+                top = 0f,
+                height = size.height * 0.42f,
+                colors = colors
             )
-            drawRect(
-                color = colors.screenAccent.copy(alpha = 0.72f),
-                topLeft = Offset(x, centerY + offset),
-                size = Size(barWidth, segmentHeight)
+            drawLcdMeterLine(
+                level = secondLevel,
+                animationPhase = phase.value,
+                channel = 1,
+                top = size.height * 0.58f,
+                height = size.height * 0.42f,
+                colors = colors
             )
         }
     }
@@ -312,8 +271,10 @@ internal fun PocketFlipArtworkLcdTreatment(modifier: Modifier = Modifier) {
     }
 }
 
-private fun DrawScope.drawSegmentRow(
+private fun DrawScope.drawLcdMeterLine(
     level: Float,
+    animationPhase: Float,
+    channel: Int,
     top: Float,
     height: Float,
     colors: PocketFlipPalette
@@ -322,13 +283,18 @@ private fun DrawScope.drawSegmentRow(
     val gap = 1.dp.toPx()
     val segmentWidth = (size.width - gap * (segmentCount - 1)) / segmentCount
     val litSegments = (level.coerceIn(0f, 1f) * segmentCount).toInt()
+    val pulsePosition = ((animationPhase + channel * 0.37f) % 1f) * (segmentCount - 1)
 
     repeat(segmentCount) { index ->
+        val pulseStrength = (1f - kotlin.math.abs(index - pulsePosition) / 2f)
+            .coerceIn(0f, 1f)
         drawRect(
-            color = if (index < litSegments) {
-                colors.screenAccent.copy(alpha = 0.86f)
-            } else {
-                colors.seekInactive.copy(alpha = 0.48f)
+            color = when {
+                index < litSegments -> colors.screenAccent.copy(
+                    alpha = (0.68f + pulseStrength * 0.24f).coerceAtMost(0.92f)
+                )
+                pulseStrength > 0f -> colors.screenAccent.copy(alpha = 0.12f + pulseStrength * 0.16f)
+                else -> colors.seekInactive.copy(alpha = 0.48f)
             },
             topLeft = Offset(index * (segmentWidth + gap), top),
             size = Size(segmentWidth, height)
@@ -354,4 +320,4 @@ private fun buildMeterKey(song: Song?): Int {
     return result
 }
 
-internal const val POCKET_FLIP_VISUALIZER_COLUMN_COUNT = 24
+internal const val POCKET_FLIP_METER_LINE_COUNT = 2

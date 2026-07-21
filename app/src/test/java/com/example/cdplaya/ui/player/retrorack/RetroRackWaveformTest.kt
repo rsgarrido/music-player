@@ -1,6 +1,6 @@
 package com.example.cdplaya.ui.player.retrorack
 
-import com.example.cdplaya.ui.player.buildTrackReactiveVisualizerLevels
+import com.example.cdplaya.ui.player.buildRetroMeterLevels
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -14,7 +14,7 @@ class RetroRackWaveformTest {
     }
 
     @Test
-    fun realWaveform_isMappedAndClampedSafely() {
+    fun waveformEnergy_drivesClampedSpectrumBands() {
         val levels = buildLevels(listOf(Float.POSITIVE_INFINITY, -0.5f, 0.5f, 1.5f))
 
         requireNotNull(levels)
@@ -23,12 +23,13 @@ class RetroRackWaveformTest {
     }
 
     private fun buildLevels(amplitudes: List<Float>?) =
-        buildTrackReactiveVisualizerLevels(
+        buildRetroMeterLevels(
             amplitudes = amplitudes,
             currentPositionMs = 45_000L,
             durationMs = 180_000L,
             columnCount = RETRO_RACK_VISUALIZER_COLUMN_COUNT,
             animationPhase = 0.25f,
-            isPlaying = true
+            isPlaying = true,
+            songSeed = 42L
         )
 }
