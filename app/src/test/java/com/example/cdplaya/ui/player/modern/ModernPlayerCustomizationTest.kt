@@ -51,8 +51,59 @@ class ModernPlayerCustomizationTest {
         })
     }
 
+    @Test
+    fun seekbarStyles_exposeStableValuesAndFriendlyLabels() {
+        val expected = listOf(
+            SeekbarStyleExpectation(
+                style = ModernSeekbarStyle.CLASSIC_BAR,
+                storageValue = "classic_bar",
+                displayName = "Classic Bar",
+                description = "The current simple progress bar."
+            ),
+            SeekbarStyleExpectation(
+                style = ModernSeekbarStyle.SLIM_LINE,
+                storageValue = "slim_line",
+                displayName = "Slim Line",
+                description = "A minimal thin progress line."
+            ),
+            SeekbarStyleExpectation(
+                style = ModernSeekbarStyle.THICK_CAPSULE,
+                storageValue = "thick_capsule",
+                displayName = "Thick Capsule",
+                description = "A larger rounded progress control."
+            ),
+            SeekbarStyleExpectation(
+                style = ModernSeekbarStyle.SEGMENTED,
+                storageValue = "segmented",
+                displayName = "Segmented",
+                description = "Small separated blocks that fill with progress."
+            ),
+            SeekbarStyleExpectation(
+                style = ModernSeekbarStyle.WAVEFORM_PREVIEW,
+                storageValue = "waveform_preview",
+                displayName = "Waveform Preview",
+                description = "A decorative waveform-inspired preview, not real track dynamics."
+            )
+        )
+
+        assertEquals(expected.map { item -> item.style }, ModernSeekbarStyle.values().toList())
+        expected.forEach { item ->
+            assertEquals(item.storageValue, item.style.storageValue)
+            assertEquals(item.displayName, item.style.displayName)
+            assertEquals(item.description, item.style.description)
+        }
+        assertTrue(ModernSeekbarStyle.WAVEFORM_PREVIEW.description.contains("not real"))
+    }
+
     private data class StyleExpectation(
         val style: ModernArtworkTransitionStyle,
+        val storageValue: String,
+        val displayName: String,
+        val description: String
+    )
+
+    private data class SeekbarStyleExpectation(
+        val style: ModernSeekbarStyle,
         val storageValue: String,
         val displayName: String,
         val description: String

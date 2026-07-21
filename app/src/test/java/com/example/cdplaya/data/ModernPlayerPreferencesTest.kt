@@ -2,6 +2,7 @@ package com.example.cdplaya.data
 
 import android.content.SharedPreferences
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
+import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.mockito.ArgumentMatchers.anyString
@@ -57,6 +58,55 @@ class ModernPlayerPreferencesTest {
         assertEquals(
             ModernArtworkTransitionStyle.SLIDE,
             preferences.getArtworkTransitionStyle()
+        )
+    }
+
+    @Test
+    fun getSeekbarStyle_missingValueDefaultsToClassicBar() {
+        val preferences = ModernPlayerPreferences(SharedPreferencesHarness().preferences)
+
+        assertEquals(
+            ModernSeekbarStyle.CLASSIC_BAR,
+            preferences.getSeekbarStyle()
+        )
+    }
+
+    @Test
+    fun saveSeekbarStyle_roundTripsEveryOption() {
+        val harness = SharedPreferencesHarness()
+        val preferences = ModernPlayerPreferences(harness.preferences)
+
+        ModernSeekbarStyle.values().forEach { style ->
+            preferences.saveSeekbarStyle(style)
+
+            assertEquals(style, preferences.getSeekbarStyle())
+            assertEquals(style.storageValue, harness.values["seekbar_style"])
+        }
+    }
+
+    @Test
+    fun getSeekbarStyle_invalidValueFallsBackToClassicBar() {
+        val harness = SharedPreferencesHarness().apply {
+            values["seekbar_style"] = "unknown_seekbar"
+        }
+        val preferences = ModernPlayerPreferences(harness.preferences)
+
+        assertEquals(
+            ModernSeekbarStyle.CLASSIC_BAR,
+            preferences.getSeekbarStyle()
+        )
+    }
+
+    @Test
+    fun getSeekbarStyle_wrongStoredTypeFallsBackToClassicBar() {
+        val harness = SharedPreferencesHarness().apply {
+            values["seekbar_style"] = 42
+        }
+        val preferences = ModernPlayerPreferences(harness.preferences)
+
+        assertEquals(
+            ModernSeekbarStyle.CLASSIC_BAR,
+            preferences.getSeekbarStyle()
         )
     }
 
