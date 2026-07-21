@@ -1,12 +1,16 @@
 package com.example.cdplaya.ui.player.modern
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -22,6 +26,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.player.RepeatMode
 
@@ -37,9 +44,8 @@ internal fun ModernPlayerControls(
     onRepeatClick: () -> Unit,
     style: ModernPlayerStyle
 ) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+    ModernPlayerGlassSurface(
+        style = style,
         modifier = Modifier.fillMaxWidth()
     ) {
         ModernPlayerModeIconButton(
@@ -127,6 +133,43 @@ internal fun ModernPlayerControls(
 }
 
 @Composable
+private fun ModernPlayerGlassSurface(
+    style: ModernPlayerStyle,
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit
+) {
+    val shape = RoundedCornerShape(38.dp)
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        content = content,
+        modifier = modifier
+            .shadow(
+                elevation = 10.dp,
+                shape = shape,
+                ambientColor = Color.Black.copy(alpha = 0.24f),
+                spotColor = Color.Black.copy(alpha = 0.32f)
+            )
+            .clip(shape)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        style.controlsSurfaceTopColor,
+                        style.controlsSurfaceBottomColor
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                color = style.controlsSurfaceBorderColor,
+                shape = shape
+            )
+            .padding(horizontal = 6.dp, vertical = 6.dp)
+    )
+}
+
+@Composable
 private fun ModernPlayerModeIconButton(
     isActive: Boolean,
     onClick: () -> Unit,
@@ -136,7 +179,7 @@ private fun ModernPlayerModeIconButton(
     val backgroundColor = if (isActive) {
         style.accentColor
     } else {
-        style.inactiveControlBackgroundColor
+        Color.Transparent
     }
 
     Box(
