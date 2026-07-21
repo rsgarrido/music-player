@@ -51,10 +51,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val transparentSystemBarStyle = SystemBarStyle.auto(
-            lightScrim = AndroidColor.TRANSPARENT,
-            darkScrim = AndroidColor.TRANSPARENT
-        )
+        val transparentSystemBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT)
         enableEdgeToEdge(
             statusBarStyle = transparentSystemBarStyle,
             navigationBarStyle = transparentSystemBarStyle

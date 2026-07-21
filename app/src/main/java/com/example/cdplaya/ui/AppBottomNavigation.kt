@@ -1,7 +1,7 @@
 package com.example.cdplaya.ui
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Arrangement
@@ -14,9 +14,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LibraryMusic
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -25,14 +25,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.ui.navigation.MainDestination
 
-val AppBottomNavigationHeight = 72.dp
+val AppBottomNavigationHeight = 82.dp
+
+private val AppBottomNavigationBarHeight = 68.dp
 
 private data class AppNavigationItem(
     val destination: MainDestination,
@@ -41,9 +43,9 @@ private data class AppNavigationItem(
 )
 
 private val appNavigationItems = listOf(
-    AppNavigationItem(MainDestination.HOME, "Home", Icons.Filled.Home),
-    AppNavigationItem(MainDestination.LIBRARY, "Library", Icons.Filled.LibraryMusic),
-    AppNavigationItem(MainDestination.SEARCH, "Search", Icons.Filled.Search)
+    AppNavigationItem(MainDestination.HOME, "Home", Icons.Rounded.Home),
+    AppNavigationItem(MainDestination.LIBRARY, "Library", Icons.Rounded.LibraryMusic),
+    AppNavigationItem(MainDestination.SEARCH, "Search", Icons.Rounded.Search)
 )
 
 @Composable
@@ -52,28 +54,39 @@ fun AppBottomNavigation(
     onDestinationSelected: (MainDestination) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 3.dp,
-        shadowElevation = 8.dp
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, bottom = 10.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(AppBottomNavigationHeight)
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-                .selectableGroup(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(
+                1.dp,
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
+            ),
+            tonalElevation = 4.dp,
+            shadowElevation = 14.dp
         ) {
-            appNavigationItems.forEach { item ->
-                AppBottomNavigationItem(
-                    item = item,
-                    selected = selectedDestination == item.destination,
-                    onClick = { onDestinationSelected(item.destination) },
-                    modifier = Modifier.weight(1f)
-                )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(AppBottomNavigationBarHeight)
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                    .selectableGroup(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                appNavigationItems.forEach { item ->
+                    AppBottomNavigationItem(
+                        item = item,
+                        selected = selectedDestination == item.destination,
+                        onClick = { onDestinationSelected(item.destination) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }
@@ -88,55 +101,48 @@ private fun AppBottomNavigationItem(
 ) {
     val contentColor by animateColorAsState(
         targetValue = if (selected) {
-            MaterialTheme.colorScheme.onPrimaryContainer
+            MaterialTheme.colorScheme.primary
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
         label = "bottomNavigationContentColor"
     )
-    val iconScale by animateFloatAsState(
-        targetValue = if (selected) 1f else 0.92f,
-        label = "bottomNavigationIconScale"
-    )
 
-    Box(
+    Surface(
         modifier = modifier
+            .height(50.dp)
             .selectable(
                 selected = selected,
                 role = Role.Tab,
                 onClick = onClick
-            )
-            .padding(vertical = 2.dp),
-        contentAlignment = Alignment.Center
+            ),
+        color = if (selected) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+        } else {
+            Color.Transparent
+        },
+        shape = RoundedCornerShape(20.dp)
     ) {
-        Surface(
-            color = if (selected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainer
-            },
-            shape = RoundedCornerShape(18.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 5.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = 18.dp, vertical = 7.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = item.label,
-                    modifier = Modifier
-                        .size(22.dp)
-                        .scale(iconScale),
-                    tint = contentColor
-                )
-                Text(
-                    text = item.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                    color = contentColor
-                )
-            }
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.label,
+                modifier = Modifier.size(21.dp),
+                tint = contentColor
+            )
+            Text(
+                text = item.label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                color = contentColor,
+                maxLines = 1
+            )
         }
     }
 }

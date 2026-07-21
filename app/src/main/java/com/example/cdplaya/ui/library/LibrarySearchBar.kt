@@ -2,12 +2,15 @@ package com.example.cdplaya.ui.library
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -27,7 +30,7 @@ fun LibrarySearchBar(
         singleLine = true,
         leadingIcon = {
             Icon(
-                imageVector = Icons.Filled.Search,
+                imageVector = Icons.Rounded.Search,
                 contentDescription = "Search"
             )
         },
@@ -39,7 +42,7 @@ fun LibrarySearchBar(
                     }
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Close,
+                        imageVector = Icons.Rounded.Close,
                         contentDescription = "Clear search"
                     )
                 }
@@ -47,6 +50,18 @@ fun LibrarySearchBar(
         },
         placeholder = {
             Text(text = "Search songs, artists, albums")
-        }
+        },
+        shape = RoundedCornerShape(18.dp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+            unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            cursorColor = MaterialTheme.colorScheme.primary
+        )
     )
 }

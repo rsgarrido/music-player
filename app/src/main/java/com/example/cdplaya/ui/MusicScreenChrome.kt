@@ -1,22 +1,26 @@
 package com.example.cdplaya.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -52,12 +56,11 @@ fun MusicScreenHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (onBackClick != null) {
-                IconButton(onClick = onBackClick) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back to Home"
-                    )
-                }
+                AppShellIconButton(
+                    onClick = onBackClick,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back to Home"
+                )
             }
 
             Text(
@@ -70,35 +73,73 @@ fun MusicScreenHeader(
             )
         }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             if (onSearchClick != null) {
-                IconButton(onClick = onSearchClick) {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = if (isSearchActive) {
-                            "Edit active search"
-                        } else {
-                            "Search library"
-                        },
-                        tint = if (isSearchActive) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onBackground
-                        }
-                    )
-                }
+                AppShellIconButton(
+                    onClick = onSearchClick,
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = if (isSearchActive) {
+                        "Edit active search"
+                    } else {
+                        "Search library"
+                    },
+                    accented = isSearchActive
+                )
             }
 
             sortAction?.invoke()
 
-            FilledTonalIconButton(
-                onClick = onSettingsClick
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "Settings"
-                )
+            AppShellIconButton(
+                onClick = onSettingsClick,
+                imageVector = Icons.Rounded.Settings,
+                contentDescription = "Settings"
+            )
+        }
+    }
+}
+
+@Composable
+fun AppShellIconButton(
+    onClick: () -> Unit,
+    imageVector: ImageVector,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    accented: Boolean = false
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier.size(40.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = if (accented) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        },
+        contentColor = if (accented) {
+            MaterialTheme.colorScheme.primary
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        border = BorderStroke(
+            1.dp,
+            if (accented) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.36f)
+            } else {
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
             }
+        )
+    ) {
+        Box(
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = imageVector,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }

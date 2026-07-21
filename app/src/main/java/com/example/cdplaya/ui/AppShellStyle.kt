@@ -9,7 +9,7 @@ fun appShellBackgroundBrush(): Brush {
     return Brush.verticalGradient(
         colors = listOf(
             MaterialTheme.colorScheme.surfaceContainerLowest,
-            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.surfaceContainerLow,
             MaterialTheme.colorScheme.surfaceContainerLow
         )
     )
