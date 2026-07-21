@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.waveform.WaveformData
-import com.example.cdplaya.player.waveform.mapWaveformAmplitudes
+import com.example.cdplaya.ui.player.buildTrackReactiveVisualizerLevels
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -102,6 +102,8 @@ internal fun PocketFlipLcdMeter(
     currentSong: Song?,
     waveformData: WaveformData?,
     isPlaying: Boolean,
+    currentPosition: Int,
+    duration: Int,
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -110,12 +112,9 @@ internal fun PocketFlipLcdMeter(
         buildMeterKey(currentSong)
     }
     val phase = remember(songKey) { Animatable(0f) }
-    val waveformLevels = remember(waveformData) {
-        mapPocketFlipWaveformLevels(waveformData?.amplitudes)
-    }
 
-    LaunchedEffect(isPlaying, songKey, waveformLevels) {
-        if (isPlaying && waveformLevels == null) {
+    LaunchedEffect(isPlaying, songKey) {
+        if (isPlaying) {
             while (true) {
                 phase.animateTo(
                     targetValue = 1f,
@@ -165,9 +164,17 @@ internal fun PocketFlipLcdMeter(
                 .fillMaxWidth()
                 .height(if (compact) 17.dp else 21.dp)
         ) {
-            if (waveformLevels != null) {
-                drawPocketFlipWaveform(
-                    levels = waveformLevels,
+            val visualizerLevels = buildTrackReactiveVisualizerLevels(
+                amplitudes = waveformData?.amplitudes,
+                currentPositionMs = currentPosition.toLong(),
+                durationMs = duration.toLong(),
+                columnCount = POCKET_FLIP_VISUALIZER_COLUMN_COUNT,
+                animationPhase = phase.value,
+                isPlaying = isPlaying
+            )
+            if (visualizerLevels != null) {
+                drawPocketFlipVisualizer(
+                    levels = visualizerLevels,
                     colors = colors
                 )
             } else {
@@ -191,14 +198,7 @@ internal fun PocketFlipLcdMeter(
     }
 }
 
-internal fun mapPocketFlipWaveformLevels(
-    amplitudes: List<Float>?,
-    barCount: Int = POCKET_FLIP_WAVEFORM_BAR_COUNT
-): List<Float>? = amplitudes
-    ?.let { values -> mapWaveformAmplitudes(values, barCount) }
-    ?.takeIf(List<Float>::isNotEmpty)
-
-private fun DrawScope.drawPocketFlipWaveform(
+private fun DrawScope.drawPocketFlipVisualizer(
     levels: List<Float>,
     colors: PocketFlipPalette
 ) {
@@ -354,4 +354,4 @@ private fun buildMeterKey(song: Song?): Int {
     return result
 }
 
-private const val POCKET_FLIP_WAVEFORM_BAR_COUNT = 24
+internal const val POCKET_FLIP_VISUALIZER_COLUMN_COUNT = 24

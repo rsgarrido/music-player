@@ -34,14 +34,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode as AnimationRepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -63,7 +61,7 @@ import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.waveform.WaveformData
-import com.example.cdplaya.player.waveform.mapWaveformAmplitudes
+import com.example.cdplaya.ui.player.buildTrackReactiveVisualizerLevels
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import kotlin.math.sin
 
@@ -158,7 +156,7 @@ fun RetroRackExpandedPlayer(
         }
 
         RackModule(
-            title = "TRACK WAVEFORM // DISPLAY",
+            title = "SPECTRUM MONITOR // VISUAL",
             modifier = Modifier.height(if (compact) 72.dp else 88.dp),
             trailingAction = {
                 RackIndicator(color = visualProfile.accent)
@@ -169,6 +167,7 @@ fun RetroRackExpandedPlayer(
                 waveformData = waveformData,
                 isPlaying = isPlaying,
                 currentPosition = currentPosition,
+                duration = duration,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -375,29 +374,20 @@ private fun DecorativeSpectrum(
     waveformData: WaveformData?,
     isPlaying: Boolean,
     currentPosition: Int,
+    duration: Int,
     modifier: Modifier = Modifier
 ) {
-    val waveformLevels = remember(waveformData, profile.levels.size) {
-        mapRetroRackWaveformLevels(
-            amplitudes = waveformData?.amplitudes,
-            barCount = profile.levels.size
-        )
-    }
-    val displayLevels = waveformLevels ?: profile.levels
-    val phase = if (waveformLevels == null) {
-        val transition = rememberInfiniteTransition(label = "rack spectrum")
-        val animatedPhase by transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 6.283f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 1_600, easing = LinearEasing),
-                repeatMode = AnimationRepeatMode.Restart
-            ),
-            label = "rack spectrum phase"
-        )
-        animatedPhase
-    } else {
-        0f
+    val phase = remember(profile) { Animatable(0f) }
+    LaunchedEffect(isPlaying, profile) {
+        if (isPlaying) {
+            while (true) {
+                phase.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 1_600, easing = LinearEasing)
+                )
+                phase.snapTo(0f)
+            }
+        }
     }
     Canvas(
         modifier = modifier
@@ -405,19 +395,24 @@ private fun DecorativeSpectrum(
             .rackBevel()
             .padding(8.dp)
     ) {
+        val trackReactiveLevels = buildTrackReactiveVisualizerLevels(
+            amplitudes = waveformData?.amplitudes,
+            currentPositionMs = currentPosition.toLong(),
+            durationMs = duration.toLong(),
+            columnCount = profile.levels.size,
+            animationPhase = phase.value,
+            isPlaying = isPlaying
+        )
+        val displayLevels = trackReactiveLevels ?: profile.levels
         val gap = size.width * 0.012f
         val barWidth = (size.width - gap * (displayLevels.size - 1)) / displayLevels.size
         val segmentGap = 2.dp.toPx()
         val segmentHeight = 3.dp.toPx()
-        val playbackPhase = if (waveformLevels == null) {
-            (currentPosition / 1_000f) * 0.22f
-        } else {
-            0f
-        }
+        val playbackPhase = (currentPosition / 1_000f) * 0.22f
         displayLevels.forEachIndexed { index, level ->
-            val movement = if (waveformLevels == null && isPlaying) {
+            val movement = if (trackReactiveLevels == null && isPlaying) {
                 sin(
-                    phase * (0.58f + index % 4 * 0.07f) +
+                    phase.value * 6.283f * (0.58f + index % 4 * 0.07f) +
                             playbackPhase +
                             profile.phaseOffset +
                             index * 0.73f
@@ -441,13 +436,6 @@ private fun DecorativeSpectrum(
         }
     }
 }
-
-internal fun mapRetroRackWaveformLevels(
-    amplitudes: List<Float>?,
-    barCount: Int
-): List<Float>? = amplitudes
-    ?.let { values -> mapWaveformAmplitudes(values, barCount) }
-    ?.takeIf(List<Float>::isNotEmpty)
 
 @Composable
 private fun RackPlaylist(

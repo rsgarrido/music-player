@@ -108,6 +108,8 @@ internal fun PocketFlipDisplayHalf(
                     currentSong = currentSong,
                     waveformData = waveformData,
                     isPlaying = isPlaying,
+                    currentPosition = currentPosition,
+                    duration = duration,
                     compact = compact,
                     modifier = Modifier.fillMaxWidth()
                 )

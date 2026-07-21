@@ -1,5 +1,6 @@
 package com.example.cdplaya.ui.player.retrorack
 
+import com.example.cdplaya.ui.player.buildTrackReactiveVisualizerLevels
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -8,19 +9,26 @@ import org.junit.Test
 class RetroRackWaveformTest {
     @Test
     fun unavailableWaveform_keepsDecorativeFallback() {
-        assertNull(mapRetroRackWaveformLevels(null, barCount = 18))
-        assertNull(mapRetroRackWaveformLevels(emptyList(), barCount = 18))
+        assertNull(buildLevels(null))
+        assertNull(buildLevels(emptyList()))
     }
 
     @Test
     fun realWaveform_isMappedAndClampedSafely() {
-        val levels = mapRetroRackWaveformLevels(
-            amplitudes = listOf(Float.POSITIVE_INFINITY, -0.5f, 0.5f, 1.5f),
-            barCount = 18
-        )
+        val levels = buildLevels(listOf(Float.POSITIVE_INFINITY, -0.5f, 0.5f, 1.5f))
 
         requireNotNull(levels)
-        assertEquals(18, levels.size)
+        assertEquals(RETRO_RACK_VISUALIZER_COLUMN_COUNT, levels.size)
         assertTrue(levels.all { level -> level.isFinite() && level in 0f..1f })
     }
+
+    private fun buildLevels(amplitudes: List<Float>?) =
+        buildTrackReactiveVisualizerLevels(
+            amplitudes = amplitudes,
+            currentPositionMs = 45_000L,
+            durationMs = 180_000L,
+            columnCount = RETRO_RACK_VISUALIZER_COLUMN_COUNT,
+            animationPhase = 0.25f,
+            isPlaying = true
+        )
 }
