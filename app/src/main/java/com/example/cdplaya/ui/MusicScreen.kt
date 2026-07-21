@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -283,7 +284,7 @@ fun MusicScreen(
             is PlaybackLaunchContext.Search -> {
                 selectedLibraryTab = LibraryTab.SONGS
                 searchQuery = validContext.query
-                mainDestination = MainDestination.LIBRARY
+                mainDestination = MainDestination.SEARCH
             }
         }
     }
@@ -297,7 +298,7 @@ fun MusicScreen(
                 selectedArtistName != null ||
                 selectedAlbumFolderPath != null ||
                 selectedPlaylistId != null ||
-                mainDestination == MainDestination.LIBRARY
+                mainDestination != MainDestination.HOME
     ) {
         when {
             songPendingTagEdit != null -> {
@@ -333,7 +334,7 @@ fun MusicScreen(
                 selectedPlaylistId = null
             }
 
-            mainDestination == MainDestination.LIBRARY -> {
+            mainDestination != MainDestination.HOME -> {
                 mainDestination = MainDestination.HOME
             }
         }
@@ -348,14 +349,20 @@ fun MusicScreen(
                 !isFolderScreenVisible &&
                 !isSettingsScreenVisible &&
                 selectedSongForTagEdit == null
+        val shouldShowBottomNavigation = !isPlayerExpanded &&
+                !isFolderScreenVisible &&
+                !isSettingsScreenVisible &&
+                selectedSongForTagEdit == null
         val navigationBarInset = WindowInsets.navigationBars
             .asPaddingValues()
             .calculateBottomPadding()
-        val bottomContentPadding = navigationBarInset + when {
-            !shouldShowBottomMiniPlayer -> 24.dp
-            isSleepTimerActive -> 176.dp
-            else -> 96.dp
-        }
+        val bottomContentPadding = navigationBarInset +
+                (if (shouldShowBottomNavigation) AppBottomNavigationHeight else 0.dp) +
+                when {
+                    !shouldShowBottomMiniPlayer -> 24.dp
+                    isSleepTimerActive -> 176.dp
+                    else -> 96.dp
+                }
 
         if (selectedSongForTagEdit != null) {
             val initialEditableTags = remember(
@@ -456,7 +463,7 @@ fun MusicScreen(
                     selectedArtistName = null
                     selectedAlbumFolderPath = null
                     selectedPlaylistId = null
-                    mainDestination = MainDestination.LIBRARY
+                    mainDestination = MainDestination.SEARCH
                 },
                 onFolderBackClick = {
                     isFolderScreenVisible = false
@@ -618,6 +625,28 @@ fun MusicScreen(
                 sleepTimerDisplayText = sleepTimerDisplayText,
                 onSleepTimerClick = {
                     isSleepTimerDialogVisible = true
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = AppBottomNavigationHeight)
+            )
+        }
+
+        if (shouldShowBottomNavigation) {
+            AppBottomNavigation(
+                selectedDestination = mainDestination,
+                onDestinationSelected = { destination ->
+                    selectedArtistName = null
+                    selectedAlbumFolderPath = null
+                    selectedPlaylistId = null
+                    if (destination == MainDestination.SEARCH) {
+                        selectedLibraryTab = LibraryTab.SONGS
+                    }
+                    if (destination != MainDestination.SEARCH) {
+                        searchQuery = ""
+                    }
+                    mainDestination = destination
                 },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)

@@ -245,8 +245,9 @@ fun MusicScreenBody(
                     bottomContentPadding = bottomContentPadding
                 )
                 } else {
+                    val isSearchDestination = destination == MainDestination.SEARCH
                     val canSearchLibrary = selectedLibraryTab != LibraryTab.QUEUE
-                    val shouldShowLibrarySearch = canSearchLibrary &&
+                    val shouldShowLibrarySearch = isSearchDestination || canSearchLibrary &&
                             (isLibrarySearchVisible || searchQuery.isNotBlank())
 
                     Column(
@@ -255,14 +256,16 @@ fun MusicScreenBody(
                         .animateContentSize()
                 ) {
                     MusicScreenHeader(
-                        title = selectedLibraryTab.title,
-                        onBackClick = {
-                            isLibrarySearchVisible = false
-                            onHomeClick()
+                        title = if (isSearchDestination) "Search" else selectedLibraryTab.title,
+                        onBackClick = if (isSearchDestination) null else {
+                            {
+                                isLibrarySearchVisible = false
+                                onHomeClick()
+                            }
                         },
                         onSettingsClick = onSettingsClick,
                         modifier = Modifier.statusBarsPadding(),
-                        onSearchClick = if (canSearchLibrary) {
+                        onSearchClick = if (canSearchLibrary && !isSearchDestination) {
                             {
                                 isLibrarySearchVisible = !shouldShowLibrarySearch
                             }

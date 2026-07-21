@@ -82,8 +82,10 @@ fun capturePlaybackLaunchContext(
     selectedPlaylistId: Long?,
     searchQuery: String
 ): PlaybackLaunchContext {
-    if (mainDestination == MainDestination.HOME) {
-        return PlaybackLaunchContext.Home
+    when (mainDestination) {
+        MainDestination.HOME -> return PlaybackLaunchContext.Home
+        MainDestination.SEARCH -> return PlaybackLaunchContext.Search(searchQuery)
+        MainDestination.LIBRARY -> Unit
     }
 
     return when {
