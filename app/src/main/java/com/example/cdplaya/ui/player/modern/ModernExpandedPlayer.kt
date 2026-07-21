@@ -36,6 +36,7 @@ import com.example.cdplaya.player.audioquality.AudioQualityRepository
 import com.example.cdplaya.player.waveform.WaveformData
 import com.example.cdplaya.player.waveform.WaveformRepository
 import com.example.cdplaya.ui.player.rememberExpandedPlayerDragState
+import kotlinx.coroutines.delay
 
 @Composable
 fun ModernExpandedPlayer(
@@ -78,6 +79,27 @@ fun ModernExpandedPlayer(
     ) {
         mutableStateOf<WaveformData?>(null)
     }
+    var isCurrentWaveformRequestComplete by remember(
+        currentSong.id,
+        currentSong.filePath,
+        currentSong.uri
+    ) {
+        mutableStateOf(false)
+    }
+    val nearbyWaveformSongs = remember(
+        currentSong.id,
+        currentSong.filePath,
+        nextPreviewSong?.id,
+        nextPreviewSong?.filePath,
+        previousPreviewSong?.id,
+        previousPreviewSong?.filePath
+    ) {
+        selectNearbyWaveformSongs(
+            currentSong = currentSong,
+            nextSong = nextPreviewSong,
+            previousSong = previousPreviewSong
+        )
+    }
     LaunchedEffect(
         currentSong.id,
         currentSong.filePath,
@@ -85,7 +107,24 @@ fun ModernExpandedPlayer(
         seekbarStyle.usesWaveformData
     ) {
         if (seekbarStyle.usesWaveformData) {
+            isCurrentWaveformRequestComplete = false
             waveformData = waveformRepository.load(currentSong)
+            isCurrentWaveformRequestComplete = true
+        } else {
+            isCurrentWaveformRequestComplete = false
+        }
+    }
+    LaunchedEffect(
+        currentSong.id,
+        currentSong.filePath,
+        currentSong.uri,
+        nearbyWaveformSongs,
+        seekbarStyle.usesWaveformData,
+        isCurrentWaveformRequestComplete
+    ) {
+        if (seekbarStyle.usesWaveformData && isCurrentWaveformRequestComplete) {
+            delay(WAVEFORM_PREFETCH_DELAY_MILLIS)
+            waveformRepository.prefetch(nearbyWaveformSongs)
         }
     }
     val carouselState = rememberModernArtworkCarouselState(
@@ -263,3 +302,20 @@ fun ModernExpandedPlayer(
         }
     }
 }
+
+internal fun selectNearbyWaveformSongs(
+    currentSong: Song,
+    nextSong: Song?,
+    previousSong: Song?
+): List<Song> {
+    return listOfNotNull(nextSong, previousSong)
+        .asSequence()
+        .filterNot { song ->
+            song.id == currentSong.id && song.filePath == currentSong.filePath
+        }
+        .distinctBy { song -> song.id to song.filePath }
+        .take(WaveformRepository.MAX_PREFETCH_COUNT)
+        .toList()
+}
+
+private const val WAVEFORM_PREFETCH_DELAY_MILLIS = 250L

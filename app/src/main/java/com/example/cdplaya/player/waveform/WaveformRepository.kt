@@ -4,11 +4,15 @@ import android.content.Context
 import android.provider.MediaStore
 import com.example.cdplaya.data.Song
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
+import kotlin.coroutines.coroutineContext
 
 fun interface WaveformSourceResolver {
     fun resolve(song: Song): WaveformSource
@@ -99,8 +103,26 @@ class WaveformRepository internal constructor(
         }
     }
 
+    suspend fun prefetch(songs: List<Song>) {
+        songs.asSequence()
+            .distinctBy { song -> song.id to song.filePath }
+            .take(MAX_PREFETCH_COUNT)
+            .forEach { song ->
+                coroutineContext.ensureActive()
+                try {
+                    load(song)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    // Prefetch is opportunistic. A normal current-song request can retry later.
+                }
+                yield()
+            }
+    }
+
     companion object {
         const val DEFAULT_ANALYZED_BAR_COUNT = 128
+        const val MAX_PREFETCH_COUNT = 2
         const val WAVEFORM_CACHE_DIRECTORY = "waveforms"
     }
 }
