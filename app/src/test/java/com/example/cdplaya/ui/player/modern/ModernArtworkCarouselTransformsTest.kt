@@ -69,8 +69,8 @@ class ModernArtworkCarouselTransformsTest {
         )
 
         assertEquals(1f, centered.scale, FLOAT_TOLERANCE)
-        assertEquals(0.80f, outgoing.scale, FLOAT_TOLERANCE)
-        assertEquals(0.80f, incomingAtStart.scale, FLOAT_TOLERANCE)
+        assertEquals(0.74f, outgoing.scale, FLOAT_TOLERANCE)
+        assertEquals(0.74f, incomingAtStart.scale, FLOAT_TOLERANCE)
         assertEquals(1f, incomingAtCenter.scale, FLOAT_TOLERANCE)
         assertEquals(0f, incomingAtStart.alpha, FLOAT_TOLERANCE)
         assertEquals(1f, incomingAtCenter.alpha, FLOAT_TOLERANCE)
@@ -98,8 +98,8 @@ class ModernArtworkCarouselTransformsTest {
             isCurrent = false
         )
 
-        assertEquals(0.88f, outgoing.scale, FLOAT_TOLERANCE)
-        assertEquals(0.76f, outgoing.alpha, FLOAT_TOLERANCE)
+        assertEquals(0.84f, outgoing.scale, FLOAT_TOLERANCE)
+        assertEquals(0.72f, outgoing.alpha, FLOAT_TOLERANCE)
         assertTrue(incoming.scale < centered.scale)
         assertTrue(incoming.alpha > 0f)
     }
@@ -126,7 +126,7 @@ class ModernArtworkCarouselTransformsTest {
         )
 
         assertEquals(0f, centered.rotationY, FLOAT_TOLERANCE)
-        assertEquals(22f, COVER_FLOW_MAX_ROTATION_DEGREES, FLOAT_TOLERANCE)
+        assertEquals(30f, COVER_FLOW_MAX_ROTATION_DEGREES, FLOAT_TOLERANCE)
         assertEquals(
             COVER_FLOW_MAX_ROTATION_DEGREES,
             abs(draggedLeft.rotationY),
@@ -150,7 +150,7 @@ class ModernArtworkCarouselTransformsTest {
             isCurrent = true
         )
 
-        assertEquals(0.60f, COVER_FLOW_METADATA_ROTATION_MULTIPLIER, FLOAT_TOLERANCE)
+        assertEquals(0.70f, COVER_FLOW_METADATA_ROTATION_MULTIPLIER, FLOAT_TOLERANCE)
         assertTrue(abs(metadata.rotationY) > 0f)
         assertTrue(abs(metadata.rotationY) < abs(artwork.rotationY))
         assertEquals(
@@ -158,8 +158,8 @@ class ModernArtworkCarouselTransformsTest {
             metadata.rotationY,
             FLOAT_TOLERANCE
         )
-        assertEquals(13.2f, abs(metadata.rotationY), FLOAT_TOLERANCE)
-        assertEquals(0.95f, metadata.scale, FLOAT_TOLERANCE)
+        assertEquals(21f, abs(metadata.rotationY), FLOAT_TOLERANCE)
+        assertEquals(0.93f, metadata.scale, FLOAT_TOLERANCE)
         assertTrue(metadata.alpha < 1f)
     }
 
@@ -184,7 +184,7 @@ class ModernArtworkCarouselTransformsTest {
             metadata.translationMultiplier,
             FLOAT_TOLERANCE
         )
-        assertEquals(0.42f, PARALLAX_METADATA_TRANSLATION_MULTIPLIER, FLOAT_TOLERANCE)
+        assertEquals(0.32f, PARALLAX_METADATA_TRANSLATION_MULTIPLIER, FLOAT_TOLERANCE)
         assertTrue(
             abs(metadata.translationMultiplier) < abs(artwork.translationMultiplier)
         )
