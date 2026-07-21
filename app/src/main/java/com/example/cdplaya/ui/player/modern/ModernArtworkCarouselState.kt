@@ -11,19 +11,61 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import com.example.cdplaya.data.Song
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 internal const val MODERN_ARTWORK_SWIPE_DISTANCE_THRESHOLD_FRACTION = 0.25f
 internal const val MODERN_ARTWORK_SWIPE_VELOCITY_THRESHOLD_PX_PER_SECOND = 900f
 
-internal enum class ModernArtworkSwipeResult {
+internal enum class ModernCarouselDirection {
     PREVIOUS,
     NEXT,
-    CANCELLED
+    NONE
 }
+
+internal data class ModernCarouselSongs(
+    val current: Song,
+    val previous: Song?,
+    val next: Song?
+) {
+    fun previewFor(direction: ModernCarouselDirection): Song? {
+        return when (direction) {
+            ModernCarouselDirection.PREVIOUS -> previous
+            ModernCarouselDirection.NEXT -> next
+            ModernCarouselDirection.NONE -> null
+        }
+    }
+
+    fun items(): List<ModernCarouselItem> {
+        return buildList {
+            previous
+                ?.takeIf { song -> song.id != current.id }
+                ?.let { song -> add(ModernCarouselItem(song, -1f)) }
+
+            next
+                ?.takeIf { song -> song.id != current.id && song.id != previous?.id }
+                ?.let { song -> add(ModernCarouselItem(song, 1f)) }
+
+            add(ModernCarouselItem(current, 0f, isCurrent = true))
+        }
+    }
+}
+
+internal data class ModernCarouselItem(
+    val song: Song,
+    val restingOffsetMultiplier: Float,
+    val isCurrent: Boolean = false
+)
+
+internal data class ModernPendingSongTransition(
+    val direction: ModernCarouselDirection,
+    val sourceSongId: Long,
+    val startedFromDrag: Boolean
+)
 
 @Stable
 internal class ModernArtworkCarouselState(
@@ -38,6 +80,8 @@ internal class ModernArtworkCarouselState(
         private set
 
     private var settleJob: Job? = null
+    private var pendingExpiryJob: Job? = null
+    private var pendingTransition: ModernPendingSongTransition? = null
 
     val dragProgress: Float
         get() = (abs(offsetX) / artworkWidthPx).coerceIn(0f, 1f)
@@ -50,47 +94,102 @@ internal class ModernArtworkCarouselState(
 
     fun startDrag() {
         settleJob?.cancel()
+        clearPendingTransition()
     }
 
     fun dragBy(deltaX: Float) {
         offsetX = (offsetX + deltaX).coerceIn(-artworkWidthPx, artworkWidthPx)
     }
 
-    fun settle(velocityX: Float) {
+    fun settle(velocityX: Float, sourceSongId: Long) {
         settleJob?.cancel()
 
-        val result = resolveModernArtworkSwipe(
+        val direction = resolveModernArtworkSwipe(
             offsetX = offsetX,
             artworkWidthPx = artworkWidthPx,
             velocityX = velocityX
         )
-        val targetOffset = when (result) {
-            ModernArtworkSwipeResult.PREVIOUS -> artworkWidthPx
-            ModernArtworkSwipeResult.NEXT -> -artworkWidthPx
-            ModernArtworkSwipeResult.CANCELLED -> 0f
+        if (direction == ModernCarouselDirection.NONE) {
+            settleJob = coroutineScope.launch {
+                animateOffsetTo(targetOffset = 0f, durationMillis = 180)
+            }
+            return
         }
-        val durationMillis = if (result == ModernArtworkSwipeResult.CANCELLED) {
-            180
-        } else {
-            130
+
+        recordPendingTransition(direction, sourceSongId, startedFromDrag = true)
+        when (direction) {
+            ModernCarouselDirection.PREVIOUS -> onPrevious()
+            ModernCarouselDirection.NEXT -> onNext()
+            ModernCarouselDirection.NONE -> Unit
         }
 
         settleJob = coroutineScope.launch {
-            animateOffsetTo(targetOffset, durationMillis)
-
-            when (result) {
-                ModernArtworkSwipeResult.PREVIOUS -> onPrevious()
-                ModernArtworkSwipeResult.NEXT -> onNext()
-                ModernArtworkSwipeResult.CANCELLED -> Unit
+            delay(DRAG_NAVIGATION_CONFIRMATION_MILLIS)
+            val pending = pendingTransition
+            if (pending?.sourceSongId == sourceSongId && pending.startedFromDrag) {
+                clearPendingTransition()
+                animateOffsetTo(targetOffset = 0f, durationMillis = 180)
             }
-
-            offsetX = 0f
         }
+    }
+
+    fun recordButtonNavigation(
+        direction: ModernCarouselDirection,
+        sourceSongId: Long
+    ) {
+        require(direction != ModernCarouselDirection.NONE)
+        recordPendingTransition(direction, sourceSongId, startedFromDrag = false)
+    }
+
+    fun consumeTransitionForSongChange(newSongId: Long): ModernPendingSongTransition? {
+        val transition = pendingTransition ?: return null
+        clearPendingTransition()
+
+        return transition.takeIf { pending -> pending.sourceSongId != newSongId }
+    }
+
+    suspend fun animateSongChange(
+        direction: ModernCarouselDirection,
+        durationMillis: Int
+    ) {
+        settleJob?.cancel()
+        val targetOffset = when (direction) {
+            ModernCarouselDirection.PREVIOUS -> artworkWidthPx
+            ModernCarouselDirection.NEXT -> -artworkWidthPx
+            ModernCarouselDirection.NONE -> return
+        }
+        animateOffsetTo(
+            targetOffset = targetOffset,
+            durationMillis = durationMillis
+        )
     }
 
     fun resetForSongChange() {
         settleJob?.cancel()
         offsetX = 0f
+    }
+
+    private fun recordPendingTransition(
+        direction: ModernCarouselDirection,
+        sourceSongId: Long,
+        startedFromDrag: Boolean
+    ) {
+        pendingExpiryJob?.cancel()
+        pendingTransition = ModernPendingSongTransition(
+            direction = direction,
+            sourceSongId = sourceSongId,
+            startedFromDrag = startedFromDrag
+        )
+        pendingExpiryJob = coroutineScope.launch {
+            delay(PENDING_NAVIGATION_TIMEOUT_MILLIS)
+            pendingTransition = null
+        }
+    }
+
+    private fun clearPendingTransition() {
+        pendingExpiryJob?.cancel()
+        pendingExpiryJob = null
+        pendingTransition = null
     }
 
     private suspend fun animateOffsetTo(targetOffset: Float, durationMillis: Int) {
@@ -128,24 +227,27 @@ internal fun resolveModernArtworkSwipe(
     offsetX: Float,
     artworkWidthPx: Float,
     velocityX: Float
-): ModernArtworkSwipeResult {
+): ModernCarouselDirection {
     if (artworkWidthPx <= 0f) {
-        return ModernArtworkSwipeResult.CANCELLED
+        return ModernCarouselDirection.NONE
     }
 
     if (abs(velocityX) >= MODERN_ARTWORK_SWIPE_VELOCITY_THRESHOLD_PX_PER_SECOND) {
         return if (velocityX > 0f) {
-            ModernArtworkSwipeResult.PREVIOUS
+            ModernCarouselDirection.PREVIOUS
         } else {
-            ModernArtworkSwipeResult.NEXT
+            ModernCarouselDirection.NEXT
         }
     }
 
     val distanceThreshold =
         artworkWidthPx * MODERN_ARTWORK_SWIPE_DISTANCE_THRESHOLD_FRACTION
     return when {
-        offsetX >= distanceThreshold -> ModernArtworkSwipeResult.PREVIOUS
-        offsetX <= -distanceThreshold -> ModernArtworkSwipeResult.NEXT
-        else -> ModernArtworkSwipeResult.CANCELLED
+        offsetX >= distanceThreshold -> ModernCarouselDirection.PREVIOUS
+        offsetX <= -distanceThreshold -> ModernCarouselDirection.NEXT
+        else -> ModernCarouselDirection.NONE
     }
 }
+
+private const val PENDING_NAVIGATION_TIMEOUT_MILLIS = 700L
+private const val DRAG_NAVIGATION_CONFIRMATION_MILLIS = 120L

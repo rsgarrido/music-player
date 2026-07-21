@@ -1,70 +1,140 @@
 package com.example.cdplaya.ui.player.modern
 
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.player.audioquality.AudioQualityInfo
+import com.example.cdplaya.player.audioquality.AudioQualityRepository
+
+@Composable
+internal fun ModernPlayerMetadataCarousel(
+    carouselSongs: ModernCarouselSongs,
+    carouselState: ModernArtworkCarouselState,
+    audioQualityRepository: AudioQualityRepository,
+    style: ModernPlayerStyle,
+    modifier: Modifier = Modifier
+) {
+    var pageWidthPx by remember { mutableFloatStateOf(1f) }
+    val dragProgress = carouselState.dragProgress
+    val neighborAlpha = (dragProgress * 1.8f).coerceAtMost(0.9f)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .onSizeChanged { size ->
+                if (size.width > 0) {
+                    pageWidthPx = size.width.toFloat()
+                }
+            },
+        contentAlignment = Alignment.TopStart
+    ) {
+        carouselSongs.items().forEach { item ->
+            key(item.song.id) {
+                ModernPlayerMetadataPage(
+                    song = item.song,
+                    audioQualityRepository = audioQualityRepository,
+                    style = style,
+                    modifier = Modifier.graphicsLayer {
+                        val pageOffsetFraction =
+                            carouselState.offsetX / carouselState.artworkWidthPx
+                        translationX = (pageOffsetFraction +
+                                item.restingOffsetMultiplier) * pageWidthPx
+                        alpha = if (item.isCurrent) {
+                            1f - dragProgress * 0.08f
+                        } else {
+                            neighborAlpha
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModernPlayerMetadataPage(
+    song: Song,
+    audioQualityRepository: AudioQualityRepository,
+    style: ModernPlayerStyle,
+    modifier: Modifier = Modifier
+) {
+    var audioQualityInfo by remember(song.id, song.filePath) {
+        mutableStateOf<AudioQualityInfo?>(null)
+    }
+
+    LaunchedEffect(song.id, song.filePath) {
+        audioQualityInfo = audioQualityRepository.getAudioQualityInfo(song)
+    }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        ModernPlayerMetadata(
+            currentSong = song,
+            style = style
+        )
+
+        ModernPlayerAudioQualityBadge(
+            audioQualityInfo = audioQualityInfo,
+            style = style,
+            modifier = Modifier
+                .align(Alignment.Start)
+                .padding(top = 12.dp)
+        )
+    }
+}
 
 @Composable
 internal fun ModernPlayerMetadata(
     currentSong: Song,
     style: ModernPlayerStyle
 ) {
-    AnimatedContent(
-        targetState = currentSong,
-        transitionSpec = {
-            fadeIn(
-                animationSpec = tween(ModernPlayerDefaults.SongTransitionDurationMillis)
-            ).togetherWith(
-                fadeOut(animationSpec = tween(140))
-            )
-        },
-        contentKey = { song -> song.id },
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        label = "modernPlayerMetadata"
-    ) { displayedSong ->
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(
-                text = displayedSong.title.ifBlank { "Unknown Title" },
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = style.contentColor,
-                maxLines = 2
-            )
+        horizontalAlignment = Alignment.Start
+    ) {
+        Text(
+            text = currentSong.title.ifBlank { "Unknown Title" },
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = style.contentColor,
+            maxLines = 2
+        )
 
-            Spacer(modifier = Modifier.height(6.dp))
+        Spacer(modifier = Modifier.height(6.dp))
 
-            Text(
-                text = displayedSong.artist.ifBlank { "Unknown Artist" },
-                style = MaterialTheme.typography.titleMedium,
-                color = style.secondaryContentColor,
-                maxLines = 1
-            )
+        Text(
+            text = currentSong.artist.ifBlank { "Unknown Artist" },
+            style = MaterialTheme.typography.titleMedium,
+            color = style.secondaryContentColor,
+            maxLines = 1
+        )
 
-            Spacer(modifier = Modifier.height(3.dp))
+        Spacer(modifier = Modifier.height(3.dp))
 
-            Text(
-                text = displayedSong.album.ifBlank { "Unknown Album" },
-                style = MaterialTheme.typography.bodyMedium,
-                color = style.tertiaryContentColor,
-                maxLines = 1
-            )
-        }
+        Text(
+            text = currentSong.album.ifBlank { "Unknown Album" },
+            style = MaterialTheme.typography.bodyMedium,
+            color = style.tertiaryContentColor,
+            maxLines = 1
+        )
     }
 }

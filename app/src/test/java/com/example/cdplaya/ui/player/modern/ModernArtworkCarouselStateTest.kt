@@ -1,6 +1,11 @@
 package com.example.cdplaya.ui.player.modern
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class ModernArtworkCarouselStateTest {
@@ -8,7 +13,7 @@ class ModernArtworkCarouselStateTest {
     @Test
     fun leftDragPastDistanceThresholdMovesNext() {
         assertEquals(
-            ModernArtworkSwipeResult.NEXT,
+            ModernCarouselDirection.NEXT,
             resolveModernArtworkSwipe(
                 offsetX = -251f,
                 artworkWidthPx = 1_000f,
@@ -20,7 +25,7 @@ class ModernArtworkCarouselStateTest {
     @Test
     fun rightDragPastDistanceThresholdMovesPrevious() {
         assertEquals(
-            ModernArtworkSwipeResult.PREVIOUS,
+            ModernCarouselDirection.PREVIOUS,
             resolveModernArtworkSwipe(
                 offsetX = 250f,
                 artworkWidthPx = 1_000f,
@@ -32,7 +37,7 @@ class ModernArtworkCarouselStateTest {
     @Test
     fun shortDragCancels() {
         assertEquals(
-            ModernArtworkSwipeResult.CANCELLED,
+            ModernCarouselDirection.NONE,
             resolveModernArtworkSwipe(
                 offsetX = -249f,
                 artworkWidthPx = 1_000f,
@@ -44,7 +49,7 @@ class ModernArtworkCarouselStateTest {
     @Test
     fun fastFlingUsesVelocityDirection() {
         assertEquals(
-            ModernArtworkSwipeResult.PREVIOUS,
+            ModernCarouselDirection.PREVIOUS,
             resolveModernArtworkSwipe(
                 offsetX = -100f,
                 artworkWidthPx = 1_000f,
@@ -52,12 +57,50 @@ class ModernArtworkCarouselStateTest {
             )
         )
         assertEquals(
-            ModernArtworkSwipeResult.NEXT,
+            ModernCarouselDirection.NEXT,
             resolveModernArtworkSwipe(
                 offsetX = 100f,
                 artworkWidthPx = 1_000f,
                 velocityX = -901f
             )
         )
+    }
+
+    @Test
+    fun previousIntentIsIgnoredWhenSongIdDoesNotChange() {
+        val coroutineScope = CoroutineScope(Job())
+        val state = ModernArtworkCarouselState(
+            coroutineScope = coroutineScope,
+            onPrevious = {},
+            onNext = {}
+        )
+
+        state.recordButtonNavigation(
+            direction = ModernCarouselDirection.PREVIOUS,
+            sourceSongId = 10L
+        )
+
+        assertNull(state.consumeTransitionForSongChange(newSongId = 10L))
+        coroutineScope.cancel()
+    }
+
+    @Test
+    fun buttonIntentIsConsumedOnlyByDifferentSong() {
+        val coroutineScope = CoroutineScope(Job())
+        val state = ModernArtworkCarouselState(
+            coroutineScope = coroutineScope,
+            onPrevious = {},
+            onNext = {}
+        )
+
+        state.recordButtonNavigation(
+            direction = ModernCarouselDirection.NEXT,
+            sourceSongId = 10L
+        )
+        val transition = state.consumeTransitionForSongChange(newSongId = 11L)
+
+        assertEquals(ModernCarouselDirection.NEXT, transition?.direction)
+        assertFalse(transition?.startedFromDrag ?: true)
+        coroutineScope.cancel()
     }
 }

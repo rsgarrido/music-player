@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -33,18 +32,11 @@ import com.example.cdplaya.data.Song
 
 @Composable
 internal fun ModernPlayerArtwork(
-    currentSong: Song,
-    previousPreviewSong: Song?,
-    nextPreviewSong: Song?,
+    carouselSongs: ModernCarouselSongs,
+    carouselState: ModernArtworkCarouselState,
     artworkSize: Dp,
-    style: ModernPlayerStyle,
-    onPreviousClick: () -> Unit,
-    onNextClick: () -> Unit
+    style: ModernPlayerStyle
 ) {
-    val carouselState = rememberModernArtworkCarouselState(
-        onPrevious = onPreviousClick,
-        onNext = onNextClick
-    )
     val horizontalDragState = rememberDraggableState { deltaX ->
         carouselState.dragBy(deltaX)
     }
@@ -52,33 +44,7 @@ internal fun ModernPlayerArtwork(
     val currentArtworkScale = 1f - dragProgress * 0.035f
     val neighborArtworkScale = 0.94f + dragProgress * 0.04f
     val neighborArtworkAlpha = (dragProgress * 1.8f).coerceAtMost(0.9f)
-    val carouselItems = buildList {
-        previousPreviewSong
-            ?.takeIf { song -> song.id != currentSong.id }
-            ?.let { song ->
-                add(ModernArtworkCarouselItem(song, restingOffsetMultiplier = -1f))
-            }
-
-        nextPreviewSong
-            ?.takeIf { song ->
-                song.id != currentSong.id && song.id != previousPreviewSong?.id
-            }
-            ?.let { song ->
-                add(ModernArtworkCarouselItem(song, restingOffsetMultiplier = 1f))
-            }
-
-        add(
-            ModernArtworkCarouselItem(
-                song = currentSong,
-                restingOffsetMultiplier = 0f,
-                isCurrent = true
-            )
-        )
-    }
-
-    LaunchedEffect(currentSong.id) {
-        carouselState.resetForSongChange()
-    }
+    val carouselItems = carouselSongs.items()
 
     Box(
         modifier = Modifier
@@ -90,7 +56,12 @@ internal fun ModernPlayerArtwork(
                 state = horizontalDragState,
                 orientation = Orientation.Horizontal,
                 onDragStarted = { carouselState.startDrag() },
-                onDragStopped = { velocityX -> carouselState.settle(velocityX) }
+                onDragStopped = { velocityX ->
+                    carouselState.settle(
+                        velocityX = velocityX,
+                        sourceSongId = carouselSongs.current.id
+                    )
+                }
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -127,12 +98,6 @@ internal fun ModernPlayerArtwork(
         }
     }
 }
-
-private data class ModernArtworkCarouselItem(
-    val song: Song,
-    val restingOffsetMultiplier: Float,
-    val isCurrent: Boolean = false
-)
 
 @Composable
 private fun ModernPlayerArtworkCard(
