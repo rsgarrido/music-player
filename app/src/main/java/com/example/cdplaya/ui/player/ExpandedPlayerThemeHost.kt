@@ -16,6 +16,8 @@ fun ExpandedPlayerThemeHost(
     selectedPlayerTheme: PlayerTheme,
     tokens: PlayerThemeTokens,
     currentSong: Song?,
+    previousPreviewSong: Song?,
+    nextPreviewSong: Song?,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -41,6 +43,8 @@ fun ExpandedPlayerThemeHost(
         PlayerTheme.DEFAULT -> {
             ModernExpandedPlayer(
                 currentSong = currentSong,
+                previousPreviewSong = previousPreviewSong,
+                nextPreviewSong = nextPreviewSong,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,

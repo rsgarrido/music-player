@@ -44,6 +44,8 @@ fun MusicRoute(
         mostPlayedSongs = libraryController.mostPlayedSongs,
         permissionGranted = permissionGranted,
         currentSong = playbackController.currentSong,
+        previousPreviewSong = playbackController.getPreviousSongForPreview(),
+        nextPreviewSong = playbackController.getNextSongForPreview(),
         isPlaying = playbackController.isPlaying,
         isShuffleEnabled = playbackController.isShuffleEnabled,
         repeatMode = playbackController.repeatMode,

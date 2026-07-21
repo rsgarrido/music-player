@@ -31,12 +31,13 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.audioquality.AudioQualityInfo
 import com.example.cdplaya.player.audioquality.AudioQualityRepository
-import com.example.cdplaya.ui.player.expandedPlayerHorizontalSwipeGestures
 import com.example.cdplaya.ui.player.rememberExpandedPlayerDragState
 
 @Composable
 fun ModernExpandedPlayer(
     currentSong: Song?,
+    previousPreviewSong: Song? = null,
+    nextPreviewSong: Song? = null,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -109,10 +110,6 @@ fun ModernExpandedPlayer(
                     onDragStarted = { dragState.startDrag() },
                     onDragStopped = { velocityY -> dragState.settle(velocityY) }
                 )
-                .expandedPlayerHorizontalSwipeGestures(
-                    onSwipeLeft = onNextClick,
-                    onSwipeRight = onPreviousClick
-                )
         ) {
             ModernPlayerBackground(
                 currentSong = currentSong,
@@ -136,8 +133,12 @@ fun ModernExpandedPlayer(
             ) {
                 ModernPlayerArtwork(
                     currentSong = currentSong,
+                    previousPreviewSong = previousPreviewSong,
+                    nextPreviewSong = nextPreviewSong,
                     artworkSize = foregroundAlbumArtSize,
-                    style = style
+                    style = style,
+                    onPreviousClick = onPreviousClick,
+                    onNextClick = onNextClick
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))

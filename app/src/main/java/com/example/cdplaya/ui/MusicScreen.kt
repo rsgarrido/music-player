@@ -52,6 +52,8 @@ fun MusicScreen(
     songs: List<Song>,
     permissionGranted: Boolean,
     currentSong: Song?,
+    previousPreviewSong: Song?,
+    nextPreviewSong: Song?,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -631,6 +633,8 @@ fun MusicScreen(
             MusicScreenOverlays(
                 isPlayerExpanded = isPlayerExpanded,
                 currentSong = currentSong,
+                previousPreviewSong = previousPreviewSong,
+                nextPreviewSong = nextPreviewSong,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,

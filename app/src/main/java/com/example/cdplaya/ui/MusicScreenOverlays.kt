@@ -28,6 +28,8 @@ import com.example.cdplaya.ui.settings.SleepTimerDialog
 fun MusicScreenOverlays(
     isPlayerExpanded: Boolean,
     currentSong: Song?,
+    previousPreviewSong: Song?,
+    nextPreviewSong: Song?,
     songs: List<Song>,
     onSongClick: (Song, List<Song>) -> Unit,
     isPlaying: Boolean,
@@ -96,6 +98,8 @@ fun MusicScreenOverlays(
                 selectedPlayerTheme = selectedPlayerTheme,
                 tokens = selectedPlayerThemeTokens,
                 currentSong = currentSong,
+                previousPreviewSong = previousPreviewSong,
+                nextPreviewSong = nextPreviewSong,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,

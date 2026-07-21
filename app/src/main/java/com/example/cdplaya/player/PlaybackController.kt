@@ -351,6 +351,16 @@ class PlaybackController(
         return upcomingSongs.drop(queuedSongCount)
     }
 
+    fun getPreviousSongForPreview(): Song? {
+        return playbackNavigationHistory.peekPreviousSong()
+    }
+
+    fun getNextSongForPreview(): Song? {
+        return playbackNavigationHistory.peekNextSong()
+            ?: playbackQueue.firstOrNull()
+            ?: upcomingSongs.firstOrNull()
+    }
+
     fun savePlayerState() {
         playerStateStorage.saveState(
             currentSongId = currentSong?.id,
