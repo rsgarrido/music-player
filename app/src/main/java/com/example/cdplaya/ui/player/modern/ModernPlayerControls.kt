@@ -5,12 +5,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -21,7 +18,6 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,12 +40,12 @@ internal fun ModernPlayerControls(
     onRepeatClick: () -> Unit,
     style: ModernPlayerStyle
 ) {
-    ModernPlayerGlassSurface(
-        style = style,
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier.fillMaxWidth()
     ) {
         ModernPlayerModeIconButton(
-            isActive = isShuffleEnabled,
             onClick = onShuffleClick,
             style = style
         ) {
@@ -57,7 +53,7 @@ internal fun ModernPlayerControls(
                 imageVector = Icons.Filled.Shuffle,
                 contentDescription = if (isShuffleEnabled) "Shuffle on" else "Shuffle off",
                 tint = if (isShuffleEnabled) {
-                    style.onAccentColor
+                    style.accentColor
                 } else {
                     style.inactiveControlColor
                 }
@@ -73,29 +69,11 @@ internal fun ModernPlayerControls(
             )
         }
 
-        Surface(
+        ModernPlayerPlayPauseButton(
+            isPlaying = isPlaying,
             onClick = onPlayPauseClick,
-            modifier = Modifier.size(82.dp),
-            shape = style.primaryControlShape,
-            color = style.contentColor,
-            contentColor = style.backgroundColor,
-            shadowElevation = 14.dp
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = if (isPlaying) {
-                        Icons.Filled.Pause
-                    } else {
-                        Icons.Filled.PlayArrow
-                    },
-                    contentDescription = if (isPlaying) "Pause" else "Play",
-                    modifier = Modifier.size(50.dp)
-                )
-            }
-        }
+            style = style
+        )
 
         IconButton(onClick = onNextClick) {
             Icon(
@@ -107,7 +85,6 @@ internal fun ModernPlayerControls(
         }
 
         ModernPlayerModeIconButton(
-            isActive = repeatMode != RepeatMode.OFF,
             onClick = onRepeatClick,
             style = style
         ) {
@@ -125,7 +102,7 @@ internal fun ModernPlayerControls(
                 tint = if (repeatMode == RepeatMode.OFF) {
                     style.inactiveControlColor
                 } else {
-                    style.onAccentColor
+                    style.accentColor
                 }
             )
         }
@@ -133,60 +110,64 @@ internal fun ModernPlayerControls(
 }
 
 @Composable
-private fun ModernPlayerGlassSurface(
+private fun ModernPlayerPlayPauseButton(
+    isPlaying: Boolean,
+    onClick: () -> Unit,
     style: ModernPlayerStyle,
-    modifier: Modifier = Modifier,
-    content: @Composable RowScope.() -> Unit
 ) {
-    val shape = RoundedCornerShape(38.dp)
-
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        content = content,
-        modifier = modifier
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(82.dp)
             .shadow(
-                elevation = 10.dp,
-                shape = shape,
+                elevation = 14.dp,
+                shape = style.primaryControlShape,
                 ambientColor = Color.Black.copy(alpha = 0.24f),
                 spotColor = Color.Black.copy(alpha = 0.32f)
             )
-            .clip(shape)
+            .clip(style.primaryControlShape)
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        style.controlsSurfaceTopColor,
-                        style.controlsSurfaceBottomColor
+                        style.primaryControlSurfaceTopColor,
+                        style.primaryControlSurfaceBottomColor
                     )
                 )
             )
             .border(
                 width = 1.dp,
-                color = style.controlsSurfaceBorderColor,
-                shape = shape
+                color = style.primaryControlSurfaceBorderColor,
+                shape = style.primaryControlShape
             )
-            .padding(horizontal = 6.dp, vertical = 6.dp)
-    )
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Icon(
+                imageVector = if (isPlaying) {
+                    Icons.Filled.Pause
+                } else {
+                    Icons.Filled.PlayArrow
+                },
+                contentDescription = if (isPlaying) "Pause" else "Play",
+                tint = style.contentColor,
+                modifier = Modifier.size(50.dp)
+            )
+        }
+    }
 }
 
 @Composable
 private fun ModernPlayerModeIconButton(
-    isActive: Boolean,
     onClick: () -> Unit,
     style: ModernPlayerStyle,
     icon: @Composable () -> Unit
 ) {
-    val backgroundColor = if (isActive) {
-        style.accentColor
-    } else {
-        Color.Transparent
-    }
-
     Box(
         modifier = Modifier
             .size(48.dp)
-            .clip(style.modeControlShape)
-            .background(backgroundColor),
+            .clip(style.modeControlShape),
         contentAlignment = Alignment.Center
     ) {
         IconButton(onClick = onClick) {
