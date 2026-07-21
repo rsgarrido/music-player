@@ -69,6 +69,16 @@ enum class ModernSeekbarStyle(
         storageValue = "waveform_preview",
         displayName = "Waveform Preview",
         description = "A decorative waveform-inspired preview, not real track dynamics."
+    ),
+    WAVEFORM_PEAKS(
+        storageValue = "waveform_peaks",
+        displayName = "Waveform Peaks",
+        description = "Decorative mirrored waveform-style progress, not analyzed track dynamics."
+    ),
+    WAVEFORM_GLOW(
+        storageValue = "waveform_glow",
+        displayName = "Waveform Glow",
+        description = "A dense decorative waveform-style progress bar with a soft glow, not analyzed audio."
     );
 
     companion object {

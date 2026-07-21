@@ -83,6 +83,18 @@ class ModernPlayerCustomizationTest {
                 storageValue = "waveform_preview",
                 displayName = "Waveform Preview",
                 description = "A decorative waveform-inspired preview, not real track dynamics."
+            ),
+            SeekbarStyleExpectation(
+                style = ModernSeekbarStyle.WAVEFORM_PEAKS,
+                storageValue = "waveform_peaks",
+                displayName = "Waveform Peaks",
+                description = "Decorative mirrored waveform-style progress, not analyzed track dynamics."
+            ),
+            SeekbarStyleExpectation(
+                style = ModernSeekbarStyle.WAVEFORM_GLOW,
+                storageValue = "waveform_glow",
+                displayName = "Waveform Glow",
+                description = "A dense decorative waveform-style progress bar with a soft glow, not analyzed audio."
             )
         )
 
@@ -92,7 +104,11 @@ class ModernPlayerCustomizationTest {
             assertEquals(item.displayName, item.style.displayName)
             assertEquals(item.description, item.style.description)
         }
-        assertTrue(ModernSeekbarStyle.WAVEFORM_PREVIEW.description.contains("not real"))
+        assertTrue(
+            ModernSeekbarStyle.values()
+                .filter { style -> style.name.startsWith("WAVEFORM") }
+                .all { style -> style.description.contains("decorative", ignoreCase = true) }
+        )
     }
 
     private data class StyleExpectation(

@@ -25,6 +25,26 @@ class ModernPlayerSeekBarTest {
     }
 
     @Test
+    fun waveformPeaksBars_areStableWithExpectedCountAndRange() {
+        val first = generateWaveformPeaksBars("42|music/track.flac|Example")
+        val second = generateWaveformPeaksBars("42|music/track.flac|Example")
+
+        assertEquals(first, second)
+        assertEquals(42, first.size)
+        assertTrue(first.all { amplitude -> amplitude in 0.12f..1f })
+    }
+
+    @Test
+    fun waveformGlowBars_areStableWithExpectedCountAndRange() {
+        val first = generateWaveformGlowBars("42|music/track.flac|Example")
+        val second = generateWaveformGlowBars("42|music/track.flac|Example")
+
+        assertEquals(first, second)
+        assertEquals(72, first.size)
+        assertTrue(first.all { amplitude -> amplitude in 0.2f..0.78f })
+    }
+
+    @Test
     fun segmentedFillFractions_fillsWholeAndPartialSegments() {
         assertEquals(
             listOf(1f, 1f, 0.5f, 0f),
