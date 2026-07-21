@@ -2,7 +2,8 @@ package com.example.cdplaya.ui
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -61,7 +62,8 @@ fun AppBottomNavigation(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(AppBottomNavigationHeight)
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -99,7 +101,11 @@ private fun AppBottomNavigationItem(
 
     Box(
         modifier = modifier
-            .clickable(role = Role.Tab, onClick = onClick)
+            .selectable(
+                selected = selected,
+                role = Role.Tab,
+                onClick = onClick
+            )
             .padding(vertical = 2.dp),
         contentAlignment = Alignment.Center
     ) {

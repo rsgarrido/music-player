@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui.library
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,7 +68,9 @@ fun LibraryBrowseSwitcher(
             shape = RoundedCornerShape(22.dp)
         ) {
             Row(
-                modifier = Modifier.padding(4.dp),
+                modifier = Modifier
+                    .padding(4.dp)
+                    .selectableGroup(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 primaryLibraryTabs.forEach { tab ->
@@ -133,7 +136,11 @@ private fun LibraryPrimaryTab(
     ) {
         Box(
             modifier = Modifier
-                .clickable(role = Role.Tab, onClick = onClick)
+                .selectable(
+                    selected = selected,
+                    role = Role.Tab,
+                    onClick = onClick
+                )
                 .padding(horizontal = 6.dp, vertical = 10.dp),
             contentAlignment = Alignment.Center
         ) {

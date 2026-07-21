@@ -197,21 +197,18 @@ fun MusicScreenBody(
             AnimatedContent(
                 targetState = mainDestination,
                 transitionSpec = {
-                    if (targetState == MainDestination.LIBRARY) {
-                        (fadeIn(tween(170)) +
-                                slideInHorizontally(tween(180)) { width -> width / 18 })
-                            .togetherWith(
-                                fadeOut(tween(120)) +
-                                        slideOutHorizontally(tween(150)) { width -> -width / 24 }
-                            )
-                    } else {
-                        (fadeIn(tween(170)) +
-                                slideInHorizontally(tween(180)) { width -> -width / 18 })
-                            .togetherWith(
-                                fadeOut(tween(120)) +
-                                        slideOutHorizontally(tween(150)) { width -> width / 24 }
-                            )
-                    }
+                    val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
+
+                    (fadeIn(tween(170)) +
+                            slideInHorizontally(tween(180)) { width ->
+                                direction * width / 18
+                            })
+                        .togetherWith(
+                            fadeOut(tween(120)) +
+                                    slideOutHorizontally(tween(150)) { width ->
+                                        -direction * width / 24
+                                    }
+                        )
                 },
                 label = "appShellDestination"
             ) { destination ->
