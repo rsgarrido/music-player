@@ -16,7 +16,7 @@ class AudioQualityInfoTest {
         )
 
         assertEquals(
-            "24 bit \u2022 96 kHz \u2022 3315 kbps \u2022 FLAC",
+            "24 bit  96 kHz  3315 kbps  FLAC",
             audioQualityInfo.toDisplayText()
         )
     }
@@ -42,7 +42,7 @@ class AudioQualityInfoTest {
             bitrateKbps = 256
         )
 
-        assertEquals("256 kbps \u2022 AAC", audioQualityInfo.toDisplayText())
+        assertEquals("256 kbps  AAC", audioQualityInfo.toDisplayText())
     }
 
     @Test

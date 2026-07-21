@@ -28,7 +28,7 @@ fun AudioQualityInfo.toDisplayText(): String? {
 
     return displayParts
         .takeIf { parts -> parts.isNotEmpty() }
-        ?.joinToString(separator = " \u2022 ")
+        ?.joinToString(separator = "  ")
 }
 
 internal fun normalizeAudioFormat(rawFormat: String?): String? {

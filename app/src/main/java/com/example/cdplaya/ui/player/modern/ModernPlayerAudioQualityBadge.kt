@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.cdplaya.player.audioquality.AudioQualityInfo
 import com.example.cdplaya.player.audioquality.toDisplayText
 
@@ -39,7 +40,9 @@ internal fun ModernPlayerAudioQualityBadge(
         Text(
             text = displayText,
             style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 0.15.sp,
             color = style.contentColor.copy(alpha = 0.82f),
             maxLines = 1
         )
