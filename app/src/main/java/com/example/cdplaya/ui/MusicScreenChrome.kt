@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
@@ -65,8 +63,7 @@ fun MusicScreenHeader(
 
             Text(
                 text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.SemiBold,
+                style = AppShellTypography.ScreenTitle,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -80,7 +77,7 @@ fun MusicScreenHeader(
             if (onSearchClick != null) {
                 AppShellIconButton(
                     onClick = onSearchClick,
-                    imageVector = Icons.Rounded.Search,
+                    imageVector = AppShellIcons.Search,
                     contentDescription = if (isSearchActive) {
                         "Edit active search"
                     } else {

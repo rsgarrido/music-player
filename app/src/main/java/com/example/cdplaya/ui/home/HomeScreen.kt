@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.MusicScreenHeader
+import com.example.cdplaya.ui.AppShellTypography
 import com.example.cdplaya.ui.library.LibraryTab
 
 @Composable
@@ -22,6 +23,7 @@ fun HomeScreen(
     permissionGranted: Boolean,
     recentlyPlayedSongs: List<Song>,
     favoriteSongs: List<Song>,
+    currentSongId: Long?,
     songCount: Int,
     albumCount: Int,
     artistCount: Int,
@@ -33,6 +35,10 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     bottomContentPadding: Dp = 24.dp
 ) {
+    val visibleRecentlyPlayedSongs = recentlyPlayedSongs
+        .filterNot { song -> song.id == currentSongId }
+        .ifEmpty { recentlyPlayedSongs }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize(),
@@ -55,7 +61,7 @@ fun HomeScreen(
                         playlistCount = playlistCount
                     ),
                     modifier = Modifier.padding(horizontal = 16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = AppShellTypography.Eyebrow,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -71,10 +77,10 @@ fun HomeScreen(
             }
         }
 
-        if (recentlyPlayedSongs.isNotEmpty()) {
+        if (visibleRecentlyPlayedSongs.isNotEmpty()) {
             item {
                 HomeRecentlyPlayedShelf(
-                    songs = recentlyPlayedSongs.take(8),
+                    songs = visibleRecentlyPlayedSongs.take(8),
                     onSeeAllClick = {
                         onOpenLibrary(LibraryTab.RECENTLY_PLAYED)
                     },
@@ -124,5 +130,5 @@ private fun buildLibrarySummary(
 
 private fun libraryCountLabel(count: Int, singularLabel: String): String {
     val label = if (count == 1) singularLabel else "${singularLabel}s"
-    return "$count $label"
+    return "$count ${label.uppercase()}"
 }

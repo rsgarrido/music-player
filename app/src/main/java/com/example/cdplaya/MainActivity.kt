@@ -26,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.cdplaya.ui.MusicRoute
-import com.example.cdplaya.ui.appShellBackgroundBrush
 import com.example.cdplaya.ui.theme.CdplayaTheme
 import com.example.cdplaya.viewmodel.MusicViewModel
 
@@ -72,7 +71,7 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(appShellBackgroundBrush())
+                            .background(MaterialTheme.colorScheme.background)
                     ) {
                         MusicRoute(
                             musicViewModel = musicViewModel,

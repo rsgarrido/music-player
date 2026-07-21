@@ -13,10 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.LibraryMusic
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -28,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.ui.navigation.MainDestination
 
@@ -43,9 +38,9 @@ private data class AppNavigationItem(
 )
 
 private val appNavigationItems = listOf(
-    AppNavigationItem(MainDestination.HOME, "Home", Icons.Rounded.Home),
-    AppNavigationItem(MainDestination.LIBRARY, "Library", Icons.Rounded.LibraryMusic),
-    AppNavigationItem(MainDestination.SEARCH, "Search", Icons.Rounded.Search)
+    AppNavigationItem(MainDestination.HOME, "Home", AppShellIcons.Deck),
+    AppNavigationItem(MainDestination.LIBRARY, "Library", AppShellIcons.AlbumStack),
+    AppNavigationItem(MainDestination.SEARCH, "Search", AppShellIcons.Search)
 )
 
 @Composable
@@ -137,9 +132,8 @@ private fun AppBottomNavigationItem(
                 tint = contentColor
             )
             Text(
-                text = item.label,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                text = item.label.uppercase(),
+                style = AppShellTypography.NavigationLabel,
                 color = contentColor,
                 maxLines = 1
             )

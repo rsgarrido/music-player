@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -15,6 +14,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.ui.AppShellTypography
+import com.example.cdplaya.ui.AppShellIcons
 
 @Composable
 fun LibrarySearchBar(
@@ -28,9 +29,10 @@ fun LibrarySearchBar(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp),
         singleLine = true,
+        textStyle = AppShellTypography.SearchInput,
         leadingIcon = {
             Icon(
-                imageVector = Icons.Rounded.Search,
+                imageVector = AppShellIcons.Search,
                 contentDescription = "Search"
             )
         },
@@ -49,7 +51,10 @@ fun LibrarySearchBar(
             }
         },
         placeholder = {
-            Text(text = "Search songs, artists, albums")
+            Text(
+                text = "Search songs, artists, albums",
+                style = AppShellTypography.SearchInput
+            )
         },
         shape = RoundedCornerShape(18.dp),
         colors = OutlinedTextFieldDefaults.colors(

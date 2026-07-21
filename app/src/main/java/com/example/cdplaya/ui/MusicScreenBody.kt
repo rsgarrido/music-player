@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -199,14 +201,16 @@ fun MusicScreenBody(
                 transitionSpec = {
                     val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
 
-                    (fadeIn(tween(170)) +
-                            slideInHorizontally(tween(180)) { width ->
-                                direction * width / 18
+                    (fadeIn(tween(190)) +
+                            scaleIn(tween(210), initialScale = 0.985f) +
+                            slideInHorizontally(tween(210)) { width ->
+                                direction * width / 28
                             })
                         .togetherWith(
-                            fadeOut(tween(120)) +
-                                    slideOutHorizontally(tween(150)) { width ->
-                                        -direction * width / 24
+                            fadeOut(tween(145)) +
+                                    scaleOut(tween(170), targetScale = 0.995f) +
+                                    slideOutHorizontally(tween(175)) { width ->
+                                        -direction * width / 36
                                     }
                         )
                 },
@@ -219,6 +223,7 @@ fun MusicScreenBody(
                     favoriteSongs = songs.filter { song ->
                         song.favoriteKey() in favoriteSongKeys
                     },
+                    currentSongId = currentSong?.id,
                     songCount = songs.size,
                     albumCount = songs
                         .mapTo(mutableSetOf()) { song -> song.folderPath }

@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.ui.AppShellTypography
 
 val primaryLibraryTabs = listOf(
     LibraryTab.SONGS,
@@ -142,8 +143,8 @@ private fun LibraryPrimaryTab(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = tab.title,
-                style = MaterialTheme.typography.labelLarge,
+                text = tab.title.uppercase(),
+                style = AppShellTypography.ControlLabel,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                 maxLines = 1
             )
@@ -198,8 +199,8 @@ private fun LibraryFilterPill(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
+                text = label.uppercase(),
+                style = AppShellTypography.ControlLabel,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                 maxLines = 1
             )
