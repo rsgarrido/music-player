@@ -62,12 +62,15 @@ import androidx.compose.ui.platform.LocalDensity
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.player.waveform.WaveformData
+import com.example.cdplaya.player.waveform.mapWaveformAmplitudes
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import kotlin.math.sin
 
 @Composable
 fun RetroRackExpandedPlayer(
     currentSong: Song?,
+    waveformData: WaveformData? = null,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -155,7 +158,7 @@ fun RetroRackExpandedPlayer(
         }
 
         RackModule(
-            title = "SPECTRUM MONITOR // VISUAL",
+            title = "TRACK WAVEFORM // DISPLAY",
             modifier = Modifier.height(if (compact) 72.dp else 88.dp),
             trailingAction = {
                 RackIndicator(color = visualProfile.accent)
@@ -163,6 +166,7 @@ fun RetroRackExpandedPlayer(
         ) {
             DecorativeSpectrum(
                 profile = visualProfile,
+                waveformData = waveformData,
                 isPlaying = isPlaying,
                 currentPosition = currentPosition,
                 modifier = Modifier.fillMaxSize()
@@ -368,20 +372,33 @@ private fun MainDeck(
 @Composable
 private fun DecorativeSpectrum(
     profile: RetroRackVisualProfile,
+    waveformData: WaveformData?,
     isPlaying: Boolean,
     currentPosition: Int,
     modifier: Modifier = Modifier
 ) {
-    val transition = rememberInfiniteTransition(label = "rack spectrum")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 6.283f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1_600, easing = LinearEasing),
-            repeatMode = AnimationRepeatMode.Restart
-        ),
-        label = "rack spectrum phase"
-    )
+    val waveformLevels = remember(waveformData, profile.levels.size) {
+        mapRetroRackWaveformLevels(
+            amplitudes = waveformData?.amplitudes,
+            barCount = profile.levels.size
+        )
+    }
+    val displayLevels = waveformLevels ?: profile.levels
+    val phase = if (waveformLevels == null) {
+        val transition = rememberInfiniteTransition(label = "rack spectrum")
+        val animatedPhase by transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 6.283f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1_600, easing = LinearEasing),
+                repeatMode = AnimationRepeatMode.Restart
+            ),
+            label = "rack spectrum phase"
+        )
+        animatedPhase
+    } else {
+        0f
+    }
     Canvas(
         modifier = modifier
             .background(DisplayBlack)
@@ -389,12 +406,16 @@ private fun DecorativeSpectrum(
             .padding(8.dp)
     ) {
         val gap = size.width * 0.012f
-        val barWidth = (size.width - gap * (profile.levels.size - 1)) / profile.levels.size
+        val barWidth = (size.width - gap * (displayLevels.size - 1)) / displayLevels.size
         val segmentGap = 2.dp.toPx()
         val segmentHeight = 3.dp.toPx()
-        val playbackPhase = (currentPosition / 1_000f) * 0.22f
-        profile.levels.forEachIndexed { index, level ->
-            val movement = if (isPlaying) {
+        val playbackPhase = if (waveformLevels == null) {
+            (currentPosition / 1_000f) * 0.22f
+        } else {
+            0f
+        }
+        displayLevels.forEachIndexed { index, level ->
+            val movement = if (waveformLevels == null && isPlaying) {
                 sin(
                     phase * (0.58f + index % 4 * 0.07f) +
                             playbackPhase +
@@ -420,6 +441,13 @@ private fun DecorativeSpectrum(
         }
     }
 }
+
+internal fun mapRetroRackWaveformLevels(
+    amplitudes: List<Float>?,
+    barCount: Int
+): List<Float>? = amplitudes
+    ?.let { values -> mapWaveformAmplitudes(values, barCount) }
+    ?.takeIf(List<Float>::isNotEmpty)
 
 @Composable
 private fun RackPlaylist(

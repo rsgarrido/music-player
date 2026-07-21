@@ -7,9 +7,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.waveform.WaveformData
 import com.example.cdplaya.player.waveform.WaveformRepository
+import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 
@@ -57,3 +59,12 @@ internal fun rememberExpandedPlayerWaveformData(
 }
 
 private const val WAVEFORM_PREFETCH_DELAY_MILLIS = 250L
+
+internal fun shouldLoadExpandedPlayerWaveform(
+    selectedPlayerTheme: PlayerTheme,
+    modernSeekbarStyle: ModernSeekbarStyle
+): Boolean = when (selectedPlayerTheme) {
+    PlayerTheme.DEFAULT -> modernSeekbarStyle.usesWaveformData
+    PlayerTheme.POCKET_FLIP, PlayerTheme.RETRO_RACK -> true
+    PlayerTheme.CLASSIC_WHEEL, PlayerTheme.POCKET_CASSETTE -> false
+}

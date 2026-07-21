@@ -31,6 +31,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.player.waveform.WaveformData
+import com.example.cdplaya.player.waveform.mapWaveformAmplitudes
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -98,6 +100,7 @@ private fun PocketFlipStatusChip(
 @Composable
 internal fun PocketFlipLcdMeter(
     currentSong: Song?,
+    waveformData: WaveformData?,
     isPlaying: Boolean,
     compact: Boolean,
     modifier: Modifier = Modifier
@@ -107,9 +110,12 @@ internal fun PocketFlipLcdMeter(
         buildMeterKey(currentSong)
     }
     val phase = remember(songKey) { Animatable(0f) }
+    val waveformLevels = remember(waveformData) {
+        mapPocketFlipWaveformLevels(waveformData?.amplitudes)
+    }
 
-    LaunchedEffect(isPlaying, songKey) {
-        if (isPlaying) {
+    LaunchedEffect(isPlaying, songKey, waveformLevels) {
+        if (isPlaying && waveformLevels == null) {
             while (true) {
                 phase.animateTo(
                     targetValue = 1f,
@@ -159,20 +165,74 @@ internal fun PocketFlipLcdMeter(
                 .fillMaxWidth()
                 .height(if (compact) 17.dp else 21.dp)
         ) {
-            val animatedPhase = phase.value
-            val firstLevel = meterLevel(songKey, channel = 0, phase = animatedPhase)
-            val secondLevel = meterLevel(songKey, channel = 1, phase = animatedPhase)
-            drawSegmentRow(
-                level = firstLevel,
-                top = 0f,
-                height = size.height * 0.42f,
-                colors = colors
+            if (waveformLevels != null) {
+                drawPocketFlipWaveform(
+                    levels = waveformLevels,
+                    colors = colors
+                )
+            } else {
+                val animatedPhase = phase.value
+                val firstLevel = meterLevel(songKey, channel = 0, phase = animatedPhase)
+                val secondLevel = meterLevel(songKey, channel = 1, phase = animatedPhase)
+                drawSegmentRow(
+                    level = firstLevel,
+                    top = 0f,
+                    height = size.height * 0.42f,
+                    colors = colors
+                )
+                drawSegmentRow(
+                    level = secondLevel,
+                    top = size.height * 0.58f,
+                    height = size.height * 0.42f,
+                    colors = colors
+                )
+            }
+        }
+    }
+}
+
+internal fun mapPocketFlipWaveformLevels(
+    amplitudes: List<Float>?,
+    barCount: Int = POCKET_FLIP_WAVEFORM_BAR_COUNT
+): List<Float>? = amplitudes
+    ?.let { values -> mapWaveformAmplitudes(values, barCount) }
+    ?.takeIf(List<Float>::isNotEmpty)
+
+private fun DrawScope.drawPocketFlipWaveform(
+    levels: List<Float>,
+    colors: PocketFlipPalette
+) {
+    val gap = 1.dp.toPx()
+    val barWidth = ((size.width - gap * (levels.size - 1)) / levels.size)
+        .coerceAtLeast(1f)
+    val centerY = size.height / 2f
+    val segmentHeight = 2.dp.toPx()
+    val segmentGap = 1.dp.toPx()
+    val segmentStep = segmentHeight + segmentGap
+    val maximumSegments = (centerY / segmentStep).toInt().coerceAtLeast(1)
+
+    drawLine(
+        color = colors.seekInactive.copy(alpha = 0.55f),
+        start = Offset(0f, centerY),
+        end = Offset(size.width, centerY),
+        strokeWidth = 1f
+    )
+    levels.forEachIndexed { index, level ->
+        val litSegments = (level.coerceIn(0f, 1f) * maximumSegments)
+            .toInt()
+            .coerceAtLeast(1)
+        repeat(litSegments) { segmentIndex ->
+            val offset = segmentIndex * segmentStep + segmentGap
+            val x = index * (barWidth + gap)
+            drawRect(
+                color = colors.screenAccent.copy(alpha = 0.88f),
+                topLeft = Offset(x, centerY - offset - segmentHeight),
+                size = Size(barWidth, segmentHeight)
             )
-            drawSegmentRow(
-                level = secondLevel,
-                top = size.height * 0.58f,
-                height = size.height * 0.42f,
-                colors = colors
+            drawRect(
+                color = colors.screenAccent.copy(alpha = 0.72f),
+                topLeft = Offset(x, centerY + offset),
+                size = Size(barWidth, segmentHeight)
             )
         }
     }
@@ -293,3 +353,5 @@ private fun buildMeterKey(song: Song?): Int {
     result = 31 * result + song.artist.hashCode()
     return result
 }
+
+private const val POCKET_FLIP_WAVEFORM_BAR_COUNT = 24

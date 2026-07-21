@@ -45,10 +45,14 @@ fun ExpandedPlayerThemeHost(
     upcomingSongs: List<Song>,
     onSongClick: (Song, List<Song>) -> Unit
 ) {
-    val shouldLoadWaveform = selectedPlayerTheme == PlayerTheme.DEFAULT &&
+    val shouldLoadWaveform = shouldLoadExpandedPlayerWaveform(
+        selectedPlayerTheme = selectedPlayerTheme,
+        modernSeekbarStyle = modernSeekbarStyle
+    )
+    val shouldPrefetchWaveforms = selectedPlayerTheme == PlayerTheme.DEFAULT &&
             modernSeekbarStyle.usesWaveformData
     val nearbyWaveformSongs = remember(
-        shouldLoadWaveform,
+        shouldPrefetchWaveforms,
         currentSong?.id,
         currentSong?.filePath,
         nextPreviewSong?.id,
@@ -56,7 +60,7 @@ fun ExpandedPlayerThemeHost(
         previousPreviewSong?.id,
         previousPreviewSong?.filePath
     ) {
-        if (shouldLoadWaveform && currentSong != null) {
+        if (shouldPrefetchWaveforms && currentSong != null) {
             selectNearbyWaveformSongs(
                 currentSong = currentSong,
                 nextSong = nextPreviewSong,
@@ -126,6 +130,7 @@ fun ExpandedPlayerThemeHost(
         PlayerTheme.RETRO_RACK -> {
             RetroRackExpandedPlayer(
                 currentSong = currentSong,
+                waveformData = waveformData,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
@@ -150,6 +155,7 @@ fun ExpandedPlayerThemeHost(
         PlayerTheme.POCKET_FLIP -> {
             PocketFlipExpandedPlayer(
                 currentSong = currentSong,
+                waveformData = waveformData,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
