@@ -181,6 +181,7 @@ internal fun PocketFlipLcdMeter(
                 level = firstLevel,
                 animationPhase = phase.value,
                 channel = 0,
+                isEnergyDriven = meterLevels != null,
                 top = 0f,
                 height = size.height * 0.42f,
                 colors = colors
@@ -189,6 +190,7 @@ internal fun PocketFlipLcdMeter(
                 level = secondLevel,
                 animationPhase = phase.value,
                 channel = 1,
+                isEnergyDriven = meterLevels != null,
                 top = size.height * 0.58f,
                 height = size.height * 0.42f,
                 colors = colors
@@ -275,6 +277,7 @@ private fun DrawScope.drawLcdMeterLine(
     level: Float,
     animationPhase: Float,
     channel: Int,
+    isEnergyDriven: Boolean,
     top: Float,
     height: Float,
     colors: PocketFlipPalette
@@ -284,17 +287,24 @@ private fun DrawScope.drawLcdMeterLine(
     val segmentWidth = (size.width - gap * (segmentCount - 1)) / segmentCount
     val litSegments = (level.coerceIn(0f, 1f) * segmentCount).toInt()
     val pulsePosition = ((animationPhase + channel * 0.37f) % 1f) * (segmentCount - 1)
+    val inactiveAlpha = if (isEnergyDriven) {
+        0.16f + level.coerceIn(0f, 1f) * 0.25f
+    } else {
+        0.48f
+    }
 
     repeat(segmentCount) { index ->
-        val pulseStrength = (1f - kotlin.math.abs(index - pulsePosition) / 2f)
-            .coerceIn(0f, 1f)
+        val pulseStrength = (
+                1f - kotlin.math.abs(index - pulsePosition) / 2f
+                ).coerceIn(0f, 1f) * level.coerceIn(0f, 1f)
         drawRect(
             color = when {
                 index < litSegments -> colors.screenAccent.copy(
-                    alpha = (0.68f + pulseStrength * 0.24f).coerceAtMost(0.92f)
+                    alpha = (0.52f + level * 0.28f + pulseStrength * 0.12f)
+                        .coerceAtMost(0.92f)
                 )
-                pulseStrength > 0f -> colors.screenAccent.copy(alpha = 0.12f + pulseStrength * 0.16f)
-                else -> colors.seekInactive.copy(alpha = 0.48f)
+                pulseStrength > 0f -> colors.screenAccent.copy(alpha = pulseStrength * 0.24f)
+                else -> colors.seekInactive.copy(alpha = inactiveAlpha)
             },
             topLeft = Offset(index * (segmentWidth + gap), top),
             size = Size(segmentWidth, height)

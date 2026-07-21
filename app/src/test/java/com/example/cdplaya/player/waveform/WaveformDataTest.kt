@@ -7,6 +7,11 @@ import org.junit.Test
 
 class WaveformDataTest {
     @Test
+    fun cacheKeyVersion_invalidatesLowerResolutionWaveforms() {
+        assertEquals(2, WAVEFORM_CACHE_KEY_VERSION)
+    }
+
+    @Test
     fun cacheKey_isStableForTheSameSource() {
         val source = source()
 
@@ -45,6 +50,17 @@ class WaveformDataTest {
         val mapped = mapWaveformAmplitudes(listOf(0f, 1f, 0f, 1f), 2)
 
         assertEquals(listOf(0.5f, 0.5f), mapped)
+    }
+
+    @Test
+    fun mapping_downsamplesHigherResolutionWaveformForExistingSeekbars() {
+        val mapped = mapWaveformAmplitudes(
+            amplitudes = List(512) { index -> index / 511f },
+            barCount = 48
+        )
+
+        assertEquals(48, mapped.size)
+        assertTrue(mapped.all { amplitude -> amplitude in 0f..1f })
     }
 
     private fun source() = WaveformSource(

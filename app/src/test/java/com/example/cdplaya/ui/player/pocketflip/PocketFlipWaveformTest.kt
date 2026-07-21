@@ -22,6 +22,14 @@ class PocketFlipWaveformTest {
         assertTrue(levels.all { level -> level.isFinite() && level in 0f..1f })
     }
 
+    @Test
+    fun silentWaveform_createsEmptyMeterLines() {
+        val levels = buildLevels(List(64) { 0f })
+
+        requireNotNull(levels)
+        assertTrue(levels.all { level -> level <= 0.01f })
+    }
+
     private fun buildLevels(amplitudes: List<Float>?) =
         buildRetroMeterLevels(
             amplitudes = amplitudes,

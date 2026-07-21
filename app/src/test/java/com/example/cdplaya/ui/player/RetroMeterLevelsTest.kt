@@ -50,6 +50,48 @@ class RetroMeterLevelsTest {
     }
 
     @Test
+    fun nearZeroEnergyIsSilencedByNoiseGate() {
+        val levels = buildLevels(List(64) { RETRO_METER_SILENCE_GATE * 0.75f })
+
+        requireNotNull(levels)
+        assertTrue(levels.all { level -> level <= 0.01f })
+    }
+
+    @Test
+    fun animationPhaseHasNoEffectDuringSilence() {
+        val amplitudes = List(64) { 0f }
+
+        val first = buildLevels(amplitudes, phase = 0.1f, isPlaying = true)
+        val second = buildLevels(amplitudes, phase = 0.8f, isPlaying = true)
+
+        assertEquals(first, second)
+    }
+
+    @Test
+    fun meterReleasesImmediatelyWhenCurrentEnergyIsSilent() {
+        val amplitudes = listOf(1f, 1f, 1f, 1f, 0f, 0f, 0f, 0f, 0f)
+        val levels = buildLevels(
+            amplitudes = amplitudes,
+            positionMs = 50_000L,
+            phase = 0.25f,
+            isPlaying = true
+        )
+
+        requireNotNull(levels)
+        assertTrue(levels.all { level -> level <= 0.01f })
+    }
+
+    @Test
+    fun higherEnergyProducesStrongerMeterLevels() {
+        val quiet = buildLevels(List(64) { 0.12f }, phase = 0.25f)
+        val loud = buildLevels(List(64) { 0.8f }, phase = 0.25f)
+
+        requireNotNull(quiet)
+        requireNotNull(loud)
+        assertTrue(loud.average() > quiet.average())
+    }
+
+    @Test
     fun pausedOutputIsStableAcrossAnimationPhases() {
         val amplitudes = List(64) { 0.65f }
 

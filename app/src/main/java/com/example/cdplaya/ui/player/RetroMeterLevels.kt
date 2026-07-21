@@ -21,12 +21,19 @@ internal fun buildRetroMeterLevels(
         .coerceIn(0.0, 1.0)
         .toFloat()
     val currentIndex = progress * amplitudes.lastIndex
-    val currentEnergy = (
-            sampleWaveform(amplitudes, currentIndex) * 0.52f +
-                    sampleWaveform(amplitudes, currentIndex - 0.75f) * 0.24f +
-                    sampleWaveform(amplitudes, currentIndex - 1.75f) * 0.14f +
-                    sampleWaveform(amplitudes, currentIndex + 0.75f) * 0.10f
+    val immediateEnergy = sampleWaveform(amplitudes, currentIndex)
+    val smoothedEnergy = (
+            immediateEnergy * 0.82f +
+                    sampleWaveform(amplitudes, currentIndex - 0.5f) * 0.08f +
+                    sampleWaveform(amplitudes, currentIndex + 0.35f) * 0.10f
             ).coerceIn(0f, 1f)
+    val localEnergy = if (immediateEnergy <= RETRO_METER_SILENCE_GATE) {
+        immediateEnergy
+    } else {
+        smoothedEnergy
+    }
+    val gatedEnergy = ((localEnergy - RETRO_METER_SILENCE_GATE) /
+            (1f - RETRO_METER_SILENCE_GATE)).coerceIn(0f, 1f)
     val normalizedPhase = if (animationPhase.isFinite()) {
         animationPhase - floor(animationPhase)
     } else {
@@ -41,22 +48,24 @@ internal fun buildRetroMeterLevels(
         val harmonic = 1 + (
                 seededUnit(songSeed, columnIndex, HARMONIC_SALT) * 3f
                 ).toInt().coerceIn(0, 2)
-        val bandEnergy = currentEnergy * bandScale
+        val bandEnergy = gatedEnergy * bandScale
         val baseLevel = if (isPlaying) {
-            0.10f + bandEnergy * 0.78f
+            bandEnergy * 0.86f
         } else {
-            0.08f + bandEnergy * 0.56f
+            bandEnergy * 0.58f
         }
         val movement = if (isPlaying) {
             val bounce = sin(phaseRadians * harmonic + phaseOffset)
             val flutter = sin(phaseRadians * (harmonic + 1) + phaseOffset * 0.73f)
-            bounce * (0.035f + currentEnergy * 0.18f) +
-                    flutter * currentEnergy * 0.035f
+            gatedEnergy * (
+                    bounce * (0.08f + gatedEnergy * 0.14f) +
+                            flutter * 0.03f
+                    )
         } else {
             0f
         }
 
-        (baseLevel + movement).coerceIn(0.06f, 0.98f)
+        (baseLevel + movement).coerceIn(0f, 0.98f)
     }
 }
 
@@ -88,3 +97,4 @@ private fun safeAmplitude(amplitude: Float): Float =
 private const val BAND_SCALE_SALT = 0x42_41_4E_44L
 private const val PHASE_OFFSET_SALT = 0x50_48_41_53_45L
 private const val HARMONIC_SALT = 0x48_41_52_4DL
+internal const val RETRO_METER_SILENCE_GATE = 0.055f

@@ -421,7 +421,8 @@ private fun DecorativeSpectrum(
             } else {
                 0f
             }
-            val animatedLevel = (level + movement).coerceIn(0.12f, 0.98f)
+            val minimumLevel = if (meterLevels == null) 0.12f else 0f
+            val animatedLevel = (level + movement).coerceIn(minimumLevel, 0.98f)
             val height = size.height * animatedLevel
             val segmentStep = segmentHeight + segmentGap
             val segmentCount = (height / segmentStep).toInt().coerceAtLeast(1)
