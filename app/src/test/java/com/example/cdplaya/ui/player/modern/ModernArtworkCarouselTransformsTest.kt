@@ -55,9 +55,11 @@ class ModernArtworkCarouselTransformsTest {
         )
 
         assertEquals(1f, centered.scale, FLOAT_TOLERANCE)
-        assertEquals(0.85f, outgoing.scale, FLOAT_TOLERANCE)
-        assertEquals(0.85f, incomingAtStart.scale, FLOAT_TOLERANCE)
+        assertEquals(0.80f, outgoing.scale, FLOAT_TOLERANCE)
+        assertEquals(0.80f, incomingAtStart.scale, FLOAT_TOLERANCE)
         assertEquals(1f, incomingAtCenter.scale, FLOAT_TOLERANCE)
+        assertEquals(0f, incomingAtStart.alpha, FLOAT_TOLERANCE)
+        assertEquals(1f, incomingAtCenter.alpha, FLOAT_TOLERANCE)
         assertTrue(outgoing.alpha < centered.alpha)
     }
 
@@ -83,6 +85,7 @@ class ModernArtworkCarouselTransformsTest {
         )
 
         assertEquals(0f, centered.rotationY, FLOAT_TOLERANCE)
+        assertEquals(22f, COVER_FLOW_MAX_ROTATION_DEGREES, FLOAT_TOLERANCE)
         assertEquals(
             COVER_FLOW_MAX_ROTATION_DEGREES,
             abs(draggedLeft.rotationY),
@@ -112,9 +115,55 @@ class ModernArtworkCarouselTransformsTest {
             metadata.translationMultiplier,
             FLOAT_TOLERANCE
         )
+        assertEquals(0.42f, PARALLAX_METADATA_TRANSLATION_MULTIPLIER, FLOAT_TOLERANCE)
         assertTrue(
             abs(metadata.translationMultiplier) < abs(artwork.translationMultiplier)
         )
+    }
+
+    @Test
+    fun depthScaleAndCoverFlow_centeredNeighborsAreFullyInvisible() {
+        listOf(
+            ModernArtworkTransitionStyle.DEPTH_SCALE,
+            ModernArtworkTransitionStyle.COVER_FLOW
+        ).forEach { style ->
+            listOf(-1f, 1f).forEach { restingOffset ->
+                val artwork = modernArtworkPageTransform(
+                    style = style,
+                    gestureOffset = 0f,
+                    restingOffset = restingOffset,
+                    isCurrent = false
+                )
+                val metadata = modernMetadataPageTransform(
+                    style = style,
+                    gestureOffset = 0f,
+                    restingOffset = restingOffset,
+                    isCurrent = false
+                )
+
+                assertEquals(restingOffset, artwork.translationMultiplier, FLOAT_TOLERANCE)
+                assertEquals(0f, artwork.alpha, FLOAT_TOLERANCE)
+                assertEquals(restingOffset, metadata.translationMultiplier, FLOAT_TOLERANCE)
+                assertEquals(0f, metadata.alpha, FLOAT_TOLERANCE)
+            }
+        }
+    }
+
+    @Test
+    fun depthScaleAndCoverFlow_neighborsRevealAfterDragStarts() {
+        listOf(
+            ModernArtworkTransitionStyle.DEPTH_SCALE,
+            ModernArtworkTransitionStyle.COVER_FLOW
+        ).forEach { style ->
+            val artwork = modernArtworkPageTransform(
+                style = style,
+                gestureOffset = -0.1f,
+                restingOffset = 1f,
+                isCurrent = false
+            )
+
+            assertTrue(artwork.alpha > 0f)
+        }
     }
 
     @Test
