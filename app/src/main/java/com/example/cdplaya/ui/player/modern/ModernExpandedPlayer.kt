@@ -72,8 +72,8 @@ fun ModernExpandedPlayer(
     ) {
         val foregroundAlbumArtSize = minOf(
             albumArtSize,
-            maxWidth - 48.dp,
-            maxHeight * 0.34f
+            maxWidth - 32.dp,
+            maxHeight * 0.42f
         )
 
         Box(
@@ -120,20 +120,6 @@ fun ModernExpandedPlayer(
                     ),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                ModernPlayerHeader(
-                    onCollapseClick = onCollapseClick,
-                    style = style
-                )
-
-                ModernPlayerFavoriteAction(
-                    currentSong = currentSong,
-                    isCurrentSongFavorite = isCurrentSongFavorite,
-                    onToggleFavoriteClick = onToggleFavoriteClick,
-                    style = style
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
                 ModernPlayerArtwork(
                     currentSong = currentSong,
                     artworkSize = foregroundAlbumArtSize,
@@ -173,11 +159,6 @@ fun ModernExpandedPlayer(
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
-
-                ModernPlayerActions(
-                    onOpenUpNextClick = onOpenUpNextClick,
-                    style = style
-                )
             }
         }
     }
