@@ -34,14 +34,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode as AnimationRepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -62,12 +60,15 @@ import androidx.compose.ui.platform.LocalDensity
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.player.waveform.WaveformData
+import com.example.cdplaya.ui.player.buildRetroMeterLevels
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import kotlin.math.sin
 
 @Composable
 fun RetroRackExpandedPlayer(
     currentSong: Song?,
+    waveformData: WaveformData? = null,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -163,8 +164,10 @@ fun RetroRackExpandedPlayer(
         ) {
             DecorativeSpectrum(
                 profile = visualProfile,
+                waveformData = waveformData,
                 isPlaying = isPlaying,
                 currentPosition = currentPosition,
+                duration = duration,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -368,35 +371,49 @@ private fun MainDeck(
 @Composable
 private fun DecorativeSpectrum(
     profile: RetroRackVisualProfile,
+    waveformData: WaveformData?,
     isPlaying: Boolean,
     currentPosition: Int,
+    duration: Int,
     modifier: Modifier = Modifier
 ) {
-    val transition = rememberInfiniteTransition(label = "rack spectrum")
-    val phase by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 6.283f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1_600, easing = LinearEasing),
-            repeatMode = AnimationRepeatMode.Restart
-        ),
-        label = "rack spectrum phase"
-    )
+    val phase = remember(profile) { Animatable(0f) }
+    LaunchedEffect(isPlaying, profile) {
+        if (isPlaying) {
+            while (true) {
+                phase.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(durationMillis = 1_600, easing = LinearEasing)
+                )
+                phase.snapTo(0f)
+            }
+        }
+    }
     Canvas(
         modifier = modifier
             .background(DisplayBlack)
             .rackBevel()
             .padding(8.dp)
     ) {
+        val meterLevels = buildRetroMeterLevels(
+            amplitudes = waveformData?.amplitudes,
+            currentPositionMs = currentPosition.toLong(),
+            durationMs = duration.toLong(),
+            columnCount = profile.levels.size,
+            animationPhase = phase.value,
+            isPlaying = isPlaying,
+            songSeed = profile.songSeed
+        )
+        val displayLevels = meterLevels ?: profile.levels
         val gap = size.width * 0.012f
-        val barWidth = (size.width - gap * (profile.levels.size - 1)) / profile.levels.size
+        val barWidth = (size.width - gap * (displayLevels.size - 1)) / displayLevels.size
         val segmentGap = 2.dp.toPx()
         val segmentHeight = 3.dp.toPx()
         val playbackPhase = (currentPosition / 1_000f) * 0.22f
-        profile.levels.forEachIndexed { index, level ->
-            val movement = if (isPlaying) {
+        displayLevels.forEachIndexed { index, level ->
+            val movement = if (meterLevels == null && isPlaying) {
                 sin(
-                    phase * (0.58f + index % 4 * 0.07f) +
+                    phase.value * 6.283f * (0.58f + index % 4 * 0.07f) +
                             playbackPhase +
                             profile.phaseOffset +
                             index * 0.73f
@@ -404,7 +421,8 @@ private fun DecorativeSpectrum(
             } else {
                 0f
             }
-            val animatedLevel = (level + movement).coerceIn(0.12f, 0.98f)
+            val minimumLevel = if (meterLevels == null) 0.12f else 0f
+            val animatedLevel = (level + movement).coerceIn(minimumLevel, 0.98f)
             val height = size.height * animatedLevel
             val segmentStep = segmentHeight + segmentGap
             val segmentCount = (height / segmentStep).toInt().coerceAtLeast(1)

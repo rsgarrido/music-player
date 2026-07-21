@@ -16,6 +16,11 @@ import org.mockito.Mockito.mock
 
 class WaveformRepositoryTest {
     @Test
+    fun defaultAnalysisResolution_capturesShortQuietSections() {
+        assertEquals(512, WaveformRepository.DEFAULT_ANALYZED_BAR_COUNT)
+    }
+
+    @Test
     fun load_analyzesOnceThenUsesCache() = runBlocking {
         val directory = Files.createTempDirectory("waveform-repository-test").toFile()
         var analysisCount = 0

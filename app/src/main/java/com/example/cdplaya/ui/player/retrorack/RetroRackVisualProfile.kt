@@ -6,7 +6,8 @@ internal data class RetroRackVisualProfile(
     val levels: List<Float>,
     val accent: Color,
     val peak: Color,
-    val phaseOffset: Float
+    val phaseOffset: Float,
+    val songSeed: Long
 )
 
 internal fun buildRetroRackVisualProfile(
@@ -21,7 +22,7 @@ internal fun buildRetroRackVisualProfile(
     }
 
     var state = songSeed
-    val levels = List(VISUAL_BAR_COUNT) {
+    val levels = List(RETRO_RACK_VISUALIZER_COLUMN_COUNT) {
         state = state * 6_364_136_223_846_793_005L + 1_442_695_040_888_963_407L
         val normalized = ((state ushr 40) and 0xFFFF).toFloat() / 0xFFFF
         0.24f + normalized * 0.7f
@@ -40,7 +41,8 @@ internal fun buildRetroRackVisualProfile(
         levels = levels,
         accent = albumColors.accent,
         peak = albumColors.peak,
-        phaseOffset = ((songSeed ushr 24) and 0xFF).toFloat() / 255f * 6.283f
+        phaseOffset = ((songSeed ushr 24) and 0xFF).toFloat() / 255f * 6.283f,
+        songSeed = songSeed
     )
 }
 
@@ -56,4 +58,4 @@ private val visualAccentPalette = listOf(
     VisualAccentColors(Color(0xFF72C9A2), Color(0xFFE1C25D))
 )
 
-private const val VISUAL_BAR_COUNT = 18
+internal const val RETRO_RACK_VISUALIZER_COLUMN_COUNT = 18

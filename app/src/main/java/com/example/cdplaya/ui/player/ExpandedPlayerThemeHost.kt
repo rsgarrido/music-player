@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui.player
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
@@ -8,6 +9,7 @@ import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
 import com.example.cdplaya.ui.player.modern.ModernExpandedPlayer
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
+import com.example.cdplaya.ui.player.modern.selectNearbyWaveformSongs
 import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
@@ -43,6 +45,37 @@ fun ExpandedPlayerThemeHost(
     upcomingSongs: List<Song>,
     onSongClick: (Song, List<Song>) -> Unit
 ) {
+    val shouldLoadWaveform = shouldLoadExpandedPlayerWaveform(
+        selectedPlayerTheme = selectedPlayerTheme,
+        modernSeekbarStyle = modernSeekbarStyle
+    )
+    val shouldPrefetchWaveforms = selectedPlayerTheme == PlayerTheme.DEFAULT &&
+            modernSeekbarStyle.usesWaveformData
+    val nearbyWaveformSongs = remember(
+        shouldPrefetchWaveforms,
+        currentSong?.id,
+        currentSong?.filePath,
+        nextPreviewSong?.id,
+        nextPreviewSong?.filePath,
+        previousPreviewSong?.id,
+        previousPreviewSong?.filePath
+    ) {
+        if (shouldPrefetchWaveforms && currentSong != null) {
+            selectNearbyWaveformSongs(
+                currentSong = currentSong,
+                nextSong = nextPreviewSong,
+                previousSong = previousPreviewSong
+            )
+        } else {
+            emptyList()
+        }
+    }
+    val waveformData = rememberExpandedPlayerWaveformData(
+        currentSong = currentSong,
+        shouldLoad = shouldLoadWaveform,
+        prefetchSongs = nearbyWaveformSongs
+    )
+
     when (selectedPlayerTheme) {
         PlayerTheme.DEFAULT -> {
             ModernExpandedPlayer(
@@ -51,6 +84,7 @@ fun ExpandedPlayerThemeHost(
                 nextPreviewSong = nextPreviewSong,
                 artworkTransitionStyle = modernArtworkTransitionStyle,
                 seekbarStyle = modernSeekbarStyle,
+                waveformData = waveformData,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
@@ -96,6 +130,7 @@ fun ExpandedPlayerThemeHost(
         PlayerTheme.RETRO_RACK -> {
             RetroRackExpandedPlayer(
                 currentSong = currentSong,
+                waveformData = waveformData,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
@@ -120,6 +155,7 @@ fun ExpandedPlayerThemeHost(
         PlayerTheme.POCKET_FLIP -> {
             PocketFlipExpandedPlayer(
                 currentSong = currentSong,
+                waveformData = waveformData,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,

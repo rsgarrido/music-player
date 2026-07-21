@@ -11,7 +11,7 @@ data class WaveformSource(
 
 internal fun waveformCacheKey(source: WaveformSource): String {
     val identity = buildString {
-        append(CACHE_KEY_VERSION)
+        append(WAVEFORM_CACHE_KEY_VERSION)
         append('\u0000')
         append(source.songId)
         append('\u0000')
@@ -26,4 +26,4 @@ internal fun waveformCacheKey(source: WaveformSource): String {
         .joinToString(separator = "") { byte -> "%02x".format(byte) }
 }
 
-private const val CACHE_KEY_VERSION = 1
+internal const val WAVEFORM_CACHE_KEY_VERSION = 2

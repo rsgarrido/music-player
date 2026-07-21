@@ -43,10 +43,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.player.waveform.WaveformData
 
 @Composable
 internal fun PocketFlipDisplayHalf(
     currentSong: Song?,
+    waveformData: WaveformData?,
     isPlaying: Boolean,
     currentPosition: Int,
     duration: Int,
@@ -104,7 +106,10 @@ internal fun PocketFlipDisplayHalf(
 
                 PocketFlipLcdMeter(
                     currentSong = currentSong,
+                    waveformData = waveformData,
                     isPlaying = isPlaying,
+                    currentPosition = currentPosition,
+                    duration = duration,
                     compact = compact,
                     modifier = Modifier.fillMaxWidth()
                 )

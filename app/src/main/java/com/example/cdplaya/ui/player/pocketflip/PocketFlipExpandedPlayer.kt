@@ -12,11 +12,13 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.player.waveform.WaveformData
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 
 @Composable
 fun PocketFlipExpandedPlayer(
     currentSong: Song?,
+    waveformData: WaveformData? = null,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -51,6 +53,7 @@ fun PocketFlipExpandedPlayer(
     ) {
         PocketFlipDisplayHalf(
             currentSong = currentSong,
+            waveformData = waveformData,
             isPlaying = isPlaying,
             currentPosition = currentPosition,
             duration = duration,

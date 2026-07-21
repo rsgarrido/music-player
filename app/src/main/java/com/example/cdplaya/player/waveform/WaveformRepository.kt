@@ -121,7 +121,7 @@ class WaveformRepository internal constructor(
     }
 
     companion object {
-        const val DEFAULT_ANALYZED_BAR_COUNT = 128
+        const val DEFAULT_ANALYZED_BAR_COUNT = 512
         const val MAX_PREFETCH_COUNT = 2
         const val WAVEFORM_CACHE_DIRECTORY = "waveforms"
     }
