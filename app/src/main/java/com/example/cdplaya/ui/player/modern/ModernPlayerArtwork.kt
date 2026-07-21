@@ -35,15 +35,12 @@ internal fun ModernPlayerArtwork(
     carouselSongs: ModernCarouselSongs,
     carouselState: ModernArtworkCarouselState,
     artworkSize: Dp,
+    transitionStyle: ModernArtworkTransitionStyle,
     style: ModernPlayerStyle
 ) {
     val horizontalDragState = rememberDraggableState { deltaX ->
         carouselState.dragBy(deltaX)
     }
-    val dragProgress = carouselState.dragProgress
-    val currentArtworkScale = 1f - dragProgress * 0.035f
-    val neighborArtworkScale = 0.94f + dragProgress * 0.04f
-    val neighborArtworkAlpha = (dragProgress * 1.8f).coerceAtMost(0.9f)
     val carouselItems = carouselSongs.items()
 
     Box(
@@ -78,19 +75,22 @@ internal fun ModernPlayerArtwork(
                     },
                     elevation = if (item.isCurrent) 18.dp else 10.dp,
                     modifier = Modifier.graphicsLayer {
-                        translationX = carouselState.offsetX +
-                                item.restingOffsetMultiplier * carouselState.artworkWidthPx
-                        val artworkScale = if (item.isCurrent) {
-                            currentArtworkScale
-                        } else {
-                            neighborArtworkScale
-                        }
-                        scaleX = artworkScale
-                        scaleY = artworkScale
-                        alpha = if (item.isCurrent) {
-                            1f - dragProgress * 0.08f
-                        } else {
-                            neighborArtworkAlpha
+                        val gestureOffset =
+                            carouselState.offsetX / carouselState.artworkWidthPx
+                        val transform = modernArtworkPageTransform(
+                            style = transitionStyle,
+                            gestureOffset = gestureOffset,
+                            restingOffset = item.restingOffsetMultiplier,
+                            isCurrent = item.isCurrent
+                        )
+                        translationX = transform.translationMultiplier *
+                            carouselState.artworkWidthPx
+                        scaleX = transform.scale
+                        scaleY = transform.scale
+                        alpha = transform.alpha
+                        rotationY = transform.rotationY
+                        if (transform.rotationY != 0f) {
+                            cameraDistance = COVER_FLOW_CAMERA_DISTANCE_MULTIPLIER * density
                         }
                     }
                 )

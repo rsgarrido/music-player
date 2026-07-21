@@ -31,13 +31,11 @@ internal fun ModernPlayerMetadataCarousel(
     carouselSongs: ModernCarouselSongs,
     carouselState: ModernArtworkCarouselState,
     audioQualityRepository: AudioQualityRepository,
+    transitionStyle: ModernArtworkTransitionStyle,
     style: ModernPlayerStyle,
     modifier: Modifier = Modifier
 ) {
     var pageWidthPx by remember { mutableFloatStateOf(1f) }
-    val dragProgress = carouselState.dragProgress
-    val neighborAlpha = (dragProgress * 1.8f).coerceAtMost(0.9f)
-
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -55,15 +53,18 @@ internal fun ModernPlayerMetadataCarousel(
                     audioQualityRepository = audioQualityRepository,
                     style = style,
                     modifier = Modifier.graphicsLayer {
-                        val pageOffsetFraction =
+                        val gestureOffset =
                             carouselState.offsetX / carouselState.artworkWidthPx
-                        translationX = (pageOffsetFraction +
-                                item.restingOffsetMultiplier) * pageWidthPx
-                        alpha = if (item.isCurrent) {
-                            1f - dragProgress * 0.08f
-                        } else {
-                            neighborAlpha
-                        }
+                        val transform = modernMetadataPageTransform(
+                            style = transitionStyle,
+                            gestureOffset = gestureOffset,
+                            restingOffset = item.restingOffsetMultiplier,
+                            isCurrent = item.isCurrent
+                        )
+                        translationX = transform.translationMultiplier * pageWidthPx
+                        scaleX = transform.scale
+                        scaleY = transform.scale
+                        alpha = transform.alpha
                     }
                 )
             }

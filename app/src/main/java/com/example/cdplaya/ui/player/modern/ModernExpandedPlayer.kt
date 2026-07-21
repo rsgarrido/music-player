@@ -192,6 +192,7 @@ fun ModernExpandedPlayer(
                     carouselSongs = displayedCarouselSongs,
                     carouselState = carouselState,
                     artworkSize = foregroundAlbumArtSize,
+                    transitionStyle = artworkTransitionStyle,
                     style = style
                 )
 
@@ -201,6 +202,7 @@ fun ModernExpandedPlayer(
                     carouselSongs = displayedCarouselSongs,
                     carouselState = carouselState,
                     audioQualityRepository = audioQualityRepository,
+                    transitionStyle = artworkTransitionStyle,
                     style = style,
                     modifier = Modifier.fillMaxWidth()
                 )
