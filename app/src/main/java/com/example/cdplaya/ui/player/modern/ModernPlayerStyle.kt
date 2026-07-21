@@ -33,19 +33,19 @@ data class ModernPlayerStyle(
 )
 
 object ModernPlayerDefaults {
-    val MaximumArtworkSize = 292.dp
+    val MaximumArtworkSize = 400.dp
     val ArtworkShape = RoundedCornerShape(30.dp)
-    val ContentHorizontalPadding = 24.dp
+    val ContentHorizontalPadding = 16.dp
     val ContentVerticalPadding = 12.dp
 
     @Composable
     fun style(): ModernPlayerStyle {
         return ModernPlayerStyle(
             backgroundColor = Color.Black,
-            backgroundOverlayColor = Color.Black.copy(alpha = 0.58f),
-            gradientTopColor = Color.Black.copy(alpha = 0.88f),
-            gradientCenterColor = Color.Black.copy(alpha = 0.34f),
-            gradientBottomColor = Color.Black.copy(alpha = 0.92f),
+            backgroundOverlayColor = Color.Black.copy(alpha = 0.42f),
+            gradientTopColor = Color.Black.copy(alpha = 0.70f),
+            gradientCenterColor = Color.Black.copy(alpha = 0.16f),
+            gradientBottomColor = Color.Black.copy(alpha = 0.78f),
             contentColor = Color.White,
             secondaryContentColor = Color.White.copy(alpha = 0.88f),
             tertiaryContentColor = Color.White.copy(alpha = 0.68f),
