@@ -58,4 +58,15 @@ class ModernPlayerSeekBarTest {
         assertEquals(listOf(1f, 1f), segmentedFillFractions(2f, 2))
         assertTrue(segmentedFillFractions(0.5f, 0).isEmpty())
     }
+
+    @Test
+    fun blendWaveformBars_keepsFallbackUntilRealDataIsUsable() {
+        val fallback = listOf(0.2f, 0.4f)
+
+        assertEquals(fallback, blendWaveformBars(fallback, null, 1f))
+        assertEquals(fallback, blendWaveformBars(fallback, listOf(1f), 1f))
+        val blended = blendWaveformBars(fallback, listOf(1f, 1f), 0.5f)
+        assertEquals(0.6f, blended[0], 0.0001f)
+        assertEquals(0.7f, blended[1], 0.0001f)
+    }
 }
