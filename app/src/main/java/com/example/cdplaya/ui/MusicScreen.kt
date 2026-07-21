@@ -443,19 +443,12 @@ fun MusicScreen(
                 onSettingsClick = {
                     isSettingsScreenVisible = true
                 },
-                onHomeClick = {
-                    when {
-                        selectedArtistName != null -> selectedArtistName = null
-                        selectedAlbumFolderPath != null -> selectedAlbumFolderPath = null
-                        selectedPlaylistId != null -> selectedPlaylistId = null
-                        else -> mainDestination = MainDestination.HOME
-                    }
-                },
                 onOpenLibrary = { tab ->
                     selectedLibraryTab = tab
                     selectedArtistName = null
                     selectedAlbumFolderPath = null
                     selectedPlaylistId = null
+                    searchQuery = ""
                     mainDestination = MainDestination.LIBRARY
                 },
                 onFolderBackClick = {
@@ -533,7 +526,8 @@ fun MusicScreen(
                     selectedAlbumFolderPath = null
                 },
                 onBackFromQueue = {
-                    mainDestination = MainDestination.HOME
+                    selectedLibraryTab = LibraryTab.SONGS
+                    mainDestination = MainDestination.LIBRARY
                 },
                 onRemoveFromQueueClick = onRemoveFromQueueClick,
                 onMoveQueueItemUpClick = onMoveQueueItemUpClick,

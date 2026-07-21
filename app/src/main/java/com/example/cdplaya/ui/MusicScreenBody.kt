@@ -33,6 +33,7 @@ import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.home.HomeScreen
 import com.example.cdplaya.ui.library.FolderSelectionScreen
+import com.example.cdplaya.ui.library.LibraryBrowseSwitcher
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.library.MusicLibraryContent
@@ -78,7 +79,6 @@ fun MusicScreenBody(
     isSettingsScreenVisible: Boolean,
     queueSnackbarActions: QueueSnackbarActions,
     onSettingsClick: () -> Unit,
-    onHomeClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
     onFolderBackClick: () -> Unit,
     onSettingsBackClick: () -> Unit,
@@ -253,7 +253,13 @@ fun MusicScreenBody(
                 )
                 } else {
                     val isSearchDestination = destination == MainDestination.SEARCH
-                    val canSearchLibrary = selectedLibraryTab != LibraryTab.QUEUE
+                    val isLibraryDetail = selectedArtistName != null ||
+                            selectedAlbumFolderPath != null ||
+                            selectedPlaylistId != null
+                    val canSearchLibrary = selectedLibraryTab == LibraryTab.SONGS ||
+                            selectedLibraryTab == LibraryTab.FAVORITES ||
+                            selectedLibraryTab == LibraryTab.ARTISTS ||
+                            selectedLibraryTab == LibraryTab.ALBUMS
                     val shouldShowLibrarySearch = isSearchDestination || canSearchLibrary &&
                             (isLibrarySearchVisible || searchQuery.isNotBlank())
 
@@ -263,13 +269,12 @@ fun MusicScreenBody(
                         .animateContentSize()
                 ) {
                     MusicScreenHeader(
-                        title = if (isSearchDestination) "Search" else selectedLibraryTab.title,
-                        onBackClick = if (isSearchDestination) null else {
-                            {
-                                isLibrarySearchVisible = false
-                                onHomeClick()
-                            }
+                        title = when {
+                            isSearchDestination -> "Search"
+                            selectedLibraryTab == LibraryTab.QUEUE -> "Up Next"
+                            else -> "Library"
                         },
+                        onBackClick = null,
                         onSettingsClick = onSettingsClick,
                         modifier = Modifier.statusBarsPadding(),
                         onSearchClick = if (canSearchLibrary && !isSearchDestination) {
@@ -303,6 +308,20 @@ fun MusicScreenBody(
                             modifier = Modifier.padding(16.dp)
                         )
                     } else {
+                        if (!isSearchDestination &&
+                            !isLibraryDetail &&
+                            selectedLibraryTab != LibraryTab.QUEUE
+                        ) {
+                            LibraryBrowseSwitcher(
+                                selectedTab = selectedLibraryTab,
+                                onTabSelected = { tab ->
+                                    isLibrarySearchVisible = false
+                                    onOpenLibrary(tab)
+                                },
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+
                         LibrarySearchControl(
                             selectedLibraryTab = selectedLibraryTab,
                             isSearchVisible = shouldShowLibrarySearch,
