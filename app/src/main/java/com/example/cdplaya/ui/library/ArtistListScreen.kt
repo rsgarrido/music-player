@@ -25,10 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.R as AppR
 
 @Composable
 fun ArtistListScreen(
@@ -72,7 +74,13 @@ fun ArtistListScreen(
                     Text(text = artist.name)
                 },
                 supportingContent = {
-                    Text(text = "${artist.songs.size} song(s)")
+                    Text(
+                        text = pluralStringResource(
+                            AppR.plurals.song_count,
+                            artist.songs.size,
+                            artist.songs.size
+                        )
+                    )
                 },
                 trailingContent = {
                     ArtistActionsMenu(

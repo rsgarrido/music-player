@@ -24,11 +24,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.ui.AppShellIcons
@@ -111,11 +113,16 @@ fun AlbumGridScreen(
             items = albums,
             key = { album -> album.key }
         ) { album ->
+            val songCountText = pluralStringResource(
+                R.plurals.song_count,
+                album.songs.size,
+                album.songs.size
+            )
             LibraryGridCard(
                 artworkUri = album.songs.firstOrNull()?.albumArtUri,
                 artworkDescription = "Album art for ${album.title}",
                 title = album.title,
-                subtitle = album.artistText,
+                subtitle = "${album.artistText} • $songCountText",
                 onClick = { onAlbumClick(album.key) },
                 actions = {
                     AlbumActionsMenu(
@@ -163,7 +170,11 @@ fun ArtistGridScreen(
                 artworkUri = artist.songs.firstOrNull()?.albumArtUri,
                 artworkDescription = "Artwork for ${artist.name}",
                 title = artist.name,
-                subtitle = null,
+                subtitle = pluralStringResource(
+                    R.plurals.song_count,
+                    artist.songs.size,
+                    artist.songs.size
+                ),
                 onClick = { onArtistClick(artist.name) },
                 actions = {
                     ArtistActionsMenu(

@@ -6,8 +6,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.ui.filterSongsByAlbumSearch
@@ -266,9 +268,18 @@ fun ArtistsTabContent(
         )
 
         val subtitle = if (searchQuery.isBlank()) {
-            "${artistSongs.size} song(s)"
+            pluralStringResource(
+                R.plurals.song_count,
+                artistSongs.size,
+                artistSongs.size
+            )
         } else {
-            "${displayedArtistSongs.size} of ${artistSongs.size} song(s)"
+            pluralStringResource(
+                R.plurals.filtered_song_count,
+                artistSongs.size,
+                displayedArtistSongs.size,
+                artistSongs.size
+            )
         }
 
         SongGroupDetailScreen(
@@ -407,9 +418,20 @@ fun AlbumsTabContent(
         val firstSong = albumSongs.firstOrNull()
 
         val subtitle = if (searchQuery.isBlank()) {
-            "${firstSong?.artist ?: "Unknown Artist"} • ${albumSongs.size} song(s)"
+            val songCountText = pluralStringResource(
+                R.plurals.song_count,
+                albumSongs.size,
+                albumSongs.size
+            )
+            "${firstSong?.artist ?: "Unknown Artist"} • $songCountText"
         } else {
-            "${firstSong?.artist ?: "Unknown Artist"} • ${displayedAlbumSongs.size} of ${albumSongs.size} song(s)"
+            val songCountText = pluralStringResource(
+                R.plurals.filtered_song_count,
+                albumSongs.size,
+                displayedAlbumSongs.size,
+                albumSongs.size
+            )
+            "${firstSong?.artist ?: "Unknown Artist"} • $songCountText"
         }
 
         SongGroupDetailScreen(

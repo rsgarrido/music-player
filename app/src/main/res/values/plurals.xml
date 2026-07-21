@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="song_count">
+        <item quantity="one">%1$d song</item>
+        <item quantity="other">%1$d songs</item>
+    </plurals>
+    <plurals name="filtered_song_count">
+        <item quantity="one">%1$d of %2$d song</item>
+        <item quantity="other">%1$d of %2$d songs</item>
+    </plurals>
+    <plurals name="available_song_count">
+        <item quantity="one">%1$d available song</item>
+        <item quantity="other">%1$d available songs</item>
+    </plurals>
+    <plurals name="song_label">
+        <item quantity="one">song</item>
+        <item quantity="other">songs</item>
+    </plurals>
+    <plurals name="album_label">
+        <item quantity="one">album</item>
+        <item quantity="other">albums</item>
+    </plurals>
+    <plurals name="artist_label">
+        <item quantity="one">artist</item>
+        <item quantity="other">artists</item>
+    </plurals>
+    <plurals name="playlist_label">
+        <item quantity="one">playlist</item>
+        <item quantity="other">playlists</item>
+    </plurals>
+</resources>

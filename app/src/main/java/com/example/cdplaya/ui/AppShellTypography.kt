@@ -30,6 +30,22 @@ object AppShellTypography {
         letterSpacing = 1.25.sp
     )
 
+    val StatNumber = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 14.sp,
+        lineHeight = 17.sp,
+        letterSpacing = (-0.2).sp
+    )
+
+    val StatLabel = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 8.sp,
+        lineHeight = 11.sp,
+        letterSpacing = 0.8.sp
+    )
+
     val NavigationLabel = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,

@@ -25,10 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.R as AppR
 
 @Composable
 fun AlbumListScreen(
@@ -72,7 +74,12 @@ fun AlbumListScreen(
                     Text(text = album.title)
                 },
                 supportingContent = {
-                    Text(text = "${album.artistText} • ${album.songs.size} song(s)")
+                    val songCountText = pluralStringResource(
+                        AppR.plurals.song_count,
+                        album.songs.size,
+                        album.songs.size
+                    )
+                    Text(text = "${album.artistText} • $songCountText")
                 },
                 trailingContent = {
                     AlbumActionsMenu(

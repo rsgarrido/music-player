@@ -10,7 +10,9 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.R
 import com.example.cdplaya.data.Playlist
 
 @Composable
@@ -40,7 +42,13 @@ fun AddToPlaylistDialog(
                                 Text(text = playlist.name)
                             },
                             supportingContent = {
-                                Text(text = "${playlist.songCount} song(s)")
+                                Text(
+                                    text = pluralStringResource(
+                                        R.plurals.song_count,
+                                        playlist.songCount,
+                                        playlist.songCount
+                                    )
+                                )
                             },
                             modifier = Modifier.clickable {
                                 onPlaylistSelected(playlist)

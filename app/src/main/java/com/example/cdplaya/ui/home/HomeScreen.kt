@@ -1,21 +1,29 @@
 package com.example.cdplaya.ui.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.ui.MusicScreenHeader
 import com.example.cdplaya.ui.AppShellTypography
+import com.example.cdplaya.ui.MusicScreenHeader
 import com.example.cdplaya.ui.library.LibraryTab
 
 @Composable
@@ -46,24 +54,40 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 MusicScreenHeader(
                     title = "CDPlaya",
                     onSettingsClick = onSettingsClick,
                     modifier = Modifier.statusBarsPadding()
                 )
 
-                Text(
-                    text = buildLibrarySummary(
-                        songCount = songCount,
-                        albumCount = albumCount,
-                        artistCount = artistCount,
-                        playlistCount = playlistCount
-                    ),
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    style = AppShellTypography.Eyebrow,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    HomeStatBadge(
+                        count = songCount,
+                        label = pluralStringResource(R.plurals.song_label, songCount),
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeStatBadge(
+                        count = albumCount,
+                        label = pluralStringResource(R.plurals.album_label, albumCount),
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeStatBadge(
+                        count = artistCount,
+                        label = pluralStringResource(R.plurals.artist_label, artistCount),
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeStatBadge(
+                        count = playlistCount,
+                        label = pluralStringResource(R.plurals.playlist_label, playlistCount),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
 
@@ -114,21 +138,36 @@ fun HomeScreen(
     }
 }
 
-private fun buildLibrarySummary(
-    songCount: Int,
-    albumCount: Int,
-    artistCount: Int,
-    playlistCount: Int
-): String {
-    return listOf(
-        libraryCountLabel(songCount, "song"),
-        libraryCountLabel(albumCount, "album"),
-        libraryCountLabel(artistCount, "artist"),
-        libraryCountLabel(playlistCount, "playlist")
-    ).joinToString(separator = " \u2022 ")
-}
-
-private fun libraryCountLabel(count: Int, singularLabel: String): String {
-    val label = if (count == 1) singularLabel else "${singularLabel}s"
-    return "$count ${label.uppercase()}"
+@Composable
+private fun HomeStatBadge(
+    count: Int,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 7.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(1.dp)
+        ) {
+            Text(
+                text = count.toString(),
+                style = AppShellTypography.StatNumber,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = label.uppercase(),
+                style = AppShellTypography.StatLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
