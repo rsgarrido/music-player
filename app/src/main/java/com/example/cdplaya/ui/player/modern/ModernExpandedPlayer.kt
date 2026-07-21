@@ -62,9 +62,7 @@ fun ModernExpandedPlayer(
     }
 
     val audioQualityRepository = remember { AudioQualityRepository() }
-    var audioQualityInfo by remember(currentSong.id, currentSong.filePath) {
-        mutableStateOf<AudioQualityInfo?>(null)
-    }
+    var audioQualityInfo by remember { mutableStateOf<AudioQualityInfo?>(null) }
 
     LaunchedEffect(currentSong.id, currentSong.filePath) {
         audioQualityInfo = audioQualityRepository.getAudioQualityInfo(currentSong)

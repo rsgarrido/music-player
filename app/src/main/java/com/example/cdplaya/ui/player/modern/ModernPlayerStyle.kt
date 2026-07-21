@@ -35,6 +35,9 @@ data class ModernPlayerStyle(
 )
 
 object ModernPlayerDefaults {
+    internal const val SongTransitionDurationMillis = 220
+    internal const val BackgroundTransitionDurationMillis = 250
+
     val MaximumArtworkSize = 400.dp
     val ArtworkShape = RoundedCornerShape(30.dp)
     val ContentHorizontalPadding = 16.dp
