@@ -19,7 +19,10 @@ class PlaybackNavigationHistoryTest {
         history.addPreviousSong(songA)
         history.addPreviousSong(songC)
 
+        assertEquals(songC, history.peekPreviousSong())
         assertEquals(songC, history.popPreviousSongAndPushCurrent(songB))
+        assertEquals(songA, history.peekPreviousSong())
+        assertEquals(songB, history.peekNextSong())
         assertEquals(songA, history.popPreviousSongAndPushCurrent(songC))
         assertEquals(songC, history.popNextSong())
         assertEquals(songB, history.popNextSong())

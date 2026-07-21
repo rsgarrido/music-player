@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.theme.customizationOptions
@@ -53,6 +54,8 @@ fun SettingsScreen(
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
     onUpdatePlayerThemeTokenOverride: (PlayerTheme, PlayerThemeTokenField, Color) -> Unit,
     onResetPlayerThemeTokenOverrides: (PlayerTheme) -> Unit,
+    selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
+    onModernArtworkTransitionStyleSelected: (ModernArtworkTransitionStyle) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     modifier: Modifier = Modifier
@@ -66,6 +69,10 @@ fun SettingsScreen(
     }
 
     var isThemeCustomizationDialogVisible by remember {
+        mutableStateOf(false)
+    }
+
+    var isArtworkTransitionDialogVisible by remember {
         mutableStateOf(false)
     }
 
@@ -235,6 +242,26 @@ fun SettingsScreen(
             }
         )
 
+        if (selectedPlayerTheme == PlayerTheme.DEFAULT) {
+            ListItem(
+                headlineContent = {
+                    Text(text = "Artwork transition style")
+                },
+                supportingContent = {
+                    Text(text = selectedModernArtworkTransitionStyle.displayName)
+                },
+                trailingContent = {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowRight,
+                        contentDescription = "Choose artwork transition style"
+                    )
+                },
+                modifier = Modifier.clickable {
+                    isArtworkTransitionDialogVisible = true
+                }
+            )
+        }
+
         if (themeCustomizationOptions.isNotEmpty()) {
             ListItem(
                 headlineContent = {
@@ -302,6 +329,64 @@ fun SettingsScreen(
                     TextButton(
                         onClick = {
                             isReplayGainDialogVisible = false
+                        }
+                    ) {
+                        Text(text = "Close")
+                    }
+                }
+            )
+        }
+
+        if (
+            isArtworkTransitionDialogVisible &&
+            selectedPlayerTheme == PlayerTheme.DEFAULT
+        ) {
+            AlertDialog(
+                onDismissRequest = {
+                    isArtworkTransitionDialogVisible = false
+                },
+                title = {
+                    Text(text = "Artwork transition style")
+                },
+                text = {
+                    Column {
+                        ModernArtworkTransitionStyle.values().forEach { transitionStyle ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onModernArtworkTransitionStyleSelected(transitionStyle)
+                                        isArtworkTransitionDialogVisible = false
+                                    }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedModernArtworkTransitionStyle == transitionStyle,
+                                    onClick = {
+                                        onModernArtworkTransitionStyleSelected(transitionStyle)
+                                        isArtworkTransitionDialogVisible = false
+                                    }
+                                )
+
+                                Column(
+                                    modifier = Modifier.padding(start = 4.dp)
+                                ) {
+                                    Text(text = transitionStyle.displayName)
+
+                                    Text(
+                                        text = transitionStyle.description,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            isArtworkTransitionDialogVisible = false
                         }
                     ) {
                         Text(text = "Close")

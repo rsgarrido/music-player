@@ -1,5 +1,10 @@
 package com.example.cdplaya.ui.player.modern
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -21,30 +26,46 @@ internal fun ModernPlayerAudioQualityBadge(
     style: ModernPlayerStyle,
     modifier: Modifier = Modifier
 ) {
-    val displayText = audioQualityInfo?.toDisplayText() ?: return
+    val displayText = audioQualityInfo?.toDisplayText()
     val badgeShape = RoundedCornerShape(percent = 50)
 
-    Box(
-        modifier = modifier
-            .background(
-                color = style.contentColor.copy(alpha = 0.10f),
-                shape = badgeShape
+    AnimatedContent(
+        targetState = displayText,
+        transitionSpec = {
+            fadeIn(
+                animationSpec = tween(ModernPlayerDefaults.SongTransitionDurationMillis)
+            ).togetherWith(
+                fadeOut(animationSpec = tween(140))
             )
-            .border(
-                width = 1.dp,
-                color = style.contentColor.copy(alpha = 0.14f),
-                shape = badgeShape
-            )
-            .padding(horizontal = 10.dp, vertical = 5.dp)
-    ) {
-        Text(
-            text = displayText,
-            style = MaterialTheme.typography.labelSmall,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.15.sp,
-            color = style.contentColor.copy(alpha = 0.82f),
-            maxLines = 1
-        )
+        },
+        contentKey = { text -> text },
+        modifier = modifier,
+        label = "modernPlayerAudioQuality"
+    ) { displayedText ->
+        if (displayedText != null) {
+            Box(
+                modifier = Modifier
+                    .background(
+                        color = style.contentColor.copy(alpha = 0.10f),
+                        shape = badgeShape
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = style.contentColor.copy(alpha = 0.14f),
+                        shape = badgeShape
+                    )
+                    .padding(horizontal = 10.dp, vertical = 5.dp)
+            ) {
+                Text(
+                    text = displayedText,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.15.sp,
+                    color = style.contentColor.copy(alpha = 0.82f),
+                    maxLines = 1
+                )
+            }
+        }
     }
 }
