@@ -40,6 +40,7 @@ import com.example.cdplaya.ui.queue.QueueSnackbarActions
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
+import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.settings.SettingsScreen
 
 @Composable
@@ -137,6 +138,8 @@ fun MusicScreenBody(
     onResetPlayerThemeTokenOverrides: (PlayerTheme) -> Unit,
     selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
     onModernArtworkTransitionStyleSelected: (ModernArtworkTransitionStyle) -> Unit,
+    selectedModernSeekbarStyle: ModernSeekbarStyle,
+    onModernSeekbarStyleSelected: (ModernSeekbarStyle) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     bottomContentPadding: Dp = 24.dp,
@@ -179,6 +182,8 @@ fun MusicScreenBody(
                 onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
                 selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
                 onModernArtworkTransitionStyleSelected = onModernArtworkTransitionStyleSelected,
+                selectedModernSeekbarStyle = selectedModernSeekbarStyle,
+                onModernSeekbarStyleSelected = onModernSeekbarStyleSelected,
                 selectedReplayGainMode = selectedReplayGainMode,
                 onReplayGainModeSelected = onReplayGainModeSelected,
                 modifier = modifier

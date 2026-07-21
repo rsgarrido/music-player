@@ -39,3 +39,53 @@ enum class ModernArtworkTransitionStyle(
         }
     }
 }
+
+enum class ModernSeekbarStyle(
+    val storageValue: String,
+    val displayName: String,
+    val description: String
+) {
+    CLASSIC_BAR(
+        storageValue = "classic_bar",
+        displayName = "Classic Bar",
+        description = "The current simple progress bar."
+    ),
+    SLIM_LINE(
+        storageValue = "slim_line",
+        displayName = "Slim Line",
+        description = "A minimal thin progress line."
+    ),
+    THICK_CAPSULE(
+        storageValue = "thick_capsule",
+        displayName = "Thick Capsule",
+        description = "A larger rounded progress control."
+    ),
+    SEGMENTED(
+        storageValue = "segmented",
+        displayName = "Segmented",
+        description = "Small separated blocks that fill with progress."
+    ),
+    WAVEFORM_PREVIEW(
+        storageValue = "waveform_preview",
+        displayName = "Waveform Preview",
+        description = "A decorative waveform-inspired preview, not real track dynamics."
+    ),
+    WAVEFORM_PEAKS(
+        storageValue = "waveform_peaks",
+        displayName = "Waveform Peaks",
+        description = "Decorative mirrored waveform-style progress, not analyzed track dynamics."
+    ),
+    WAVEFORM_GLOW(
+        storageValue = "waveform_glow",
+        displayName = "Waveform Glow",
+        description = "A dense decorative waveform-style progress bar with a soft glow, not analyzed audio."
+    );
+
+    companion object {
+        fun fromStorageValue(storageValue: String?): ModernSeekbarStyle {
+            return values().firstOrNull { style ->
+                style.storageValue == storageValue
+            } ?: CLASSIC_BAR
+        }
+    }
+}

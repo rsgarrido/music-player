@@ -37,6 +37,7 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokenOverrides
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.theme.customizationOptions
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
+import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import kotlinx.coroutines.launch
 
 class MusicViewModel(
@@ -84,6 +85,16 @@ class MusicViewModel(
     fun selectModernArtworkTransitionStyle(style: ModernArtworkTransitionStyle) {
         selectedModernArtworkTransitionStyle = style
         modernPlayerPreferences.saveArtworkTransitionStyle(style)
+    }
+
+    var selectedModernSeekbarStyle by mutableStateOf(
+        modernPlayerPreferences.getSeekbarStyle()
+    )
+        private set
+
+    fun selectModernSeekbarStyle(style: ModernSeekbarStyle) {
+        selectedModernSeekbarStyle = style
+        modernPlayerPreferences.saveSeekbarStyle(style)
     }
 
     fun updatePlayerThemeTokenOverride(
