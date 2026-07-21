@@ -87,6 +87,66 @@ object AppShellIcons {
         }
     }
 
+    val GridView: ImageVector by lazy {
+        shellIcon("CDPlayaGridView") {
+            strokedPath {
+                moveTo(4.5f, 4.5f)
+                horizontalLineTo(10f)
+                verticalLineTo(10f)
+                horizontalLineTo(4.5f)
+                close()
+
+                moveTo(14f, 4.5f)
+                horizontalLineTo(19.5f)
+                verticalLineTo(10f)
+                horizontalLineTo(14f)
+                close()
+
+                moveTo(4.5f, 14f)
+                horizontalLineTo(10f)
+                verticalLineTo(19.5f)
+                horizontalLineTo(4.5f)
+                close()
+
+                moveTo(14f, 14f)
+                horizontalLineTo(19.5f)
+                verticalLineTo(19.5f)
+                horizontalLineTo(14f)
+                close()
+            }
+        }
+    }
+
+    val ListView: ImageVector by lazy {
+        shellIcon("CDPlayaListView") {
+            strokedPath {
+                moveTo(5f, 6.5f)
+                horizontalLineTo(7f)
+                verticalLineTo(8.5f)
+                horizontalLineTo(5f)
+                close()
+                moveTo(10f, 7.5f)
+                horizontalLineTo(19f)
+
+                moveTo(5f, 11f)
+                horizontalLineTo(7f)
+                verticalLineTo(13f)
+                horizontalLineTo(5f)
+                close()
+                moveTo(10f, 12f)
+                horizontalLineTo(19f)
+
+                moveTo(5f, 15.5f)
+                horizontalLineTo(7f)
+                verticalLineTo(17.5f)
+                horizontalLineTo(5f)
+                close()
+                moveTo(10f, 16.5f)
+                horizontalLineTo(19f)
+            }
+        }
+    }
+
     private fun shellIcon(
         name: String,
         paths: ImageVector.Builder.() -> Unit

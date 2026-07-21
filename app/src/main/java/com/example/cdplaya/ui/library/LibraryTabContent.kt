@@ -23,6 +23,7 @@ fun SongsTabContent(
     searchQuery: String,
     sortOption: LibrarySortOption,
     currentSong: Song?,
+    viewMode: LibraryViewMode,
     recentlyAddedSongIds: Set<Long>,
     onSongClick: (Song, List<Song>) -> Unit,
     onPlayNextClick: (Song) -> Unit,
@@ -55,20 +56,37 @@ fun SongsTabContent(
             modifier = Modifier.padding(16.dp)
         )
     } else {
-        SongList(
-            songs = displayedSongs,
-            currentSongId = currentSong?.id,
-            recentlyAddedSongIds = recentlyAddedSongIds,
-            onSongClick = onSongClick,
-            onPlayNextClick = onPlayNextClick,
-            onAddToQueueClick = onAddToQueueClick,
-            onToggleFavoriteClick = onToggleFavoriteClick,
-            favoriteSongKeys = favoriteSongKeys,
-            onAddToPlaylistClick = onAddToPlaylistClick,
-            onEditSongTagsClick = onEditSongTagsClick,
-            bottomContentPadding = bottomContentPadding,
-            modifier = modifier
-        )
+        if (viewMode == LibraryViewMode.GRID) {
+            SongGrid(
+                songs = displayedSongs,
+                currentSongId = currentSong?.id,
+                recentlyAddedSongIds = recentlyAddedSongIds,
+                favoriteSongKeys = favoriteSongKeys,
+                onSongClick = onSongClick,
+                onPlayNextClick = onPlayNextClick,
+                onAddToQueueClick = onAddToQueueClick,
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                onAddToPlaylistClick = onAddToPlaylistClick,
+                onEditSongTagsClick = onEditSongTagsClick,
+                bottomContentPadding = bottomContentPadding,
+                modifier = modifier
+            )
+        } else {
+            SongList(
+                songs = displayedSongs,
+                currentSongId = currentSong?.id,
+                recentlyAddedSongIds = recentlyAddedSongIds,
+                onSongClick = onSongClick,
+                onPlayNextClick = onPlayNextClick,
+                onAddToQueueClick = onAddToQueueClick,
+                onToggleFavoriteClick = onToggleFavoriteClick,
+                favoriteSongKeys = favoriteSongKeys,
+                onAddToPlaylistClick = onAddToPlaylistClick,
+                onEditSongTagsClick = onEditSongTagsClick,
+                bottomContentPadding = bottomContentPadding,
+                modifier = modifier
+            )
+        }
     }
 }
 
@@ -152,6 +170,7 @@ fun ArtistsTabContent(
     searchQuery: String,
     selectedArtistName: String?,
     currentSong: Song?,
+    viewMode: LibraryViewMode,
     sortOption: LibrarySortOption,
     recentlyAddedSongIds: Set<Long>,
     onArtistSelected: (String) -> Unit,
@@ -187,28 +206,52 @@ fun ArtistsTabContent(
                 modifier = Modifier.padding(16.dp)
             )
         } else {
-            ArtistListScreen(
-                songs = artistSearchSongs,
-                onArtistClick = onArtistSelected,
-                sortOption = sortOption,
-                onArtistPlayClick = { _, artistSongs ->
-                    onPlaySongsClick(artistSongs, false)
-                },
-                onArtistShuffleClick = { _, artistSongs ->
-                    onPlaySongsClick(artistSongs, true)
-                },
-                onArtistPlayNextClick = { artistName, artistSongs ->
+            val onArtistPlay: (String, List<Song>) -> Unit = { _, artistSongs ->
+                onPlaySongsClick(artistSongs, false)
+            }
+            val onArtistShuffle: (String, List<Song>) -> Unit = { _, artistSongs ->
+                onPlaySongsClick(artistSongs, true)
+            }
+            val onArtistPlayNext: (String, List<Song>) -> Unit =
+                { artistName, artistSongs ->
                     onPlayNextSongsClick(artistName, artistSongs)
-                },
-                onArtistAddToQueueClick = { artistName, artistSongs ->
+                }
+            val onArtistAddToQueue: (String, List<Song>) -> Unit =
+                { artistName, artistSongs ->
                     onAddSongsToQueueClick(artistName, artistSongs)
-                },
-                onArtistAddToPlaylistClick = { _, artistSongs ->
+                }
+            val onArtistAddToPlaylist: (String, List<Song>) -> Unit =
+                { _, artistSongs ->
                     onAddSongsToPlaylistClick(artistSongs)
-                },
-                bottomContentPadding = bottomContentPadding,
-                modifier = modifier
-            )
+                }
+
+            if (viewMode == LibraryViewMode.GRID) {
+                ArtistGridScreen(
+                    songs = artistSearchSongs,
+                    onArtistClick = onArtistSelected,
+                    sortOption = sortOption,
+                    onArtistPlayClick = onArtistPlay,
+                    onArtistShuffleClick = onArtistShuffle,
+                    onArtistPlayNextClick = onArtistPlayNext,
+                    onArtistAddToQueueClick = onArtistAddToQueue,
+                    onArtistAddToPlaylistClick = onArtistAddToPlaylist,
+                    bottomContentPadding = bottomContentPadding,
+                    modifier = modifier
+                )
+            } else {
+                ArtistListScreen(
+                    songs = artistSearchSongs,
+                    onArtistClick = onArtistSelected,
+                    sortOption = sortOption,
+                    onArtistPlayClick = onArtistPlay,
+                    onArtistShuffleClick = onArtistShuffle,
+                    onArtistPlayNextClick = onArtistPlayNext,
+                    onArtistAddToQueueClick = onArtistAddToQueue,
+                    onArtistAddToPlaylistClick = onArtistAddToPlaylist,
+                    bottomContentPadding = bottomContentPadding,
+                    modifier = modifier
+                )
+            }
         }
     } else {
         val artistSongs = sortSongsForArtistDetail(
@@ -266,6 +309,7 @@ fun AlbumsTabContent(
     searchQuery: String,
     selectedAlbumFolderPath: String?,
     currentSong: Song?,
+    viewMode: LibraryViewMode,
     sortOption: LibrarySortOption,
     recentlyAddedSongIds: Set<Long>,
     onAlbumSelected: (String) -> Unit,
@@ -301,28 +345,52 @@ fun AlbumsTabContent(
                 modifier = Modifier.padding(16.dp)
             )
         } else {
-            AlbumListScreen(
-                songs = albumSearchSongs,
-                onAlbumClick = onAlbumSelected,
-                sortOption = sortOption,
-                onAlbumPlayClick = { _, albumSongs ->
-                    onPlaySongsClick(albumSongs, false)
-                },
-                onAlbumShuffleClick = { _, albumSongs ->
-                    onPlaySongsClick(albumSongs, true)
-                },
-                onAlbumPlayNextClick = { albumTitle, albumSongs ->
+            val onAlbumPlay: (String, List<Song>) -> Unit = { _, albumSongs ->
+                onPlaySongsClick(albumSongs, false)
+            }
+            val onAlbumShuffle: (String, List<Song>) -> Unit = { _, albumSongs ->
+                onPlaySongsClick(albumSongs, true)
+            }
+            val onAlbumPlayNext: (String, List<Song>) -> Unit =
+                { albumTitle, albumSongs ->
                     onPlayNextSongsClick(albumTitle, albumSongs)
-                },
-                onAlbumAddToQueueClick = { albumTitle, albumSongs ->
+                }
+            val onAlbumAddToQueue: (String, List<Song>) -> Unit =
+                { albumTitle, albumSongs ->
                     onAddSongsToQueueClick(albumTitle, albumSongs)
-                },
-                onAlbumAddToPlaylistClick = { _, albumSongs ->
+                }
+            val onAlbumAddToPlaylist: (String, List<Song>) -> Unit =
+                { _, albumSongs ->
                     onAddSongsToPlaylistClick(albumSongs)
-                },
-                bottomContentPadding = bottomContentPadding,
-                modifier = modifier
-            )
+                }
+
+            if (viewMode == LibraryViewMode.GRID) {
+                AlbumGridScreen(
+                    songs = albumSearchSongs,
+                    onAlbumClick = onAlbumSelected,
+                    sortOption = sortOption,
+                    onAlbumPlayClick = onAlbumPlay,
+                    onAlbumShuffleClick = onAlbumShuffle,
+                    onAlbumPlayNextClick = onAlbumPlayNext,
+                    onAlbumAddToQueueClick = onAlbumAddToQueue,
+                    onAlbumAddToPlaylistClick = onAlbumAddToPlaylist,
+                    bottomContentPadding = bottomContentPadding,
+                    modifier = modifier
+                )
+            } else {
+                AlbumListScreen(
+                    songs = albumSearchSongs,
+                    onAlbumClick = onAlbumSelected,
+                    sortOption = sortOption,
+                    onAlbumPlayClick = onAlbumPlay,
+                    onAlbumShuffleClick = onAlbumShuffle,
+                    onAlbumPlayNextClick = onAlbumPlayNext,
+                    onAlbumAddToQueueClick = onAlbumAddToQueue,
+                    onAlbumAddToPlaylistClick = onAlbumAddToPlaylist,
+                    bottomContentPadding = bottomContentPadding,
+                    modifier = modifier
+                )
+            }
         }
     } else {
         val albumSongs = sortSongsByAlbumOrder(

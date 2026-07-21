@@ -38,8 +38,7 @@ fun MusicScreenHeader(
     onBackClick: (() -> Unit)? = null,
     onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onSearchClick: (() -> Unit)? = null,
-    isSearchActive: Boolean = false,
+    viewModeAction: (@Composable () -> Unit)? = null,
     sortAction: (@Composable () -> Unit)? = null
 ) {
     Row(
@@ -74,18 +73,7 @@ fun MusicScreenHeader(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (onSearchClick != null) {
-                AppShellIconButton(
-                    onClick = onSearchClick,
-                    imageVector = AppShellIcons.Search,
-                    contentDescription = if (isSearchActive) {
-                        "Edit active search"
-                    } else {
-                        "Search library"
-                    },
-                    accented = isSearchActive
-                )
-            }
+            viewModeAction?.invoke()
 
             sortAction?.invoke()
 

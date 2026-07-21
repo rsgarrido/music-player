@@ -64,7 +64,6 @@ fun SongList(
             val isCurrentSong = song.id == currentSongId
             val wasRecentlyAdded = song.id in recentlyAddedSongIds
             val isFavorite = song.favoriteKey() in favoriteSongKeys
-            var isMenuExpanded by remember { mutableStateOf(false) }
 
             ListItem(
                 leadingContent = {
@@ -107,88 +106,16 @@ fun SongList(
                     )
                 },
                 trailingContent = {
-                    IconButton(
-                        onClick = {
-                            isMenuExpanded = true
-                        }
-                    ) {
-                        Icon(
-                            imageVector = if (wasRecentlyAdded) {
-                                Icons.Filled.Check
-                            } else {
-                                Icons.Filled.MoreVert
-                            },
-                            contentDescription = "Song actions",
-                            tint = if (wasRecentlyAdded) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            }
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = isMenuExpanded,
-                        onDismissRequest = {
-                            isMenuExpanded = false
-                        }
-                    ) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = "Play next")
-                            },
-                            onClick = {
-                                isMenuExpanded = false
-                                onPlayNextClick(song)
-                            }
-                        )
-
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = "Add to queue")
-                            },
-                            onClick = {
-                                isMenuExpanded = false
-                                onAddToQueueClick(song)
-                            }
-                        )
-
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = if (isFavorite) {
-                                        "Remove from favorites"
-                                    } else {
-                                        "Add to favorites"
-                                    }
-                                )
-                            },
-                            onClick = {
-                                isMenuExpanded = false
-                                onToggleFavoriteClick(song)
-                            }
-                        )
-
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = "Add to playlist")
-                            },
-                            onClick = {
-                                isMenuExpanded = false
-                                onAddToPlaylistClick(song)
-                            }
-                        )
-
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = "Edit tags")
-                            },
-                            onClick = {
-                                isMenuExpanded = false
-                                onEditSongTagsClick(song)
-                            }
-                        )
-                    }
+                    SongActionsMenu(
+                        song = song,
+                        wasRecentlyAdded = wasRecentlyAdded,
+                        isFavorite = isFavorite,
+                        onPlayNextClick = onPlayNextClick,
+                        onAddToQueueClick = onAddToQueueClick,
+                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        onAddToPlaylistClick = onAddToPlaylistClick,
+                        onEditSongTagsClick = onEditSongTagsClick
+                    )
                 },
                 colors = ListItemDefaults.colors(
                     containerColor = if (isCurrentSong) {
@@ -202,5 +129,90 @@ fun SongList(
                 }
             )
         }
+    }
+}
+
+@Composable
+internal fun SongActionsMenu(
+    song: Song,
+    wasRecentlyAdded: Boolean,
+    isFavorite: Boolean,
+    onPlayNextClick: (Song) -> Unit,
+    onAddToQueueClick: (Song) -> Unit,
+    onToggleFavoriteClick: (Song) -> Unit,
+    onAddToPlaylistClick: (Song) -> Unit,
+    onEditSongTagsClick: (Song) -> Unit
+) {
+    var isMenuExpanded by remember { mutableStateOf(false) }
+
+    IconButton(
+        onClick = {
+            isMenuExpanded = true
+        }
+    ) {
+        Icon(
+            imageVector = if (wasRecentlyAdded) {
+                Icons.Filled.Check
+            } else {
+                Icons.Filled.MoreVert
+            },
+            contentDescription = "Song actions",
+            tint = if (wasRecentlyAdded) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            }
+        )
+    }
+
+    DropdownMenu(
+        expanded = isMenuExpanded,
+        onDismissRequest = {
+            isMenuExpanded = false
+        }
+    ) {
+        DropdownMenuItem(
+            text = { Text(text = "Play next") },
+            onClick = {
+                isMenuExpanded = false
+                onPlayNextClick(song)
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(text = "Add to queue") },
+            onClick = {
+                isMenuExpanded = false
+                onAddToQueueClick(song)
+            }
+        )
+        DropdownMenuItem(
+            text = {
+                Text(
+                    text = if (isFavorite) {
+                        "Remove from favorites"
+                    } else {
+                        "Add to favorites"
+                    }
+                )
+            },
+            onClick = {
+                isMenuExpanded = false
+                onToggleFavoriteClick(song)
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(text = "Add to playlist") },
+            onClick = {
+                isMenuExpanded = false
+                onAddToPlaylistClick(song)
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(text = "Edit tags") },
+            onClick = {
+                isMenuExpanded = false
+                onEditSongTagsClick(song)
+            }
+        )
     }
 }

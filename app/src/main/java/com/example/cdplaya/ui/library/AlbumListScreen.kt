@@ -43,35 +43,7 @@ fun AlbumListScreen(
     sortOption: LibrarySortOption = LibrarySortOption.TITLE,
     bottomContentPadding: Dp = 0.dp
 ) {
-    val albumGroups = buildLibraryAlbumGroups(songs)
-
-    val albums = when (sortOption) {
-        LibrarySortOption.ARTIST -> {
-            albumGroups.sortedWith(
-                compareBy<LibraryAlbumGroup> { album ->
-                    album.artistText.lowercase()
-                }.thenBy { album ->
-                    album.title.lowercase()
-                }
-            )
-        }
-
-        LibrarySortOption.SONG_COUNT -> {
-            albumGroups.sortedWith(
-                compareBy<LibraryAlbumGroup> { album ->
-                    album.songs.size
-                }.thenBy { album ->
-                    album.title.lowercase()
-                }
-            )
-        }
-
-        else -> {
-            albumGroups.sortedBy { album ->
-                album.title.lowercase()
-            }
-        }
-    }
+    val albums = sortedLibraryAlbumGroups(songs, sortOption)
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -121,8 +93,43 @@ fun AlbumListScreen(
     }
 }
 
+internal fun sortedLibraryAlbumGroups(
+    songs: List<Song>,
+    sortOption: LibrarySortOption
+): List<LibraryAlbumGroup> {
+    val albumGroups = buildLibraryAlbumGroups(songs)
+
+    return when (sortOption) {
+        LibrarySortOption.ARTIST -> {
+            albumGroups.sortedWith(
+                compareBy<LibraryAlbumGroup> { album ->
+                    album.artistText.lowercase()
+                }.thenBy { album ->
+                    album.title.lowercase()
+                }
+            )
+        }
+
+        LibrarySortOption.SONG_COUNT -> {
+            albumGroups.sortedWith(
+                compareBy<LibraryAlbumGroup> { album ->
+                    album.songs.size
+                }.thenBy { album ->
+                    album.title.lowercase()
+                }
+            )
+        }
+
+        else -> {
+            albumGroups.sortedBy { album ->
+                album.title.lowercase()
+            }
+        }
+    }
+}
+
 @Composable
-private fun AlbumActionsMenu(
+internal fun AlbumActionsMenu(
     albumTitle: String,
     albumSongs: List<Song>,
     onPlayClick: (String, List<Song>) -> Unit,

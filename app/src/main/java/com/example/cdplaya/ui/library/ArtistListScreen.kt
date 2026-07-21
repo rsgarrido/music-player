@@ -43,25 +43,7 @@ fun ArtistListScreen(
     sortOption: LibrarySortOption = LibrarySortOption.NAME,
     bottomContentPadding: Dp = 0.dp
 ) {
-    val artistGroups = buildLibraryArtistGroups(songs)
-
-    val artists = when (sortOption) {
-        LibrarySortOption.SONG_COUNT -> {
-            artistGroups.sortedWith(
-                compareByDescending<LibraryArtistGroup> { artist ->
-                    artist.songs.size
-                }.thenBy { artist ->
-                    artist.name.lowercase()
-                }
-            )
-        }
-
-        else -> {
-            artistGroups.sortedBy { artist ->
-                artist.name.lowercase()
-            }
-        }
-    }
+    val artists = sortedLibraryArtistGroups(songs, sortOption)
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -111,8 +93,33 @@ fun ArtistListScreen(
     }
 }
 
+internal fun sortedLibraryArtistGroups(
+    songs: List<Song>,
+    sortOption: LibrarySortOption
+): List<LibraryArtistGroup> {
+    val artistGroups = buildLibraryArtistGroups(songs)
+
+    return when (sortOption) {
+        LibrarySortOption.SONG_COUNT -> {
+            artistGroups.sortedWith(
+                compareByDescending<LibraryArtistGroup> { artist ->
+                    artist.songs.size
+                }.thenBy { artist ->
+                    artist.name.lowercase()
+                }
+            )
+        }
+
+        else -> {
+            artistGroups.sortedBy { artist ->
+                artist.name.lowercase()
+            }
+        }
+    }
+}
+
 @Composable
-private fun ArtistActionsMenu(
+internal fun ArtistActionsMenu(
     artistName: String,
     artistSongs: List<Song>,
     onPlayClick: (String, List<Song>) -> Unit,

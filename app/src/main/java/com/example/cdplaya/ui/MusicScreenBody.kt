@@ -17,10 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -38,7 +34,11 @@ import com.example.cdplaya.ui.library.FolderSelectionScreen
 import com.example.cdplaya.ui.library.LibraryBrowseSwitcher
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
+import com.example.cdplaya.ui.library.LibraryViewMode
+import com.example.cdplaya.ui.library.LibraryViewModeToggle
 import com.example.cdplaya.ui.library.MusicLibraryContent
+import com.example.cdplaya.ui.library.rememberLibraryViewModeState
+import com.example.cdplaya.ui.library.viewCategory
 import com.example.cdplaya.ui.navigation.MainDestination
 import com.example.cdplaya.ui.queue.QueueSnackbarActions
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
@@ -147,7 +147,7 @@ fun MusicScreenBody(
     bottomContentPadding: Dp = 24.dp,
     modifier: Modifier = Modifier
 ) {
-    var isLibrarySearchVisible by rememberSaveable { mutableStateOf(false) }
+    val libraryViewModeState = rememberLibraryViewModeState()
 
     when {
         isFolderScreenVisible -> {
@@ -236,7 +236,6 @@ fun MusicScreenBody(
                     playlistCount = playlists.size,
                     onSettingsClick = onSettingsClick,
                     onOpenLibrary = { tab ->
-                        isLibrarySearchVisible = false
                         onOpenLibrary(tab)
                     },
                     onRecentlyPlayedSongClick = { song ->
@@ -258,12 +257,11 @@ fun MusicScreenBody(
                     val isLibraryDetail = selectedArtistName != null ||
                             selectedAlbumFolderPath != null ||
                             selectedPlaylistId != null
-                    val canSearchLibrary = selectedLibraryTab == LibraryTab.SONGS ||
-                            selectedLibraryTab == LibraryTab.FAVORITES ||
-                            selectedLibraryTab == LibraryTab.ARTISTS ||
-                            selectedLibraryTab == LibraryTab.ALBUMS
-                    val shouldShowLibrarySearch = isSearchDestination || canSearchLibrary &&
-                            (isLibrarySearchVisible || searchQuery.isNotBlank())
+                    val selectedViewMode = if (isSearchDestination) {
+                        LibraryViewMode.LIST
+                    } else {
+                        libraryViewModeState.modeFor(selectedLibraryTab)
+                    }
 
                     Column(
                     modifier = modifier
@@ -279,14 +277,21 @@ fun MusicScreenBody(
                         onBackClick = null,
                         onSettingsClick = onSettingsClick,
                         modifier = Modifier.statusBarsPadding(),
-                        onSearchClick = if (canSearchLibrary && !isSearchDestination) {
+                        viewModeAction = if (!isSearchDestination &&
+                            !isLibraryDetail &&
+                            selectedLibraryTab.viewCategory() != null
+                        ) {
                             {
-                                isLibrarySearchVisible = !shouldShowLibrarySearch
+                                LibraryViewModeToggle(
+                                    viewMode = selectedViewMode,
+                                    onToggle = {
+                                        libraryViewModeState.toggle(selectedLibraryTab)
+                                    }
+                                )
                             }
                         } else {
                             null
                         },
-                        isSearchActive = shouldShowLibrarySearch,
                         sortAction = {
                             LibrarySortAction(
                                 selectedLibraryTab = selectedLibraryTab,
@@ -317,7 +322,6 @@ fun MusicScreenBody(
                             LibraryBrowseSwitcher(
                                 selectedTab = selectedLibraryTab,
                                 onTabSelected = { tab ->
-                                    isLibrarySearchVisible = false
                                     onOpenLibrary(tab)
                                 },
                                 modifier = Modifier.padding(bottom = 4.dp)
@@ -326,7 +330,7 @@ fun MusicScreenBody(
 
                         LibrarySearchControl(
                             selectedLibraryTab = selectedLibraryTab,
-                            isSearchVisible = shouldShowLibrarySearch,
+                            isSearchVisible = isSearchDestination,
                             searchQuery = searchQuery,
                             onSearchQueryChange = onSearchQueryChange
                         )
@@ -339,6 +343,7 @@ fun MusicScreenBody(
                             selectedArtistSortOption = selectedArtistSortOption,
                             selectedAlbumSortOption = selectedAlbumSortOption,
                             selectedFavoriteSortOption = selectedFavoriteSortOption,
+                            viewMode = selectedViewMode,
                             selectedArtistName = selectedArtistName,
                             selectedAlbumFolderPath = selectedAlbumFolderPath,
                             selectedPlaylistId = selectedPlaylistId,
