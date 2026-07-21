@@ -87,7 +87,7 @@ class ModernArtworkCarouselTransformsTest {
         )
         val outgoing = modernMetadataPageTransform(
             style = ModernArtworkTransitionStyle.DEPTH_SCALE,
-            gestureOffset = -0.75f,
+            gestureOffset = -1f,
             restingOffset = 0f,
             isCurrent = true
         )
@@ -98,8 +98,8 @@ class ModernArtworkCarouselTransformsTest {
             isCurrent = false
         )
 
-        assertTrue(outgoing.scale < centered.scale)
-        assertTrue(outgoing.alpha < centered.alpha)
+        assertEquals(0.88f, outgoing.scale, FLOAT_TOLERANCE)
+        assertEquals(0.76f, outgoing.alpha, FLOAT_TOLERANCE)
         assertTrue(incoming.scale < centered.scale)
         assertTrue(incoming.alpha > 0f)
     }
@@ -139,17 +139,18 @@ class ModernArtworkCarouselTransformsTest {
     fun coverFlow_metadataRotatesLessThanArtworkAndScalesAwayFromCenter() {
         val artwork = modernArtworkPageTransform(
             style = ModernArtworkTransitionStyle.COVER_FLOW,
-            gestureOffset = -0.75f,
+            gestureOffset = -1f,
             restingOffset = 0f,
             isCurrent = true
         )
         val metadata = modernMetadataPageTransform(
             style = ModernArtworkTransitionStyle.COVER_FLOW,
-            gestureOffset = -0.75f,
+            gestureOffset = -1f,
             restingOffset = 0f,
             isCurrent = true
         )
 
+        assertEquals(0.60f, COVER_FLOW_METADATA_ROTATION_MULTIPLIER, FLOAT_TOLERANCE)
         assertTrue(abs(metadata.rotationY) > 0f)
         assertTrue(abs(metadata.rotationY) < abs(artwork.rotationY))
         assertEquals(
@@ -157,7 +158,8 @@ class ModernArtworkCarouselTransformsTest {
             metadata.rotationY,
             FLOAT_TOLERANCE
         )
-        assertTrue(metadata.scale < 1f)
+        assertEquals(13.2f, abs(metadata.rotationY), FLOAT_TOLERANCE)
+        assertEquals(0.95f, metadata.scale, FLOAT_TOLERANCE)
         assertTrue(metadata.alpha < 1f)
     }
 

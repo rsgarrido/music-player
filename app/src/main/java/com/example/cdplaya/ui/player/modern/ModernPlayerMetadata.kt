@@ -18,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
@@ -48,30 +49,37 @@ internal fun ModernPlayerMetadataCarousel(
     ) {
         carouselSongs.items().forEach { item ->
             key(item.song.id) {
-                ModernPlayerMetadataPage(
-                    song = item.song,
-                    audioQualityRepository = audioQualityRepository,
-                    style = style,
-                    modifier = Modifier.graphicsLayer {
-                        val gestureOffset =
-                            carouselState.offsetX / carouselState.artworkWidthPx
-                        val transform = modernMetadataPageTransform(
-                            style = transitionStyle,
-                            gestureOffset = gestureOffset,
-                            restingOffset = item.restingOffsetMultiplier,
-                            isCurrent = item.isCurrent
-                        )
-                        translationX = transform.translationMultiplier * pageWidthPx
-                        scaleX = transform.scale
-                        scaleY = transform.scale
-                        alpha = transform.alpha
-                        rotationY = transform.rotationY
-                        if (transform.rotationY != 0f) {
-                            cameraDistance =
-                                COVER_FLOW_CAMERA_DISTANCE_MULTIPLIER * density
-                        }
-                    }
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            val gestureOffset =
+                                carouselState.offsetX / carouselState.artworkWidthPx
+                            val transform = modernMetadataPageTransform(
+                                style = transitionStyle,
+                                gestureOffset = gestureOffset,
+                                restingOffset = item.restingOffsetMultiplier,
+                                isCurrent = item.isCurrent
+                            )
+                            translationX = transform.translationMultiplier * pageWidthPx
+                            scaleX = transform.scale
+                            scaleY = transform.scale
+                            alpha = transform.alpha
+                            rotationY = transform.rotationY
+                            transformOrigin = TransformOrigin.Center
+                            if (transform.rotationY != 0f) {
+                                cameraDistance =
+                                    COVER_FLOW_METADATA_CAMERA_DISTANCE_MULTIPLIER * density
+                            }
+                        },
+                    contentAlignment = Alignment.TopStart
+                ) {
+                    ModernPlayerMetadataPage(
+                        song = item.song,
+                        audioQualityRepository = audioQualityRepository,
+                        style = style
+                    )
+                }
             }
         }
     }
@@ -81,8 +89,7 @@ internal fun ModernPlayerMetadataCarousel(
 private fun ModernPlayerMetadataPage(
     song: Song,
     audioQualityRepository: AudioQualityRepository,
-    style: ModernPlayerStyle,
-    modifier: Modifier = Modifier
+    style: ModernPlayerStyle
 ) {
     var audioQualityInfo by remember(song.id, song.filePath) {
         mutableStateOf<AudioQualityInfo?>(null)
@@ -92,7 +99,7 @@ private fun ModernPlayerMetadataPage(
         audioQualityInfo = audioQualityRepository.getAudioQualityInfo(song)
     }
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         ModernPlayerMetadata(
             currentSong = song,
             style = style
