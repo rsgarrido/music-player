@@ -204,6 +204,8 @@ fun MusicRoute(
             musicViewModel.selectedModernArtworkTransitionStyle,
         onModernArtworkTransitionStyleSelected =
             musicViewModel::selectModernArtworkTransitionStyle,
+        selectedModernSeekbarStyle = musicViewModel.selectedModernSeekbarStyle,
+        onModernSeekbarStyleSelected = musicViewModel::selectModernSeekbarStyle,
         selectedReplayGainMode = musicViewModel.selectedReplayGainMode,
         onReplayGainModeSelected = { replayGainMode ->
             musicViewModel.selectReplayGainMode(replayGainMode)

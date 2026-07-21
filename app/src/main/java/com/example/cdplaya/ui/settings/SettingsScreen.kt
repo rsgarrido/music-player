@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
+import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.theme.customizationOptions
@@ -56,6 +57,8 @@ fun SettingsScreen(
     onResetPlayerThemeTokenOverrides: (PlayerTheme) -> Unit,
     selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
     onModernArtworkTransitionStyleSelected: (ModernArtworkTransitionStyle) -> Unit,
+    selectedModernSeekbarStyle: ModernSeekbarStyle,
+    onModernSeekbarStyleSelected: (ModernSeekbarStyle) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     modifier: Modifier = Modifier
@@ -73,6 +76,10 @@ fun SettingsScreen(
     }
 
     var isArtworkTransitionDialogVisible by remember {
+        mutableStateOf(false)
+    }
+
+    var isSeekbarStyleDialogVisible by remember {
         mutableStateOf(false)
     }
 
@@ -260,6 +267,24 @@ fun SettingsScreen(
                     isArtworkTransitionDialogVisible = true
                 }
             )
+
+            ListItem(
+                headlineContent = {
+                    Text(text = "Modern player seekbar style")
+                },
+                supportingContent = {
+                    Text(text = selectedModernSeekbarStyle.displayName)
+                },
+                trailingContent = {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowRight,
+                        contentDescription = "Choose modern player seekbar style"
+                    )
+                },
+                modifier = Modifier.clickable {
+                    isSeekbarStyleDialogVisible = true
+                }
+            )
         }
 
         if (themeCustomizationOptions.isNotEmpty()) {
@@ -387,6 +412,64 @@ fun SettingsScreen(
                     TextButton(
                         onClick = {
                             isArtworkTransitionDialogVisible = false
+                        }
+                    ) {
+                        Text(text = "Close")
+                    }
+                }
+            )
+        }
+
+        if (
+            isSeekbarStyleDialogVisible &&
+            selectedPlayerTheme == PlayerTheme.DEFAULT
+        ) {
+            AlertDialog(
+                onDismissRequest = {
+                    isSeekbarStyleDialogVisible = false
+                },
+                title = {
+                    Text(text = "Modern player seekbar style")
+                },
+                text = {
+                    Column {
+                        ModernSeekbarStyle.values().forEach { seekbarStyle ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onModernSeekbarStyleSelected(seekbarStyle)
+                                        isSeekbarStyleDialogVisible = false
+                                    }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedModernSeekbarStyle == seekbarStyle,
+                                    onClick = {
+                                        onModernSeekbarStyleSelected(seekbarStyle)
+                                        isSeekbarStyleDialogVisible = false
+                                    }
+                                )
+
+                                Column(
+                                    modifier = Modifier.padding(start = 4.dp)
+                                ) {
+                                    Text(text = seekbarStyle.displayName)
+
+                                    Text(
+                                        text = seekbarStyle.description,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            isSeekbarStyleDialogVisible = false
                         }
                     ) {
                         Text(text = "Close")

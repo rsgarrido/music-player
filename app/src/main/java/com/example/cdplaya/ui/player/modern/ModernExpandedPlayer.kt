@@ -40,6 +40,7 @@ fun ModernExpandedPlayer(
     previousPreviewSong: Song? = null,
     nextPreviewSong: Song? = null,
     artworkTransitionStyle: ModernArtworkTransitionStyle = ModernArtworkTransitionStyle.SLIDE,
+    seekbarStyle: ModernSeekbarStyle = ModernSeekbarStyle.CLASSIC_BAR,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -215,6 +216,8 @@ fun ModernExpandedPlayer(
                     currentPosition = currentPosition,
                     duration = duration,
                     onSeekChange = onSeekChange,
+                    seekbarStyle = seekbarStyle,
+                    waveformSeed = "${currentSong.id}|${currentSong.filePath}|${currentSong.title}",
                     style = style
                 )
 

@@ -42,6 +42,7 @@ import com.example.cdplaya.ui.playlist.rememberPlaylistSnackbarActions
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
+import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.queue.rememberQueueSnackbarActions
 import com.example.cdplaya.ui.tageditor.DiscardTagChangesDialog
 import com.example.cdplaya.ui.tageditor.TagEditorScreen
@@ -120,6 +121,8 @@ fun MusicScreen(
     onResetPlayerThemeTokenOverrides: (PlayerTheme) -> Unit,
     selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
     onModernArtworkTransitionStyleSelected: (ModernArtworkTransitionStyle) -> Unit,
+    selectedModernSeekbarStyle: ModernSeekbarStyle,
+    onModernSeekbarStyleSelected: (ModernSeekbarStyle) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     mostPlayedSongs: List<Song>
@@ -576,6 +579,8 @@ fun MusicScreen(
                 onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
                 selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
                 onModernArtworkTransitionStyleSelected = onModernArtworkTransitionStyleSelected,
+                selectedModernSeekbarStyle = selectedModernSeekbarStyle,
+                onModernSeekbarStyleSelected = onModernSeekbarStyleSelected,
                 selectedReplayGainMode = selectedReplayGainMode,
                 onReplayGainModeSelected = onReplayGainModeSelected,
                 bottomContentPadding = bottomContentPadding,
@@ -707,6 +712,7 @@ fun MusicScreen(
                 selectedPlayerTheme = selectedPlayerTheme,
                 selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                 selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
+                selectedModernSeekbarStyle = selectedModernSeekbarStyle,
                 songs = songs,
                 onSongClick = onSongClick
             )
