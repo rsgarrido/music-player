@@ -82,19 +82,19 @@ class ModernPlayerCustomizationTest {
                 style = ModernSeekbarStyle.WAVEFORM_PREVIEW,
                 storageValue = "waveform_preview",
                 displayName = "Waveform Preview",
-                description = "A decorative waveform-inspired preview, not real track dynamics."
+                description = "Uses analyzed track shape when available, with a generated preview while loading or unsupported."
             ),
             SeekbarStyleExpectation(
                 style = ModernSeekbarStyle.WAVEFORM_PEAKS,
                 storageValue = "waveform_peaks",
                 displayName = "Waveform Peaks",
-                description = "Decorative mirrored waveform-style progress, not analyzed track dynamics."
+                description = "Mirrors analyzed track peaks when available, with a generated preview as fallback."
             ),
             SeekbarStyleExpectation(
                 style = ModernSeekbarStyle.WAVEFORM_GLOW,
                 storageValue = "waveform_glow",
                 displayName = "Waveform Glow",
-                description = "A dense decorative waveform-style progress bar with a soft glow, not analyzed audio."
+                description = "Adds a soft glow to analyzed track shape, with a generated preview as fallback."
             )
         )
 
@@ -107,7 +107,12 @@ class ModernPlayerCustomizationTest {
         assertTrue(
             ModernSeekbarStyle.values()
                 .filter { style -> style.name.startsWith("WAVEFORM") }
-                .all { style -> style.description.contains("decorative", ignoreCase = true) }
+                .all { style -> style.usesWaveformData }
+        )
+        assertTrue(
+            ModernSeekbarStyle.values()
+                .filterNot { style -> style.name.startsWith("WAVEFORM") }
+                .none { style -> style.usesWaveformData }
         )
     }
 

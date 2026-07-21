@@ -68,18 +68,24 @@ enum class ModernSeekbarStyle(
     WAVEFORM_PREVIEW(
         storageValue = "waveform_preview",
         displayName = "Waveform Preview",
-        description = "A decorative waveform-inspired preview, not real track dynamics."
+        description = "Uses analyzed track shape when available, with a generated preview while loading or unsupported."
     ),
     WAVEFORM_PEAKS(
         storageValue = "waveform_peaks",
         displayName = "Waveform Peaks",
-        description = "Decorative mirrored waveform-style progress, not analyzed track dynamics."
+        description = "Mirrors analyzed track peaks when available, with a generated preview as fallback."
     ),
     WAVEFORM_GLOW(
         storageValue = "waveform_glow",
         displayName = "Waveform Glow",
-        description = "A dense decorative waveform-style progress bar with a soft glow, not analyzed audio."
+        description = "Adds a soft glow to analyzed track shape, with a generated preview as fallback."
     );
+
+    val usesWaveformData: Boolean
+        get() = when (this) {
+            WAVEFORM_PREVIEW, WAVEFORM_PEAKS, WAVEFORM_GLOW -> true
+            CLASSIC_BAR, SLIM_LINE, THICK_CAPSULE, SEGMENTED -> false
+        }
 
     companion object {
         fun fromStorageValue(storageValue: String?): ModernSeekbarStyle {

@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
@@ -32,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.audioquality.AudioQualityRepository
+import com.example.cdplaya.player.waveform.WaveformData
+import com.example.cdplaya.player.waveform.WaveformRepository
 import com.example.cdplaya.ui.player.rememberExpandedPlayerDragState
 
 @Composable
@@ -65,7 +68,26 @@ fun ModernExpandedPlayer(
         return
     }
 
+    val appContext = LocalContext.current.applicationContext
     val audioQualityRepository = remember { AudioQualityRepository() }
+    val waveformRepository = remember(appContext) { WaveformRepository(appContext) }
+    var waveformData by remember(
+        currentSong.id,
+        currentSong.filePath,
+        currentSong.uri
+    ) {
+        mutableStateOf<WaveformData?>(null)
+    }
+    LaunchedEffect(
+        currentSong.id,
+        currentSong.filePath,
+        currentSong.uri,
+        seekbarStyle.usesWaveformData
+    ) {
+        if (seekbarStyle.usesWaveformData) {
+            waveformData = waveformRepository.load(currentSong)
+        }
+    }
     val carouselState = rememberModernArtworkCarouselState(
         onPrevious = onPreviousClick,
         onNext = onNextClick
@@ -218,6 +240,7 @@ fun ModernExpandedPlayer(
                     onSeekChange = onSeekChange,
                     seekbarStyle = seekbarStyle,
                     waveformSeed = "${currentSong.id}|${currentSong.filePath}|${currentSong.title}",
+                    waveformData = waveformData,
                     style = style
                 )
 

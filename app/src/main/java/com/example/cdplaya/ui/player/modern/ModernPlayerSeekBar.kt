@@ -1,5 +1,7 @@
 package com.example.cdplaya.ui.player.modern
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +17,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -25,6 +28,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.player.waveform.WaveformData
+import com.example.cdplaya.player.waveform.mapWaveformAmplitudes
 import com.example.cdplaya.ui.formatDuration
 import kotlin.math.max
 
@@ -35,6 +40,7 @@ internal fun ModernPlayerSeekBar(
     onSeekChange: (Int) -> Unit,
     seekbarStyle: ModernSeekbarStyle,
     waveformSeed: String,
+    waveformData: WaveformData? = null,
     style: ModernPlayerStyle
 ) {
     val safeDuration = duration.coerceAtLeast(1)
@@ -93,9 +99,13 @@ internal fun ModernPlayerSeekBar(
         }
 
         ModernSeekbarStyle.WAVEFORM_PREVIEW -> {
-            val bars = remember(waveformSeed) {
+            val fallbackBars = remember(waveformSeed) {
                 generateWaveformPreviewBars(waveformSeed)
             }
+            val bars = rememberAnimatedWaveformBars(
+                fallbackBars = fallbackBars,
+                waveformData = waveformData
+            )
             VisualSeekbar(
                 safePosition = safePosition,
                 safeDuration = safeDuration,
@@ -113,9 +123,13 @@ internal fun ModernPlayerSeekBar(
         }
 
         ModernSeekbarStyle.WAVEFORM_PEAKS -> {
-            val bars = remember(waveformSeed) {
+            val fallbackBars = remember(waveformSeed) {
                 generateWaveformPeaksBars(waveformSeed)
             }
+            val bars = rememberAnimatedWaveformBars(
+                fallbackBars = fallbackBars,
+                waveformData = waveformData
+            )
             VisualSeekbar(
                 safePosition = safePosition,
                 safeDuration = safeDuration,
@@ -133,9 +147,13 @@ internal fun ModernPlayerSeekBar(
         }
 
         ModernSeekbarStyle.WAVEFORM_GLOW -> {
-            val bars = remember(waveformSeed) {
+            val fallbackBars = remember(waveformSeed) {
                 generateWaveformGlowBars(waveformSeed)
             }
+            val bars = rememberAnimatedWaveformBars(
+                fallbackBars = fallbackBars,
+                waveformData = waveformData
+            )
             VisualSeekbar(
                 safePosition = safePosition,
                 safeDuration = safeDuration,
@@ -167,6 +185,35 @@ internal fun ModernPlayerSeekBar(
             text = formatDuration(duration),
             style = MaterialTheme.typography.bodySmall,
             color = style.timeColor
+        )
+    }
+}
+
+@Composable
+private fun rememberAnimatedWaveformBars(
+    fallbackBars: List<Float>,
+    waveformData: WaveformData?
+): List<Float> {
+    val realBars = remember(
+        waveformData?.sourceKey,
+        waveformData?.amplitudes,
+        fallbackBars.size
+    ) {
+        waveformData?.amplitudes
+            ?.let { amplitudes -> mapWaveformAmplitudes(amplitudes, fallbackBars.size) }
+            ?.takeIf(List<Float>::isNotEmpty)
+    }
+    val realWaveformBlend by animateFloatAsState(
+        targetValue = if (realBars == null) 0f else 1f,
+        animationSpec = tween(durationMillis = REAL_WAVEFORM_TRANSITION_MILLIS),
+        label = "realWaveformBlend"
+    )
+
+    return remember(fallbackBars, realBars, realWaveformBlend) {
+        blendWaveformBars(
+            fallbackBars = fallbackBars,
+            realBars = realBars,
+            blend = realWaveformBlend
         )
     }
 }
@@ -446,6 +493,19 @@ internal fun segmentedFillFractions(
     }
 }
 
+internal fun blendWaveformBars(
+    fallbackBars: List<Float>,
+    realBars: List<Float>?,
+    blend: Float
+): List<Float> {
+    if (realBars == null || realBars.size != fallbackBars.size) return fallbackBars
+
+    val fraction = blend.coerceIn(0f, 1f)
+    return fallbackBars.indices.map { index ->
+        fallbackBars[index] + (realBars[index] - fallbackBars[index]) * fraction
+    }
+}
+
 internal fun generateWaveformPreviewBars(
     seed: String,
     barCount: Int = 48
@@ -503,3 +563,5 @@ private fun generateDeterministicWaveformBars(
             .coerceIn(minimumAmplitude, maximumAmplitude)
     }
 }
+
+private const val REAL_WAVEFORM_TRANSITION_MILLIS = 320
