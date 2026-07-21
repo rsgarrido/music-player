@@ -15,6 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,6 +29,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.player.audioquality.AudioQualityInfo
+import com.example.cdplaya.player.audioquality.AudioQualityRepository
 import com.example.cdplaya.ui.player.expandedPlayerHorizontalSwipeGestures
 import com.example.cdplaya.ui.player.rememberExpandedPlayerDragState
 
@@ -52,6 +59,15 @@ fun ModernExpandedPlayer(
 ) {
     if (currentSong == null) {
         return
+    }
+
+    val audioQualityRepository = remember { AudioQualityRepository() }
+    var audioQualityInfo by remember(currentSong.id, currentSong.filePath) {
+        mutableStateOf<AudioQualityInfo?>(null)
+    }
+
+    LaunchedEffect(currentSong.id, currentSong.filePath) {
+        audioQualityInfo = audioQualityRepository.getAudioQualityInfo(currentSong)
     }
 
     val dragState = rememberExpandedPlayerDragState(onCollapseClick)
@@ -131,6 +147,14 @@ fun ModernExpandedPlayer(
                 ModernPlayerMetadata(
                     currentSong = currentSong,
                     style = style
+                )
+
+                ModernPlayerAudioQualityBadge(
+                    audioQualityInfo = audioQualityInfo,
+                    style = style,
+                    modifier = Modifier
+                        .align(Alignment.Start)
+                        .padding(top = 12.dp)
                 )
 
                 lyricsContent()
