@@ -99,6 +99,10 @@ private class FakeFavoriteDao(
         favorites.forEach { insertFavorite(it) }
     }
 
+    override suspend fun deleteFavoritesByReferenceKeys(referenceKeys: List<String>) {
+        rows.removeAll { it.referenceKey in referenceKeys }
+    }
+
     override suspend fun countFavoriteByReferenceKey(referenceKey: String): Int =
         rows.count { it.referenceKey == referenceKey }
 
