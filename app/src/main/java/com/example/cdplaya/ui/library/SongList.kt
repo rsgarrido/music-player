@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.ui.AppShellAccent
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.ui.getDisplayTrackNumber
 
@@ -112,7 +113,7 @@ fun SongList(
                 },
                 colors = ListItemDefaults.colors(
                     containerColor = if (isCurrentSong) {
-                        MaterialTheme.colorScheme.primaryContainer
+                        AppShellAccent.copy(alpha = 0.16f)
                     } else {
                         MaterialTheme.colorScheme.surface
                     }

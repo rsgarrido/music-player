@@ -96,7 +96,7 @@ private fun AppBottomNavigationItem(
 ) {
     val contentColor by animateColorAsState(
         targetValue = if (selected) {
-            MaterialTheme.colorScheme.primary
+            AppShellAccent
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
@@ -112,7 +112,7 @@ private fun AppBottomNavigationItem(
                 onClick = onClick
             ),
         color = if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+            AppShellAccent.copy(alpha = 0.16f)
         } else {
             Color.Transparent
         },

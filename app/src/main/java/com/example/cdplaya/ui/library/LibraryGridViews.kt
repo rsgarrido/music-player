@@ -40,6 +40,7 @@ import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.ui.AppShellIcons
+import com.example.cdplaya.ui.AppShellAccent
 import com.example.cdplaya.ui.AppShellTypography
 
 @Composable
@@ -322,7 +323,7 @@ private fun LibraryGridCard(
                         .padding(start = 8.dp, bottom = 7.dp)
                         .size(width = gridMetrics.selectedAccentWidth, height = 3.dp)
                         .clip(RoundedCornerShape(2.dp))
-                        .background(MaterialTheme.colorScheme.primary)
+                        .background(AppShellAccent)
                 )
             }
         }
@@ -340,7 +341,7 @@ private fun LibraryGridCard(
                 style = gridMetrics.titleStyle,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
                 color = if (selected) {
-                    MaterialTheme.colorScheme.primary
+                    AppShellAccent
                 } else {
                     MaterialTheme.colorScheme.onSurface
                 },

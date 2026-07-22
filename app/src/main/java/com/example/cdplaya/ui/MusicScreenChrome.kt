@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
@@ -31,6 +32,7 @@ import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.player.PlayerCard
 import com.example.cdplaya.ui.player.SleepTimerStatusBanner
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 
 @Composable
 fun MusicScreenHeader(
@@ -99,19 +101,19 @@ fun AppShellIconButton(
         modifier = modifier.size(40.dp),
         shape = RoundedCornerShape(14.dp),
         color = if (accented) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+            AppShellAccent.copy(alpha = 0.15f)
         } else {
             MaterialTheme.colorScheme.surfaceContainerHigh
         },
         contentColor = if (accented) {
-            MaterialTheme.colorScheme.primary
+            AppShellAccent
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
         border = BorderStroke(
             1.dp,
             if (accented) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.36f)
+                AppShellAccent.copy(alpha = 0.36f)
             } else {
                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
             }
@@ -137,6 +139,8 @@ fun MiniPlayerSection(
     repeatMode: RepeatMode,
     currentPosition: Int,
     duration: Int,
+    selectedPlayerTheme: PlayerTheme,
+    selectedPlayerThemeTokens: PlayerThemeTokens,
     favoriteSongKeys: Set<String>,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
@@ -167,6 +171,8 @@ fun MiniPlayerSection(
             repeatMode = repeatMode,
             currentPosition = currentPosition,
             duration = duration,
+            selectedPlayerTheme = selectedPlayerTheme,
+            selectedPlayerThemeTokens = selectedPlayerThemeTokens,
             onPlayPauseClick = onPlayPauseClick,
             onPreviousClick = onPreviousClick,
             onNextClick = onNextClick,

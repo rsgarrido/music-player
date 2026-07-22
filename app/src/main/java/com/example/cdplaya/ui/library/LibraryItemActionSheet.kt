@@ -37,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.ui.AppShellIcons
+import com.example.cdplaya.ui.AppShellAccent
 import com.example.cdplaya.ui.AppShellTypography
 import kotlinx.coroutines.launch
 
@@ -117,7 +118,7 @@ fun LibraryItemActionSheet(
                     .padding(top = 10.dp, bottom = 6.dp)
                     .size(width = 34.dp, height = 4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.72f))
+                    .background(AppShellAccent.copy(alpha = 0.72f))
             )
         }
     ) {
@@ -220,7 +221,7 @@ private fun LibraryActionRow(
                 tint = if (action.isDestructive) {
                     contentColor
                 } else {
-                    MaterialTheme.colorScheme.primary
+                    AppShellAccent
                 }
             )
             Text(

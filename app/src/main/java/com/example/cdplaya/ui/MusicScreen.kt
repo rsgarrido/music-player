@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -340,11 +341,16 @@ fun MusicScreen(
         }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .appShellBackground()
-    ) {
+    val appShellAccent = rememberAppShellAccent(
+        playerTheme = selectedPlayerTheme,
+        tokens = selectedPlayerThemeTokens
+    )
+    CompositionLocalProvider(LocalAppShellAccent provides appShellAccent) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .appShellBackground()
+        ) {
         val selectedSongForTagEdit = songPendingTagEdit
         val shouldShowBottomMiniPlayer = currentSong != null &&
                 !isPlayerExpanded &&
@@ -592,6 +598,8 @@ fun MusicScreen(
                 repeatMode = repeatMode,
                 currentPosition = currentPosition,
                 duration = duration,
+                selectedPlayerTheme = selectedPlayerTheme,
+                selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                 favoriteSongKeys = favoriteSongKeys,
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
@@ -734,6 +742,7 @@ fun MusicScreen(
                 songs = songs,
                 onSongClick = onSongClick
             )
+        }
         }
     }
 }
