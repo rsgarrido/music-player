@@ -1,6 +1,5 @@
 package com.example.cdplaya.ui.playlist
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -8,13 +7,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -31,6 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import com.example.cdplaya.R
 import com.example.cdplaya.data.Playlist
+import com.example.cdplaya.ui.library.LibraryItemAction
+import com.example.cdplaya.ui.library.LibraryItemActionSheet
+import com.example.cdplaya.ui.library.LibraryItemActionSheetTarget
+import com.example.cdplaya.ui.library.libraryItemActions
 
 @Composable
 fun PlaylistListScreen(
@@ -52,6 +54,10 @@ fun PlaylistListScreen(
         mutableStateOf<Playlist?>(null)
     }
 
+    var actionSheetTarget by remember {
+        mutableStateOf<LibraryItemActionSheetTarget?>(null)
+    }
+
     Column(
         modifier = modifier
     ) {
@@ -62,7 +68,7 @@ fun PlaylistListScreen(
                 .padding(16.dp)
         ) {
             Icon(
-                imageVector = Icons.Filled.PlaylistAdd,
+                imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
                 contentDescription = null
             )
 
@@ -99,9 +105,11 @@ fun PlaylistListScreen(
                     items = playlists,
                     key = { playlist -> playlist.playlistId }
                 ) { playlist ->
-                    var isMenuExpanded by remember {
-                        mutableStateOf(false)
-                    }
+                    val songCountText = pluralStringResource(
+                        R.plurals.song_count,
+                        playlist.songCount,
+                        playlist.songCount
+                    )
 
                     ListItem(
                         headlineContent = {
@@ -112,70 +120,61 @@ fun PlaylistListScreen(
                         },
                         supportingContent = {
                             Text(
-                                text = pluralStringResource(
-                                    R.plurals.song_count,
-                                    playlist.songCount,
-                                    playlist.songCount
-                                ),
+                                text = songCountText,
                                 style = MaterialTheme.typography.bodySmall
                             )
                         },
-                        trailingContent = {
-                            IconButton(
-                                onClick = {
-                                    isMenuExpanded = true
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.MoreVert,
-                                    contentDescription = "Playlist actions"
+                        modifier = Modifier.libraryItemActions(
+                            clickLabel = "Open ${playlist.name}",
+                            onClick = {
+                                onPlaylistClick(playlist)
+                            },
+                            onShowActions = {
+                                actionSheetTarget = LibraryItemActionSheetTarget(
+                                    title = playlist.name,
+                                    subtitle = songCountText,
+                                    artworkUri = null,
+                                    artworkDescription = "Playlist ${playlist.name}",
+                                    actions = listOf(
+                                        LibraryItemAction(
+                                            label = "Rename",
+                                            icon = Icons.Filled.Edit,
+                                            onClick = {
+                                                playlistPendingRename = playlist
+                                            }
+                                        ),
+                                        LibraryItemAction(
+                                            label = "Export as M3U8",
+                                            icon = Icons.Filled.Share,
+                                            onClick = {
+                                                onExportPlaylistClick(playlist)
+                                            }
+                                        ),
+                                        LibraryItemAction(
+                                            label = "Delete",
+                                            icon = Icons.Filled.Delete,
+                                            isDestructive = true,
+                                            onClick = {
+                                                playlistPendingDelete = playlist
+                                            }
+                                        )
+                                    )
                                 )
                             }
-
-                            DropdownMenu(
-                                expanded = isMenuExpanded,
-                                onDismissRequest = {
-                                    isMenuExpanded = false
-                                }
-                            ) {
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(text = "Rename")
-                                    },
-                                    onClick = {
-                                        isMenuExpanded = false
-                                        playlistPendingRename = playlist
-                                    }
-                                )
-
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(text = "Export as M3U8")
-                                    },
-                                    onClick = {
-                                        isMenuExpanded = false
-                                        onExportPlaylistClick(playlist)
-                                    }
-                                )
-
-                                DropdownMenuItem(
-                                    text = {
-                                        Text(text = "Delete")
-                                    },
-                                    onClick = {
-                                        isMenuExpanded = false
-                                        playlistPendingDelete = playlist
-                                    }
-                                )
-                            }
-                        },
-                        modifier = Modifier.clickable {
-                            onPlaylistClick(playlist)
-                        }
+                        )
                     )
                 }
             }
         }
+    }
+
+    actionSheetTarget?.let { target ->
+        LibraryItemActionSheet(
+            target = target,
+            onDismissRequest = {
+                actionSheetTarget = null
+            }
+        )
     }
 
     val playlistToRename = playlistPendingRename

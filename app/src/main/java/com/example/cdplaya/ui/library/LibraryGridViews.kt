@@ -20,6 +20,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +55,10 @@ fun SongGrid(
     bottomContentPadding: Dp,
     modifier: Modifier = Modifier
 ) {
+    var actionSheetTarget by remember {
+        mutableStateOf<LibraryItemActionSheetTarget?>(null)
+    }
+
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 148.dp),
         modifier = modifier.fillMaxSize(),
@@ -68,10 +76,11 @@ fun SongGrid(
                 artworkDescription = "Album art for ${song.title}",
                 title = song.title.ifBlank { "Unknown Title" },
                 subtitle = song.artist.ifBlank { "Unknown Artist" },
+                clickLabel = "Play ${song.title}",
                 selected = isCurrentSong,
                 onClick = { onSongClick(song, songs) },
-                actions = {
-                    SongActionsMenu(
+                onShowActions = {
+                    actionSheetTarget = songActionSheetTarget(
                         song = song,
                         wasRecentlyAdded = song.id in recentlyAddedSongIds,
                         isFavorite = song.favoriteKey() in favoriteSongKeys,
@@ -84,6 +93,15 @@ fun SongGrid(
                 }
             )
         }
+    }
+
+    actionSheetTarget?.let { target ->
+        LibraryItemActionSheet(
+            target = target,
+            onDismissRequest = {
+                actionSheetTarget = null
+            }
+        )
     }
 }
 
@@ -101,6 +119,9 @@ fun AlbumGridScreen(
     modifier: Modifier = Modifier
 ) {
     val albums = sortedLibraryAlbumGroups(songs, sortOption)
+    var actionSheetTarget by remember {
+        mutableStateOf<LibraryItemActionSheetTarget?>(null)
+    }
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 148.dp),
@@ -123,10 +144,13 @@ fun AlbumGridScreen(
                 artworkDescription = "Album art for ${album.title}",
                 title = album.title,
                 subtitle = "${album.artistText} • $songCountText",
+                clickLabel = "Open ${album.title}",
                 onClick = { onAlbumClick(album.key) },
-                actions = {
-                    AlbumActionsMenu(
+                onShowActions = {
+                    actionSheetTarget = albumActionSheetTarget(
                         albumTitle = album.title,
+                        subtitle = "${album.artistText} • $songCountText",
+                        artworkUri = album.songs.firstOrNull()?.albumArtUri,
                         albumSongs = album.songs,
                         onPlayClick = onAlbumPlayClick,
                         onShuffleClick = onAlbumShuffleClick,
@@ -137,6 +161,15 @@ fun AlbumGridScreen(
                 }
             )
         }
+    }
+
+    actionSheetTarget?.let { target ->
+        LibraryItemActionSheet(
+            target = target,
+            onDismissRequest = {
+                actionSheetTarget = null
+            }
+        )
     }
 }
 
@@ -154,6 +187,9 @@ fun ArtistGridScreen(
     modifier: Modifier = Modifier
 ) {
     val artists = sortedLibraryArtistGroups(songs, sortOption)
+    var actionSheetTarget by remember {
+        mutableStateOf<LibraryItemActionSheetTarget?>(null)
+    }
 
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 148.dp),
@@ -166,19 +202,23 @@ fun ArtistGridScreen(
             items = artists,
             key = { artist -> artist.name }
         ) { artist ->
+            val songCountText = pluralStringResource(
+                R.plurals.song_count,
+                artist.songs.size,
+                artist.songs.size
+            )
             LibraryGridCard(
                 artworkUri = artist.songs.firstOrNull()?.albumArtUri,
                 artworkDescription = "Artwork for ${artist.name}",
                 title = artist.name,
-                subtitle = pluralStringResource(
-                    R.plurals.song_count,
-                    artist.songs.size,
-                    artist.songs.size
-                ),
+                subtitle = songCountText,
+                clickLabel = "Open ${artist.name}",
                 onClick = { onArtistClick(artist.name) },
-                actions = {
-                    ArtistActionsMenu(
+                onShowActions = {
+                    actionSheetTarget = artistActionSheetTarget(
                         artistName = artist.name,
+                        subtitle = songCountText,
+                        artworkUri = artist.songs.firstOrNull()?.albumArtUri,
                         artistSongs = artist.songs,
                         onPlayClick = onArtistPlayClick,
                         onShuffleClick = onArtistShuffleClick,
@@ -190,6 +230,15 @@ fun ArtistGridScreen(
             )
         }
     }
+
+    actionSheetTarget?.let { target ->
+        LibraryItemActionSheet(
+            target = target,
+            onDismissRequest = {
+                actionSheetTarget = null
+            }
+        )
+    }
 }
 
 @Composable
@@ -198,14 +247,20 @@ private fun LibraryGridCard(
     artworkDescription: String,
     title: String,
     subtitle: String?,
+    clickLabel: String,
     onClick: () -> Unit,
+    onShowActions: () -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false,
-    actions: @Composable () -> Unit
+    selected: Boolean = false
 ) {
     Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .libraryItemActions(
+                clickLabel = clickLabel,
+                onClick = onClick,
+                onShowActions = onShowActions
+            ),
         shape = RoundedCornerShape(20.dp),
         color = if (selected) {
             MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)
@@ -246,17 +301,6 @@ private fun LibraryGridCard(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp),
-                    shape = RoundedCornerShape(13.dp),
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        actions()
-                    }
-                }
             }
 
             Column(
