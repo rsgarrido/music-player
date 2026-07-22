@@ -3,6 +3,7 @@ package com.example.cdplaya.player
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -28,6 +29,7 @@ class PlaybackController(
     private val playbackQueueManager = PlaybackQueueManager()
     private val playbackNavigationHistory = PlaybackNavigationHistory()
     private val upcomingPlaylistBuilder = UpcomingPlaylistBuilder()
+    private val checkpointPolicy = PlaybackStateCheckpointPolicy()
     private val replayGainRepository = ReplayGainRepository()
     private var librarySongs: List<Song> = emptyList()
     private var playbackContextSongs: List<Song> = emptyList()
@@ -76,6 +78,11 @@ class PlaybackController(
                     duration = duration
                 )
 
+                val nowMillis = SystemClock.elapsedRealtime()
+                if (checkpointPolicy.shouldCheckpoint(isPlaying, nowMillis)) {
+                    savePlayerState()
+                }
+
                 progressHandler.postDelayed(this, 500)
             }
         }
@@ -97,7 +104,11 @@ class PlaybackController(
         }
 
         musicPlayer.onPlaybackStateChanged = { playerIsPlaying ->
+            val wasPlaying = isPlaying
             isPlaying = playerIsPlaying
+            if (wasPlaying && !playerIsPlaying) {
+                savePlayerState()
+            }
         }
 
         musicPlayer.onCurrentSongChanged = { songId ->
@@ -211,6 +222,7 @@ class PlaybackController(
         if (musicPlayer.isPlaying()) {
             musicPlayer.pause()
             isPlaying = false
+            savePlayerState()
         } else {
             musicPlayer.resume()
             isPlaying = true
@@ -372,6 +384,7 @@ class PlaybackController(
             queueSongIds = playbackQueueManager.getQueuedSongIds(),
             playbackContextSongIds = playbackContextSongs.map { song -> song.id }
         )
+        checkpointPolicy.recordCheckpoint(SystemClock.elapsedRealtime())
     }
 
     fun release() {
@@ -397,8 +410,8 @@ class PlaybackController(
         } ?: return
 
         currentSong = restoredSong
-        currentPosition = playerStateStorage.getCurrentPosition()
-        duration = restoredSong.duration.toInt()
+        duration = restoredSong.duration.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+        currentPosition = playerStateStorage.getCurrentPosition().coerceIn(0, duration)
         isPlaying = false
         playbackHistoryRecorder.resetForNewSong()
 
@@ -577,6 +590,7 @@ class PlaybackController(
                 if (currentIndex == playbackSourceSongs.lastIndex) {
                     isPlaying = false
                     currentPosition = duration
+                    savePlayerState()
                 } else {
                     playNextSong()
                 }
