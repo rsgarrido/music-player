@@ -2,6 +2,9 @@ package com.example.cdplaya.controller
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
+import android.os.SystemClock
+import android.content.pm.ApplicationInfo
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +39,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Job
 
 class LibraryController(
     context: Context,
@@ -53,6 +57,10 @@ class LibraryController(
     )
     private val libraryCacheRepository = LibraryCacheRepository(appDatabase.cachedSongDao())
     private val playlistFileRepository = PlaylistFileRepository(applicationContext)
+    private var refreshJob: Job? = null
+
+    var lastLibraryRefreshResult: com.example.cdplaya.data.LibraryRefreshResult? = null
+        private set
 
     var songs by mutableStateOf<List<Song>>(emptyList())
         private set
@@ -89,7 +97,8 @@ class LibraryController(
     }
 
     fun loadSongs() {
-        coroutineScope.launch {
+        refreshJob?.cancel()
+        refreshJob = coroutineScope.launch {
             val savedSelectedFolders = libraryPreferences.getSelectedFolders()
             selectedLibraryFolders = savedSelectedFolders
 
@@ -469,7 +478,8 @@ class LibraryController(
     }
 
     private fun reloadSongsAfterFolderChange() {
-        coroutineScope.launch {
+        refreshJob?.cancel()
+        refreshJob = coroutineScope.launch {
             val hasCachedSongs = withContext(Dispatchers.IO) {
                 libraryCacheRepository.hasCachedSongs()
             }
@@ -519,18 +529,29 @@ class LibraryController(
         selectedFolders: Set<String>
     ): MusicLibraryData {
         val repository = MusicRepository(applicationContext)
-        val hadCachedSongs = libraryCacheRepository.hasCachedSongs()
+        val cachedSongs = libraryCacheRepository.getAllCachedSongs()
+        val startedAt = SystemClock.elapsedRealtime()
+        val refreshResult = repository.refreshLibrary(cachedSongs)
+        lastLibraryRefreshResult = refreshResult
 
-        val freshAllSongsLibraryData = repository.getLibraryData()
-
-        val shouldReplaceCache =
-            freshAllSongsLibraryData.songs.isNotEmpty() || !hadCachedSongs
-
-        if (shouldReplaceCache) {
-            libraryCacheRepository.replaceCachedSongs(freshAllSongsLibraryData.songs)
+        if (applicationContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            Log.d(
+                "LibraryRefresh",
+                "elapsedMs=${SystemClock.elapsedRealtime() - startedAt} " +
+                    "reused=${refreshResult.reusedCount} added=${refreshResult.addedCount} " +
+                    "updated=${refreshResult.updatedCount} moved=${refreshResult.movedCount} " +
+                    "removed=${refreshResult.removedCount} enriched=${refreshResult.enrichmentCount} " +
+                    "complete=${refreshResult.successfulCompleteScan}"
+            )
         }
 
-        return libraryCacheRepository.getCachedLibraryData(selectedFolders)
+        if (refreshResult.successfulCompleteScan) {
+            libraryCacheRepository.replaceCachedSongs(refreshResult.songs)
+        }
+        return com.example.cdplaya.data.buildMusicLibraryData(
+            allSongs = refreshResult.songs,
+            selectedFolders = selectedFolders
+        )
     }
 
     private fun loadFavoriteSongKeys() {
@@ -540,7 +561,8 @@ class LibraryController(
     }
 
     private fun reconcileUserSongReferences(currentSongs: List<Song>) {
-        coroutineScope.launch {
+        refreshJob?.cancel()
+        refreshJob = coroutineScope.launch {
             val reconciled = withContext(Dispatchers.IO) {
                 val favoriteResult = favoritesRepository.reconcileSongReferences(currentSongs)
                 playlistsRepository.reconcileSongReferences(currentSongs)

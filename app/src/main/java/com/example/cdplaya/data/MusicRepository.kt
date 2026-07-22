@@ -13,7 +13,7 @@ import java.security.MessageDigest
 class MusicRepository(private val context: Context) {
     fun getLibraryData(selectedFolders: Set<String> = emptySet()): MusicLibraryData {
         return buildMusicLibraryData(
-            allSongs = getAllSongs(),
+            allSongs = refreshLibrary(emptyList()).songs,
             selectedFolders = selectedFolders
         )
     }
@@ -22,10 +22,24 @@ class MusicRepository(private val context: Context) {
         return getLibraryData(selectedFolders).songs
     }
 
-    private fun getAllSongs(): List<Song> {
-        val songs = mutableListOf<Song>()
+    fun refreshLibrary(cachedSongs: List<Song>): LibraryRefreshResult {
+        val indexSongs = runCatching { querySongIndex() }.getOrNull()
+        LibraryRefreshEngine.fallbackForIncompleteScan(cachedSongs, indexSongs)?.let { return it }
+        checkNotNull(indexSongs)
+        var albumArtByFolder: Map<String, Uri>? = null
+        return LibraryRefreshEngine.refresh(cachedSongs, indexSongs) { indexSong ->
+            val folderArtwork = albumArtByFolder ?: runCatching { getAlbumArtByFolder() }
+                .getOrDefault(emptyMap())
+                .also { albumArtByFolder = it }
+            indexSong.copy(
+                albumArtUri = getEmbeddedAlbumArtUri(indexSong.filePath)
+                    ?: folderArtwork[indexSong.folderPath]
+            )
+        }
+    }
 
-        val albumArtByFolder = getAlbumArtByFolder()
+    private fun querySongIndex(): List<Song>? {
+        val songs = mutableListOf<Song>()
 
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 
@@ -119,9 +133,6 @@ class MusicRepository(private val context: Context) {
                     id
                 )
 
-                val albumArtUri =
-                    getEmbeddedAlbumArtUri(filePath) ?: albumArtByFolder[folderPath]
-
                 val albumArtist = ""
 
                 val song = Song(
@@ -134,7 +145,7 @@ class MusicRepository(private val context: Context) {
                     uri = uri,
                     filePath = filePath,
                     folderPath = folderPath,
-                    albumArtUri = albumArtUri,
+                    albumArtUri = null,
                     albumArtist = albumArtist,
                     volumeName = volumeName,
                     displayName = displayName,
@@ -147,7 +158,7 @@ class MusicRepository(private val context: Context) {
                 songs.add(song)
             }
         }
-    return songs
+        return if (query == null) null else songs
     }
 
     private fun getAlbumArtByFolder(): Map<String, Uri> {

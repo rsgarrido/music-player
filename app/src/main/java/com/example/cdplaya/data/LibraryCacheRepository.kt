@@ -26,6 +26,10 @@ class LibraryCacheRepository(
         )
     }
 
+    suspend fun getAllCachedSongs(): List<Song> {
+        return cachedSongDao.getAllCachedSongs().map { it.toSong() }
+    }
+
     suspend fun replaceCachedSongs(songs: List<Song>) {
         val cachedAt = System.currentTimeMillis()
 
