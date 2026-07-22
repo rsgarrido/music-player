@@ -3,7 +3,7 @@ package com.example.cdplaya.ui
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import com.example.cdplaya.viewmodel.MusicViewModel
 import com.example.cdplaya.ui.state.displayText
@@ -19,10 +19,9 @@ fun MusicRoute(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
-    val playbackUiState by musicViewModel.playbackUiState.collectAsState()
-    val playbackProgressUiState by musicViewModel.playbackProgressUiState.collectAsState()
-    val libraryUiState by musicViewModel.libraryUiState.collectAsState()
-    val sleepTimerUiState by musicViewModel.sleepTimerUiState.collectAsState()
+    val playbackUiState by musicViewModel.playbackUiState.collectAsStateWithLifecycle()
+    val libraryUiState by musicViewModel.libraryUiState.collectAsStateWithLifecycle()
+    val sleepTimerUiState by musicViewModel.sleepTimerUiState.collectAsStateWithLifecycle()
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
         onPrepareExport = musicViewModel::preparePlaylistExport,
@@ -58,8 +57,7 @@ fun MusicRoute(
         isPlaying = playbackUiState.isPlaying,
         isShuffleEnabled = playbackUiState.isShuffleEnabled,
         repeatMode = playbackUiState.repeatMode,
-        currentPosition = playbackProgressUiState.currentPosition,
-        duration = playbackProgressUiState.duration,
+        playbackProgressUiState = musicViewModel.playbackProgressUiState,
         queuedSongs = playbackUiState.queuedSongs,
         upcomingSongs = playbackUiState.upcomingSongs,
         snackbarHostState = snackbarHostState,
