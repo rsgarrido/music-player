@@ -5,9 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import org.jaudiotagger.audio.AudioFileIO
 import java.io.File
-import java.security.MessageDigest
 
 
 class MusicRepository(private val context: Context) {
@@ -22,20 +20,47 @@ class MusicRepository(private val context: Context) {
         return getLibraryData(selectedFolders).songs
     }
 
-    fun refreshLibrary(cachedSongs: List<Song>): LibraryRefreshResult {
+    fun refreshLibrary(
+        cachedSongs: List<Song>,
+        forceArtworkRefreshIds: Set<Long> = emptySet()
+    ): LibraryRefreshResult {
         val indexSongs = runCatching { querySongIndex() }.getOrNull()
         LibraryRefreshEngine.fallbackForIncompleteScan(cachedSongs, indexSongs)?.let { return it }
         checkNotNull(indexSongs)
+        val embeddedArtworkResolver = EmbeddedArtworkResolver(context)
+        cachedSongs.filter { it.id in forceArtworkRefreshIds }
+            .forEach(embeddedArtworkResolver::invalidate)
         var albumArtByFolder: Map<String, Uri>? = null
-        return LibraryRefreshEngine.refresh(cachedSongs, indexSongs) { indexSong ->
-            val folderArtwork = albumArtByFolder ?: runCatching { getAlbumArtByFolder() }
-                .getOrDefault(emptyMap())
-                .also { albumArtByFolder = it }
-            indexSong.copy(
-                albumArtUri = getEmbeddedAlbumArtUri(indexSong.filePath)
-                    ?: folderArtwork[indexSong.folderPath]
-            )
-        }
+        val artworkRepairKeys = mutableSetOf<String>()
+        val result = LibraryRefreshEngine.refresh(
+            cachedSongs = cachedSongs,
+            indexSongs = indexSongs,
+            requiresEnrichment = { cached, current ->
+                val requiresRepair = cached.id in forceArtworkRefreshIds ||
+                    cached.requiresArtworkRepair(current) ||
+                    embeddedArtworkResolver.requiresReconstruction(cached)
+                if (requiresRepair) artworkRepairKeys += current.uri.toString()
+                requiresRepair
+            },
+            enrich = { indexSong ->
+                val folderArtwork = albumArtByFolder ?: runCatching { getAlbumArtByFolder() }
+                    .getOrDefault(emptyMap())
+                    .also { albumArtByFolder = it }
+                indexSong.copy(
+                    albumArtUri = selectArtwork(
+                        embedded = embeddedArtworkResolver.resolve(indexSong),
+                        folder = folderArtwork[indexSong.folderPath]
+                    ),
+                    artworkEnrichmentVersion = CURRENT_ARTWORK_ENRICHMENT_VERSION
+                )
+            }
+        )
+        return result.copy(artworkRepairCount = artworkRepairKeys.size)
+    }
+
+    fun prepareCachedSongsForPublication(cachedSongs: List<Song>): List<Song> {
+        val resolver = EmbeddedArtworkResolver(context)
+        return hideUnavailableEmbeddedArtwork(cachedSongs, resolver::isMaterialized)
     }
 
     private fun querySongIndex(): List<Song>? {
@@ -219,164 +244,6 @@ class MusicRepository(private val context: Context) {
         return albumArtByFolder
     }
 
-    private fun getEmbeddedAlbumArtUri(filePath: String): Uri? {
-        val audioFile = File(filePath)
-
-        if (!audioFile.exists()) {
-            return null
-        }
-
-        val cacheDirectory = File(context.cacheDir, EMBEDDED_ARTWORK_CACHE_DIRECTORY)
-
-        if (!cacheDirectory.exists()) {
-            cacheDirectory.mkdirs()
-        }
-
-        findCachedEmbeddedArtworkUri(
-            audioFile = audioFile,
-            cacheDirectory = cacheDirectory
-        )?.let { cachedArtworkUri ->
-            return cachedArtworkUri
-        }
-
-        if (hasNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)) {
-            return null
-        }
-
-        return try {
-
-            val tag = AudioFileIO.read(audioFile).tag
-
-            if (tag == null) {
-                writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
-                return null
-            }
-
-            val artwork = tag.firstArtwork
-
-            if (artwork == null) {
-                writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
-                return null
-            }
-
-            val artworkBytes = artwork.binaryData
-
-            if (artworkBytes == null || artworkBytes.isEmpty()) {
-                writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
-                return null
-            }
-
-            val artworkFileExtension = getArtworkFileExtension(artwork.mimeType)
-            val cacheFileName = buildEmbeddedArtworkCacheFileName(
-                audioFile = audioFile,
-                extension = artworkFileExtension
-            )
-
-            val cachedArtworkFile = File(cacheDirectory, cacheFileName)
-
-            if (!cachedArtworkFile.exists()) {
-                cachedArtworkFile.writeBytes(artworkBytes)
-            }
-
-            buildEmbeddedArtworkContentUri(cachedArtworkFile)
-        } catch (exception: Exception) {
-            writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
-            null
-        } catch (error: LinkageError) {
-            writeNoEmbeddedArtworkCacheMarker(audioFile, cacheDirectory)
-            null
-        }
-    }
-
-    private fun hasNoEmbeddedArtworkCacheMarker(
-        audioFile: File,
-        cacheDirectory: File
-    ): Boolean {
-        val markerFile = File(
-            cacheDirectory,
-            buildNoEmbeddedArtworkCacheFileName(audioFile)
-        )
-
-        return markerFile.exists() && markerFile.isFile
-    }
-
-    private fun writeNoEmbeddedArtworkCacheMarker(
-        audioFile: File,
-        cacheDirectory: File
-    ) {
-        val markerFile = File(
-            cacheDirectory,
-            buildNoEmbeddedArtworkCacheFileName(audioFile)
-        )
-
-        if (markerFile.exists()) {
-            return
-        }
-
-        try {
-            markerFile.writeText("no_embedded_artwork")
-        } catch (exception: Exception) {
-        }
-    }
-
-    private fun buildNoEmbeddedArtworkCacheFileName(audioFile: File): String {
-        return "${buildEmbeddedArtworkCacheKey(audioFile)}.no_artwork"
-    }
-
-    private fun findCachedEmbeddedArtworkUri(
-        audioFile: File,
-        cacheDirectory: File
-    ): Uri? {
-        val cacheKey = buildEmbeddedArtworkCacheKey(audioFile)
-
-        val possibleCachedFiles = listOf(
-            File(cacheDirectory, "$cacheKey.jpg"),
-            File(cacheDirectory, "$cacheKey.png"),
-            File(cacheDirectory, "$cacheKey.webp")
-        )
-
-        val cachedArtworkFile = possibleCachedFiles.firstOrNull { file ->
-            file.exists() && file.isFile
-        }
-
-        return cachedArtworkFile?.let { file ->
-            buildEmbeddedArtworkContentUri(file)
-        }
-    }
-
-    private fun buildEmbeddedArtworkContentUri(artworkFile: File): Uri {
-        return Uri.Builder()
-            .scheme("content")
-            .authority("${context.packageName}.embeddedartwork")
-            .appendPath(artworkFile.name)
-            .build()
-    }
-
-    private fun buildEmbeddedArtworkCacheKey(audioFile: File): String {
-        val rawKey = listOf(
-            audioFile.absolutePath,
-            audioFile.lastModified().toString(),
-            audioFile.length().toString()
-        ).joinToString("|")
-
-        return rawKey.sha256()
-    }
-
-    private fun buildEmbeddedArtworkCacheFileName(
-        audioFile: File,
-        extension: String
-    ): String {
-        return "${buildEmbeddedArtworkCacheKey(audioFile)}.$extension"
-    }
-
-    private fun getArtworkFileExtension(mimeType: String?): String {
-        return when (mimeType?.lowercase()) {
-            "image/png" -> "png"
-            "image/webp" -> "webp"
-            else -> "jpg"
-        }
-    }
-
     private fun isLikelyAlbumCover(fileName: String): Boolean {
         val normalizedName = fileName.lowercase()
 
@@ -390,19 +257,27 @@ class MusicRepository(private val context: Context) {
                 normalizedName == "album.png"
     }
 
-    private fun String.sha256(): String {
-        val bytes = MessageDigest
-            .getInstance("SHA-256")
-            .digest(toByteArray())
+}
 
-        return bytes.joinToString("") { byte ->
-            "%02x".format(byte)
+internal fun selectArtwork(embedded: Uri?, folder: Uri?): Uri? = embedded ?: folder
+
+internal fun hideUnavailableEmbeddedArtwork(
+    songs: List<Song>,
+    isMaterialized: (Uri?) -> Boolean
+): List<Song> {
+    var changed = false
+    val prepared = songs.map { song ->
+        if (
+            EmbeddedArtworkContract.isEmbeddedArtworkUri(song.albumArtUri) &&
+            !isMaterialized(song.albumArtUri)
+        ) {
+            changed = true
+            song.copy(albumArtUri = null)
+        } else {
+            song
         }
     }
-
-    companion object {
-        private const val EMBEDDED_ARTWORK_CACHE_DIRECTORY = "embedded_album_art"
-    }
+    return if (changed) prepared else songs
 }
 
 private fun android.database.Cursor.stringOrEmpty(columnIndex: Int): String {

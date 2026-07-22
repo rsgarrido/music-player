@@ -23,7 +23,8 @@ object DatabaseProvider {
                     MIGRATION_3_4,
                     MIGRATION_4_5,
                     MIGRATION_5_6,
-                    MIGRATION_6_7
+                    MIGRATION_6_7,
+                    MIGRATION_7_8
                 )
                 .build()
                 .also { database ->
@@ -255,6 +256,14 @@ object DatabaseProvider {
             db.execSQL("ALTER TABLE `$tableName` ADD COLUMN `albumArtist` TEXT NOT NULL DEFAULT ''")
             db.execSQL("ALTER TABLE `$tableName` ADD COLUMN `portableKey` TEXT NOT NULL DEFAULT ''")
             db.execSQL("ALTER TABLE `$tableName` ADD COLUMN `portableKeyVersion` INTEGER NOT NULL DEFAULT 1")
+        }
+    }
+
+    val MIGRATION_7_8 = object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE `cached_songs` ADD COLUMN `artworkEnrichmentVersion` INTEGER NOT NULL DEFAULT 0"
+            )
         }
     }
 

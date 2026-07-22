@@ -44,6 +44,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+internal suspend fun <T> runLibraryScanOffMain(block: suspend () -> T): T {
+    return withContext(Dispatchers.IO) { block() }
+}
+
+internal class LibraryPublicationTracker {
+    private var lastSnapshot: MusicLibraryData? = null
+
+    fun shouldPublish(snapshot: MusicLibraryData): Boolean {
+        if (snapshot == lastSnapshot) return false
+        lastSnapshot = snapshot
+        return true
+    }
+}
 
 class LibraryController(
     context: Context,
@@ -67,6 +83,8 @@ class LibraryController(
     private var songReferenceIndex: SongReferenceIndex = SongReferenceIndex.EMPTY
     private var visibleSongMembershipKeys: Set<String> = emptySet()
     private var libraryPublishCount = 0L
+    private val publicationTracker = LibraryPublicationTracker()
+    private val libraryScanMutex = Mutex()
 
     var lastLibraryRefreshResult: com.example.cdplaya.data.LibraryRefreshResult? = null
         private set
@@ -123,9 +141,7 @@ class LibraryController(
             }
 
             if (hasCachedSongs) {
-                val cachedLibraryData = withContext(Dispatchers.IO) {
-                    libraryCacheRepository.getCachedLibraryData(savedSelectedFolders)
-                }
+                val cachedLibraryData = loadCachedLibraryDataForPublication(savedSelectedFolders)
 
                 publishLibraryData(
                     libraryData = cachedLibraryData,
@@ -203,7 +219,10 @@ class LibraryController(
             }
 
             val libraryData = withContext(Dispatchers.IO) {
-                scanFreshLibraryAndUpdateCache(selectedLibraryFolders)
+                scanFreshLibraryAndUpdateCache(
+                    selectedFolders = selectedLibraryFolders,
+                    forceArtworkRefreshIds = setOf(originalSong.id)
+                )
             }
 
             favoriteMembershipKeys = updatedFavoriteMembershipKeys
@@ -513,9 +532,8 @@ class LibraryController(
             }
 
             if (hasCachedSongs) {
-                val cachedLibraryData = withContext(Dispatchers.IO) {
-                    libraryCacheRepository.getCachedLibraryData(selectedLibraryFolders)
-                }
+                val cachedLibraryData =
+                    loadCachedLibraryDataForPublication(selectedLibraryFolders)
 
                 publishLibraryData(
                     libraryData = cachedLibraryData,
@@ -538,6 +556,7 @@ class LibraryController(
         libraryData: MusicLibraryData,
         reconcilePlayback: Boolean
     ) {
+        if (!publicationTracker.shouldPublish(libraryData)) return
         val indexedSnapshot = withContext(Dispatchers.Default) {
             IndexedLibrarySnapshot(
                 index = SongReferenceIndex.build(libraryData.referenceSongs),
@@ -566,30 +585,49 @@ class LibraryController(
     }
 
     private suspend fun scanFreshLibraryAndUpdateCache(
-        selectedFolders: Set<String>
-    ): MusicLibraryData {
-        val repository = MusicRepository(applicationContext)
-        val cachedSongs = libraryCacheRepository.getAllCachedSongs()
-        val startedAt = SystemClock.elapsedRealtime()
-        val refreshResult = repository.refreshLibrary(cachedSongs)
-        lastLibraryRefreshResult = refreshResult
+        selectedFolders: Set<String>,
+        forceArtworkRefreshIds: Set<Long> = emptySet()
+    ): MusicLibraryData = runLibraryScanOffMain {
+        libraryScanMutex.withLock {
+            val repository = MusicRepository(applicationContext)
+            val cachedSongs = libraryCacheRepository.getAllCachedSongs()
+            val startedAt = SystemClock.elapsedRealtime()
+            val refreshResult = repository.refreshLibrary(
+                cachedSongs = cachedSongs,
+                forceArtworkRefreshIds = forceArtworkRefreshIds
+            )
+            lastLibraryRefreshResult = refreshResult
 
-        if (applicationContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
-            Log.d(
-                "LibraryRefresh",
-                "elapsedMs=${SystemClock.elapsedRealtime() - startedAt} " +
-                    "reused=${refreshResult.reusedCount} added=${refreshResult.addedCount} " +
-                    "updated=${refreshResult.updatedCount} moved=${refreshResult.movedCount} " +
-                    "removed=${refreshResult.removedCount} enriched=${refreshResult.enrichmentCount} " +
-                    "complete=${refreshResult.successfulCompleteScan}"
+            if (applicationContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+                Log.d(
+                    "LibraryRefresh",
+                    "elapsedMs=${SystemClock.elapsedRealtime() - startedAt} " +
+                        "reused=${refreshResult.reusedCount} added=${refreshResult.addedCount} " +
+                        "updated=${refreshResult.updatedCount} moved=${refreshResult.movedCount} " +
+                        "removed=${refreshResult.removedCount} enriched=${refreshResult.enrichmentCount} " +
+                        "artworkRepairs=${refreshResult.artworkRepairCount} " +
+                        "complete=${refreshResult.successfulCompleteScan}"
+                )
+            }
+
+            if (refreshResult.successfulCompleteScan && refreshResult.requiresCacheWrite) {
+                libraryCacheRepository.replaceCachedSongs(refreshResult.songs)
+            }
+            com.example.cdplaya.data.buildMusicLibraryData(
+                allSongs = refreshResult.songs,
+                selectedFolders = selectedFolders
             )
         }
+    }
 
-        if (refreshResult.successfulCompleteScan) {
-            libraryCacheRepository.replaceCachedSongs(refreshResult.songs)
-        }
-        return com.example.cdplaya.data.buildMusicLibraryData(
-            allSongs = refreshResult.songs,
+    private suspend fun loadCachedLibraryDataForPublication(
+        selectedFolders: Set<String>
+    ): MusicLibraryData = runLibraryScanOffMain {
+        val cachedSongs = libraryCacheRepository.getAllCachedSongs()
+        val publicationSongs = MusicRepository(applicationContext)
+            .prepareCachedSongsForPublication(cachedSongs)
+        com.example.cdplaya.data.buildMusicLibraryData(
+            allSongs = publicationSongs,
             selectedFolders = selectedFolders
         )
     }

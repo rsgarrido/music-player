@@ -76,6 +76,123 @@ class LibraryRefreshEngineTest {
         assertTrue(LibraryRefreshEngine.fallbackForIncompleteScan(emptyList(), emptyList()) == null)
     }
 
+    @Test
+    fun migratedLegacyCachedSongRequestsOneTimeArtworkRepair() {
+        val legacy = song(1).copy(artworkEnrichmentVersion = 0)
+        var enrichmentCalls = 0
+
+        val result = LibraryRefreshEngine.refresh(listOf(legacy), listOf(song(1))) {
+            enrichmentCalls += 1
+            it.copy(artworkEnrichmentVersion = CURRENT_ARTWORK_ENRICHMENT_VERSION)
+        }
+
+        assertEquals(1, enrichmentCalls)
+        assertEquals(1, result.updatedCount)
+    }
+
+    @Test
+    fun repairedCachedSongDoesNotReenrichOnEveryRefresh() {
+        val legacy = song(1).copy(artworkEnrichmentVersion = 0)
+        var enrichmentCalls = 0
+        val repaired = LibraryRefreshEngine.refresh(listOf(legacy), listOf(song(1))) {
+            enrichmentCalls += 1
+            it.copy(artworkEnrichmentVersion = CURRENT_ARTWORK_ENRICHMENT_VERSION)
+        }.songs.single()
+
+        val second = LibraryRefreshEngine.refresh(listOf(repaired), listOf(song(1))) {
+            enrichmentCalls += 1
+            it
+        }
+
+        assertEquals(1, enrichmentCalls)
+        assertEquals(1, second.reusedCount)
+        assertEquals(0, second.enrichmentCount)
+        assertFalse(second.requiresCacheWrite)
+    }
+
+    @Test
+    fun secondIdenticalPassPerformsZeroArtworkRepairs() {
+        val result = LibraryRefreshEngine.refresh(listOf(song(1)), listOf(song(1))) { it }
+
+        assertEquals(0, result.updatedCount)
+        assertEquals(0, result.enrichmentCount)
+        assertFalse(result.requiresCacheWrite)
+    }
+
+    @Test
+    fun trulyArtworklessSongDoesNotRetryEveryLaunch() {
+        val artworkless = song(1).copy(albumArtUri = null)
+        var enrichmentCalls = 0
+
+        val result = LibraryRefreshEngine.refresh(listOf(artworkless), listOf(song(1))) {
+            enrichmentCalls += 1
+            it
+        }
+
+        assertEquals(0, enrichmentCalls)
+        assertEquals(1, result.reusedCount)
+    }
+
+    @Test
+    fun folderArtworkRemainsSupported() {
+        val folderArtwork = mock(Uri::class.java)
+        val cached = song(1).copy(albumArtUri = folderArtwork)
+        var enrichmentCalls = 0
+
+        val result = LibraryRefreshEngine.refresh(listOf(cached), listOf(song(1))) {
+            enrichmentCalls += 1
+            it
+        }
+
+        assertEquals(0, enrichmentCalls)
+        assertSame(folderArtwork, result.songs.single().albumArtUri)
+    }
+
+    @Test
+    fun embeddedArtworkAndFolderArtworkKeepExistingPrecedence() {
+        val embedded = mock(Uri::class.java)
+        val folder = mock(Uri::class.java)
+
+        assertSame(embedded, selectArtwork(embedded, folder))
+        assertSame(folder, selectArtwork(null, folder))
+    }
+
+    @Test
+    fun sourceChangeInvalidatesEmbeddedArtworkReference() {
+        val cached = song(1, modified = 10, size = 20)
+        val changed = song(1, modified = 11, size = 21)
+        var enrichmentCalls = 0
+
+        LibraryRefreshEngine.refresh(listOf(cached), listOf(changed)) {
+            enrichmentCalls += 1
+            it
+        }
+
+        assertEquals(1, enrichmentCalls)
+    }
+
+    @Test
+    fun tagArtworkEditRefreshesEmbeddedArtworkReference() {
+        val cached = song(1)
+        var enrichmentCalls = 0
+
+        LibraryRefreshEngine.refresh(
+            cachedSongs = listOf(cached),
+            indexSongs = listOf(song(1)),
+            requiresEnrichment = { _, current -> current.id == 1L }
+        ) {
+            enrichmentCalls += 1
+            it
+        }
+
+        assertEquals(1, enrichmentCalls)
+    }
+
+    @Test
+    fun artworkRepairDoesNotTriggerRepeatedLibraryPublication() {
+        repairedCachedSongDoesNotReenrichOnEveryRefresh()
+    }
+
     private fun song(
         id: Long,
         title: String = "Title",
@@ -103,7 +220,8 @@ class LibraryRefreshEngineTest {
             displayName = "track.flac",
             fileSizeBytes = size,
             dateAddedEpochSeconds = added,
-            dateModifiedEpochSeconds = modified
+            dateModifiedEpochSeconds = modified,
+            artworkEnrichmentVersion = CURRENT_ARTWORK_ENRICHMENT_VERSION
         )
     }
 }

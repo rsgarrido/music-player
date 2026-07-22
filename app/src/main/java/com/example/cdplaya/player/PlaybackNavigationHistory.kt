@@ -45,6 +45,10 @@ class PlaybackNavigationHistory {
         }
     }
 
+    fun getPreviousSongs(): List<Song> = previousSongs.toList()
+
+    fun getNextSongs(): List<Song> = nextSongs.toList()
+
     fun peekPreviousSong(): Song? {
         return previousSongs.lastOrNull()
     }

@@ -7,9 +7,12 @@ data class LibraryRefreshResult(
     val removedCount: Int = 0,
     val movedCount: Int = 0,
     val reusedCount: Int = 0,
+    val artworkRepairCount: Int = 0,
     val successfulCompleteScan: Boolean = true
 ) {
     val enrichmentCount: Int get() = addedCount + updatedCount
+    val requiresCacheWrite: Boolean
+        get() = addedCount > 0 || updatedCount > 0 || removedCount > 0 || movedCount > 0
 }
 
 object LibraryRefreshEngine {
@@ -28,6 +31,8 @@ object LibraryRefreshEngine {
     fun refresh(
         cachedSongs: List<Song>,
         indexSongs: List<Song>,
+        requiresEnrichment: (cached: Song, current: Song) -> Boolean =
+            { cached, current -> cached.requiresArtworkRepair(current) },
         enrich: (Song) -> Song
     ): LibraryRefreshResult {
         val unmatchedCached = cachedSongs.toMutableSet()
@@ -43,7 +48,10 @@ object LibraryRefreshEngine {
             }
             if (candidates.size == 1) {
                 val cached = candidates.single()
-                val output = if (sourceFileChanged(cached, indexSong)) {
+                val output = if (
+                    sourceFileChanged(cached, indexSong) ||
+                    requiresEnrichment(cached, indexSong)
+                ) {
                     updated += 1
                     enrich(indexSong.withPreservedDateAdded(cached))
                 } else {
@@ -61,7 +69,10 @@ object LibraryRefreshEngine {
             val resolution = SongReferenceResolver.resolve(cached.toSongReference(), remaining)
             if (resolution is SongReferenceResolution.Resolved) {
                 val indexSong = resolution.song
-                val output = if (sourceFileChanged(cached, indexSong)) {
+                val output = if (
+                    sourceFileChanged(cached, indexSong) ||
+                    requiresEnrichment(cached, indexSong)
+                ) {
                     updated += 1
                     enrich(indexSong.withPreservedDateAdded(cached))
                 } else {
@@ -124,4 +135,13 @@ object LibraryRefreshEngine {
         dateModifiedEpochSeconds = current.dateModifiedEpochSeconds.takeIf { it > 0L }
             ?: dateModifiedEpochSeconds
     )
+}
+
+internal fun Song.requiresArtworkRepair(current: Song): Boolean {
+    if (artworkEnrichmentVersion < CURRENT_ARTWORK_ENRICHMENT_VERSION) return true
+    if (displayName.isBlank() && current.displayName.isNotBlank()) return true
+    if (volumeName.isBlank() && current.volumeName.isNotBlank()) return true
+    if (fileSizeBytes <= 0L && current.fileSizeBytes > 0L) return true
+    if (dateModifiedEpochSeconds <= 0L && current.dateModifiedEpochSeconds > 0L) return true
+    return !EmbeddedArtworkContract.isCurrentReferenceFor(albumArtUri, current)
 }

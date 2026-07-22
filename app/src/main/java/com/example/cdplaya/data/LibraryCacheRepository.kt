@@ -69,7 +69,8 @@ fun CachedSongEntity.toSong(): Song {
         relativePath = relativePath,
         fileSizeBytes = fileSizeBytes,
         dateAddedEpochSeconds = dateAddedEpochSeconds,
-        dateModifiedEpochSeconds = dateModifiedEpochSeconds
+        dateModifiedEpochSeconds = dateModifiedEpochSeconds,
+        artworkEnrichmentVersion = artworkEnrichmentVersion
     )
 }
 
@@ -92,6 +93,7 @@ fun Song.toCachedSongEntity(cachedAt: Long): CachedSongEntity {
         fileSizeBytes = fileSizeBytes,
         dateAddedEpochSeconds = dateAddedEpochSeconds,
         dateModifiedEpochSeconds = dateModifiedEpochSeconds,
+        artworkEnrichmentVersion = artworkEnrichmentVersion,
         cachedAt = cachedAt
     )
 }

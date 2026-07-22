@@ -30,5 +30,6 @@ data class CachedSongEntity(
     val fileSizeBytes: Long,
     val dateAddedEpochSeconds: Long,
     val dateModifiedEpochSeconds: Long,
+    val artworkEnrichmentVersion: Int,
     val cachedAt: Long
 )

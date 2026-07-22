@@ -37,14 +37,42 @@ class LibrarySourceMetadataTest {
             relativePath = "Music/",
             fileSizeBytes = 12_345_678L,
             dateAddedEpochSeconds = 1_700_000_123L,
-            dateModifiedEpochSeconds = 1_700_000_456L
+            dateModifiedEpochSeconds = 1_700_000_456L,
+            artworkEnrichmentVersion = 1
         )
 
         assertEquals(song, song.toCachedSongEntity(cachedAt = 999L).toSong())
     }
 
     @Test
-    fun migrationFiveToSevenPreservesCachedAndUserRowsWithSafeDefaults() {
+    fun cachedSongRoundTripPreservesEmbeddedArtworkReference() {
+        val embeddedArtworkUri = Uri.parse(
+            "content://com.example.cdplaya.embeddedartwork/v2/source/art.jpg" +
+                "?source=content%3A%2F%2Fmedia%2Fexternal%2Faudio%2Fmedia%2F41" +
+                "&name=Track.flac&modified=10&size=20"
+        )
+        val song = Song(
+            id = 41L,
+            title = "Track",
+            artist = "Artist",
+            album = "Album",
+            trackNumber = 1,
+            duration = 100L,
+            uri = Uri.parse("content://media/external/audio/media/41"),
+            filePath = "/storage/Music/Track.flac",
+            folderPath = "/storage/Music",
+            albumArtUri = embeddedArtworkUri,
+            artworkEnrichmentVersion = 1
+        )
+
+        assertEquals(
+            embeddedArtworkUri,
+            song.toCachedSongEntity(cachedAt = 1L).toSong().albumArtUri
+        )
+    }
+
+    @Test
+    fun migrationFiveToEightPreservesCachedAndUserRowsWithSafeDefaults() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val databaseName = "metadata-migration-${System.nanoTime()}.db"
         val configuration = SupportSQLiteOpenHelper.Configuration.builder(context)
@@ -106,11 +134,15 @@ class LibrarySourceMetadataTest {
         helper.close()
 
         val database = Room.databaseBuilder(context, AppDatabase::class.java, databaseName)
-            .addMigrations(DatabaseProvider.MIGRATION_5_6, DatabaseProvider.MIGRATION_6_7)
+            .addMigrations(
+                DatabaseProvider.MIGRATION_5_6,
+                DatabaseProvider.MIGRATION_6_7,
+                DatabaseProvider.MIGRATION_7_8
+            )
             .build()
         try {
             val cursor = database.openHelper.writableDatabase.query(
-                "SELECT title, volumeName, displayName, fileSizeBytes, dateAddedEpochSeconds, dateModifiedEpochSeconds FROM cached_songs WHERE mediaStoreId = 7"
+                "SELECT title, volumeName, displayName, fileSizeBytes, dateAddedEpochSeconds, dateModifiedEpochSeconds, artworkEnrichmentVersion FROM cached_songs WHERE mediaStoreId = 7"
             )
             cursor.use {
                 assertTrue(it.moveToFirst())
@@ -120,6 +152,7 @@ class LibrarySourceMetadataTest {
                 assertEquals(0L, it.getLong(3))
                 assertEquals(0L, it.getLong(4))
                 assertEquals(0L, it.getLong(5))
+                assertEquals(0, it.getInt(6))
             }
             database.openHelper.writableDatabase.query(
                 "SELECT referenceKey, songKey, createdAt FROM favorite_songs"
