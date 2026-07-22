@@ -10,7 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.cdplaya.controller.SleepTimerController
+import com.example.cdplaya.ui.state.SLEEP_TIMER_OPTIONS_MINUTES
 
 @Composable
 fun SleepTimerDialog(
@@ -29,7 +29,7 @@ fun SleepTimerDialog(
             Column {
                 Text(text = sleepTimerDisplayText)
 
-                SleepTimerController.TIMER_OPTIONS_MINUTES.forEach { minutes ->
+                SLEEP_TIMER_OPTIONS_MINUTES.forEach { minutes ->
                     Button(
                         onClick = {
                             onStartTimerClick(minutes)

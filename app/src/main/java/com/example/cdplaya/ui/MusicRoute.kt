@@ -2,8 +2,11 @@ package com.example.cdplaya.ui
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import com.example.cdplaya.viewmodel.MusicViewModel
+import com.example.cdplaya.ui.state.displayText
 import com.example.cdplaya.ui.playlist.rememberPlaylistExportActions
 import com.example.cdplaya.ui.playlist.rememberPlaylistImportActions
 import com.example.cdplaya.ui.settings.rememberBackupExportActions
@@ -16,8 +19,14 @@ fun MusicRoute(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
-    val playbackController = musicViewModel.playbackController
-    val libraryController = musicViewModel.libraryController
+    val playbackUiState by musicViewModel.playbackUiState.collectAsStateWithLifecycle()
+    val libraryUiState by musicViewModel.libraryUiState.collectAsStateWithLifecycle()
+    val sleepTimerUiState by musicViewModel.sleepTimerUiState.collectAsStateWithLifecycle()
+    val playerAppearanceUiState by
+        musicViewModel.playerAppearanceUiState.collectAsStateWithLifecycle()
+    val libraryAppearanceUiState by
+        musicViewModel.libraryAppearanceUiState.collectAsStateWithLifecycle()
+    if (!playerAppearanceUiState.isLoaded || !libraryAppearanceUiState.isLoaded) return
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
         onPrepareExport = musicViewModel::preparePlaylistExport,
@@ -39,35 +48,34 @@ fun MusicRoute(
     )
 
     MusicScreen(
-        songs = libraryController.songs,
-        recentlyPlayedSongs = libraryController.recentlyPlayedSongs,
-        recentlyAddedLibrarySongs = libraryController.recentlyAddedSongs,
-        mostPlayedSongs = libraryController.mostPlayedSongs,
+        songs = libraryUiState.songs,
+        recentlyPlayedSongs = libraryUiState.recentlyPlayedSongs,
+        recentlyAddedLibrarySongs = libraryUiState.recentlyAddedSongs,
+        mostPlayedSongs = libraryUiState.mostPlayedSongs,
         permissionGranted = permissionGranted,
-        currentSong = playbackController.currentSong,
-        isPlayerConnected = playbackController.isPlayerConnected,
-        previousHistoryCount = playbackController.getPreviousHistoryCount(),
-        forwardHistoryCount = playbackController.getForwardHistoryCount(),
-        previousPreviewSong = playbackController.getPreviousSongForPreview(),
-        nextPreviewSong = playbackController.getNextSongForPreview(),
-        isPlaying = playbackController.isPlaying,
-        isShuffleEnabled = playbackController.isShuffleEnabled,
-        repeatMode = playbackController.repeatMode,
-        currentPosition = playbackController.currentPosition,
-        duration = playbackController.duration,
-        queuedSongs = playbackController.playbackQueue,
-        upcomingSongs = playbackController.getComingUpSongsForDisplay(),
+        currentSong = playbackUiState.currentSong,
+        isPlayerConnected = playbackUiState.isConnected,
+        previousHistoryCount = playbackUiState.previousHistoryCount,
+        forwardHistoryCount = playbackUiState.forwardHistoryCount,
+        previousPreviewSong = playbackUiState.previousPreviewSong,
+        nextPreviewSong = playbackUiState.nextPreviewSong,
+        isPlaying = playbackUiState.isPlaying,
+        isShuffleEnabled = playbackUiState.isShuffleEnabled,
+        repeatMode = playbackUiState.repeatMode,
+        playbackProgressUiState = musicViewModel.playbackProgressUiState,
+        queuedSongs = playbackUiState.queuedSongs,
+        upcomingSongs = playbackUiState.upcomingSongs,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
-        libraryFolders = libraryController.libraryFolders,
-        selectedLibraryFolders = libraryController.selectedLibraryFolders,
-        favoriteMembershipKeys = libraryController.favoriteMembershipKeys,
-        unresolvedFavoriteCount = libraryController.unresolvedFavoriteCount,
-        unresolvedPlaylistRowCount = libraryController.unresolvedPlaylistRowCount,
-        unresolvedListeningHistoryCount = libraryController.unresolvedListeningHistoryCount,
-        playlists = libraryController.playlists,
-        selectedPlaylistName = libraryController.selectedPlaylistName,
-        selectedPlaylistSongs = libraryController.selectedPlaylistSongs,
+        libraryFolders = libraryUiState.folders,
+        selectedLibraryFolders = libraryUiState.selectedFolders,
+        favoriteMembershipKeys = libraryUiState.favoriteMembershipKeys,
+        unresolvedFavoriteCount = libraryUiState.unresolvedFavoriteCount,
+        unresolvedPlaylistRowCount = libraryUiState.unresolvedPlaylistRowCount,
+        unresolvedListeningHistoryCount = libraryUiState.unresolvedListeningHistoryCount,
+        playlists = libraryUiState.playlists,
+        selectedPlaylistName = libraryUiState.selectedPlaylistName,
+        selectedPlaylistSongs = libraryUiState.selectedPlaylistSongs,
         onSongClick = { song, playbackContext ->
             musicViewModel.playSelectedSong(
                 song = song,
@@ -192,30 +200,35 @@ fun MusicRoute(
                 editedTags = editedTags
             )
         },
-        isSleepTimerActive = musicViewModel.isSleepTimerActive,
-        sleepTimerDisplayText = musicViewModel.getSleepTimerDisplayText(),
+        isSleepTimerActive = sleepTimerUiState.isActive,
+        sleepTimerDisplayText = sleepTimerUiState.displayText(),
         onStartSleepTimerClick = { minutes ->
             musicViewModel.startSleepTimer(minutes)
         },
         onCancelSleepTimerClick = {
             musicViewModel.cancelSleepTimer()
         },
-        selectedPlayerTheme = musicViewModel.selectedPlayerTheme,
-        selectedPlayerThemeTokens = musicViewModel.selectedPlayerThemeTokens,
+        selectedPlayerTheme = playerAppearanceUiState.selectedTheme,
+        selectedPlayerThemeTokens = playerAppearanceUiState.themeTokens,
         onPlayerThemeSelected = { playerTheme ->
             musicViewModel.selectPlayerTheme(playerTheme)
         },
         onUpdatePlayerThemeTokenOverride = musicViewModel::updatePlayerThemeTokenOverride,
         onResetPlayerThemeTokenOverrides = musicViewModel::resetPlayerThemeTokenOverrides,
         selectedModernArtworkTransitionStyle =
-            musicViewModel.selectedModernArtworkTransitionStyle,
+            playerAppearanceUiState.modernArtworkTransitionStyle,
         onModernArtworkTransitionStyleSelected =
             musicViewModel::selectModernArtworkTransitionStyle,
-        selectedModernSeekbarStyle = musicViewModel.selectedModernSeekbarStyle,
+        selectedModernSeekbarStyle = playerAppearanceUiState.modernSeekbarStyle,
         onModernSeekbarStyleSelected = musicViewModel::selectModernSeekbarStyle,
-        selectedReplayGainMode = musicViewModel.selectedReplayGainMode,
+        selectedReplayGainMode = playerAppearanceUiState.replayGainMode,
         onReplayGainModeSelected = { replayGainMode ->
             musicViewModel.selectReplayGainMode(replayGainMode)
         },
+        onReadEditableSongTags = musicViewModel::readEditableSongTags,
+        onGetUnsupportedTagEditingMessage = musicViewModel::getUnsupportedTagEditingMessage,
+        onWriteTagsAndArtwork = musicViewModel::writeTagsAndArtwork,
+        libraryAppearanceUiState = libraryAppearanceUiState,
+        onLibraryViewOptionSelected = musicViewModel::selectLibraryViewOption,
     )
 }

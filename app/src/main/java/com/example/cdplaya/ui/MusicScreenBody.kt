@@ -43,7 +43,6 @@ import com.example.cdplaya.ui.library.LibraryGridColumns
 import com.example.cdplaya.ui.library.LibraryViewOptionsButton
 import com.example.cdplaya.ui.library.LibraryViewOptionsSheet
 import com.example.cdplaya.ui.library.MusicLibraryContent
-import com.example.cdplaya.ui.library.rememberLibraryViewModeState
 import com.example.cdplaya.ui.library.viewCategory
 import com.example.cdplaya.ui.navigation.MainDestination
 import com.example.cdplaya.ui.queue.QueueSnackbarActions
@@ -53,6 +52,14 @@ import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.settings.SettingsScreen
 import com.example.cdplaya.ui.settings.DiagnosticsScreen
+import com.example.cdplaya.ui.state.PlaybackProgress
+import com.example.cdplaya.ui.state.PlaybackProgressUiState
+import com.example.cdplaya.ui.state.LibraryAppearanceUiState
+import com.example.cdplaya.ui.state.gridColumnCountFor
+import com.example.cdplaya.ui.state.modeFor
+import com.example.cdplaya.ui.library.LibraryViewCategory
+import com.example.cdplaya.ui.library.LibraryViewOption
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun MusicScreenBody(
@@ -65,8 +72,7 @@ fun MusicScreenBody(
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
-    currentPosition: Int,
-    duration: Int,
+    playbackProgressUiState: StateFlow<PlaybackProgressUiState>,
     queuedSongs: List<Song>,
     upcomingSongs: List<Song>,
     libraryFolders: List<LibraryFolder>,
@@ -161,10 +167,11 @@ fun MusicScreenBody(
     onModernSeekbarStyleSelected: (ModernSeekbarStyle) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
+    libraryAppearanceUiState: LibraryAppearanceUiState,
+    onLibraryViewOptionSelected: (LibraryViewCategory, LibraryViewOption) -> Unit,
     bottomContentPadding: Dp = 24.dp,
     modifier: Modifier = Modifier
 ) {
-    val libraryViewModeState = rememberLibraryViewModeState()
     var isLibraryViewOptionsVisible by rememberSaveable {
         mutableStateOf(false)
     }
@@ -186,6 +193,7 @@ fun MusicScreenBody(
         }
 
         isDiagnosticsScreenVisible -> {
+            PlaybackProgress(playbackProgressUiState) { progress ->
             DiagnosticsScreen(
                 librarySongCount = songs.size,
                 selectedFolderCount = selectedLibraryFolders.size,
@@ -194,8 +202,8 @@ fun MusicScreenBody(
                 isPlaybackConnected = isPlayerConnected,
                 currentSong = currentSong,
                 isPlaying = isPlaying,
-                currentPosition = currentPosition,
-                duration = duration,
+                currentPosition = progress.currentPosition,
+                duration = progress.duration,
                 queueCount = queuedSongs.size,
                 upcomingCount = upcomingSongs.size,
                 previousCount = previousHistoryCount,
@@ -209,6 +217,7 @@ fun MusicScreenBody(
                     .statusBarsPadding()
                     .navigationBarsPadding()
             )
+            }
         }
 
         isSettingsScreenVisible -> {
@@ -243,9 +252,9 @@ fun MusicScreenBody(
         }
 
         else -> {
-            val currentLibraryViewMode = libraryViewModeState.modeFor(selectedLibraryTab)
+            val currentLibraryViewMode = libraryAppearanceUiState.modeFor(selectedLibraryTab)
             val currentGridColumnCount =
-                libraryViewModeState.gridColumnCountFor(selectedLibraryTab)
+                libraryAppearanceUiState.gridColumnCountFor(selectedLibraryTab)
 
             AnimatedContent(
                 targetState = mainDestination,
@@ -471,7 +480,9 @@ fun MusicScreenBody(
                     viewMode = currentLibraryViewMode,
                     gridColumnCount = currentGridColumnCount,
                     onOptionSelected = { option ->
-                        libraryViewModeState.select(selectedLibraryTab, option)
+                        selectedLibraryTab.viewCategory()?.let { category ->
+                            onLibraryViewOptionSelected(category, option)
+                        }
                         isLibraryViewOptionsVisible = false
                     },
                     onDismissRequest = {

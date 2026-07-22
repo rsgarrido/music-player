@@ -2,9 +2,6 @@ package com.example.cdplaya.viewmodel
 
 import android.app.Application
 import android.net.Uri
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -14,11 +11,11 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
+import com.example.cdplaya.data.TagEditorRepository
+import com.example.cdplaya.data.TagEditorResult
 import com.example.cdplaya.data.PlayerTheme
-import com.example.cdplaya.data.PlayerThemePreferences
-import com.example.cdplaya.data.PlayerThemeTokenPreferences
 import com.example.cdplaya.data.ListeningHistoryRepository
-import com.example.cdplaya.data.ModernPlayerPreferences
+import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.data.backup.AppBackup
 import com.example.cdplaya.data.backup.BackupExportResult
 import com.example.cdplaya.data.backup.BackupRepository
@@ -31,7 +28,6 @@ import com.example.cdplaya.data.playlistfile.PlaylistImportResult
 import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.replaygain.ReplayGainMode
-import com.example.cdplaya.player.replaygain.ReplayGainPreferences
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenOverrides
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -39,6 +35,21 @@ import com.example.cdplaya.ui.player.theme.customizationOptions
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.collectLatest
+import com.example.cdplaya.ui.state.LibraryAppearanceUiState
+import com.example.cdplaya.ui.state.LibraryCategoryAppearance
+import com.example.cdplaya.ui.state.PlayerAppearanceUiState
+import com.example.cdplaya.ui.state.category
+import com.example.cdplaya.ui.library.LibraryViewCategory
+import com.example.cdplaya.ui.library.LibraryViewOption
+import com.example.cdplaya.ui.library.viewCategory
+import com.example.cdplaya.ui.player.theme.applyOverrides
+import com.example.cdplaya.ui.player.theme.defaultTokens
 
 class MusicViewModel(
     application: Application
@@ -48,53 +59,53 @@ class MusicViewModel(
 
     private val appDatabase: AppDatabase = DatabaseProvider.getDatabase(appContext)
 
-    private val playerThemePreferences = PlayerThemePreferences(appContext)
+    private val appPreferencesRepository = AppPreferencesRepository.getInstance(appContext)
+    private val tagEditorRepository = TagEditorRepository()
 
-    private val playerThemeTokenPreferences = PlayerThemeTokenPreferences(appContext)
+    val playerAppearanceUiState = appPreferencesRepository.state.map { preferences ->
+        val selectedTheme = preferences.selectedPlayerTheme
+        val overrides = preferences.playerThemeTokenOverrides[selectedTheme]
+            ?: PlayerThemeTokenOverrides()
+        PlayerAppearanceUiState(
+            selectedTheme = selectedTheme,
+            themeTokens = selectedTheme.defaultTokens().applyOverrides(overrides),
+            modernArtworkTransitionStyle = preferences.modernArtworkTransitionStyle,
+            modernSeekbarStyle = preferences.modernSeekbarStyle,
+            replayGainMode = preferences.replayGainMode,
+            isLoaded = preferences.isLoaded
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, PlayerAppearanceUiState())
 
-    private val modernPlayerPreferences = ModernPlayerPreferences(appContext)
-
-    private val replayGainPreferences = ReplayGainPreferences(appContext)
-
-    private var selectedPlayerThemeState by mutableStateOf(
-        playerThemePreferences.getSelectedPlayerTheme()
-    )
-
-    var selectedPlayerThemeTokens by mutableStateOf(
-        playerThemeTokenPreferences.getTokens(selectedPlayerThemeState)
-    )
-        private set
-
-    var selectedPlayerTheme: PlayerTheme
-        get() = selectedPlayerThemeState
-        private set(value) {
-            selectedPlayerThemeState = value
-            selectedPlayerThemeTokens = playerThemeTokenPreferences.getTokens(value)
-        }
+    val libraryAppearanceUiState = appPreferencesRepository.state.map { preferences ->
+        LibraryAppearanceUiState(
+            songs = LibraryCategoryAppearance(
+                preferences.songsViewMode,
+                preferences.songsGridColumnCount
+            ),
+            albums = LibraryCategoryAppearance(
+                preferences.albumsViewMode,
+                preferences.albumsGridColumnCount
+            ),
+            artists = LibraryCategoryAppearance(
+                preferences.artistsViewMode,
+                preferences.artistsGridColumnCount
+            ),
+            isLoaded = preferences.isLoaded
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, LibraryAppearanceUiState())
 
     fun selectPlayerTheme(playerTheme: PlayerTheme) {
-        selectedPlayerTheme = playerTheme
-        playerThemePreferences.saveSelectedPlayerTheme(playerTheme)
+        viewModelScope.launch { appPreferencesRepository.setSelectedPlayerTheme(playerTheme) }
     }
-
-    var selectedModernArtworkTransitionStyle by mutableStateOf(
-        modernPlayerPreferences.getArtworkTransitionStyle()
-    )
-        private set
 
     fun selectModernArtworkTransitionStyle(style: ModernArtworkTransitionStyle) {
-        selectedModernArtworkTransitionStyle = style
-        modernPlayerPreferences.saveArtworkTransitionStyle(style)
+        viewModelScope.launch {
+            appPreferencesRepository.setModernArtworkTransitionStyle(style)
+        }
     }
 
-    var selectedModernSeekbarStyle by mutableStateOf(
-        modernPlayerPreferences.getSeekbarStyle()
-    )
-        private set
-
     fun selectModernSeekbarStyle(style: ModernSeekbarStyle) {
-        selectedModernSeekbarStyle = style
-        modernPlayerPreferences.saveSeekbarStyle(style)
+        viewModelScope.launch { appPreferencesRepository.setModernSeekbarStyle(style) }
     }
 
     fun updatePlayerThemeTokenOverride(
@@ -106,7 +117,8 @@ class MusicViewModel(
             return
         }
 
-        val currentOverrides = playerThemeTokenPreferences.getOverrides(playerTheme)
+        val currentOverrides = appPreferencesRepository.state.value
+            .playerThemeTokenOverrides[playerTheme] ?: PlayerThemeTokenOverrides()
         val updatedOverrides = when (field) {
             PlayerThemeTokenField.SHELL -> currentOverrides.copy(shellColor = color)
             PlayerThemeTokenField.ACCENT -> currentOverrides.copy(accentColor = color)
@@ -120,69 +132,79 @@ class MusicViewModel(
             }
         }
 
-        playerThemeTokenPreferences.saveOverrides(playerTheme, updatedOverrides)
-        refreshSelectedPlayerThemeTokens(playerTheme)
+        viewModelScope.launch {
+            appPreferencesRepository.setThemeTokenOverrides(playerTheme, updatedOverrides)
+        }
     }
 
     fun resetPlayerThemeTokenOverrides(playerTheme: PlayerTheme) {
-        playerThemeTokenPreferences.clearOverrides(playerTheme)
-        refreshSelectedPlayerThemeTokens(playerTheme)
+        viewModelScope.launch { appPreferencesRepository.clearThemeTokenOverrides(playerTheme) }
     }
 
     fun getPlayerThemeTokenOverrides(playerTheme: PlayerTheme): PlayerThemeTokenOverrides {
         return if (playerTheme.customizationOptions().isEmpty()) {
             PlayerThemeTokenOverrides()
         } else {
-            playerThemeTokenPreferences.getOverrides(playerTheme)
+            appPreferencesRepository.state.value.playerThemeTokenOverrides[playerTheme]
+                ?: PlayerThemeTokenOverrides()
         }
     }
-
-    private fun refreshSelectedPlayerThemeTokens(playerTheme: PlayerTheme) {
-        if (selectedPlayerTheme == playerTheme) {
-            selectedPlayerThemeTokens = playerThemeTokenPreferences.getTokens(playerTheme)
-        }
-    }
-
-    var selectedReplayGainMode by mutableStateOf(
-        replayGainPreferences.getReplayGainMode()
-    )
-        private set
 
     fun selectReplayGainMode(replayGainMode: ReplayGainMode) {
-        selectedReplayGainMode = replayGainMode
-        replayGainPreferences.setReplayGainMode(replayGainMode)
-        playbackController.setReplayGainMode(replayGainMode)
+        viewModelScope.launch { appPreferencesRepository.setReplayGainMode(replayGainMode) }
     }
-    val playbackController = PlaybackController(
+
+    fun selectLibraryViewOption(category: LibraryViewCategory, option: LibraryViewOption) {
+        val current = libraryAppearanceUiState.value.category(category)
+        viewModelScope.launch {
+            appPreferencesRepository.setLibraryView(
+                category = category,
+                mode = option.viewMode,
+                gridColumnCount = option.gridColumnCount ?: current.gridColumnCount
+            )
+        }
+    }
+
+    fun readEditableSongTags(song: Song): EditableSongTags = tagEditorRepository.readTags(song)
+
+    fun getUnsupportedTagEditingMessage(song: Song): String? =
+        tagEditorRepository.getUnsupportedEditingMessage(song)
+
+    suspend fun writeTagsAndArtwork(
+        song: Song,
+        editedTags: EditableSongTags,
+        artworkUri: Uri?
+    ): TagEditorResult = tagEditorRepository.writeTagsAndArtwork(
+        context = appContext,
+        song = song,
+        editedTags = editedTags,
+        artworkUri = artworkUri
+    )
+    private val playbackController = PlaybackController(
         context = appContext,
         coroutineScope = viewModelScope
     )
 
-    val sleepTimerController = SleepTimerController(
+    private val sleepTimerController = SleepTimerController(
         coroutineScope = viewModelScope,
         onTimerFinished = {
             playbackController.pausePlayback()
         }
     )
 
-    val libraryController = LibraryController(
+    private val libraryController = LibraryController(
         context = appContext,
         appDatabase = appDatabase,
         playbackController = playbackController,
         coroutineScope = viewModelScope
     )
 
-    private val backupRepository = BackupRepository(
-        context = appContext,
-        favoritesRepository = libraryController.favoritesRepository,
-        playlistsRepository = libraryController.playlistsRepository,
-        listeningHistoryRepository = libraryController.listeningHistoryRepository,
-        libraryPreferences = libraryController.libraryPreferences,
-        playerThemePreferences = playerThemePreferences,
-        replayGainPreferences = replayGainPreferences,
-        modernPlayerPreferences = modernPlayerPreferences,
-        playerThemeTokenPreferences = playerThemeTokenPreferences
-    )
+    val libraryUiState = libraryController.uiState
+    val playbackUiState = playbackController.uiState
+    val playbackProgressUiState = playbackController.progressState
+    val sleepTimerUiState = sleepTimerController.uiState
+
+    private val backupRepository = libraryController.createBackupRepository()
 
     init {
         val listeningHistoryRepository = ListeningHistoryRepository(
@@ -195,16 +217,15 @@ class MusicViewModel(
             libraryController.refreshListeningHistory()
         }
 
-        playbackController.setReplayGainMode(selectedReplayGainMode)
+        viewModelScope.launch {
+            appPreferencesRepository.state
+                .filter { preferences -> preferences.isLoaded }
+                .map { preferences -> preferences.replayGainMode }
+                .distinctUntilChanged()
+                .collectLatest(playbackController::setReplayGainMode)
+        }
         playbackController.connect()
         libraryController.loadSavedUserData()
-    }
-
-    val isSleepTimerActive: Boolean
-        get() = sleepTimerController.isTimerActive
-
-    fun getSleepTimerDisplayText(): String {
-        return sleepTimerController.getDisplayText()
     }
 
     fun startSleepTimer(minutes: Int) {
@@ -424,10 +445,6 @@ class MusicViewModel(
                 val restoreResult = backupRepository.restoreBackup(backup)
 
                 libraryController.refreshAfterBackupRestore()
-
-                selectedPlayerTheme = playerThemePreferences.getSelectedPlayerTheme()
-                selectedReplayGainMode = replayGainPreferences.getReplayGainMode()
-                playbackController.setReplayGainMode(selectedReplayGainMode)
 
                 restoreResult
             }

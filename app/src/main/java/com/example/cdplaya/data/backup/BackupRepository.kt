@@ -5,18 +5,14 @@ import android.net.Uri
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.example.cdplaya.data.FavoritesRepository
-import com.example.cdplaya.data.LibraryPreferences
 import com.example.cdplaya.data.ListeningHistoryRepository
-import com.example.cdplaya.data.ModernPlayerPreferences
 import com.example.cdplaya.data.PlayerTheme
-import com.example.cdplaya.data.PlayerThemePreferences
-import com.example.cdplaya.data.PlayerThemeTokenPreferences
 import com.example.cdplaya.data.PlaylistsRepository
 import com.example.cdplaya.player.replaygain.ReplayGainMode
-import com.example.cdplaya.player.replaygain.ReplayGainPreferences
+import com.example.cdplaya.data.preferences.AppPreferencesRepository
+import com.example.cdplaya.data.preferences.AppPreferencesState
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewMode
-import com.example.cdplaya.ui.library.LibraryViewPreferences
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
@@ -33,17 +29,13 @@ class BackupRepository(
     private val favoritesRepository: FavoritesRepository,
     private val playlistsRepository: PlaylistsRepository,
     private val listeningHistoryRepository: ListeningHistoryRepository,
-    private val libraryPreferences: LibraryPreferences,
-    private val playerThemePreferences: PlayerThemePreferences,
-    private val replayGainPreferences: ReplayGainPreferences,
-    private val modernPlayerPreferences: ModernPlayerPreferences = ModernPlayerPreferences(context),
-    private val playerThemeTokenPreferences: PlayerThemeTokenPreferences =
-        PlayerThemeTokenPreferences(context),
-    private val libraryViewPreferences: LibraryViewPreferences = LibraryViewPreferences(context)
+    private val appPreferencesRepository: AppPreferencesRepository =
+        AppPreferencesRepository.getInstance(context)
 ) {
     private val context = context.applicationContext ?: context
 
     suspend fun createBackup(): AppBackup = withContext(Dispatchers.IO) {
+        val appPreferences = appPreferencesRepository.awaitLoadedState()
         AppBackup(
             schemaVersion = AppBackupJson.CURRENT_SCHEMA_VERSION,
             createdAt = System.currentTimeMillis(),
@@ -52,28 +44,22 @@ class BackupRepository(
             playlists = playlistsRepository.getPlaylistsForBackup(),
             listeningHistory = listeningHistoryRepository.getListeningHistoryForBackup(),
             preferences = BackupPreferences(
-                selectedLibraryFolders = libraryPreferences.getSelectedFolders()
+                selectedLibraryFolders = appPreferences.selectedLibraryFolders
                     .map { it.toPortableFolderSelection() }
                     .filter { it.isNotBlank() }
                     .sorted(),
-                selectedPlayerThemeId = playerThemePreferences.getSelectedPlayerThemeId(),
-                replayGainMode = replayGainPreferences.getReplayGainModeName(),
+                selectedPlayerThemeId = appPreferences.selectedPlayerTheme.id,
+                replayGainMode = appPreferences.replayGainMode.name,
                 modernArtworkTransitionStyle =
-                    modernPlayerPreferences.getArtworkTransitionStyle().storageValue,
-                modernSeekbarStyle = modernPlayerPreferences.getSeekbarStyle().storageValue,
-                playerThemeTokenOverrides = createThemeTokenBackup(),
-                songsViewMode = libraryViewPreferences
-                    .getViewMode(LibraryViewCategory.SONGS).storageValue,
-                albumsViewMode = libraryViewPreferences
-                    .getViewMode(LibraryViewCategory.ALBUMS).storageValue,
-                artistsViewMode = libraryViewPreferences
-                    .getViewMode(LibraryViewCategory.ARTISTS).storageValue,
-                songsGridColumnCount = libraryViewPreferences
-                    .getGridColumnCount(LibraryViewCategory.SONGS),
-                albumsGridColumnCount = libraryViewPreferences
-                    .getGridColumnCount(LibraryViewCategory.ALBUMS),
-                artistsGridColumnCount = libraryViewPreferences
-                    .getGridColumnCount(LibraryViewCategory.ARTISTS)
+                    appPreferences.modernArtworkTransitionStyle.storageValue,
+                modernSeekbarStyle = appPreferences.modernSeekbarStyle.storageValue,
+                playerThemeTokenOverrides = createThemeTokenBackup(appPreferences),
+                songsViewMode = appPreferences.songsViewMode.storageValue,
+                albumsViewMode = appPreferences.albumsViewMode.storageValue,
+                artistsViewMode = appPreferences.artistsViewMode.storageValue,
+                songsGridColumnCount = appPreferences.songsGridColumnCount,
+                albumsGridColumnCount = appPreferences.albumsGridColumnCount,
+                artistsGridColumnCount = appPreferences.artistsGridColumnCount
             )
         )
     }
@@ -114,9 +100,6 @@ class BackupRepository(
             listeningHistoryRepository.restoreListeningHistoryFromBackup(
                 backup.listeningHistory
             )
-            libraryPreferences.saveSelectedFolders(
-                backup.preferences.selectedLibraryFolders.toSet()
-            )
             restorePreferences(backup.preferences)
 
             BackupRestoreResult(
@@ -128,11 +111,14 @@ class BackupRepository(
             )
         }
 
-    private fun createThemeTokenBackup(): Map<String, BackupPlayerThemeTokenOverrides> {
+    private fun createThemeTokenBackup(
+        preferences: AppPreferencesState
+    ): Map<String, BackupPlayerThemeTokenOverrides> {
         return PlayerTheme.entries.mapNotNull { theme ->
             val supportedFields = theme.customizationOptions().map { it.field }.toSet()
             if (supportedFields.isEmpty()) return@mapNotNull null
-            val overrides = playerThemeTokenPreferences.getOverrides(theme)
+            val overrides = preferences.playerThemeTokenOverrides[theme]
+                ?: PlayerThemeTokenOverrides()
             val backup = BackupPlayerThemeTokenOverrides(
                 shellArgb = overrides.shellColor.toBackupArgbIfSupported(
                     PlayerThemeTokenField.SHELL in supportedFields
@@ -154,30 +140,12 @@ class BackupRepository(
         }.toMap()
     }
 
-    private fun restorePreferences(preferences: BackupPreferences) {
-        playerThemePreferences.saveSelectedPlayerTheme(
-            PlayerTheme.fromId(preferences.selectedPlayerThemeId)
-        )
-        replayGainPreferences.setReplayGainMode(
-            runCatching { ReplayGainMode.valueOf(preferences.replayGainMode) }
-                .getOrDefault(ReplayGainMode.OFF)
-        )
-        modernPlayerPreferences.saveArtworkTransitionStyle(
-            ModernArtworkTransitionStyle.fromStorageValue(
-                preferences.modernArtworkTransitionStyle
-            )
-        )
-        modernPlayerPreferences.saveSeekbarStyle(
-            ModernSeekbarStyle.fromStorageValue(preferences.modernSeekbarStyle)
-        )
-        playerThemeTokenPreferences.clearAllOverrides()
-        PlayerTheme.entries.forEach { theme ->
-            val backup = preferences.playerThemeTokenOverrides[theme.id] ?: return@forEach
+    private suspend fun restorePreferences(preferences: BackupPreferences) {
+        val overrides = PlayerTheme.entries.mapNotNull { theme ->
+            val backup = preferences.playerThemeTokenOverrides[theme.id] ?: return@mapNotNull null
             val supportedFields = theme.customizationOptions().map { it.field }.toSet()
-            if (supportedFields.isEmpty()) return@forEach
-            playerThemeTokenPreferences.saveOverrides(
-                theme,
-                PlayerThemeTokenOverrides(
+            if (supportedFields.isEmpty()) return@mapNotNull null
+            theme to PlayerThemeTokenOverrides(
                     shellColor = backup.shellArgb.toColorIfSupported(
                         PlayerThemeTokenField.SHELL in supportedFields
                     ),
@@ -194,32 +162,29 @@ class BackupRepository(
                         PlayerThemeTokenField.SECONDARY_ACCENT in supportedFields
                     )
                 )
+        }.toMap()
+        appPreferencesRepository.replaceAll(
+            AppPreferencesState(
+                selectedPlayerTheme = PlayerTheme.fromId(preferences.selectedPlayerThemeId),
+                playerThemeTokenOverrides = overrides,
+                modernArtworkTransitionStyle = ModernArtworkTransitionStyle.fromStorageValue(
+                    preferences.modernArtworkTransitionStyle
+                ),
+                modernSeekbarStyle = ModernSeekbarStyle.fromStorageValue(
+                    preferences.modernSeekbarStyle
+                ),
+                replayGainMode = runCatching { ReplayGainMode.valueOf(preferences.replayGainMode) }
+                    .getOrDefault(ReplayGainMode.OFF),
+                selectedLibraryFolders = preferences.selectedLibraryFolders.toSet(),
+                songsViewMode = LibraryViewMode.fromStorageValue(preferences.songsViewMode),
+                albumsViewMode = LibraryViewMode.fromStorageValue(preferences.albumsViewMode),
+                artistsViewMode = LibraryViewMode.fromStorageValue(preferences.artistsViewMode),
+                songsGridColumnCount = preferences.songsGridColumnCount,
+                albumsGridColumnCount = preferences.albumsGridColumnCount,
+                artistsGridColumnCount = preferences.artistsGridColumnCount,
+                isLoaded = true
             )
-        }
-        restoreLibraryView(
-            LibraryViewCategory.SONGS,
-            preferences.songsViewMode,
-            preferences.songsGridColumnCount
         )
-        restoreLibraryView(
-            LibraryViewCategory.ALBUMS,
-            preferences.albumsViewMode,
-            preferences.albumsGridColumnCount
-        )
-        restoreLibraryView(
-            LibraryViewCategory.ARTISTS,
-            preferences.artistsViewMode,
-            preferences.artistsGridColumnCount
-        )
-    }
-
-    private fun restoreLibraryView(
-        category: LibraryViewCategory,
-        mode: String,
-        columns: Int
-    ) {
-        libraryViewPreferences.saveViewMode(category, LibraryViewMode.fromStorageValue(mode))
-        libraryViewPreferences.saveGridColumnCount(category, columns)
     }
 
     private companion object {

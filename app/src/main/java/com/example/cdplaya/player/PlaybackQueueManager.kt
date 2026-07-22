@@ -1,10 +1,9 @@
 package com.example.cdplaya.player
 
-import androidx.compose.runtime.mutableStateListOf
 import com.example.cdplaya.data.Song
 
 class PlaybackQueueManager {
-    val playbackQueue = mutableStateListOf<Song>()
+    internal val playbackQueue = mutableListOf<Song>()
 
     fun addSongToQueue(song: Song) {
         playbackQueue.add(song)

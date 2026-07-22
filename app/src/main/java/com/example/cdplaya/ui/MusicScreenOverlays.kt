@@ -24,6 +24,9 @@ import com.example.cdplaya.ui.playlist.AddToPlaylistDialog
 import com.example.cdplaya.ui.playlist.PlaylistNameDialog
 import com.example.cdplaya.ui.queue.QueueScreen
 import com.example.cdplaya.ui.settings.SleepTimerDialog
+import com.example.cdplaya.ui.state.PlaybackProgress
+import com.example.cdplaya.ui.state.PlaybackProgressUiState
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,8 +40,7 @@ fun MusicScreenOverlays(
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
-    currentPosition: Int,
-    duration: Int,
+    playbackProgressUiState: StateFlow<PlaybackProgressUiState>,
     favoriteMembershipKeys: Set<String>,
     isExpandedUpNextSheetVisible: Boolean,
     queuedSongs: List<Song>,
@@ -98,6 +100,7 @@ fun MusicScreenOverlays(
                     onClick = {}
                 )
         ) {
+            PlaybackProgress(playbackProgressUiState) { progress ->
             ExpandedPlayerThemeHost(
                 selectedPlayerTheme = selectedPlayerTheme,
                 tokens = selectedPlayerThemeTokens,
@@ -109,8 +112,8 @@ fun MusicScreenOverlays(
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
+                currentPosition = progress.currentPosition,
+                duration = progress.duration,
                 isCurrentSongFavorite = currentSong.membershipKey() in favoriteMembershipKeys,
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
@@ -127,6 +130,7 @@ fun MusicScreenOverlays(
                 upcomingSongs = upcomingSongs,
                 onSongClick = onSongClick
             )
+            }
         }
     }
 

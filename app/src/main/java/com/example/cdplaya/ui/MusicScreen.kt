@@ -30,7 +30,7 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
-import com.example.cdplaya.data.TagEditorRepository
+import com.example.cdplaya.data.TagEditorResult
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibrarySortOption
@@ -45,10 +45,16 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
+import com.example.cdplaya.ui.state.PlaybackProgress
+import com.example.cdplaya.ui.state.PlaybackProgressUiState
+import com.example.cdplaya.ui.state.LibraryAppearanceUiState
+import com.example.cdplaya.ui.library.LibraryViewCategory
+import com.example.cdplaya.ui.library.LibraryViewOption
 import com.example.cdplaya.ui.queue.rememberQueueSnackbarActions
 import com.example.cdplaya.ui.tageditor.DiscardTagChangesDialog
 import com.example.cdplaya.ui.tageditor.TagEditorScreen
 import com.example.cdplaya.ui.tageditor.rememberTagEditorActions
+import kotlinx.coroutines.flow.StateFlow
 
 
 @Composable
@@ -64,8 +70,7 @@ fun MusicScreen(
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
-    currentPosition: Int,
-    duration: Int,
+    playbackProgressUiState: StateFlow<PlaybackProgressUiState>,
     snackbarHostState: SnackbarHostState,
     onUndoAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
@@ -117,6 +122,9 @@ fun MusicScreen(
     onMovePlaylistSongUpClick: (PlaylistSong) -> Unit,
     onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onTagsEdited: (Song, EditableSongTags) -> Unit,
+    onReadEditableSongTags: (Song) -> EditableSongTags,
+    onGetUnsupportedTagEditingMessage: (Song) -> String?,
+    onWriteTagsAndArtwork: suspend (Song, EditableSongTags, Uri?) -> TagEditorResult,
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
     onStartSleepTimerClick: (Int) -> Unit,
@@ -134,35 +142,35 @@ fun MusicScreen(
     onModernSeekbarStyleSelected: (ModernSeekbarStyle) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
+    libraryAppearanceUiState: LibraryAppearanceUiState,
+    onLibraryViewOptionSelected: (LibraryViewCategory, LibraryViewOption) -> Unit,
     mostPlayedSongs: List<Song>
 ) {
-    var isPlayerExpanded by rememberSaveable { mutableStateOf(false) }
-    var isFolderScreenVisible by rememberSaveable { mutableStateOf(false) }
-    var mainDestination by rememberSaveable { mutableStateOf(MainDestination.HOME) }
-    var selectedLibraryTab by rememberSaveable { mutableStateOf(LibraryTab.SONGS) }
-    var playbackLaunchContext by rememberSaveable(
-        stateSaver = playbackLaunchContextSaver
-    ) {
-        mutableStateOf<PlaybackLaunchContext>(PlaybackLaunchContext.Home)
-    }
-    var isSettingsScreenVisible by rememberSaveable { mutableStateOf(false) }
-    var isDiagnosticsScreenVisible by rememberSaveable { mutableStateOf(false) }
-    var isExpandedUpNextSheetVisible by rememberSaveable { mutableStateOf(false) }
-    var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
-    var selectedAlbumFolderPath by rememberSaveable { mutableStateOf<String?>(null) }
-    var searchQuery by rememberSaveable { mutableStateOf("") }
-    var selectedSongSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.TITLE) }
-    var selectedArtistSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.NAME) }
-    var selectedAlbumSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.TITLE) }
-    var selectedFavoriteSortOption by rememberSaveable { mutableStateOf(LibrarySortOption.TITLE) }
-    var selectedPlaylistId by rememberSaveable { mutableStateOf<Long?>(null) }
-    var isCreatePlaylistDialogVisible by rememberSaveable { mutableStateOf(false) }
+    val navigationState = rememberMusicNavigationState()
+    var mainDestination by navigationState.mainDestination
+    var selectedLibraryTab by navigationState.selectedLibraryTab
+    var playbackLaunchContext by navigationState.playbackLaunchContext
+    var selectedArtistName by navigationState.selectedArtistName
+    var selectedAlbumFolderPath by navigationState.selectedAlbumFolderPath
+    var selectedPlaylistId by navigationState.selectedPlaylistId
+    var searchQuery by navigationState.searchQuery
+    var selectedSongSortOption by navigationState.selectedSongSortOption
+    var selectedArtistSortOption by navigationState.selectedArtistSortOption
+    var selectedAlbumSortOption by navigationState.selectedAlbumSortOption
+    var selectedFavoriteSortOption by navigationState.selectedFavoriteSortOption
+
+    val overlayState = rememberMusicOverlayState()
+    var isPlayerExpanded by overlayState.isPlayerExpanded
+    var isFolderScreenVisible by overlayState.isFolderScreenVisible
+    var isSettingsScreenVisible by overlayState.isSettingsScreenVisible
+    var isDiagnosticsScreenVisible by overlayState.isDiagnosticsScreenVisible
+    var isExpandedUpNextSheetVisible by overlayState.isExpandedUpNextSheetVisible
+    var isCreatePlaylistDialogVisible by overlayState.isCreatePlaylistDialogVisible
+    var isSleepTimerDialogVisible by overlayState.isSleepTimerDialogVisible
     var songPendingPlaylistAdd by remember { mutableStateOf<Song?>(null) }
     var songsPendingPlaylistAdd by remember { mutableStateOf<List<Song>>(emptyList()) }
     var songPendingTagEdit by remember { mutableStateOf<Song?>(null) }
-    var isSleepTimerDialogVisible by remember { mutableStateOf(false) }
 
-    val tagEditorRepository = remember { TagEditorRepository() }
     var isTagSaveInProgress by remember { mutableStateOf(false) }
     var hasUnsavedTagChanges by remember { mutableStateOf(false) }
     var isDiscardTagChangesDialogVisible by remember { mutableStateOf(false) }
@@ -170,7 +178,8 @@ fun MusicScreen(
 
     val tagEditorActions = rememberTagEditorActions(
         snackbarHostState = snackbarHostState,
-        tagEditorRepository = tagEditorRepository,
+        onGetUnsupportedEditingMessage = onGetUnsupportedTagEditingMessage,
+        onWriteTagsAndArtwork = onWriteTagsAndArtwork,
         onTagsSaved = { originalSong, editedTags ->
             onTagsEdited(originalSong, editedTags)
         },
@@ -393,14 +402,14 @@ fun MusicScreen(
                 selectedSongForTagEdit.id,
                 selectedSongForTagEdit.filePath
             ) {
-                tagEditorRepository.readTags(selectedSongForTagEdit)
+                onReadEditableSongTags(selectedSongForTagEdit)
             }
 
             val unsupportedTagEditingMessage = remember(
                 selectedSongForTagEdit.id,
                 selectedSongForTagEdit.filePath
             ) {
-                tagEditorRepository.getUnsupportedEditingMessage(selectedSongForTagEdit)
+                onGetUnsupportedTagEditingMessage(selectedSongForTagEdit)
             }
 
             TagEditorScreen(
@@ -442,8 +451,7 @@ fun MusicScreen(
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
+                playbackProgressUiState = playbackProgressUiState,
                 queuedSongs = queuedSongs,
                 upcomingSongs = upcomingSongs,
                 libraryFolders = libraryFolders,
@@ -617,19 +625,22 @@ fun MusicScreen(
                 onModernSeekbarStyleSelected = onModernSeekbarStyleSelected,
                 selectedReplayGainMode = selectedReplayGainMode,
                 onReplayGainModeSelected = onReplayGainModeSelected,
+                libraryAppearanceUiState = libraryAppearanceUiState,
+                onLibraryViewOptionSelected = onLibraryViewOptionSelected,
                 bottomContentPadding = bottomContentPadding,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
         if (shouldShowBottomMiniPlayer) {
+            PlaybackProgress(playbackProgressUiState) { progress ->
             MiniPlayerSection(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
+                currentPosition = progress.currentPosition,
+                duration = progress.duration,
                 selectedPlayerTheme = selectedPlayerTheme,
                 selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                 favoriteMembershipKeys = favoriteMembershipKeys,
@@ -660,6 +671,7 @@ fun MusicScreen(
                     .navigationBarsPadding()
                     .padding(bottom = AppBottomNavigationHeight)
             )
+            }
         }
 
         if (shouldShowBottomNavigation) {
@@ -706,8 +718,7 @@ fun MusicScreen(
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
+                playbackProgressUiState = playbackProgressUiState,
                 favoriteMembershipKeys = favoriteMembershipKeys,
                 isExpandedUpNextSheetVisible = isExpandedUpNextSheetVisible,
                 queuedSongs = queuedSongs,
