@@ -6,7 +6,6 @@ import androidx.compose.ui.unit.Dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
-import com.example.cdplaya.ui.player.theme.defaultTokens
 
 data class MiniPlayerState(
     val currentSong: Song,
@@ -43,13 +42,11 @@ internal fun miniPlayerVariantFor(playerTheme: PlayerTheme): MiniPlayerVariant =
 @Composable
 fun MiniPlayerHost(
     selectedPlayerTheme: PlayerTheme,
-    tokens: PlayerThemeTokens?,
+    tokens: PlayerThemeTokens,
     state: MiniPlayerState,
     callbacks: MiniPlayerCallbacks,
     modifier: Modifier = Modifier
 ) {
-    val resolvedTokens = tokens ?: selectedPlayerTheme.defaultTokens()
-
     when (miniPlayerVariantFor(selectedPlayerTheme)) {
         MiniPlayerVariant.MODERN -> ModernMiniPlayer(
             state = state,
@@ -60,28 +57,28 @@ fun MiniPlayerHost(
         MiniPlayerVariant.CLASSIC_WHEEL -> ClassicWheelMiniPlayer(
             state = state,
             callbacks = callbacks,
-            tokens = resolvedTokens,
+            tokens = tokens,
             modifier = modifier
         )
 
         MiniPlayerVariant.POCKET_CASSETTE -> PocketCassetteMiniPlayer(
             state = state,
             callbacks = callbacks,
-            tokens = resolvedTokens,
+            tokens = tokens,
             modifier = modifier
         )
 
         MiniPlayerVariant.POCKET_FLIP -> PocketFlipMiniPlayer(
             state = state,
             callbacks = callbacks,
-            tokens = resolvedTokens,
+            tokens = tokens,
             modifier = modifier
         )
 
         MiniPlayerVariant.RETRO_RACK -> RetroRackMiniPlayer(
             state = state,
             callbacks = callbacks,
-            tokens = resolvedTokens,
+            tokens = tokens,
             modifier = modifier
         )
     }

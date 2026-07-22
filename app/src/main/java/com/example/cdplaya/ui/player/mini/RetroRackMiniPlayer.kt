@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.theme.darken
 import com.example.cdplaya.ui.player.theme.lighten
+import java.util.Locale
 
 @Composable
 fun RetroRackMiniPlayer(
@@ -62,7 +63,7 @@ fun RetroRackMiniPlayer(
                     .padding(horizontal = 7.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = displayedState.currentSong.miniTitle.uppercase(),
+                    text = displayedState.currentSong.miniTitle.uppercase(Locale.ROOT),
                     style = MaterialTheme.typography.labelMedium,
                     color = meterColor,
                     fontFamily = FontFamily.Monospace,
@@ -71,7 +72,7 @@ fun RetroRackMiniPlayer(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = displayedState.currentSong.miniArtist.uppercase(),
+                    text = displayedState.currentSong.miniArtist.uppercase(Locale.ROOT),
                     style = MaterialTheme.typography.labelSmall,
                     color = meterColor.copy(alpha = 0.62f),
                     fontFamily = FontFamily.Monospace,

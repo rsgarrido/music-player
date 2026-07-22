@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.theme.darken
 import com.example.cdplaya.ui.player.theme.lighten
+import java.util.Locale
 
 @Composable
 fun PocketCassetteMiniPlayer(
@@ -56,7 +57,7 @@ fun PocketCassetteMiniPlayer(
             Spacer(modifier = Modifier.width(8.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = displayedState.currentSong.miniTitle.uppercase(),
+                    text = displayedState.currentSong.miniTitle.uppercase(Locale.ROOT),
                     style = MaterialTheme.typography.labelMedium,
                     color = ink,
                     fontFamily = FontFamily.Monospace,
@@ -65,7 +66,7 @@ fun PocketCassetteMiniPlayer(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = displayedState.currentSong.miniArtist.uppercase(),
+                    text = displayedState.currentSong.miniArtist.uppercase(Locale.ROOT),
                     style = MaterialTheme.typography.labelSmall,
                     color = ink.copy(alpha = 0.7f),
                     fontFamily = FontFamily.Monospace,

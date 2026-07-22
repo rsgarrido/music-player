@@ -64,7 +64,7 @@ internal fun MiniPlayerScaffold(
             .padding(horizontal = 12.dp, vertical = 6.dp)
             .semantics {
                 role = Role.Button
-                contentDescription = "Open player for ${state.currentSong.miniTitle}"
+                contentDescription = miniPlayerOpenContentDescription(state.currentSong)
             }
             .miniPlayerSwipeGestures(
                 onSwipeLeft = {
@@ -141,7 +141,7 @@ internal fun MiniPlayerPlayPauseButton(
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription = miniPlayerPlaybackContentDescription(isPlaying),
                 tint = iconTint
             )
         }
@@ -153,6 +153,12 @@ internal val Song.miniTitle: String
 
 internal val Song.miniArtist: String
     get() = artist.ifBlank { "Unknown Artist" }
+
+internal fun miniPlayerOpenContentDescription(song: Song): String =
+    "Open player for ${song.miniTitle}"
+
+internal fun miniPlayerPlaybackContentDescription(isPlaying: Boolean): String =
+    if (isPlaying) "Pause" else "Play"
 
 internal fun normalizedMiniPlayerProgress(currentPosition: Int, duration: Int): Float {
     if (duration <= 0) return 0f
