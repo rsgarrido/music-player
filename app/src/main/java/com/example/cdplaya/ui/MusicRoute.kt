@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.example.cdplaya.viewmodel.MusicViewModel
+import com.example.cdplaya.ui.state.displayText
 import com.example.cdplaya.ui.playlist.rememberPlaylistExportActions
 import com.example.cdplaya.ui.playlist.rememberPlaylistImportActions
 import com.example.cdplaya.ui.settings.rememberBackupExportActions
@@ -18,11 +19,10 @@ fun MusicRoute(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
-    val playbackController = musicViewModel.playbackController
-    val libraryController = musicViewModel.libraryController
-    val playbackUiState by playbackController.uiState.collectAsState()
-    val playbackProgressUiState by playbackController.progressState.collectAsState()
-    val libraryUiState by libraryController.uiState.collectAsState()
+    val playbackUiState by musicViewModel.playbackUiState.collectAsState()
+    val playbackProgressUiState by musicViewModel.playbackProgressUiState.collectAsState()
+    val libraryUiState by musicViewModel.libraryUiState.collectAsState()
+    val sleepTimerUiState by musicViewModel.sleepTimerUiState.collectAsState()
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
         onPrepareExport = musicViewModel::preparePlaylistExport,
@@ -197,8 +197,8 @@ fun MusicRoute(
                 editedTags = editedTags
             )
         },
-        isSleepTimerActive = musicViewModel.isSleepTimerActive,
-        sleepTimerDisplayText = musicViewModel.getSleepTimerDisplayText(),
+        isSleepTimerActive = sleepTimerUiState.isActive,
+        sleepTimerDisplayText = sleepTimerUiState.displayText(),
         onStartSleepTimerClick = { minutes ->
             musicViewModel.startSleepTimer(minutes)
         },

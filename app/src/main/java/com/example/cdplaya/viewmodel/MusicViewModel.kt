@@ -153,24 +153,29 @@ class MusicViewModel(
         replayGainPreferences.setReplayGainMode(replayGainMode)
         playbackController.setReplayGainMode(replayGainMode)
     }
-    val playbackController = PlaybackController(
+    private val playbackController = PlaybackController(
         context = appContext,
         coroutineScope = viewModelScope
     )
 
-    val sleepTimerController = SleepTimerController(
+    private val sleepTimerController = SleepTimerController(
         coroutineScope = viewModelScope,
         onTimerFinished = {
             playbackController.pausePlayback()
         }
     )
 
-    val libraryController = LibraryController(
+    private val libraryController = LibraryController(
         context = appContext,
         appDatabase = appDatabase,
         playbackController = playbackController,
         coroutineScope = viewModelScope
     )
+
+    val libraryUiState = libraryController.uiState
+    val playbackUiState = playbackController.uiState
+    val playbackProgressUiState = playbackController.progressState
+    val sleepTimerUiState = sleepTimerController.uiState
 
     private val backupRepository = BackupRepository(
         context = appContext,
@@ -198,13 +203,6 @@ class MusicViewModel(
         playbackController.setReplayGainMode(selectedReplayGainMode)
         playbackController.connect()
         libraryController.loadSavedUserData()
-    }
-
-    val isSleepTimerActive: Boolean
-        get() = sleepTimerController.uiState.value.isActive
-
-    fun getSleepTimerDisplayText(): String {
-        return sleepTimerController.getDisplayText()
     }
 
     fun startSleepTimer(minutes: Int) {
