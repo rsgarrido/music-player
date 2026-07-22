@@ -287,7 +287,6 @@ private fun LibraryGridCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(gridMetrics.interactionCornerRadius))
             .libraryItemActions(
                 clickLabel = clickLabel,
                 onClick = onClick,
@@ -330,7 +329,11 @@ private fun LibraryGridCard(
         }
 
         Column(
-            modifier = Modifier.padding(horizontal = gridMetrics.metadataHorizontalPadding),
+            modifier = Modifier.padding(
+                start = gridMetrics.metadataHorizontalPadding,
+                end = gridMetrics.metadataHorizontalPadding,
+                bottom = gridMetrics.metadataBottomPadding
+            ),
             verticalArrangement = Arrangement.spacedBy(1.dp)
         ) {
             Text(
@@ -365,9 +368,9 @@ private data class LibraryGridMetrics(
     val verticalSpacing: Dp,
     val contentHorizontalPadding: Dp,
     val artworkCornerRadius: Dp,
-    val interactionCornerRadius: Dp,
     val metadataSpacing: Dp,
     val metadataHorizontalPadding: Dp,
+    val metadataBottomPadding: Dp,
     val placeholderIconSize: Dp,
     val selectedAccentWidth: Dp,
     val titleMinimumHeight: Dp,
@@ -384,12 +387,12 @@ private fun libraryGridMetrics(columnCount: Int): LibraryGridMetrics {
             verticalSpacing = 20.dp,
             contentHorizontalPadding = 12.dp,
             artworkCornerRadius = 18.dp,
-            interactionCornerRadius = 18.dp,
             metadataSpacing = 8.dp,
             metadataHorizontalPadding = 2.dp,
+            metadataBottomPadding = 4.dp,
             placeholderIconSize = 36.dp,
             selectedAccentWidth = 30.dp,
-            titleMinimumHeight = 18.dp,
+            titleMinimumHeight = 36.dp,
             titleStyle = AppShellTypography.SongTitle,
             subtitleStyle = AppShellTypography.SongSubtitle,
             showSubtitle = true
@@ -401,12 +404,12 @@ private fun libraryGridMetrics(columnCount: Int): LibraryGridMetrics {
             verticalSpacing = 17.dp,
             contentHorizontalPadding = 10.dp,
             artworkCornerRadius = 15.dp,
-            interactionCornerRadius = 15.dp,
             metadataSpacing = 6.dp,
             metadataHorizontalPadding = 1.dp,
+            metadataBottomPadding = 4.dp,
             placeholderIconSize = 30.dp,
             selectedAccentWidth = 26.dp,
-            titleMinimumHeight = 17.dp,
+            titleMinimumHeight = 34.dp,
             titleStyle = AppShellTypography.SongTitle.copy(
                 fontSize = 13.sp,
                 lineHeight = 17.sp
@@ -424,9 +427,9 @@ private fun libraryGridMetrics(columnCount: Int): LibraryGridMetrics {
             verticalSpacing = 14.dp,
             contentHorizontalPadding = 8.dp,
             artworkCornerRadius = 12.dp,
-            interactionCornerRadius = 12.dp,
             metadataSpacing = 5.dp,
             metadataHorizontalPadding = 0.dp,
+            metadataBottomPadding = 3.dp,
             placeholderIconSize = 24.dp,
             selectedAccentWidth = 22.dp,
             titleMinimumHeight = 28.dp,
