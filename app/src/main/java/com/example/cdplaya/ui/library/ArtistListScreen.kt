@@ -1,7 +1,8 @@
 package com.example.cdplaya.ui.library
 
 import android.R
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
@@ -9,11 +10,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,10 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.R as AppR
 
 @Composable
 fun ArtistListScreen(
@@ -43,24 +46,9 @@ fun ArtistListScreen(
     sortOption: LibrarySortOption = LibrarySortOption.NAME,
     bottomContentPadding: Dp = 0.dp
 ) {
-    val artistGroups = buildLibraryArtistGroups(songs)
-
-    val artists = when (sortOption) {
-        LibrarySortOption.SONG_COUNT -> {
-            artistGroups.sortedWith(
-                compareByDescending<LibraryArtistGroup> { artist ->
-                    artist.songs.size
-                }.thenBy { artist ->
-                    artist.name.lowercase()
-                }
-            )
-        }
-
-        else -> {
-            artistGroups.sortedBy { artist ->
-                artist.name.lowercase()
-            }
-        }
+    val artists = sortedLibraryArtistGroups(songs, sortOption)
+    var actionSheetTarget by remember {
+        mutableStateOf<LibraryItemActionSheetTarget?>(null)
     }
 
     LazyColumn(
@@ -72,6 +60,11 @@ fun ArtistListScreen(
             key = { artist -> artist.name }
         ) { artist ->
             val firstSong = artist.songs.firstOrNull()
+            val songCountText = pluralStringResource(
+                AppR.plurals.song_count,
+                artist.songs.size,
+                artist.songs.size
+            )
 
             ListItem(
                 leadingContent = {
@@ -90,96 +83,115 @@ fun ArtistListScreen(
                     Text(text = artist.name)
                 },
                 supportingContent = {
-                    Text(text = "${artist.songs.size} song(s)")
+                    Text(text = songCountText)
                 },
-                trailingContent = {
-                    ArtistActionsMenu(
-                        artistName = artist.name,
-                        artistSongs = artist.songs,
-                        onPlayClick = onArtistPlayClick,
-                        onShuffleClick = onArtistShuffleClick,
-                        onPlayNextClick = onArtistPlayNextClick,
-                        onAddToQueueClick = onArtistAddToQueueClick,
-                        onAddToPlaylistClick = onArtistAddToPlaylistClick
+                modifier = Modifier
+                    .animateItem(
+                        placementSpec = tween(
+                            durationMillis = LibraryLayoutMotionDurationMillis,
+                            easing = FastOutSlowInEasing
+                        )
                     )
-                },
-                modifier = Modifier.clickable {
-                    onArtistClick(artist.name)
+                    .libraryItemActions(
+                    clickLabel = "Open ${artist.name}",
+                    onClick = {
+                        onArtistClick(artist.name)
+                    },
+                    onShowActions = {
+                        actionSheetTarget = artistActionSheetTarget(
+                            artistName = artist.name,
+                            subtitle = songCountText,
+                            artworkUri = firstSong?.albumArtUri,
+                            artistSongs = artist.songs,
+                            onPlayClick = onArtistPlayClick,
+                            onShuffleClick = onArtistShuffleClick,
+                            onPlayNextClick = onArtistPlayNextClick,
+                            onAddToQueueClick = onArtistAddToQueueClick,
+                            onAddToPlaylistClick = onArtistAddToPlaylistClick
+                        )
+                    }
+                    )
+            )
+        }
+    }
+
+    actionSheetTarget?.let { target ->
+        LibraryItemActionSheet(
+            target = target,
+            onDismissRequest = {
+                actionSheetTarget = null
+            }
+        )
+    }
+}
+
+internal fun sortedLibraryArtistGroups(
+    songs: List<Song>,
+    sortOption: LibrarySortOption
+): List<LibraryArtistGroup> {
+    val artistGroups = buildLibraryArtistGroups(songs)
+
+    return when (sortOption) {
+        LibrarySortOption.SONG_COUNT -> {
+            artistGroups.sortedWith(
+                compareByDescending<LibraryArtistGroup> { artist ->
+                    artist.songs.size
+                }.thenBy { artist ->
+                    artist.name.lowercase()
                 }
             )
+        }
+
+        else -> {
+            artistGroups.sortedBy { artist ->
+                artist.name.lowercase()
+            }
         }
     }
 }
 
-@Composable
-private fun ArtistActionsMenu(
+internal fun artistActionSheetTarget(
     artistName: String,
+    subtitle: String,
+    artworkUri: Any?,
     artistSongs: List<Song>,
     onPlayClick: (String, List<Song>) -> Unit,
     onShuffleClick: (String, List<Song>) -> Unit,
     onPlayNextClick: (String, List<Song>) -> Unit,
     onAddToQueueClick: (String, List<Song>) -> Unit,
     onAddToPlaylistClick: (String, List<Song>) -> Unit
-) {
-    var isMenuExpanded by remember { mutableStateOf(false) }
-
-    IconButton(
-        onClick = {
-            isMenuExpanded = true
-        }
-    ) {
-        Icon(
-            imageVector = Icons.Filled.MoreVert,
-            contentDescription = "Artist actions"
+): LibraryItemActionSheetTarget {
+    return LibraryItemActionSheetTarget(
+        title = artistName,
+        subtitle = subtitle,
+        artworkUri = artworkUri,
+        artworkDescription = "Artwork for $artistName",
+        actions = listOf(
+            LibraryItemAction(
+                label = "Play",
+                icon = Icons.Filled.PlayArrow,
+                onClick = { onPlayClick(artistName, artistSongs) }
+            ),
+            LibraryItemAction(
+                label = "Shuffle",
+                icon = Icons.Filled.Shuffle,
+                onClick = { onShuffleClick(artistName, artistSongs) }
+            ),
+            LibraryItemAction(
+                label = "Play next",
+                icon = Icons.Filled.SkipNext,
+                onClick = { onPlayNextClick(artistName, artistSongs) }
+            ),
+            LibraryItemAction(
+                label = "Add to queue",
+                icon = Icons.AutoMirrored.Filled.QueueMusic,
+                onClick = { onAddToQueueClick(artistName, artistSongs) }
+            ),
+            LibraryItemAction(
+                label = "Add to playlist",
+                icon = Icons.AutoMirrored.Filled.PlaylistAdd,
+                onClick = { onAddToPlaylistClick(artistName, artistSongs) }
+            )
         )
-    }
-
-    DropdownMenu(
-        expanded = isMenuExpanded,
-        onDismissRequest = {
-            isMenuExpanded = false
-        }
-    ) {
-        DropdownMenuItem(
-            text = { Text(text = "Play") },
-            onClick = {
-                isMenuExpanded = false
-                onPlayClick(artistName, artistSongs)
-            }
-        )
-
-        DropdownMenuItem(
-            text = { Text(text = "Shuffle") },
-            onClick = {
-                isMenuExpanded = false
-                onShuffleClick(artistName, artistSongs)
-            }
-        )
-
-        DropdownMenuItem(
-            text = { Text(text = "Play next") },
-            onClick = {
-                isMenuExpanded = false
-                onPlayNextClick(artistName, artistSongs)
-            }
-        )
-
-        DropdownMenuItem(
-            text = { Text(text = "Add to queue") },
-            onClick = {
-                isMenuExpanded = false
-                onAddToQueueClick(artistName, artistSongs)
-            }
-        )
-
-        DropdownMenuItem(
-            text = {
-                Text(text = "Add to playlist")
-            },
-            onClick = {
-                isMenuExpanded = false
-                onAddToPlaylistClick(artistName, artistSongs)
-            }
-        )
-    }
+    )
 }

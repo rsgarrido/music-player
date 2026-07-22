@@ -4,7 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import com.example.cdplaya.ui.AppShellTypography
 
 @Composable
 fun HomeSectionHeader(
@@ -14,8 +14,7 @@ fun HomeSectionHeader(
     Text(
         text = text,
         modifier = modifier,
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.SemiBold,
+        style = AppShellTypography.SectionTitle,
         color = MaterialTheme.colorScheme.onBackground
     )
 }

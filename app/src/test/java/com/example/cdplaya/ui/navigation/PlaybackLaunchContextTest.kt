@@ -25,7 +25,7 @@ class PlaybackLaunchContextTest {
     @Test
     fun capturePreservesTopLevelSearchQuery() {
         val context = capturePlaybackLaunchContext(
-            mainDestination = MainDestination.LIBRARY,
+            mainDestination = MainDestination.SEARCH,
             selectedLibraryTab = LibraryTab.SONGS,
             selectedAlbumFolderPath = null,
             selectedArtistName = null,
@@ -34,6 +34,20 @@ class PlaybackLaunchContextTest {
         )
 
         assertEquals(PlaybackLaunchContext.Search("needle"), context)
+    }
+
+    @Test
+    fun capturePreservesEmptySearchDestination() {
+        val context = capturePlaybackLaunchContext(
+            mainDestination = MainDestination.SEARCH,
+            selectedLibraryTab = LibraryTab.SONGS,
+            selectedAlbumFolderPath = null,
+            selectedArtistName = null,
+            selectedPlaylistId = null,
+            searchQuery = ""
+        )
+
+        assertEquals(PlaybackLaunchContext.Search(""), context)
     }
 
     @Test

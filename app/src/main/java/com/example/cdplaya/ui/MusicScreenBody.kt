@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -28,13 +30,21 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.home.HomeScreen
 import com.example.cdplaya.ui.library.FolderSelectionScreen
+import com.example.cdplaya.ui.library.LibraryBrowseSwitcher
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
+import com.example.cdplaya.ui.library.LibraryViewMode
+import com.example.cdplaya.ui.library.LibraryGridColumns
+import com.example.cdplaya.ui.library.LibraryViewOptionsButton
+import com.example.cdplaya.ui.library.LibraryViewOptionsSheet
 import com.example.cdplaya.ui.library.MusicLibraryContent
+import com.example.cdplaya.ui.library.rememberLibraryViewModeState
+import com.example.cdplaya.ui.library.viewCategory
 import com.example.cdplaya.ui.navigation.MainDestination
 import com.example.cdplaya.ui.queue.QueueSnackbarActions
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
@@ -77,9 +87,7 @@ fun MusicScreenBody(
     isSettingsScreenVisible: Boolean,
     queueSnackbarActions: QueueSnackbarActions,
     onSettingsClick: () -> Unit,
-    onHomeClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
-    onSearchClick: () -> Unit,
     onFolderBackClick: () -> Unit,
     onSettingsBackClick: () -> Unit,
     onLibraryFoldersClick: () -> Unit,
@@ -145,7 +153,10 @@ fun MusicScreenBody(
     bottomContentPadding: Dp = 24.dp,
     modifier: Modifier = Modifier
 ) {
-    var isLibrarySearchVisible by rememberSaveable { mutableStateOf(false) }
+    val libraryViewModeState = rememberLibraryViewModeState()
+    var isLibraryViewOptionsVisible by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     when {
         isFolderScreenVisible -> {
@@ -194,24 +205,27 @@ fun MusicScreenBody(
         }
 
         else -> {
+            val currentLibraryViewMode = libraryViewModeState.modeFor(selectedLibraryTab)
+            val currentGridColumnCount =
+                libraryViewModeState.gridColumnCountFor(selectedLibraryTab)
+
             AnimatedContent(
                 targetState = mainDestination,
                 transitionSpec = {
-                    if (targetState == MainDestination.LIBRARY) {
-                        (fadeIn(tween(170)) +
-                                slideInHorizontally(tween(180)) { width -> width / 18 })
-                            .togetherWith(
-                                fadeOut(tween(120)) +
-                                        slideOutHorizontally(tween(150)) { width -> -width / 24 }
-                            )
-                    } else {
-                        (fadeIn(tween(170)) +
-                                slideInHorizontally(tween(180)) { width -> -width / 18 })
-                            .togetherWith(
-                                fadeOut(tween(120)) +
-                                        slideOutHorizontally(tween(150)) { width -> width / 24 }
-                            )
-                    }
+                    val direction = if (targetState.ordinal > initialState.ordinal) 1 else -1
+
+                    (fadeIn(tween(190)) +
+                            scaleIn(tween(210), initialScale = 0.985f) +
+                            slideInHorizontally(tween(210)) { width ->
+                                direction * width / 28
+                            })
+                        .togetherWith(
+                            fadeOut(tween(145)) +
+                                    scaleOut(tween(170), targetScale = 0.995f) +
+                                    slideOutHorizontally(tween(175)) { width ->
+                                        -direction * width / 36
+                                    }
+                        )
                 },
                 label = "appShellDestination"
             ) { destination ->
@@ -219,6 +233,10 @@ fun MusicScreenBody(
                 HomeScreen(
                     permissionGranted = permissionGranted,
                     recentlyPlayedSongs = recentlyPlayedSongs,
+                    favoriteSongs = songs.filter { song ->
+                        song.favoriteKey() in favoriteSongKeys
+                    },
+                    currentSongId = currentSong?.id,
                     songCount = songs.size,
                     albumCount = songs
                         .mapTo(mutableSetOf()) { song -> song.folderPath }
@@ -231,23 +249,37 @@ fun MusicScreenBody(
                     playlistCount = playlists.size,
                     onSettingsClick = onSettingsClick,
                     onOpenLibrary = { tab ->
-                        isLibrarySearchVisible = false
                         onOpenLibrary(tab)
-                    },
-                    onSearchClick = {
-                        isLibrarySearchVisible = true
-                        onSearchClick()
                     },
                     onRecentlyPlayedSongClick = { song ->
                         onSongClick(song, recentlyPlayedSongs)
+                    },
+                    onFavoriteSongClick = { song ->
+                        onSongClick(
+                            song,
+                            songs.filter { candidate ->
+                                candidate.favoriteKey() in favoriteSongKeys
+                            }
+                        )
                     },
                     modifier = modifier,
                     bottomContentPadding = bottomContentPadding
                 )
                 } else {
-                    val canSearchLibrary = selectedLibraryTab != LibraryTab.QUEUE
-                    val shouldShowLibrarySearch = canSearchLibrary &&
-                            (isLibrarySearchVisible || searchQuery.isNotBlank())
+                    val isSearchDestination = destination == MainDestination.SEARCH
+                    val isLibraryDetail = selectedArtistName != null ||
+                            selectedAlbumFolderPath != null ||
+                            selectedPlaylistId != null
+                    val selectedViewMode = if (isSearchDestination) {
+                        LibraryViewMode.LIST
+                    } else {
+                        currentLibraryViewMode
+                    }
+                    val selectedGridColumnCount = if (isSearchDestination) {
+                        LibraryGridColumns.DEFAULT
+                    } else {
+                        currentGridColumnCount
+                    }
 
                     Column(
                     modifier = modifier
@@ -255,21 +287,30 @@ fun MusicScreenBody(
                         .animateContentSize()
                 ) {
                     MusicScreenHeader(
-                        title = selectedLibraryTab.title,
-                        onBackClick = {
-                            isLibrarySearchVisible = false
-                            onHomeClick()
+                        title = when {
+                            isSearchDestination -> "Search"
+                            selectedLibraryTab == LibraryTab.QUEUE -> "Up Next"
+                            else -> "Library"
                         },
+                        onBackClick = null,
                         onSettingsClick = onSettingsClick,
                         modifier = Modifier.statusBarsPadding(),
-                        onSearchClick = if (canSearchLibrary) {
+                        viewModeAction = if (!isSearchDestination &&
+                            !isLibraryDetail &&
+                            selectedLibraryTab.viewCategory() != null
+                        ) {
                             {
-                                isLibrarySearchVisible = !shouldShowLibrarySearch
+                                LibraryViewOptionsButton(
+                                    viewMode = selectedViewMode,
+                                    gridColumnCount = selectedGridColumnCount,
+                                    onClick = {
+                                        isLibraryViewOptionsVisible = true
+                                    }
+                                )
                             }
                         } else {
                             null
                         },
-                        isSearchActive = shouldShowLibrarySearch,
                         sortAction = {
                             LibrarySortAction(
                                 selectedLibraryTab = selectedLibraryTab,
@@ -293,9 +334,22 @@ fun MusicScreenBody(
                             modifier = Modifier.padding(16.dp)
                         )
                     } else {
+                        if (!isSearchDestination &&
+                            !isLibraryDetail &&
+                            selectedLibraryTab != LibraryTab.QUEUE
+                        ) {
+                            LibraryBrowseSwitcher(
+                                selectedTab = selectedLibraryTab,
+                                onTabSelected = { tab ->
+                                    onOpenLibrary(tab)
+                                },
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+
                         LibrarySearchControl(
                             selectedLibraryTab = selectedLibraryTab,
-                            isSearchVisible = shouldShowLibrarySearch,
+                            isSearchVisible = isSearchDestination,
                             searchQuery = searchQuery,
                             onSearchQueryChange = onSearchQueryChange
                         )
@@ -308,6 +362,8 @@ fun MusicScreenBody(
                             selectedArtistSortOption = selectedArtistSortOption,
                             selectedAlbumSortOption = selectedAlbumSortOption,
                             selectedFavoriteSortOption = selectedFavoriteSortOption,
+                            viewMode = selectedViewMode,
+                            gridColumnCount = selectedGridColumnCount,
                             selectedArtistName = selectedArtistName,
                             selectedAlbumFolderPath = selectedAlbumFolderPath,
                             selectedPlaylistId = selectedPlaylistId,
@@ -365,6 +421,20 @@ fun MusicScreenBody(
                     }
                     }
                 }
+            }
+
+            if (isLibraryViewOptionsVisible && selectedLibraryTab.viewCategory() != null) {
+                LibraryViewOptionsSheet(
+                    viewMode = currentLibraryViewMode,
+                    gridColumnCount = currentGridColumnCount,
+                    onOptionSelected = { option ->
+                        libraryViewModeState.select(selectedLibraryTab, option)
+                        isLibraryViewOptionsVisible = false
+                    },
+                    onDismissRequest = {
+                        isLibraryViewOptionsVisible = false
+                    }
+                )
             }
         }
     }

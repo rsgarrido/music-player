@@ -1,5 +1,6 @@
 package com.example.cdplaya.ui.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,17 +10,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.ui.AppShellTypography
 import com.example.cdplaya.ui.MusicScreenHeader
 import com.example.cdplaya.ui.library.LibraryTab
 
@@ -27,17 +30,23 @@ import com.example.cdplaya.ui.library.LibraryTab
 fun HomeScreen(
     permissionGranted: Boolean,
     recentlyPlayedSongs: List<Song>,
+    favoriteSongs: List<Song>,
+    currentSongId: Long?,
     songCount: Int,
     albumCount: Int,
     artistCount: Int,
     playlistCount: Int,
     onSettingsClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
-    onSearchClick: () -> Unit,
     onRecentlyPlayedSongClick: (Song) -> Unit,
+    onFavoriteSongClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
     bottomContentPadding: Dp = 24.dp
 ) {
+    val visibleRecentlyPlayedSongs = recentlyPlayedSongs
+        .filterNot { song -> song.id == currentSongId }
+        .ifEmpty { recentlyPlayedSongs }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize(),
@@ -45,24 +54,40 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 MusicScreenHeader(
                     title = "CDPlaya",
                     onSettingsClick = onSettingsClick,
                     modifier = Modifier.statusBarsPadding()
                 )
 
-                Text(
-                    text = buildLibrarySummary(
-                        songCount = songCount,
-                        albumCount = albumCount,
-                        artistCount = artistCount,
-                        playlistCount = playlistCount
-                    ),
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    HomeStatBadge(
+                        count = songCount,
+                        label = pluralStringResource(R.plurals.song_label, songCount),
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeStatBadge(
+                        count = albumCount,
+                        label = pluralStringResource(R.plurals.album_label, albumCount),
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeStatBadge(
+                        count = artistCount,
+                        label = pluralStringResource(R.plurals.artist_label, artistCount),
+                        modifier = Modifier.weight(1f)
+                    )
+                    HomeStatBadge(
+                        count = playlistCount,
+                        label = pluralStringResource(R.plurals.playlist_label, playlistCount),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
 
@@ -76,10 +101,10 @@ fun HomeScreen(
             }
         }
 
-        if (recentlyPlayedSongs.isNotEmpty()) {
+        if (visibleRecentlyPlayedSongs.isNotEmpty()) {
             item {
                 HomeRecentlyPlayedShelf(
-                    songs = recentlyPlayedSongs.take(8),
+                    songs = visibleRecentlyPlayedSongs.take(8),
                     onSeeAllClick = {
                         onOpenLibrary(LibraryTab.RECENTLY_PLAYED)
                     },
@@ -88,78 +113,61 @@ fun HomeScreen(
             }
         }
 
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                HomeSectionHeader(
-                    text = "Your Library",
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
-                HomeLibraryShortcutGrid(
-                    onOpenLibrary = onOpenLibrary,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+        if (favoriteSongs.isNotEmpty()) {
+            item {
+                HomeFavoritesShelf(
+                    songs = favoriteSongs.take(8),
+                    onSeeAllClick = {
+                        onOpenLibrary(LibraryTab.FAVORITES)
+                    },
+                    onSongClick = onFavoriteSongClick
                 )
             }
         }
 
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                HomeSectionHeader(
-                    text = "More",
-                    modifier = Modifier.padding(horizontal = 16.dp)
+        if (permissionGranted && recentlyPlayedSongs.isEmpty() && favoriteSongs.isEmpty()) {
+            item {
+                Text(
+                    text = "Choose something from Library to start building your listening history.",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                HomeSecondaryShortcutRow(onOpenLibrary = onOpenLibrary)
-            }
-        }
-
-        item {
-            PressableHomeCard(
-                onClick = onSearchClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                pressedContainerColor = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Search,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-
-                    Text(
-                        text = "Search",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                }
             }
         }
     }
 }
 
-private fun buildLibrarySummary(
-    songCount: Int,
-    albumCount: Int,
-    artistCount: Int,
-    playlistCount: Int
-): String {
-    return listOf(
-        libraryCountLabel(songCount, "song"),
-        libraryCountLabel(albumCount, "album"),
-        libraryCountLabel(artistCount, "artist"),
-        libraryCountLabel(playlistCount, "playlist")
-    ).joinToString(separator = " \u2022 ")
-}
-
-private fun libraryCountLabel(count: Int, singularLabel: String): String {
-    val label = if (count == 1) singularLabel else "${singularLabel}s"
-    return "$count $label"
+@Composable
+private fun HomeStatBadge(
+    count: Int,
+    label: String,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        border = BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 7.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(1.dp)
+        ) {
+            Text(
+                text = count.toString(),
+                style = AppShellTypography.StatNumber,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = label.uppercase(),
+                style = AppShellTypography.StatLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }

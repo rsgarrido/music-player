@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -141,9 +142,13 @@ private fun MiniPlayerCard(
                 }
             ),
         shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f),
-        tonalElevation = 3.dp,
-        shadowElevation = 4.dp
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.76f)
+        ),
+        tonalElevation = 4.dp,
+        shadowElevation = 10.dp
     ) {
         Row(
             modifier = Modifier

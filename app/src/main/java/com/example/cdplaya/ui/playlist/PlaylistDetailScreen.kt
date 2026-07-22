@@ -16,9 +16,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import com.example.cdplaya.R
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
 
@@ -67,7 +69,11 @@ fun PlaylistDetailScreen(
                 )
 
                 Text(
-                    text = "${playlistSongs.size} available song(s)",
+                    text = pluralStringResource(
+                        R.plurals.available_song_count,
+                        playlistSongs.size,
+                        playlistSongs.size
+                    ),
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

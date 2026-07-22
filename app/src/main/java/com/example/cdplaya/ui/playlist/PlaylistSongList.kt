@@ -1,19 +1,20 @@
 package com.example.cdplaya.ui.playlist
 
 import android.R
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -34,6 +35,10 @@ import coil.compose.AsyncImage
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.ui.library.LibraryItemAction
+import com.example.cdplaya.ui.library.LibraryItemActionSheet
+import com.example.cdplaya.ui.library.LibraryItemActionSheetTarget
+import com.example.cdplaya.ui.library.libraryItemActions
 
 @Composable
 fun PlaylistSongList(
@@ -53,6 +58,10 @@ fun PlaylistSongList(
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
+    var actionSheetTarget by remember {
+        mutableStateOf<LibraryItemActionSheetTarget?>(null)
+    }
+
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(bottom = bottomContentPadding)
@@ -67,7 +76,6 @@ fun PlaylistSongList(
             val isCurrentSong = song.id == currentSongId
             val wasRecentlyAdded = song.id in recentlyAddedSongIds
             val isFavorite = song.favoriteKey() in favoriteSongKeys
-            var isMenuExpanded by remember { mutableStateOf(false) }
             val canMoveUp = playlistSong != null && index > 0
             val canMoveDown = playlistSong != null && index < playlistSongRows.lastIndex
 
@@ -97,120 +105,6 @@ fun PlaylistSongList(
                 supportingContent = {
                     Text(text = song.artist.ifBlank { "Unknown Artist" })
                 },
-                trailingContent = {
-                    IconButton(
-                        onClick = {
-                            isMenuExpanded = true
-                        }
-                    ) {
-                        Icon(
-                            imageVector = if (wasRecentlyAdded) {
-                                Icons.Filled.Check
-                            } else {
-                                Icons.Filled.MoreVert
-                            },
-                            contentDescription = "Song actions",
-                            tint = if (wasRecentlyAdded) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurface
-                            }
-                        )
-                    }
-
-                    DropdownMenu(
-                        expanded = isMenuExpanded,
-                        onDismissRequest = {
-                            isMenuExpanded = false
-                        }
-                    ) {
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = "Play next")
-                            },
-                            onClick = {
-                                isMenuExpanded = false
-                                onPlayNextClick(song)
-                            }
-                        )
-
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = "Add to queue")
-                            },
-                            onClick = {
-                                isMenuExpanded = false
-                                onAddToQueueClick(song)
-                            }
-                        )
-
-                        DropdownMenuItem(
-                            text = {
-                                Text(
-                                    text = if (isFavorite) {
-                                        "Remove from favorites"
-                                    } else {
-                                        "Add to favorites"
-                                    }
-                                )
-                            },
-                            onClick = {
-                                isMenuExpanded = false
-                                onToggleFavoriteClick(song)
-                            }
-                        )
-
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = "Move up")
-                            },
-                            enabled = canMoveUp,
-                            onClick = {
-                                isMenuExpanded = false
-
-                                playlistSong?.let { row ->
-                                    onMovePlaylistSongUpClick(row)
-                                }
-                            }
-                        )
-
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = "Move down")
-                            },
-                            enabled = canMoveDown,
-                            onClick = {
-                                isMenuExpanded = false
-
-                                playlistSong?.let { row ->
-                                    onMovePlaylistSongDownClick(row)
-                                }
-                            }
-                        )
-
-                        DropdownMenuItem(
-                            text = {
-                                Text(text = "Edit tags")
-                            },
-                            onClick = {
-                                isMenuExpanded = false
-                                onEditSongTagsClick(song)
-                            }
-                        )
-
-                        if (playlistSong != null) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(text = "Remove from playlist")
-                                },
-                                onClick = {
-                                    isMenuExpanded = false
-                                    onRemovePlaylistSongClick(playlistSong)
-                                }
-                            )
-                        }
-                    }
-                },
                 colors = ListItemDefaults.colors(
                     containerColor = if (isCurrentSong) {
                         MaterialTheme.colorScheme.primaryContainer
@@ -218,10 +112,103 @@ fun PlaylistSongList(
                         MaterialTheme.colorScheme.surface
                     }
                 ),
-                modifier = Modifier.clickable {
-                    onSongClick(song, playlistSongs)
-                }
+                modifier = Modifier.libraryItemActions(
+                    clickLabel = "Play ${song.title}",
+                    onClick = {
+                        onSongClick(song, playlistSongs)
+                    },
+                    onShowActions = {
+                        val subtitleParts = buildList {
+                            add(song.artist.ifBlank { "Unknown Artist" })
+                            add(song.album.ifBlank { "Unknown Album" })
+                            if (wasRecentlyAdded) add("Recently added")
+                        }
+                        val actions = buildList {
+                            add(
+                                LibraryItemAction(
+                                    label = "Play next",
+                                    icon = Icons.Filled.SkipNext,
+                                    onClick = { onPlayNextClick(song) }
+                                )
+                            )
+                            add(
+                                LibraryItemAction(
+                                    label = "Add to queue",
+                                    icon = Icons.AutoMirrored.Filled.QueueMusic,
+                                    onClick = { onAddToQueueClick(song) }
+                                )
+                            )
+                            add(
+                                LibraryItemAction(
+                                    label = if (isFavorite) {
+                                        "Remove from favorites"
+                                    } else {
+                                        "Add to favorites"
+                                    },
+                                    icon = if (isFavorite) {
+                                        Icons.Filled.Favorite
+                                    } else {
+                                        Icons.Filled.FavoriteBorder
+                                    },
+                                    onClick = { onToggleFavoriteClick(song) }
+                                )
+                            )
+                            playlistSong?.takeIf { canMoveUp }?.let { row ->
+                                add(
+                                    LibraryItemAction(
+                                        label = "Move up",
+                                        icon = Icons.Filled.KeyboardArrowUp,
+                                        onClick = { onMovePlaylistSongUpClick(row) }
+                                    )
+                                )
+                            }
+                            playlistSong?.takeIf { canMoveDown }?.let { row ->
+                                add(
+                                    LibraryItemAction(
+                                        label = "Move down",
+                                        icon = Icons.Filled.KeyboardArrowDown,
+                                        onClick = { onMovePlaylistSongDownClick(row) }
+                                    )
+                                )
+                            }
+                            add(
+                                LibraryItemAction(
+                                    label = "Edit tags",
+                                    icon = Icons.Filled.Edit,
+                                    onClick = { onEditSongTagsClick(song) }
+                                )
+                            )
+                            if (playlistSong != null) {
+                                add(
+                                    LibraryItemAction(
+                                        label = "Remove from playlist",
+                                        icon = Icons.Filled.Delete,
+                                        isDestructive = true,
+                                        onClick = { onRemovePlaylistSongClick(playlistSong) }
+                                    )
+                                )
+                            }
+                        }
+
+                        actionSheetTarget = LibraryItemActionSheetTarget(
+                            title = song.title.ifBlank { "Unknown Title" },
+                            subtitle = subtitleParts.joinToString(" • "),
+                            artworkUri = song.albumArtUri,
+                            artworkDescription = "Album art for ${song.title}",
+                            actions = actions
+                        )
+                    }
+                )
             )
         }
+    }
+
+    actionSheetTarget?.let { target ->
+        LibraryItemActionSheet(
+            target = target,
+            onDismissRequest = {
+                actionSheetTarget = null
+            }
+        )
     }
 }

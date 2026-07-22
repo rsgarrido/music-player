@@ -26,7 +26,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.example.cdplaya.ui.MusicRoute
-import com.example.cdplaya.ui.appShellBackgroundBrush
 import com.example.cdplaya.ui.theme.CdplayaTheme
 import com.example.cdplaya.viewmodel.MusicViewModel
 
@@ -51,10 +50,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val transparentSystemBarStyle = SystemBarStyle.auto(
-            lightScrim = AndroidColor.TRANSPARENT,
-            darkScrim = AndroidColor.TRANSPARENT
-        )
+        val transparentSystemBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT)
         enableEdgeToEdge(
             statusBarStyle = transparentSystemBarStyle,
             navigationBarStyle = transparentSystemBarStyle
@@ -75,7 +71,7 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(appShellBackgroundBrush())
+                            .background(MaterialTheme.colorScheme.background)
                     ) {
                         MusicRoute(
                             musicViewModel = musicViewModel,
