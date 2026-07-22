@@ -23,13 +23,31 @@ Discover the exact tasks available to this checkout:
 .\gradlew.bat :benchmark:tasks --all
 ```
 
-The expected AGP 9.2.1 tasks are documented after task discovery in the Phase 4 report. Use
+Task discovery with AGP 9.2.1 and Baseline Profile plugin 1.4.1 produced these commands:
+
+```powershell
+.\gradlew.bat :app:assembleBenchmark
+.\gradlew.bat :benchmark:assembleBenchmarkBenchmark
+.\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest
+.\gradlew.bat :app:generateReleaseBaselineProfile
+```
+
+Run only the smoke suite or profile comparison with instrumentation class filtering:
+
+```powershell
+.\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest `
+  -Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.MacrobenchmarkSmokeSuite
+.\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest `
+  -Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.BaselineProfileComparisonBenchmarks
+```
+
+Use
 instrumentation arguments `cdplaya.smokeIterations` and `cdplaya.fullIterations` to override the
 default 2-iteration smoke and 10-iteration full suites.
 
 Gradle writes benchmark JSON and Perfetto traces below `benchmark/build/outputs/` and connected
 test results below `benchmark/build/reports/androidTests/connected/`. Generated profile sources
-are copied by the Baseline Profile plugin under `app/src/benchmark/generated/baselineProfiles/`.
+are copied by the Baseline Profile plugin under `app/src/release/generated/baselineProfiles/`.
 Do not commit raw traces, APKs, or generated benchmark build outputs.
 
 Debug builds are useful for correctness only. They are debuggable and are not representative
