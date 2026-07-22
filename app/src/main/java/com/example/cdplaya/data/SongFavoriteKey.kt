@@ -12,7 +12,7 @@ fun Song.stableKey(): String {
 }
 
 fun Song.favoriteKey(): String {
-    return stableKey()
+    return membershipKey()
 }
 
 fun stableSongKey(

@@ -8,5 +8,12 @@ data class PlaylistSong(
     val title: String,
     val artist: String,
     val album: String,
-    val duration: Long
+    val duration: Long,
+    val reference: SongReference = SongReference(
+        title = title,
+        artist = artist,
+        album = album,
+        duration = duration,
+        legacyStableKey = songKey
+    )
 )

@@ -8,6 +8,8 @@ import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.stableKey
+import com.example.cdplaya.data.SongReferenceResolution
+import com.example.cdplaya.data.SongReferenceResolver
 
 @Composable
 fun PlaylistsTabContent(
@@ -52,9 +54,8 @@ fun PlaylistsTabContent(
         )
     } else {
         val availablePlaylistSongs = selectedPlaylistSongs.mapNotNull { playlistSong ->
-            songs.firstOrNull { song ->
-                song.stableKey() == playlistSong.songKey
-            }
+            (SongReferenceResolver.resolve(playlistSong.reference, songs)
+                as? SongReferenceResolution.Resolved)?.song
         }
 
         PlaylistDetailScreen(

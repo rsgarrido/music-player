@@ -20,6 +20,8 @@ import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.PlaylistsRepository
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.SongReferenceResolution
+import com.example.cdplaya.data.SongReferenceResolver
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.playlistfile.M3uExportResult
@@ -179,6 +181,7 @@ class LibraryController(
             if (updatedSelectedPlaylistSongs != null) {
                 selectedPlaylistSongs = updatedSelectedPlaylistSongs
             }
+            publishLibraryData(libraryData, reconcilePlayback = true)
         }
     }
 
@@ -270,11 +273,9 @@ class LibraryController(
         coroutineScope.launch {
             val result = runCatching {
                 val playlistSongs = playlistsRepository.getPlaylistSongs(playlist.playlistId)
-                val songsByStableKey = songs.associateBy { song ->
-                    song.stableKey()
-                }
                 val exportableSongs = playlistSongs.mapNotNull { playlistSong ->
-                    songsByStableKey[playlistSong.songKey]
+                    (SongReferenceResolver.resolve(playlistSong.reference, songs)
+                        as? SongReferenceResolution.Resolved)?.song
                 }
 
                 PreparedPlaylistExport(
@@ -458,6 +459,8 @@ class LibraryController(
 
         if (folderSelectionChanged) {
             reloadSongsAfterFolderChange()
+        } else {
+            reconcileUserSongReferences(songs)
         }
     }
 
@@ -498,7 +501,7 @@ class LibraryController(
 
         songs = libraryData.songs
         PlaybackLibraryBridge.updateSongs(songs)
-        refreshListeningHistory()
+        reconcileUserSongReferences(songs)
 
         if (reconcilePlayback) {
             playbackController.handleLibrarySongsChanged(songs)
@@ -531,6 +534,26 @@ class LibraryController(
         }
     }
 
+    private fun reconcileUserSongReferences(currentSongs: List<Song>) {
+        coroutineScope.launch {
+            val reconciled = withContext(Dispatchers.IO) {
+                val favoriteResult = favoritesRepository.reconcileSongReferences(currentSongs)
+                playlistsRepository.reconcileSongReferences(currentSongs)
+                listeningHistoryRepository.reconcileSongReferences(currentSongs)
+                val recentlyPlayed = listeningHistoryRepository.getRecentlyPlayed()
+                val mostPlayed = listeningHistoryRepository.getMostPlayed()
+                Triple(favoriteResult.resolvedMembershipKeys, recentlyPlayed, mostPlayed)
+            }
+            favoriteSongKeys = reconciled.first
+            recentlyPlayedSongs = mapListeningHistoryEntriesToSongs(reconciled.second)
+            mostPlayedSongs = mapListeningHistoryEntriesToSongs(reconciled.third)
+            val selectedPlaylistId = selectedPlaylistSongs.firstOrNull()?.playlistId
+            if (selectedPlaylistId != null) {
+                selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(selectedPlaylistId)
+            }
+        }
+    }
+
     private fun loadPlaylists() {
         coroutineScope.launch {
             playlists = playlistsRepository.getPlaylists()
@@ -540,12 +563,9 @@ class LibraryController(
     private fun mapListeningHistoryEntriesToSongs(
         historyEntries: List<ListeningHistoryEntry>
     ): List<Song> {
-        val songsByStableKey = songs.associateBy { song ->
-            song.stableKey()
-        }
-
         return historyEntries.mapNotNull { historyEntry ->
-            songsByStableKey[historyEntry.songKey]
+            (SongReferenceResolver.resolve(historyEntry.reference, songs)
+                as? SongReferenceResolution.Resolved)?.song
         }
     }
 }

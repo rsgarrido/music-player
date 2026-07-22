@@ -14,8 +14,8 @@ interface SongPlayStatsDao {
     @Query("SELECT * FROM song_play_stats ORDER BY playCount DESC, lastPlayedAt DESC")
     suspend fun getMostPlayed(): List<SongPlayStatsEntity>
 
-    @Query("SELECT * FROM song_play_stats WHERE songKey = :songKey LIMIT 1")
-    suspend fun getStatsByKey(songKey: String): SongPlayStatsEntity?
+    @Query("SELECT * FROM song_play_stats WHERE referenceKey = :referenceKey LIMIT 1")
+    suspend fun getStatsByReferenceKey(referenceKey: String): SongPlayStatsEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrReplaceStats(songPlayStats: SongPlayStatsEntity)
@@ -23,8 +23,8 @@ interface SongPlayStatsDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrReplaceStats(stats: List<SongPlayStatsEntity>)
 
-    @Query("DELETE FROM song_play_stats WHERE songKey = :songKey")
-    suspend fun deleteStatsByKey(songKey: String)
+    @Query("DELETE FROM song_play_stats WHERE referenceKey = :referenceKey")
+    suspend fun deleteStatsByReferenceKey(referenceKey: String)
 
     @Query("DELETE FROM song_play_stats")
     suspend fun deleteAllStats()

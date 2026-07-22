@@ -44,7 +44,7 @@ class LibrarySourceMetadataTest {
     }
 
     @Test
-    fun migrationFiveToSixPreservesCachedRowsWithSafeDefaults() {
+    fun migrationFiveToSevenPreservesCachedAndUserRowsWithSafeDefaults() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val databaseName = "metadata-migration-${System.nanoTime()}.db"
         val configuration = SupportSQLiteOpenHelper.Configuration.builder(context)
@@ -88,6 +88,10 @@ class LibrarySourceMetadataTest {
                     db.execSQL("CREATE INDEX `index_cached_songs_folderPath` ON `cached_songs` (`folderPath`)")
                     db.execSQL("CREATE INDEX `index_cached_songs_title` ON `cached_songs` (`title`)")
                     db.execSQL("INSERT INTO `cached_songs` VALUES (7, 'Title', 'Artist', 'Album', 1, 120000, 'content://song/7', '/music/7.mp3', '/music', NULL, '', 123)")
+                    db.execSQL("INSERT INTO `favorite_songs` VALUES ('favorite-key', 'Title', 'Artist', 'Album', 120000, 111)")
+                    db.execSQL("INSERT INTO `playlists` (`playlistId`, `name`, `createdAt`, `updatedAt`) VALUES (9, 'Road trip', 222, 333)")
+                    db.execSQL("INSERT INTO `playlist_songs` (`playlistSongId`, `playlistId`, `songKey`, `position`, `title`, `artist`, `album`, `duration`, `addedAt`) VALUES (12, 9, 'playlist-key', 4, 'Track', 'Artist', 'Album', 120000, 444)")
+                    db.execSQL("INSERT INTO `song_play_stats` VALUES ('history-key', 'Played', 'Artist', 'Album', 120000, 7, 555, 666)")
                 }
 
                 override fun onUpgrade(
@@ -102,7 +106,7 @@ class LibrarySourceMetadataTest {
         helper.close()
 
         val database = Room.databaseBuilder(context, AppDatabase::class.java, databaseName)
-            .addMigrations(DatabaseProvider.MIGRATION_5_6)
+            .addMigrations(DatabaseProvider.MIGRATION_5_6, DatabaseProvider.MIGRATION_6_7)
             .build()
         try {
             val cursor = database.openHelper.writableDatabase.query(
@@ -116,6 +120,32 @@ class LibrarySourceMetadataTest {
                 assertEquals(0L, it.getLong(3))
                 assertEquals(0L, it.getLong(4))
                 assertEquals(0L, it.getLong(5))
+            }
+            database.openHelper.writableDatabase.query(
+                "SELECT referenceKey, songKey, createdAt FROM favorite_songs"
+            ).use {
+                assertTrue(it.moveToFirst())
+                assertEquals("legacy:favorite-key", it.getString(0))
+                assertEquals("favorite-key", it.getString(1))
+                assertEquals(111L, it.getLong(2))
+            }
+            database.openHelper.writableDatabase.query(
+                "SELECT playlistSongId, playlistId, position, songKey FROM playlist_songs"
+            ).use {
+                assertTrue(it.moveToFirst())
+                assertEquals(12L, it.getLong(0))
+                assertEquals(9L, it.getLong(1))
+                assertEquals(4, it.getInt(2))
+                assertEquals("playlist-key", it.getString(3))
+            }
+            database.openHelper.writableDatabase.query(
+                "SELECT referenceKey, playCount, firstPlayedAt, lastPlayedAt FROM song_play_stats"
+            ).use {
+                assertTrue(it.moveToFirst())
+                assertEquals("legacy:history-key", it.getString(0))
+                assertEquals(7, it.getInt(1))
+                assertEquals(555L, it.getLong(2))
+                assertEquals(666L, it.getLong(3))
             }
         } finally {
             database.close()

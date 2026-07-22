@@ -3,6 +3,7 @@ package com.example.cdplaya.data.local
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 
 @Dao
 interface PlaylistDao {
@@ -66,32 +67,14 @@ interface PlaylistDao {
     @Insert
     suspend fun insertPlaylistSongs(playlistSongs: List<PlaylistSongEntity>): List<Long>
 
+    @Update
+    suspend fun updatePlaylistSong(playlistSong: PlaylistSongEntity)
+
     @Query("UPDATE playlists SET name = :name, updatedAt = :updatedAt WHERE playlistId = :playlistId")
     suspend fun renamePlaylist(
         playlistId: Long,
         name: String,
         updatedAt: Long
-    )
-
-    @Query(
-        """
-    UPDATE playlist_songs
-    SET 
-        songKey = :newSongKey,
-        title = :title,
-        artist = :artist,
-        album = :album,
-        duration = :duration
-    WHERE songKey = :oldSongKey
-    """
-    )
-    suspend fun updatePlaylistSongReferences(
-        oldSongKey: String,
-        newSongKey: String,
-        title: String,
-        artist: String,
-        album: String,
-        duration: Long
     )
 
     @Query("DELETE FROM playlists WHERE playlistId = :playlistId")

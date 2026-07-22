@@ -9,11 +9,11 @@ import kotlin.math.min
 class ListeningHistoryRepository(
     private val songPlayStatsDao: SongPlayStatsDao
 ) {
-    suspend fun getRecentlyPlayed(): List<ListeningHistoryEntry> {
-        return songPlayStatsDao.getRecentlyPlayed().map { entity ->
-            entity.toListeningHistoryEntry()
-        }
-    }
+    suspend fun getRecentlyPlayed(): List<ListeningHistoryEntry> =
+        songPlayStatsDao.getRecentlyPlayed().map { it.toListeningHistoryEntry() }
+
+    suspend fun getMostPlayed(): List<ListeningHistoryEntry> =
+        songPlayStatsDao.getMostPlayed().map { it.toListeningHistoryEntry() }
 
     suspend fun getListeningHistoryForBackup(): List<BackupListeningHistoryEntry> {
         return songPlayStatsDao.getRecentlyPlayed().map { stats ->
@@ -34,61 +34,21 @@ class ListeningHistoryRepository(
         listeningHistory: List<BackupListeningHistoryEntry>
     ) {
         songPlayStatsDao.deleteAllStats()
-
-        if (listeningHistory.isEmpty()) {
-            return
-        }
-
-        songPlayStatsDao.insertOrReplaceStats(
-            listeningHistory.map { stats ->
-                SongPlayStatsEntity(
-                    songKey = stats.songKey,
-                    title = stats.title,
-                    artist = stats.artist,
-                    album = stats.album,
-                    duration = stats.duration,
-                    playCount = stats.playCount,
-                    firstPlayedAt = stats.firstPlayedAt,
-                    lastPlayedAt = stats.lastPlayedAt
-                )
-            }
-        )
-    }
-
-    suspend fun getMostPlayed(): List<ListeningHistoryEntry> {
-        return songPlayStatsDao.getMostPlayed().map { entity ->
-            entity.toListeningHistoryEntry()
-        }
+        songPlayStatsDao.insertOrReplaceStats(listeningHistory.map { it.toLegacyEntity() })
     }
 
     suspend fun recordSongPlay(song: Song) {
-        val songKey = song.stableKey()
+        val referenceKey = song.membershipKey()
         val now = System.currentTimeMillis()
-
-        val existingStats = songPlayStatsDao.getStatsByKey(songKey)
-
+        val existingStats = songPlayStatsDao.getStatsByReferenceKey(referenceKey)
         val updatedStats = if (existingStats == null) {
-            SongPlayStatsEntity(
-                songKey = songKey,
-                title = song.title,
-                artist = song.artist,
-                album = song.album,
-                duration = song.duration,
-                playCount = 1,
-                firstPlayedAt = now,
-                lastPlayedAt = now
-            )
+            newStats(song, referenceKey, now)
         } else {
-            existingStats.copy(
-                title = song.title,
-                artist = song.artist,
-                album = song.album,
-                duration = song.duration,
+            existingStats.withSongReference(song).copy(
                 playCount = existingStats.playCount + 1,
                 lastPlayedAt = now
             )
         }
-
         songPlayStatsDao.insertOrReplaceStats(updatedStats)
     }
 
@@ -96,76 +56,121 @@ class ListeningHistoryRepository(
         originalSong: Song,
         editedTags: EditableSongTags
     ) {
-        val oldSongKey = originalSong.stableKey()
-
-        val newTitle = editedTags.title.trim()
-        val newArtist = editedTags.artist.trim()
-        val newAlbum = editedTags.album.trim()
-
-        val newSongKey = stableSongKey(
-            title = newTitle,
-            artist = newArtist,
-            album = newAlbum,
-            duration = originalSong.duration
+        val updatedSong = originalSong.copy(
+            title = editedTags.title.trim(),
+            artist = editedTags.artist.trim(),
+            album = editedTags.album.trim()
         )
-
-        val oldStats = songPlayStatsDao.getStatsByKey(oldSongKey)
-            ?: return
-
-        val existingNewStats = songPlayStatsDao.getStatsByKey(newSongKey)
-
-        if (oldSongKey == newSongKey) {
-            songPlayStatsDao.insertOrReplaceStats(
-                oldStats.copy(
-                    title = newTitle,
-                    artist = newArtist,
-                    album = newAlbum,
-                    duration = originalSong.duration
-                )
-            )
-
-            return
+        songPlayStatsDao.getRecentlyPlayed().forEach { stats ->
+            if (SongReferenceResolver.resolve(stats.toSongReference(), listOf(originalSong))
+                is SongReferenceResolution.Resolved
+            ) {
+                persistReconciledStats(stats, stats.withSongReference(updatedSong))
+            }
         }
-
-        if (existingNewStats != null) {
-            val mergedStats = existingNewStats.copy(
-                title = newTitle,
-                artist = newArtist,
-                album = newAlbum,
-                duration = originalSong.duration,
-                playCount = existingNewStats.playCount + oldStats.playCount,
-                firstPlayedAt = min(existingNewStats.firstPlayedAt, oldStats.firstPlayedAt),
-                lastPlayedAt = max(existingNewStats.lastPlayedAt, oldStats.lastPlayedAt)
-            )
-
-            songPlayStatsDao.insertOrReplaceStats(mergedStats)
-            songPlayStatsDao.deleteStatsByKey(oldSongKey)
-            return
-        }
-
-        songPlayStatsDao.insertOrReplaceStats(
-            oldStats.copy(
-                songKey = newSongKey,
-                title = newTitle,
-                artist = newArtist,
-                album = newAlbum,
-                duration = originalSong.duration
-            )
-        )
-
-        songPlayStatsDao.deleteStatsByKey(oldSongKey)
     }
 
-    private fun SongPlayStatsEntity.toListeningHistoryEntry(): ListeningHistoryEntry {
-        return ListeningHistoryEntry(
-            songKey = songKey,
-            title = title,
-            artist = artist,
-            album = album,
-            duration = duration,
-            playCount = playCount,
-            firstPlayedAt = firstPlayedAt,
-            lastPlayedAt = lastPlayedAt
+    suspend fun reconcileSongReferences(songs: Collection<Song>): SongReferenceReconciliation {
+        var unresolved = 0
+        var ambiguous = 0
+        var backfilled = 0
+        songPlayStatsDao.getRecentlyPlayed().forEach { stats ->
+            when (val result = SongReferenceResolver.resolve(stats.toSongReference(), songs)) {
+                is SongReferenceResolution.Resolved -> {
+                    val updated = stats.withSongReference(result.song)
+                    if (updated != stats) {
+                        persistReconciledStats(stats, updated)
+                        backfilled += 1
+                    }
+                }
+
+                is SongReferenceResolution.Ambiguous -> ambiguous += 1
+                SongReferenceResolution.NotFound -> unresolved += 1
+            }
+        }
+        return SongReferenceReconciliation(
+            unresolvedCount = unresolved,
+            ambiguousCount = ambiguous,
+            backfilledCount = backfilled
         )
     }
+
+    private suspend fun persistReconciledStats(
+        old: SongPlayStatsEntity,
+        updated: SongPlayStatsEntity
+    ) {
+        val existingTarget = if (old.referenceKey == updated.referenceKey) null else {
+            songPlayStatsDao.getStatsByReferenceKey(updated.referenceKey)
+        }
+        val finalStats = if (existingTarget == null) updated else {
+            updated.copy(
+                playCount = existingTarget.playCount + old.playCount,
+                firstPlayedAt = min(existingTarget.firstPlayedAt, old.firstPlayedAt),
+                lastPlayedAt = max(existingTarget.lastPlayedAt, old.lastPlayedAt)
+            )
+        }
+        songPlayStatsDao.insertOrReplaceStats(finalStats)
+        if (old.referenceKey != finalStats.referenceKey) {
+            songPlayStatsDao.deleteStatsByReferenceKey(old.referenceKey)
+        }
+    }
+
+    private fun SongPlayStatsEntity.toListeningHistoryEntry() = ListeningHistoryEntry(
+        songKey = songKey,
+        title = title,
+        artist = artist,
+        album = album,
+        duration = duration,
+        playCount = playCount,
+        firstPlayedAt = firstPlayedAt,
+        lastPlayedAt = lastPlayedAt,
+        reference = toSongReference()
+    )
 }
+
+private fun newStats(song: Song, referenceKey: String, now: Long): SongPlayStatsEntity {
+    val reference = song.toSongReference()
+    return SongPlayStatsEntity(
+        referenceKey = referenceKey,
+        songKey = reference.legacyStableKey,
+        title = reference.title,
+        artist = reference.artist,
+        album = reference.album,
+        duration = reference.duration,
+        playCount = 1,
+        firstPlayedAt = now,
+        lastPlayedAt = now,
+        mediaStoreId = reference.mediaStoreId,
+        volumeName = reference.volumeName,
+        contentUri = reference.contentUri,
+        relativePath = reference.relativePath,
+        displayName = reference.displayName,
+        fileSizeBytes = reference.fileSizeBytes,
+        dateModifiedEpochSeconds = reference.dateModifiedEpochSeconds,
+        albumArtist = reference.albumArtist,
+        portableKey = reference.portableKey,
+        portableKeyVersion = reference.portableKeyVersion
+    )
+}
+
+private fun BackupListeningHistoryEntry.toLegacyEntity() = SongPlayStatsEntity(
+    referenceKey = "legacy:$songKey",
+    songKey = songKey,
+    title = title,
+    artist = artist,
+    album = album,
+    duration = duration,
+    playCount = playCount,
+    firstPlayedAt = firstPlayedAt,
+    lastPlayedAt = lastPlayedAt,
+    mediaStoreId = null,
+    volumeName = "",
+    contentUri = "",
+    relativePath = "",
+    displayName = "",
+    fileSizeBytes = 0L,
+    dateModifiedEpochSeconds = 0L,
+    albumArtist = "",
+    portableKey = portableMetadataKey(title, artist, album, duration).orEmpty(),
+    portableKeyVersion = SongIdentity.PORTABLE_KEY_VERSION
+)
