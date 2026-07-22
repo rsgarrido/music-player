@@ -50,5 +50,8 @@ test results below `benchmark/build/reports/androidTests/connected/`. Generated 
 are copied by the Baseline Profile plugin under `app/src/release/generated/baselineProfiles/`.
 Do not commit raw traces, APKs, or generated benchmark build outputs.
 
+The reproducible thermal protocol, results table, limitations, and standalone Perfetto capture
+command are in `docs/performance/phase4-performance-report.md`.
+
 Debug builds are useful for correctness only. They are debuggable and are not representative
 performance measurements; all reported timing must come from the release-like benchmark variant.
