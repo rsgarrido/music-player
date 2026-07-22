@@ -47,6 +47,9 @@ import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
+import com.example.cdplaya.ui.state.LibraryAppearanceUiState
+import com.example.cdplaya.ui.library.LibraryViewCategory
+import com.example.cdplaya.ui.library.LibraryViewOption
 import com.example.cdplaya.ui.queue.rememberQueueSnackbarActions
 import com.example.cdplaya.ui.tageditor.DiscardTagChangesDialog
 import com.example.cdplaya.ui.tageditor.TagEditorScreen
@@ -136,6 +139,8 @@ fun MusicScreen(
     onModernSeekbarStyleSelected: (ModernSeekbarStyle) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
+    libraryAppearanceUiState: LibraryAppearanceUiState,
+    onLibraryViewOptionSelected: (LibraryViewCategory, LibraryViewOption) -> Unit,
     mostPlayedSongs: List<Song>
 ) {
     val navigationState = rememberMusicNavigationState()
@@ -617,6 +622,8 @@ fun MusicScreen(
                 onModernSeekbarStyleSelected = onModernSeekbarStyleSelected,
                 selectedReplayGainMode = selectedReplayGainMode,
                 onReplayGainModeSelected = onReplayGainModeSelected,
+                libraryAppearanceUiState = libraryAppearanceUiState,
+                onLibraryViewOptionSelected = onLibraryViewOptionSelected,
                 bottomContentPadding = bottomContentPadding,
                 modifier = Modifier.fillMaxSize()
             )

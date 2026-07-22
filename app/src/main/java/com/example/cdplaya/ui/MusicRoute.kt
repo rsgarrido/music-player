@@ -22,6 +22,11 @@ fun MusicRoute(
     val playbackUiState by musicViewModel.playbackUiState.collectAsStateWithLifecycle()
     val libraryUiState by musicViewModel.libraryUiState.collectAsStateWithLifecycle()
     val sleepTimerUiState by musicViewModel.sleepTimerUiState.collectAsStateWithLifecycle()
+    val playerAppearanceUiState by
+        musicViewModel.playerAppearanceUiState.collectAsStateWithLifecycle()
+    val libraryAppearanceUiState by
+        musicViewModel.libraryAppearanceUiState.collectAsStateWithLifecycle()
+    if (!playerAppearanceUiState.isLoaded || !libraryAppearanceUiState.isLoaded) return
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
         onPrepareExport = musicViewModel::preparePlaylistExport,
@@ -203,22 +208,24 @@ fun MusicRoute(
         onCancelSleepTimerClick = {
             musicViewModel.cancelSleepTimer()
         },
-        selectedPlayerTheme = musicViewModel.selectedPlayerTheme,
-        selectedPlayerThemeTokens = musicViewModel.selectedPlayerThemeTokens,
+        selectedPlayerTheme = playerAppearanceUiState.selectedTheme,
+        selectedPlayerThemeTokens = playerAppearanceUiState.themeTokens,
         onPlayerThemeSelected = { playerTheme ->
             musicViewModel.selectPlayerTheme(playerTheme)
         },
         onUpdatePlayerThemeTokenOverride = musicViewModel::updatePlayerThemeTokenOverride,
         onResetPlayerThemeTokenOverrides = musicViewModel::resetPlayerThemeTokenOverrides,
         selectedModernArtworkTransitionStyle =
-            musicViewModel.selectedModernArtworkTransitionStyle,
+            playerAppearanceUiState.modernArtworkTransitionStyle,
         onModernArtworkTransitionStyleSelected =
             musicViewModel::selectModernArtworkTransitionStyle,
-        selectedModernSeekbarStyle = musicViewModel.selectedModernSeekbarStyle,
+        selectedModernSeekbarStyle = playerAppearanceUiState.modernSeekbarStyle,
         onModernSeekbarStyleSelected = musicViewModel::selectModernSeekbarStyle,
-        selectedReplayGainMode = musicViewModel.selectedReplayGainMode,
+        selectedReplayGainMode = playerAppearanceUiState.replayGainMode,
         onReplayGainModeSelected = { replayGainMode ->
             musicViewModel.selectReplayGainMode(replayGainMode)
         },
+        libraryAppearanceUiState = libraryAppearanceUiState,
+        onLibraryViewOptionSelected = musicViewModel::selectLibraryViewOption,
     )
 }

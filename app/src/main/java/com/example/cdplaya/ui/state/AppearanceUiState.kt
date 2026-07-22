@@ -4,6 +4,9 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibraryGridColumns
 import com.example.cdplaya.ui.library.LibraryViewMode
+import com.example.cdplaya.ui.library.LibraryViewCategory
+import com.example.cdplaya.ui.library.LibraryTab
+import com.example.cdplaya.ui.library.viewCategory
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -30,3 +33,16 @@ data class LibraryAppearanceUiState(
     val artists: LibraryCategoryAppearance = LibraryCategoryAppearance(),
     val isLoaded: Boolean = false
 )
+
+fun LibraryAppearanceUiState.category(category: LibraryViewCategory): LibraryCategoryAppearance =
+    when (category) {
+        LibraryViewCategory.SONGS -> songs
+        LibraryViewCategory.ALBUMS -> albums
+        LibraryViewCategory.ARTISTS -> artists
+    }
+
+fun LibraryAppearanceUiState.modeFor(tab: LibraryTab): LibraryViewMode =
+    tab.viewCategory()?.let(::category)?.viewMode ?: LibraryViewMode.LIST
+
+fun LibraryAppearanceUiState.gridColumnCountFor(tab: LibraryTab): Int =
+    tab.viewCategory()?.let(::category)?.gridColumnCount ?: LibraryGridColumns.DEFAULT

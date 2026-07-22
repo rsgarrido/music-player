@@ -9,7 +9,6 @@ import androidx.room.withTransaction
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.FavoritesRepository
 import com.example.cdplaya.data.LibraryFolder
-import com.example.cdplaya.data.LibraryPreferences
 import com.example.cdplaya.data.ListeningHistoryEntry
 import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.LibraryCacheRepository
@@ -28,6 +27,7 @@ import com.example.cdplaya.data.SongReferenceResolution
 import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.data.sortSongsByDateAddedDescending
 import com.example.cdplaya.data.local.AppDatabase
+import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.data.playlistfile.M3uExportResult
 import com.example.cdplaya.data.playlistfile.PlaylistFileRepository
 import com.example.cdplaya.data.playlistfile.PlaylistImportResult
@@ -71,7 +71,7 @@ class LibraryController(
 ) {
     private val applicationContext = context.applicationContext
 
-    internal val libraryPreferences = LibraryPreferences(applicationContext)
+    private val appPreferencesRepository = AppPreferencesRepository.getInstance(applicationContext)
     internal val favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
     internal val playlistsRepository = PlaylistsRepository(appDatabase.playlistDao())
     internal val listeningHistoryRepository = ListeningHistoryRepository(
@@ -132,7 +132,7 @@ class LibraryController(
     fun loadSongs() {
         refreshJob?.cancel()
         refreshJob = coroutineScope.launch {
-            val savedSelectedFolders = libraryPreferences.getSelectedFolders()
+            val savedSelectedFolders = appPreferencesRepository.awaitLoadedState().selectedLibraryFolders
             selectedLibraryFolders = savedSelectedFolders
 
             val hasCachedSongs = withContext(Dispatchers.IO) {
@@ -166,7 +166,9 @@ class LibraryController(
             selectedLibraryFolders + folderPath
         }
 
-        libraryPreferences.saveSelectedFolders(selectedLibraryFolders)
+        coroutineScope.launch {
+            appPreferencesRepository.setSelectedLibraryFolders(selectedLibraryFolders)
+        }
         reloadSongsAfterFolderChange()
     }
 
@@ -175,14 +177,18 @@ class LibraryController(
             folder.path
         }.toSet()
 
-        libraryPreferences.saveSelectedFolders(selectedLibraryFolders)
+        coroutineScope.launch {
+            appPreferencesRepository.setSelectedLibraryFolders(selectedLibraryFolders)
+        }
         reloadSongsAfterFolderChange()
     }
 
     fun clearSelectedLibraryFolders() {
         selectedLibraryFolders = emptySet()
 
-        libraryPreferences.saveSelectedFolders(selectedLibraryFolders)
+        coroutineScope.launch {
+            appPreferencesRepository.setSelectedLibraryFolders(selectedLibraryFolders)
+        }
         reloadSongsAfterFolderChange()
     }
 
@@ -489,7 +495,8 @@ class LibraryController(
     internal suspend fun refreshAfterBackupRestore() {
         val restoredData = withContext(Dispatchers.IO) {
             BackupRestoredUserData(
-                selectedLibraryFolders = libraryPreferences.getSelectedFolders(),
+                selectedLibraryFolders =
+                    appPreferencesRepository.awaitLoadedState().selectedLibraryFolders,
                 favoriteMembershipKeys = favoritesRepository.getFavoriteMembershipKeys(),
                 playlists = playlistsRepository.getPlaylists(),
                 recentlyPlayed = listeningHistoryRepository.getRecentlyPlayed(),
@@ -500,7 +507,7 @@ class LibraryController(
             restoredData.selectedLibraryFolders
         )
         if (resolvedSelectedFolders != restoredData.selectedLibraryFolders) {
-            libraryPreferences.saveSelectedFolders(resolvedSelectedFolders)
+            appPreferencesRepository.setSelectedLibraryFolders(resolvedSelectedFolders)
         }
         val folderSelectionChanged = selectedLibraryFolders != resolvedSelectedFolders
 
