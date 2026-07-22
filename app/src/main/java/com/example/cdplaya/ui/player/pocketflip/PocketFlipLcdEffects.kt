@@ -1,8 +1,5 @@
 package com.example.cdplaya.ui.player.pocketflip
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -16,7 +13,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +28,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.waveform.WaveformData
-import com.example.cdplaya.ui.player.buildRetroMeterLevels
+import com.example.cdplaya.ui.player.fillRetroMeterLevels
+import com.example.cdplaya.ui.player.isRetroMeterEffectivelySilent
+import com.example.cdplaya.ui.player.rememberBoundedVisualizerPhase
+import com.example.cdplaya.ui.player.RETRO_VISUALIZER_CADENCE_HZ
+import com.example.cdplaya.performance.PerformanceTraceNames
+import com.example.cdplaya.performance.VisualizerPerformanceCounters
+import com.example.cdplaya.performance.tracePerformance
 import kotlin.math.PI
 import kotlin.math.sin
 
@@ -101,6 +103,7 @@ private fun PocketFlipStatusChip(
 internal fun PocketFlipLcdMeter(
     currentSong: Song?,
     waveformData: WaveformData?,
+    isVisualizerWorkAllowed: Boolean,
     isPlaying: Boolean,
     currentPosition: Int,
     duration: Int,
@@ -111,19 +114,18 @@ internal fun PocketFlipLcdMeter(
     val songKey = remember(currentSong?.id, currentSong?.title, currentSong?.artist) {
         buildMeterKey(currentSong)
     }
-    val phase = remember(songKey) { Animatable(0f) }
-
-    LaunchedEffect(isPlaying, songKey) {
-        if (isPlaying) {
-            while (true) {
-                phase.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = 900, easing = LinearEasing)
-                )
-                phase.snapTo(0f)
-            }
-        }
-    }
+    val isSilent = isRetroMeterEffectivelySilent(
+        amplitudes = waveformData?.amplitudes,
+        currentPositionMs = currentPosition.toLong(),
+        durationMs = duration.toLong()
+    )
+    val phase = rememberBoundedVisualizerPhase(
+        animationEnabled = isPlaying && isVisualizerWorkAllowed && !isSilent,
+        targetCadenceHz = RETRO_VISUALIZER_CADENCE_HZ,
+        cycleDurationMillis = 900,
+        updateTraceName = PerformanceTraceNames.POCKET_FLIP_UPDATE
+    )
+    val meterLevels = remember { FloatArray(POCKET_FLIP_METER_LINE_COUNT) }
 
     Column(
         modifier = modifier
@@ -164,37 +166,41 @@ internal fun PocketFlipLcdMeter(
                 .fillMaxWidth()
                 .height(if (compact) 17.dp else 21.dp)
         ) {
-            val meterLevels = buildRetroMeterLevels(
+            tracePerformance(PerformanceTraceNames.POCKET_FLIP_DRAW) {
+            VisualizerPerformanceCounters.onDraw()
+            val currentPhase = phase.value
+            val isEnergyDriven = fillRetroMeterLevels(
+                output = meterLevels,
                 amplitudes = waveformData?.amplitudes,
                 currentPositionMs = currentPosition.toLong(),
                 durationMs = duration.toLong(),
-                columnCount = POCKET_FLIP_METER_LINE_COUNT,
-                animationPhase = phase.value,
+                animationPhase = currentPhase,
                 isPlaying = isPlaying,
                 songSeed = songKey.toLong()
             )
-            val firstLevel = meterLevels?.get(0) ?:
-                meterLevel(songKey, channel = 0, phase = phase.value)
-            val secondLevel = meterLevels?.get(1) ?:
-                meterLevel(songKey, channel = 1, phase = phase.value)
+            val firstLevel = meterLevels.takeIf { isEnergyDriven }?.get(0) ?:
+                meterLevel(songKey, channel = 0, phase = currentPhase)
+            val secondLevel = meterLevels.takeIf { isEnergyDriven }?.get(1) ?:
+                meterLevel(songKey, channel = 1, phase = currentPhase)
             drawLcdMeterLine(
                 level = firstLevel,
-                animationPhase = phase.value,
+                animationPhase = currentPhase,
                 channel = 0,
-                isEnergyDriven = meterLevels != null,
+                isEnergyDriven = isEnergyDriven,
                 top = 0f,
                 height = size.height * 0.42f,
                 colors = colors
             )
             drawLcdMeterLine(
                 level = secondLevel,
-                animationPhase = phase.value,
+                animationPhase = currentPhase,
                 channel = 1,
-                isEnergyDriven = meterLevels != null,
+                isEnergyDriven = isEnergyDriven,
                 top = size.height * 0.58f,
                 height = size.height * 0.42f,
                 colors = colors
             )
+            }
         }
     }
 }

@@ -44,6 +44,7 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 @Composable
 fun PocketCassetteExpandedPlayer(
     currentSong: Song?,
+    isVisualizerWorkAllowed: Boolean = true,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -88,6 +89,7 @@ fun PocketCassetteExpandedPlayer(
             PocketCassetteWindow(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
+                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
                 currentPosition = currentPosition,
                 duration = duration,
                 compact = compact,

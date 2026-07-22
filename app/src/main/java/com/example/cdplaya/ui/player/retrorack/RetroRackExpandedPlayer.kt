@@ -34,12 +34,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -61,7 +57,13 @@ import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.waveform.WaveformData
-import com.example.cdplaya.ui.player.buildRetroMeterLevels
+import com.example.cdplaya.ui.player.fillRetroMeterLevels
+import com.example.cdplaya.ui.player.isRetroMeterEffectivelySilent
+import com.example.cdplaya.ui.player.rememberBoundedVisualizerPhase
+import com.example.cdplaya.ui.player.RETRO_VISUALIZER_CADENCE_HZ
+import com.example.cdplaya.performance.PerformanceTraceNames
+import com.example.cdplaya.performance.VisualizerPerformanceCounters
+import com.example.cdplaya.performance.tracePerformance
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import kotlin.math.sin
 
@@ -69,6 +71,7 @@ import kotlin.math.sin
 fun RetroRackExpandedPlayer(
     currentSong: Song?,
     waveformData: WaveformData? = null,
+    isVisualizerWorkAllowed: Boolean = true,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -165,6 +168,7 @@ fun RetroRackExpandedPlayer(
             DecorativeSpectrum(
                 profile = visualProfile,
                 waveformData = waveformData,
+                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
                 isPlaying = isPlaying,
                 currentPosition = currentPosition,
                 duration = duration,
@@ -372,48 +376,53 @@ private fun MainDeck(
 private fun DecorativeSpectrum(
     profile: RetroRackVisualProfile,
     waveformData: WaveformData?,
+    isVisualizerWorkAllowed: Boolean,
     isPlaying: Boolean,
     currentPosition: Int,
     duration: Int,
     modifier: Modifier = Modifier
 ) {
-    val phase = remember(profile) { Animatable(0f) }
-    LaunchedEffect(isPlaying, profile) {
-        if (isPlaying) {
-            while (true) {
-                phase.animateTo(
-                    targetValue = 1f,
-                    animationSpec = tween(durationMillis = 1_600, easing = LinearEasing)
-                )
-                phase.snapTo(0f)
-            }
-        }
-    }
+    val isSilent = isRetroMeterEffectivelySilent(
+        amplitudes = waveformData?.amplitudes,
+        currentPositionMs = currentPosition.toLong(),
+        durationMs = duration.toLong()
+    )
+    val phase = rememberBoundedVisualizerPhase(
+        animationEnabled = isPlaying && isVisualizerWorkAllowed && !isSilent,
+        targetCadenceHz = RETRO_VISUALIZER_CADENCE_HZ,
+        cycleDurationMillis = 1_600,
+        updateTraceName = PerformanceTraceNames.RETRO_RACK_UPDATE
+    )
+    val meterLevels = remember(profile.levels.size) { FloatArray(profile.levels.size) }
     Canvas(
         modifier = modifier
             .background(DisplayBlack)
             .rackBevel()
             .padding(8.dp)
     ) {
-        val meterLevels = buildRetroMeterLevels(
+        tracePerformance(PerformanceTraceNames.RETRO_RACK_DRAW) {
+        VisualizerPerformanceCounters.onDraw()
+        val currentPhase = phase.value
+        val isEnergyDriven = fillRetroMeterLevels(
+            output = meterLevels,
             amplitudes = waveformData?.amplitudes,
             currentPositionMs = currentPosition.toLong(),
             durationMs = duration.toLong(),
-            columnCount = profile.levels.size,
-            animationPhase = phase.value,
+            animationPhase = currentPhase,
             isPlaying = isPlaying,
             songSeed = profile.songSeed
         )
-        val displayLevels = meterLevels ?: profile.levels
+        val displayLevelCount = if (isEnergyDriven) meterLevels.size else profile.levels.size
         val gap = size.width * 0.012f
-        val barWidth = (size.width - gap * (displayLevels.size - 1)) / displayLevels.size
+        val barWidth = (size.width - gap * (displayLevelCount - 1)) / displayLevelCount
         val segmentGap = 2.dp.toPx()
         val segmentHeight = 3.dp.toPx()
         val playbackPhase = (currentPosition / 1_000f) * 0.22f
-        displayLevels.forEachIndexed { index, level ->
-            val movement = if (meterLevels == null && isPlaying) {
+        repeat(displayLevelCount) { index ->
+            val level = if (isEnergyDriven) meterLevels[index] else profile.levels[index]
+            val movement = if (!isEnergyDriven && isPlaying) {
                 sin(
-                    phase.value * 6.283f * (0.58f + index % 4 * 0.07f) +
+                    currentPhase * 6.283f * (0.58f + index % 4 * 0.07f) +
                             playbackPhase +
                             profile.phaseOffset +
                             index * 0.73f
@@ -421,7 +430,7 @@ private fun DecorativeSpectrum(
             } else {
                 0f
             }
-            val minimumLevel = if (meterLevels == null) 0.12f else 0f
+            val minimumLevel = if (!isEnergyDriven) 0.12f else 0f
             val animatedLevel = (level + movement).coerceIn(minimumLevel, 0.98f)
             val height = size.height * animatedLevel
             val segmentStep = segmentHeight + segmentGap
@@ -435,6 +444,7 @@ private fun DecorativeSpectrum(
                     size = Size(barWidth, segmentHeight)
                 )
             }
+        }
         }
     }
 }

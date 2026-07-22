@@ -13,9 +13,31 @@ internal fun buildRetroMeterLevels(
     isPlaying: Boolean,
     songSeed: Long
 ): List<Float>? {
-    if (amplitudes.isNullOrEmpty() || durationMs <= 0L || columnCount <= 0) {
-        return null
-    }
+    if (columnCount <= 0) return null
+    val output = FloatArray(columnCount)
+    if (!fillRetroMeterLevels(
+            output = output,
+            amplitudes = amplitudes,
+            currentPositionMs = currentPositionMs,
+            durationMs = durationMs,
+            animationPhase = animationPhase,
+            isPlaying = isPlaying,
+            songSeed = songSeed
+        )
+    ) return null
+    return output.toList()
+}
+
+internal fun fillRetroMeterLevels(
+    output: FloatArray,
+    amplitudes: List<Float>?,
+    currentPositionMs: Long,
+    durationMs: Long,
+    animationPhase: Float,
+    isPlaying: Boolean,
+    songSeed: Long
+): Boolean {
+    if (amplitudes.isNullOrEmpty() || durationMs <= 0L || output.isEmpty()) return false
 
     val progress = (currentPositionMs.toDouble() / durationMs.toDouble())
         .coerceIn(0.0, 1.0)
@@ -41,7 +63,7 @@ internal fun buildRetroMeterLevels(
     }
     val phaseRadians = normalizedPhase * (2f * PI.toFloat())
 
-    return List(columnCount) { columnIndex ->
+    output.indices.forEach { columnIndex ->
         val bandScale = 0.62f + seededUnit(songSeed, columnIndex, BAND_SCALE_SALT) * 0.38f
         val phaseOffset = seededUnit(songSeed, columnIndex, PHASE_OFFSET_SALT) *
                 (2f * PI.toFloat())
@@ -65,8 +87,22 @@ internal fun buildRetroMeterLevels(
             0f
         }
 
-        (baseLevel + movement).coerceIn(0f, 0.98f)
+        output[columnIndex] = (baseLevel + movement).coerceIn(0f, 0.98f)
     }
+    return true
+}
+
+internal fun isRetroMeterEffectivelySilent(
+    amplitudes: List<Float>?,
+    currentPositionMs: Long,
+    durationMs: Long
+): Boolean {
+    if (amplitudes.isNullOrEmpty() || durationMs <= 0L) return false
+    val progress = (currentPositionMs.toDouble() / durationMs.toDouble())
+        .coerceIn(0.0, 1.0)
+        .toFloat()
+    return sampleWaveform(amplitudes, progress * amplitudes.lastIndex) <=
+        RETRO_METER_SILENCE_GATE
 }
 
 private fun sampleWaveform(

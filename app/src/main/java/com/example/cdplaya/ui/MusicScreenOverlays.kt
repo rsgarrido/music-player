@@ -106,6 +106,11 @@ fun MusicScreenOverlays(
                 tokens = selectedPlayerThemeTokens,
                 modernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
                 modernSeekbarStyle = selectedModernSeekbarStyle,
+                isVisualizerWorkAllowed = !isExpandedUpNextSheetVisible &&
+                    !isSleepTimerDialogVisible &&
+                    !isCreatePlaylistDialogVisible &&
+                    songPendingPlaylistAdd == null &&
+                    songsPendingPlaylistAdd.isEmpty(),
                 currentSong = currentSong,
                 previousPreviewSong = previousPreviewSong,
                 nextPreviewSong = nextPreviewSong,

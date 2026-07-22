@@ -19,6 +19,7 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 fun PocketFlipExpandedPlayer(
     currentSong: Song?,
     waveformData: WaveformData? = null,
+    isVisualizerWorkAllowed: Boolean = true,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -54,6 +55,7 @@ fun PocketFlipExpandedPlayer(
         PocketFlipDisplayHalf(
             currentSong = currentSong,
             waveformData = waveformData,
+            isVisualizerWorkAllowed = isVisualizerWorkAllowed,
             isPlaying = isPlaying,
             currentPosition = currentPosition,
             duration = duration,
