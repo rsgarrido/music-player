@@ -130,6 +130,19 @@ Get-Content -Raw tools\performance\cdplaya-perfetto.pbtx |
 
 Use the same physical device, benchmark build, track, playback state, brightness, audio route, refresh-rate mode, starting battery percentage, and approximate starting temperature. Disconnect charging when practical. Let the phone return near baseline between the app shell, Modern, Classic Wheel, Pocket Flip, and Pocket Cassette runs. Record both paused and playing cases, run each expanded theme for ten minutes, and capture at least one Pocket Flip Perfetto trace. Treat all observations as comparative and device-specific, not laboratory energy measurements.
 
+## Automated validation
+
+The final host-side validation completed successfully on July 22, 2026:
+
+```powershell
+.\gradlew.bat testDebugUnitTest assembleDebug assembleDebugAndroidTest lintDebug `
+  :app:assembleBenchmark :benchmark:assembleBenchmarkBenchmark --stacktrace
+```
+
+Gradle reported `BUILD SUCCESSFUL` with 164 actionable tasks (75 executed and 89 up-to-date). This validates unit tests, Kotlin compilation, debug app and instrumentation APK assembly, debug lint, the non-debuggable benchmark app APK, and the benchmark test APK. The merged benchmark manifest contains `<profileable android:shell="true" />` and no `android:debuggable="true"` application override. `git diff --check` passed, and no build directory, APK, app bundle, Perfetto trace, or trace file is tracked by Git.
+
+An ADB device check returned an empty device list. Consequently, `connectedDebugAndroidTest`, connected Macrobenchmark suites, Baseline/Startup Profile generation, and profile-content inspection were intentionally not run; they are device-only checks, not host validation failures.
+
 ## Limitations and remaining concerns
 
 - No compatible device was connected, so Macrobenchmark execution, profile generation, APK profile-content inspection, memory metrics, Perfetto evidence, visual cadence validation, and thermal comparisons remain pending.
