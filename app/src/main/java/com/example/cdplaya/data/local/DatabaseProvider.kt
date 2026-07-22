@@ -21,7 +21,8 @@ object DatabaseProvider {
                     MIGRATION_1_2,
                     MIGRATION_2_3,
                     MIGRATION_3_4,
-                    MIGRATION_4_5
+                    MIGRATION_4_5,
+                    MIGRATION_5_6
                 )
                 .build()
                 .also { database ->
@@ -140,6 +141,17 @@ object DatabaseProvider {
             db.execSQL(
                 "CREATE INDEX IF NOT EXISTS `index_cached_songs_title` ON `cached_songs` (`title`)"
             )
+        }
+    }
+
+    val MIGRATION_5_6 = object : Migration(5, 6) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE `cached_songs` ADD COLUMN `volumeName` TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE `cached_songs` ADD COLUMN `displayName` TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE `cached_songs` ADD COLUMN `relativePath` TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE `cached_songs` ADD COLUMN `fileSizeBytes` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE `cached_songs` ADD COLUMN `dateAddedEpochSeconds` INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE `cached_songs` ADD COLUMN `dateModifiedEpochSeconds` INTEGER NOT NULL DEFAULT 0")
         }
     }
 

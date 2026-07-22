@@ -3,6 +3,7 @@ package com.example.cdplaya.data
 import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.provider.MediaStore
 import org.jaudiotagger.audio.AudioFileIO
 import java.io.File
@@ -35,8 +36,19 @@ class MusicRepository(private val context: Context) {
             MediaStore.Audio.Media.ALBUM,
             MediaStore.Audio.Media.TRACK,
             MediaStore.Audio.Media.DURATION,
-            MediaStore.Audio.Media.DATA
-        )
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.DISPLAY_NAME,
+            MediaStore.Audio.Media.SIZE,
+            MediaStore.Audio.Media.DATE_ADDED,
+            MediaStore.Audio.Media.DATE_MODIFIED
+        ) + if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            arrayOf(
+                MediaStore.Audio.Media.VOLUME_NAME,
+                MediaStore.Audio.Media.RELATIVE_PATH
+            )
+        } else {
+            emptyArray()
+        }
 
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
 
@@ -58,6 +70,20 @@ class MusicRepository(private val context: Context) {
             val trackColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
             val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
+            val displayNameColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
+            val fileSizeColumn = cursor.getColumnIndex(MediaStore.Audio.Media.SIZE)
+            val dateAddedColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATE_ADDED)
+            val dateModifiedColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATE_MODIFIED)
+            val volumeNameColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                cursor.getColumnIndex(MediaStore.Audio.Media.VOLUME_NAME)
+            } else {
+                -1
+            }
+            val relativePathColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                cursor.getColumnIndex(MediaStore.Audio.Media.RELATIVE_PATH)
+            } else {
+                -1
+            }
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
@@ -67,15 +93,29 @@ class MusicRepository(private val context: Context) {
                 val duration = cursor.getLong(durationColumn)
                 val filePath = cursor.getString(dataColumn) ?: ""
                 val trackNumber = cursor.getInt(trackColumn)
+                val displayName = cursor.stringOrEmpty(displayNameColumn)
+                val fileSizeBytes = cursor.longOrZero(fileSizeColumn)
+                val dateAddedEpochSeconds = cursor.longOrZero(dateAddedColumn)
+                val dateModifiedEpochSeconds = cursor.longOrZero(dateModifiedColumn)
+                val volumeName = cursor.stringOrEmpty(volumeNameColumn)
+                val relativePath = cursor.stringOrEmpty(relativePathColumn)
 
-                val folderPath = File(filePath).parent ?: ""
+                val folderPath = (File(filePath).parent ?: "")
+                    .ifBlank { relativePath.trimEnd('/', '\\') }
 
                 if (folderPath.isBlank()) {
                     continue
                 }
 
+                val audioCollection = if (
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && volumeName.isNotBlank()
+                ) {
+                    MediaStore.Audio.Media.getContentUri(volumeName)
+                } else {
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                }
                 val uri = ContentUris.withAppendedId(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    audioCollection,
                     id
                 )
 
@@ -95,7 +135,13 @@ class MusicRepository(private val context: Context) {
                     filePath = filePath,
                     folderPath = folderPath,
                     albumArtUri = albumArtUri,
-                    albumArtist = albumArtist
+                    albumArtist = albumArtist,
+                    volumeName = volumeName,
+                    displayName = displayName,
+                    relativePath = relativePath,
+                    fileSizeBytes = fileSizeBytes,
+                    dateAddedEpochSeconds = dateAddedEpochSeconds,
+                    dateModifiedEpochSeconds = dateModifiedEpochSeconds
                 )
 
                 songs.add(song)
@@ -346,4 +392,12 @@ class MusicRepository(private val context: Context) {
     companion object {
         private const val EMBEDDED_ARTWORK_CACHE_DIRECTORY = "embedded_album_art"
     }
+}
+
+private fun android.database.Cursor.stringOrEmpty(columnIndex: Int): String {
+    return if (columnIndex >= 0 && !isNull(columnIndex)) getString(columnIndex).orEmpty() else ""
+}
+
+private fun android.database.Cursor.longOrZero(columnIndex: Int): Long {
+    return if (columnIndex >= 0 && !isNull(columnIndex)) getLong(columnIndex) else 0L
 }

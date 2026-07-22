@@ -13,5 +13,11 @@ data class Song(
     val filePath: String,
     val folderPath: String,
     val albumArtUri: Uri?,
-    val albumArtist: String = ""
+    val albumArtist: String = "",
+    val volumeName: String = "",
+    val displayName: String = "",
+    val relativePath: String = "",
+    val fileSizeBytes: Long = 0L,
+    val dateAddedEpochSeconds: Long = 0L,
+    val dateModifiedEpochSeconds: Long = 0L
 )
