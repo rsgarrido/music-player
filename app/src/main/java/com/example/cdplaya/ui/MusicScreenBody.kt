@@ -17,6 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -35,7 +39,9 @@ import com.example.cdplaya.ui.library.LibraryBrowseSwitcher
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.library.LibraryViewMode
-import com.example.cdplaya.ui.library.LibraryViewModeToggle
+import com.example.cdplaya.ui.library.LibraryGridColumns
+import com.example.cdplaya.ui.library.LibraryViewOptionsButton
+import com.example.cdplaya.ui.library.LibraryViewOptionsSheet
 import com.example.cdplaya.ui.library.MusicLibraryContent
 import com.example.cdplaya.ui.library.rememberLibraryViewModeState
 import com.example.cdplaya.ui.library.viewCategory
@@ -148,6 +154,9 @@ fun MusicScreenBody(
     modifier: Modifier = Modifier
 ) {
     val libraryViewModeState = rememberLibraryViewModeState()
+    var isLibraryViewOptionsVisible by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     when {
         isFolderScreenVisible -> {
@@ -196,6 +205,10 @@ fun MusicScreenBody(
         }
 
         else -> {
+            val currentLibraryViewMode = libraryViewModeState.modeFor(selectedLibraryTab)
+            val currentGridColumnCount =
+                libraryViewModeState.gridColumnCountFor(selectedLibraryTab)
+
             AnimatedContent(
                 targetState = mainDestination,
                 transitionSpec = {
@@ -260,7 +273,12 @@ fun MusicScreenBody(
                     val selectedViewMode = if (isSearchDestination) {
                         LibraryViewMode.LIST
                     } else {
-                        libraryViewModeState.modeFor(selectedLibraryTab)
+                        currentLibraryViewMode
+                    }
+                    val selectedGridColumnCount = if (isSearchDestination) {
+                        LibraryGridColumns.DEFAULT
+                    } else {
+                        currentGridColumnCount
                     }
 
                     Column(
@@ -282,10 +300,11 @@ fun MusicScreenBody(
                             selectedLibraryTab.viewCategory() != null
                         ) {
                             {
-                                LibraryViewModeToggle(
+                                LibraryViewOptionsButton(
                                     viewMode = selectedViewMode,
-                                    onToggle = {
-                                        libraryViewModeState.toggle(selectedLibraryTab)
+                                    gridColumnCount = selectedGridColumnCount,
+                                    onClick = {
+                                        isLibraryViewOptionsVisible = true
                                     }
                                 )
                             }
@@ -344,6 +363,7 @@ fun MusicScreenBody(
                             selectedAlbumSortOption = selectedAlbumSortOption,
                             selectedFavoriteSortOption = selectedFavoriteSortOption,
                             viewMode = selectedViewMode,
+                            gridColumnCount = selectedGridColumnCount,
                             selectedArtistName = selectedArtistName,
                             selectedAlbumFolderPath = selectedAlbumFolderPath,
                             selectedPlaylistId = selectedPlaylistId,
@@ -401,6 +421,20 @@ fun MusicScreenBody(
                     }
                     }
                 }
+            }
+
+            if (isLibraryViewOptionsVisible && selectedLibraryTab.viewCategory() != null) {
+                LibraryViewOptionsSheet(
+                    viewMode = currentLibraryViewMode,
+                    gridColumnCount = currentGridColumnCount,
+                    onOptionSelected = { option ->
+                        libraryViewModeState.select(selectedLibraryTab, option)
+                        isLibraryViewOptionsVisible = false
+                    },
+                    onDismissRequest = {
+                        isLibraryViewOptionsVisible = false
+                    }
+                )
             }
         }
     }

@@ -44,6 +44,7 @@ import com.example.cdplaya.ui.AppShellTypography
 fun SongGrid(
     songs: List<Song>,
     currentSongId: Long?,
+    gridColumnCount: Int,
     recentlyAddedSongIds: Set<Long>,
     favoriteSongKeys: Set<String>,
     onSongClick: (Song, List<Song>) -> Unit,
@@ -60,7 +61,7 @@ fun SongGrid(
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 148.dp),
+        columns = GridCells.Fixed(LibraryGridColumns.normalize(gridColumnCount)),
         modifier = modifier.fillMaxSize(),
         contentPadding = libraryGridPadding(bottomContentPadding),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -109,6 +110,7 @@ fun SongGrid(
 fun AlbumGridScreen(
     songs: List<Song>,
     sortOption: LibrarySortOption,
+    gridColumnCount: Int,
     onAlbumClick: (String) -> Unit,
     onAlbumPlayClick: (String, List<Song>) -> Unit,
     onAlbumShuffleClick: (String, List<Song>) -> Unit,
@@ -124,7 +126,7 @@ fun AlbumGridScreen(
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 148.dp),
+        columns = GridCells.Fixed(LibraryGridColumns.normalize(gridColumnCount)),
         modifier = modifier.fillMaxSize(),
         contentPadding = libraryGridPadding(bottomContentPadding),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -177,6 +179,7 @@ fun AlbumGridScreen(
 fun ArtistGridScreen(
     songs: List<Song>,
     sortOption: LibrarySortOption,
+    gridColumnCount: Int,
     onArtistClick: (String) -> Unit,
     onArtistPlayClick: (String, List<Song>) -> Unit,
     onArtistShuffleClick: (String, List<Song>) -> Unit,
@@ -192,7 +195,7 @@ fun ArtistGridScreen(
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 148.dp),
+        columns = GridCells.Fixed(LibraryGridColumns.normalize(gridColumnCount)),
         modifier = modifier.fillMaxSize(),
         contentPadding = libraryGridPadding(bottomContentPadding),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
