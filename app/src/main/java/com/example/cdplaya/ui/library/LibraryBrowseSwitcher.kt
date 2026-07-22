@@ -37,6 +37,7 @@ val primaryLibraryTabs = listOf(
 val songCollectionTabs = listOf(
     LibraryTab.SONGS,
     LibraryTab.FAVORITES,
+    LibraryTab.RECENTLY_ADDED,
     LibraryTab.RECENTLY_PLAYED,
     LibraryTab.MOST_PLAYED
 )
@@ -44,6 +45,7 @@ val songCollectionTabs = listOf(
 fun LibraryTab.primaryBrowseTab(): LibraryTab? {
     return when (this) {
         LibraryTab.FAVORITES,
+        LibraryTab.RECENTLY_ADDED,
         LibraryTab.RECENTLY_PLAYED,
         LibraryTab.MOST_PLAYED -> LibraryTab.SONGS
 
@@ -162,6 +164,7 @@ private fun LibraryFilterPill(
 ) {
     val label = when (tab) {
         LibraryTab.SONGS -> "All"
+        LibraryTab.RECENTLY_ADDED -> "Added"
         LibraryTab.RECENTLY_PLAYED -> "Recent"
         LibraryTab.MOST_PLAYED -> "Most played"
         else -> tab.title

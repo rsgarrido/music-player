@@ -41,6 +41,7 @@ fun MusicRoute(
     MusicScreen(
         songs = libraryController.songs,
         recentlyPlayedSongs = libraryController.recentlyPlayedSongs,
+        recentlyAddedLibrarySongs = libraryController.recentlyAddedSongs,
         mostPlayedSongs = libraryController.mostPlayedSongs,
         permissionGranted = permissionGranted,
         currentSong = playbackController.currentSong,

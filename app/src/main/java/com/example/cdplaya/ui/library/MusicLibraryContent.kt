@@ -9,6 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.cdplaya.R
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
@@ -68,6 +70,7 @@ fun MusicLibraryContent(
     onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
     recentlyPlayedSongs: List<Song>,
+    recentlyAddedSongs: List<Song>,
     mostPlayedSongs: List<Song>,
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
@@ -225,6 +228,34 @@ fun MusicLibraryContent(
             } else {
                 SongList(
                     songs = recentlyPlayedSongs,
+                    currentSongId = currentSong?.id,
+                    recentlyAddedSongIds = recentlyAddedSongIds,
+                    favoriteSongKeys = favoriteSongKeys,
+                    onSongClick = onSongClick,
+                    onPlayNextClick = onPlayNextClick,
+                    onAddToQueueClick = onAddToQueueClick,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    onAddToPlaylistClick = onAddToPlaylistClick,
+                    onEditSongTagsClick = onEditSongTagsClick,
+                    bottomContentPadding = bottomContentPadding,
+                    modifier = modifier
+                )
+            }
+        }
+
+        LibraryTab.RECENTLY_ADDED -> {
+            val displayedSongs = com.example.cdplaya.ui.filterSongsForSearch(
+                recentlyAddedSongs,
+                searchQuery
+            )
+            if (displayedSongs.isEmpty()) {
+                EmptyHistoryMessage(
+                    message = stringResource(R.string.recently_added_empty),
+                    modifier = modifier
+                )
+            } else {
+                SongList(
+                    songs = displayedSongs,
                     currentSongId = currentSong?.id,
                     recentlyAddedSongIds = recentlyAddedSongIds,
                     favoriteSongKeys = favoriteSongKeys,

@@ -23,6 +23,7 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.SongReferenceResolution
 import com.example.cdplaya.data.SongReferenceResolver
 import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.sortSongsByDateAddedDescending
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.playlistfile.M3uExportResult
 import com.example.cdplaya.data.playlistfile.PlaylistFileRepository
@@ -77,6 +78,9 @@ class LibraryController(
         private set
 
     var mostPlayedSongs by mutableStateOf<List<Song>>(emptyList())
+        private set
+
+    var recentlyAddedSongs by mutableStateOf<List<Song>>(emptyList())
         private set
 
     fun loadSavedUserData() {
@@ -500,6 +504,7 @@ class LibraryController(
         libraryFolders.addAll(libraryData.libraryFolders)
 
         songs = libraryData.songs
+        recentlyAddedSongs = sortSongsByDateAddedDescending(songs)
         PlaybackLibraryBridge.updateSongs(songs)
         reconcileUserSongReferences(songs)
 

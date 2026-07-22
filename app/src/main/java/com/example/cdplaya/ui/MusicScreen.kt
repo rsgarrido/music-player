@@ -119,6 +119,7 @@ fun MusicScreen(
     onStartSleepTimerClick: (Int) -> Unit,
     onCancelSleepTimerClick: () -> Unit,
     recentlyPlayedSongs: List<Song>,
+    recentlyAddedLibrarySongs: List<Song>,
     selectedPlayerTheme: PlayerTheme,
     selectedPlayerThemeTokens: PlayerThemeTokens,
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
@@ -597,6 +598,7 @@ fun MusicScreen(
                     isSleepTimerDialogVisible = true
                 },
                 recentlyPlayedSongs = recentlyPlayedSongs,
+                recentlyAddedLibrarySongs = recentlyAddedLibrarySongs,
                 mostPlayedSongs = mostPlayedSongs,
                 selectedPlayerTheme = selectedPlayerTheme,
                 selectedPlayerThemeTokens = selectedPlayerThemeTokens,

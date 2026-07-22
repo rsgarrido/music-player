@@ -39,6 +39,8 @@
     <string name="diagnostics_clear">Clear</string>
     <string name="diagnostics_cancel">Cancel</string>
     <string name="diagnostics_clip_label">CDPlaya diagnostics</string>
+    <string name="recently_added">Recently Added</string>
+    <string name="recently_added_empty">No recently added songs.</string>
     <plurals name="diagnostics_song_count">
         <item quantity="one">%d song</item>
         <item quantity="other">%d songs</item>

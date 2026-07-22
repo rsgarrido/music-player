@@ -85,6 +85,7 @@ fun MusicScreenBody(
     selectedArtistSortOption: LibrarySortOption,
     selectedAlbumSortOption: LibrarySortOption,
     selectedFavoriteSortOption: LibrarySortOption,
+    recentlyAddedLibrarySongs: List<Song>,
     recentlyAddedSongIds: Set<Long>,
     isPlayerExpanded: Boolean,
     isFolderScreenVisible: Boolean,
@@ -264,6 +265,7 @@ fun MusicScreenBody(
                 HomeScreen(
                     permissionGranted = permissionGranted,
                     recentlyPlayedSongs = recentlyPlayedSongs,
+                    recentlyAddedSongs = recentlyAddedLibrarySongs,
                     favoriteSongs = songs.filter { song ->
                         song.favoriteKey() in favoriteSongKeys
                     },
@@ -284,6 +286,9 @@ fun MusicScreenBody(
                     },
                     onRecentlyPlayedSongClick = { song ->
                         onSongClick(song, recentlyPlayedSongs)
+                    },
+                    onRecentlyAddedSongClick = { song ->
+                        onSongClick(song, recentlyAddedLibrarySongs)
                     },
                     onFavoriteSongClick = { song ->
                         onSongClick(
@@ -445,6 +450,7 @@ fun MusicScreenBody(
                             onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                             onEditSongTagsClick = onEditSongTagsClick,
                             recentlyPlayedSongs = recentlyPlayedSongs,
+                            recentlyAddedSongs = recentlyAddedLibrarySongs,
                             mostPlayedSongs = mostPlayedSongs,
                             bottomContentPadding = bottomContentPadding,
                             modifier = Modifier.weight(1f)

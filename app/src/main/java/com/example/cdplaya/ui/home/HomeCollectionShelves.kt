@@ -29,7 +29,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
+import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.AppShellIcons
 import com.example.cdplaya.ui.AppShellAccent
@@ -109,6 +111,35 @@ fun HomeFavoritesShelf(
                     song = song,
                     onClick = { onSongClick(song) }
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun HomeRecentlyAddedShelf(
+    songs: List<Song>,
+    onSeeAllClick: () -> Unit,
+    onSongClick: (Song) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (songs.isEmpty()) return
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        HomeCollectionSectionHeader(
+            title = stringResource(R.string.recently_added),
+            onSeeAllClick = onSeeAllClick,
+            modifier = Modifier.padding(start = 16.dp, end = 8.dp)
+        )
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(items = songs, key = { it.id }) { song ->
+                HomeCompactArtworkCard(song = song, onClick = { onSongClick(song) })
             }
         }
     }
