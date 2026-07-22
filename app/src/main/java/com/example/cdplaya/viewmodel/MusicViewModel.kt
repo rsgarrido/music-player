@@ -201,7 +201,7 @@ class MusicViewModel(
     }
 
     val isSleepTimerActive: Boolean
-        get() = sleepTimerController.isTimerActive
+        get() = sleepTimerController.uiState.value.isActive
 
     fun getSleepTimerDisplayText(): String {
         return sleepTimerController.getDisplayText()

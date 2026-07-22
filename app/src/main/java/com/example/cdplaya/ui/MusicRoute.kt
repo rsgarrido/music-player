@@ -2,6 +2,8 @@ package com.example.cdplaya.ui
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import com.example.cdplaya.viewmodel.MusicViewModel
 import com.example.cdplaya.ui.playlist.rememberPlaylistExportActions
@@ -18,6 +20,7 @@ fun MusicRoute(
 ) {
     val playbackController = musicViewModel.playbackController
     val libraryController = musicViewModel.libraryController
+    val libraryUiState by libraryController.uiState.collectAsState()
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
         onPrepareExport = musicViewModel::preparePlaylistExport,
@@ -39,10 +42,10 @@ fun MusicRoute(
     )
 
     MusicScreen(
-        songs = libraryController.songs,
-        recentlyPlayedSongs = libraryController.recentlyPlayedSongs,
-        recentlyAddedLibrarySongs = libraryController.recentlyAddedSongs,
-        mostPlayedSongs = libraryController.mostPlayedSongs,
+        songs = libraryUiState.songs,
+        recentlyPlayedSongs = libraryUiState.recentlyPlayedSongs,
+        recentlyAddedLibrarySongs = libraryUiState.recentlyAddedSongs,
+        mostPlayedSongs = libraryUiState.mostPlayedSongs,
         permissionGranted = permissionGranted,
         currentSong = playbackController.currentSong,
         isPlayerConnected = playbackController.isPlayerConnected,
@@ -59,15 +62,15 @@ fun MusicRoute(
         upcomingSongs = playbackController.getComingUpSongsForDisplay(),
         snackbarHostState = snackbarHostState,
         modifier = modifier,
-        libraryFolders = libraryController.libraryFolders,
-        selectedLibraryFolders = libraryController.selectedLibraryFolders,
-        favoriteMembershipKeys = libraryController.favoriteMembershipKeys,
-        unresolvedFavoriteCount = libraryController.unresolvedFavoriteCount,
-        unresolvedPlaylistRowCount = libraryController.unresolvedPlaylistRowCount,
-        unresolvedListeningHistoryCount = libraryController.unresolvedListeningHistoryCount,
-        playlists = libraryController.playlists,
-        selectedPlaylistName = libraryController.selectedPlaylistName,
-        selectedPlaylistSongs = libraryController.selectedPlaylistSongs,
+        libraryFolders = libraryUiState.folders,
+        selectedLibraryFolders = libraryUiState.selectedFolders,
+        favoriteMembershipKeys = libraryUiState.favoriteMembershipKeys,
+        unresolvedFavoriteCount = libraryUiState.unresolvedFavoriteCount,
+        unresolvedPlaylistRowCount = libraryUiState.unresolvedPlaylistRowCount,
+        unresolvedListeningHistoryCount = libraryUiState.unresolvedListeningHistoryCount,
+        playlists = libraryUiState.playlists,
+        selectedPlaylistName = libraryUiState.selectedPlaylistName,
+        selectedPlaylistSongs = libraryUiState.selectedPlaylistSongs,
         onSongClick = { song, playbackContext ->
             musicViewModel.playSelectedSong(
                 song = song,

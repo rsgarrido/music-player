@@ -5,10 +5,6 @@ import android.net.Uri
 import android.util.Log
 import android.os.SystemClock
 import android.content.pm.ApplicationInfo
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.room.withTransaction
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.FavoritesRepository
@@ -39,6 +35,8 @@ import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.data.playlistfile.defaultImportedPlaylistName
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.PlaybackLibraryBridge
+import com.example.cdplaya.ui.state.LibraryUiState
+import com.example.cdplaya.ui.state.libraryUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +44,10 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 internal suspend fun <T> runLibraryScanOffMain(block: suspend () -> T): T {
     return withContext(Dispatchers.IO) { block() }
@@ -86,44 +88,41 @@ class LibraryController(
     private val publicationTracker = LibraryPublicationTracker()
     private val libraryScanMutex = Mutex()
 
-    var lastLibraryRefreshResult: com.example.cdplaya.data.LibraryRefreshResult? = null
-        private set
+    private val _uiState = MutableStateFlow(LibraryUiState.Empty)
+    val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
 
-    var unresolvedFavoriteCount: Int = 0
-        private set
-    var unresolvedPlaylistRowCount: Int = 0
-        private set
-    var unresolvedListeningHistoryCount: Int = 0
-        private set
+    private var lastLibraryRefreshResult: com.example.cdplaya.data.LibraryRefreshResult? = null
 
-    var songs by mutableStateOf<List<Song>>(emptyList())
-        private set
+    private var songs: List<Song>
+        get() = _uiState.value.songs
+        set(value) = updateState { copy(songs = value.toList()) }
+    private val libraryFolders: List<LibraryFolder>
+        get() = _uiState.value.folders
+    private var selectedLibraryFolders: Set<String>
+        get() = _uiState.value.selectedFolders
+        set(value) = updateState { copy(selectedFolders = value.toSet()) }
+    private var favoriteMembershipKeys: Set<String>
+        get() = _uiState.value.favoriteMembershipKeys
+        set(value) = updateState { copy(favoriteMembershipKeys = value.toSet()) }
+    private var playlists: List<Playlist>
+        get() = _uiState.value.playlists
+        set(value) = updateState { copy(playlists = value.toList()) }
+    private var selectedPlaylistName: String
+        get() = _uiState.value.selectedPlaylistName
+        set(value) = updateState { copy(selectedPlaylistName = value) }
+    private var selectedPlaylistSongs: List<PlaylistSong>
+        get() = _uiState.value.selectedPlaylistSongs
+        set(value) = updateState { copy(selectedPlaylistSongs = value.toList()) }
+    private var recentlyPlayedSongs: List<Song>
+        get() = _uiState.value.recentlyPlayedSongs
+        set(value) = updateState { copy(recentlyPlayedSongs = value.toList()) }
+    private var mostPlayedSongs: List<Song>
+        get() = _uiState.value.mostPlayedSongs
+        set(value) = updateState { copy(mostPlayedSongs = value.toList()) }
 
-    val libraryFolders = mutableStateListOf<LibraryFolder>()
-
-    var selectedLibraryFolders by mutableStateOf<Set<String>>(emptySet())
-        private set
-
-    var favoriteMembershipKeys by mutableStateOf<Set<String>>(emptySet())
-        private set
-
-    var playlists by mutableStateOf<List<Playlist>>(emptyList())
-        private set
-
-    var selectedPlaylistName by mutableStateOf("Playlist")
-        private set
-
-    var selectedPlaylistSongs by mutableStateOf<List<PlaylistSong>>(emptyList())
-        private set
-
-    var recentlyPlayedSongs by mutableStateOf<List<Song>>(emptyList())
-        private set
-
-    var mostPlayedSongs by mutableStateOf<List<Song>>(emptyList())
-        private set
-
-    var recentlyAddedSongs by mutableStateOf<List<Song>>(emptyList())
-        private set
+    private inline fun updateState(transform: LibraryUiState.() -> LibraryUiState) {
+        _uiState.update { current -> current.transform() }
+    }
 
     fun loadSavedUserData() {
         loadFavoriteMembershipKeys()
@@ -569,18 +568,35 @@ class LibraryController(
         visibleSongMembershipKeys = indexedSnapshot.visibleMembershipKeys
         libraryPublishCount += 1
 
-        libraryFolders.clear()
-        libraryFolders.addAll(libraryData.libraryFolders)
-
-        songs = libraryData.songs
-        recentlyAddedSongs = sortSongsByDateAddedDescending(songs)
-        PlaybackLibraryBridge.updateSongs(songs)
-        reconcileUserSongReferences(songs, indexedSnapshot.index)
+        val publishedSongs = libraryData.songs.toList()
+        _uiState.update { current ->
+            libraryUiState(
+                songs = publishedSongs,
+                folders = libraryData.libraryFolders,
+                selectedFolders = current.selectedFolders,
+                favoriteMembershipKeys = current.favoriteMembershipKeys,
+                playlists = current.playlists,
+                selectedPlaylistName = current.selectedPlaylistName,
+                selectedPlaylistSongs = current.selectedPlaylistSongs,
+                recentlyPlayedSongs = current.recentlyPlayedSongs,
+                mostPlayedSongs = current.mostPlayedSongs,
+                recentlyAddedSongs = sortSongsByDateAddedDescending(publishedSongs),
+                unresolvedFavoriteCount = current.unresolvedFavoriteCount,
+                unresolvedPlaylistRowCount = current.unresolvedPlaylistRowCount,
+                unresolvedListeningHistoryCount = current.unresolvedListeningHistoryCount,
+                lastRefreshResult = lastLibraryRefreshResult,
+                isLoading = false,
+                isRefreshing = false,
+                errorMessage = null
+            )
+        }
+        PlaybackLibraryBridge.updateSongs(publishedSongs)
+        reconcileUserSongReferences(publishedSongs, indexedSnapshot.index)
 
         if (reconcilePlayback) {
-            playbackController.handleLibrarySongsChanged(songs)
+            playbackController.handleLibrarySongsChanged(publishedSongs)
         } else {
-            playbackController.setLibrarySongs(songs)
+            playbackController.setLibrarySongs(publishedSongs)
         }
     }
 
@@ -710,14 +726,17 @@ class LibraryController(
                 )
             }
             if (reconciled == null || !reconciliationCoordinator.isCurrent(generation)) return@launch
-            favoriteMembershipKeys = reconciled.favoriteMembershipKeys
-            recentlyPlayedSongs = reconciled.recentlyPlayed
-            mostPlayedSongs = reconciled.mostPlayed
-            unresolvedFavoriteCount = reconciled.unresolvedFavorites
-            unresolvedPlaylistRowCount = reconciled.unresolvedPlaylistRows
-            unresolvedListeningHistoryCount = reconciled.unresolvedHistoryRows
-            if (reconciled.selectedPlaylistSongs != null) {
-                selectedPlaylistSongs = reconciled.selectedPlaylistSongs
+            _uiState.update { current ->
+                current.copy(
+                    favoriteMembershipKeys = reconciled.favoriteMembershipKeys.toSet(),
+                    recentlyPlayedSongs = reconciled.recentlyPlayed.toList(),
+                    mostPlayedSongs = reconciled.mostPlayed.toList(),
+                    unresolvedFavoriteCount = reconciled.unresolvedFavorites,
+                    unresolvedPlaylistRowCount = reconciled.unresolvedPlaylistRows,
+                    unresolvedListeningHistoryCount = reconciled.unresolvedHistoryRows,
+                    selectedPlaylistSongs = reconciled.selectedPlaylistSongs?.toList()
+                        ?: current.selectedPlaylistSongs
+                )
             }
             if (applicationContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
                 Log.d(
