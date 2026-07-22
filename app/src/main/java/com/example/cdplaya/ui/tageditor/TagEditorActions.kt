@@ -19,7 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.data.TagEditorRepository
+import com.example.cdplaya.data.TagEditorResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -38,7 +38,8 @@ private data class PendingTagSave(
 @Composable
 fun rememberTagEditorActions(
     snackbarHostState: SnackbarHostState,
-    tagEditorRepository: TagEditorRepository,
+    onGetUnsupportedEditingMessage: (Song) -> String?,
+    onWriteTagsAndArtwork: suspend (Song, EditableSongTags, Uri?) -> TagEditorResult,
     onTagsSaved: (Song, EditableSongTags) -> Unit,
     onSavingChanged: (Boolean) -> Unit,
     onCloseEditor: () -> Unit
@@ -95,12 +96,7 @@ fun rememberTagEditorActions(
             onSavingChanged(true)
 
             val result = withContext(Dispatchers.IO) {
-                tagEditorRepository.writeTagsAndArtwork(
-                    context = context.applicationContext,
-                    song = song,
-                    editedTags = editedTags,
-                    artworkUri = artworkUri
-                )
+                onWriteTagsAndArtwork(song, editedTags, artworkUri)
             }
 
             if (result.wasSuccessful) {
@@ -142,7 +138,7 @@ fun rememberTagEditorActions(
     return TagEditorActions(
         saveTags = { song, editedTags, artworkUri ->
             val unsupportedMessage =
-                tagEditorRepository.getUnsupportedEditingMessage(song)
+                onGetUnsupportedEditingMessage(song)
 
             if (unsupportedMessage != null) {
                 showMessage(unsupportedMessage)

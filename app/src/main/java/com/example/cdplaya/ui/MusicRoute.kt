@@ -225,6 +225,9 @@ fun MusicRoute(
         onReplayGainModeSelected = { replayGainMode ->
             musicViewModel.selectReplayGainMode(replayGainMode)
         },
+        onReadEditableSongTags = musicViewModel::readEditableSongTags,
+        onGetUnsupportedTagEditingMessage = musicViewModel::getUnsupportedTagEditingMessage,
+        onWriteTagsAndArtwork = musicViewModel::writeTagsAndArtwork,
         libraryAppearanceUiState = libraryAppearanceUiState,
         onLibraryViewOptionSelected = musicViewModel::selectLibraryViewOption,
     )

@@ -11,6 +11,8 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
+import com.example.cdplaya.data.TagEditorRepository
+import com.example.cdplaya.data.TagEditorResult
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
@@ -58,6 +60,7 @@ class MusicViewModel(
     private val appDatabase: AppDatabase = DatabaseProvider.getDatabase(appContext)
 
     private val appPreferencesRepository = AppPreferencesRepository.getInstance(appContext)
+    private val tagEditorRepository = TagEditorRepository()
 
     val playerAppearanceUiState = appPreferencesRepository.state.map { preferences ->
         val selectedTheme = preferences.selectedPlayerTheme
@@ -161,6 +164,22 @@ class MusicViewModel(
             )
         }
     }
+
+    fun readEditableSongTags(song: Song): EditableSongTags = tagEditorRepository.readTags(song)
+
+    fun getUnsupportedTagEditingMessage(song: Song): String? =
+        tagEditorRepository.getUnsupportedEditingMessage(song)
+
+    suspend fun writeTagsAndArtwork(
+        song: Song,
+        editedTags: EditableSongTags,
+        artworkUri: Uri?
+    ): TagEditorResult = tagEditorRepository.writeTagsAndArtwork(
+        context = appContext,
+        song = song,
+        editedTags = editedTags,
+        artworkUri = artworkUri
+    )
     private val playbackController = PlaybackController(
         context = appContext,
         coroutineScope = viewModelScope

@@ -10,6 +10,8 @@ data class SleepTimerUiState(
     }
 }
 
+val SLEEP_TIMER_OPTIONS_MINUTES = listOf(5, 10, 15, 30, 45, 60)
+
 fun SleepTimerUiState.displayText(): String {
     if (!isActive || remainingSeconds <= 0) return "No sleep timer"
     val minutes = remainingSeconds / 60

@@ -411,32 +411,6 @@ class PlaybackController(
         }
     }
 
-    fun getComingUpSongsForDisplay(): List<Song> {
-        val queuedSongCount = playbackQueueManager.getQueuedSongCountExcludingCurrent(
-            currentSongId = currentSong?.id
-        )
-
-        return upcomingSongs.drop(queuedSongCount)
-    }
-
-    fun getPreviousSongForPreview(): Song? {
-        return playbackNavigationHistory.peekPreviousSong()
-    }
-
-    fun getNextSongForPreview(): Song? {
-        return playbackNavigationHistory.peekNextSong()
-            ?: playbackQueue.firstOrNull()
-            ?: upcomingSongs.firstOrNull()
-    }
-
-    fun getPreviousHistoryCount(): Int {
-        return playbackNavigationHistory.getPreviousSongIds().size
-    }
-
-    fun getForwardHistoryCount(): Int {
-        return playbackNavigationHistory.getNextSongIds().size
-    }
-
     fun savePlayerState() {
         playerStateStorage.saveState(
             currentSongId = currentSong?.id,

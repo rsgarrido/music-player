@@ -1,6 +1,7 @@
 package com.example.cdplaya.controller
 
 import com.example.cdplaya.ui.state.SleepTimerUiState
+import com.example.cdplaya.ui.state.SLEEP_TIMER_OPTIONS_MINUTES
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -15,7 +16,7 @@ class SleepTimerController(
     private val onTimerFinished: () -> Unit
 ) {
     private val _uiState = MutableStateFlow(
-        SleepTimerUiState(timerOptionsMinutes = TIMER_OPTIONS_MINUTES)
+        SleepTimerUiState(timerOptionsMinutes = SLEEP_TIMER_OPTIONS_MINUTES)
     )
     val uiState: StateFlow<SleepTimerUiState> = _uiState.asStateFlow()
 
@@ -54,29 +55,11 @@ class SleepTimerController(
         _uiState.value = _uiState.value.copy(isActive = false, remainingSeconds = 0)
     }
 
-    fun getDisplayText(): String {
-        val state = _uiState.value
-        if (!state.isActive || state.remainingSeconds <= 0) {
-            return "No sleep timer"
-        }
-
-        val minutes = state.remainingSeconds / SECONDS_PER_MINUTE
-        val seconds = state.remainingSeconds % SECONDS_PER_MINUTE
-
-        return if (minutes > 0) {
-            "${minutes}m ${seconds.toString().padStart(2, '0')}s remaining"
-        } else {
-            "${seconds}s remaining"
-        }
-    }
-
     fun release() {
         cancelTimer()
     }
 
     companion object {
-        val TIMER_OPTIONS_MINUTES = listOf(5, 10, 15, 30, 45, 60)
-
         private const val SECONDS_PER_MINUTE = 60
         private const val ONE_SECOND_MS = 1_000L
     }

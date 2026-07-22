@@ -30,5 +30,11 @@ class MusicViewModelBoundaryTest {
                     method.returnType in forbiddenTypes
             }
         )
+        assertFalse(
+            MusicViewModel::class.java.declaredMethods.any { method ->
+                Modifier.isPublic(method.modifiers) && !method.isSynthetic &&
+                    method.returnType.simpleName.endsWith("Repository")
+            }
+        )
     }
 }

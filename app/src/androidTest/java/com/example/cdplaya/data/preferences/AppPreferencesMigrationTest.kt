@@ -47,12 +47,14 @@ class AppPreferencesMigrationTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val suffix = System.nanoTime().toString()
         val dataStoreFile = "app_preferences_migration_test_$suffix.preferences_pb"
-        seedLegacyPreferences(context)
+        val legacyStores = legacyStoreNames("migration_$suffix")
+        seedLegacyPreferences(context, legacyStores)
         val firstScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         val repository = AppPreferencesRepository.create(
             context = context,
             scope = firstScope,
-            dataStoreFileName = dataStoreFile
+            dataStoreFileName = dataStoreFile,
+            legacyStores = legacyStores
         )
 
         val migrated = withTimeout(5_000) { repository.awaitLoadedState() }
@@ -93,22 +95,31 @@ class AppPreferencesMigrationTest {
         firstScope.cancel()
     }
 
-    private fun seedLegacyPreferences(context: Context) {
-        context.getSharedPreferences("player_theme_preferences", Context.MODE_PRIVATE).edit()
+    private fun seedLegacyPreferences(context: Context, stores: List<String>) {
+        context.getSharedPreferences(stores[0], Context.MODE_PRIVATE).edit()
             .putString("selected_player_theme", PlayerTheme.RETRO_RACK.id).commit()
-        context.getSharedPreferences("modern_player_preferences", Context.MODE_PRIVATE).edit()
+        context.getSharedPreferences(stores[1], Context.MODE_PRIVATE).edit()
             .putString("artwork_transition_style", "parallax")
             .putString("seekbar_style", "thick_capsule").commit()
-        context.getSharedPreferences("replay_gain_preferences", Context.MODE_PRIVATE).edit()
+        context.getSharedPreferences(stores[2], Context.MODE_PRIVATE).edit()
             .putString("replay_gain_mode", ReplayGainMode.TRACK.name).commit()
-        context.getSharedPreferences("library_preferences", Context.MODE_PRIVATE).edit()
+        context.getSharedPreferences(stores[3], Context.MODE_PRIVATE).edit()
             .putStringSet("selected_folders", setOf("Music", "Podcasts")).commit()
-        context.getSharedPreferences("library_view_preferences", Context.MODE_PRIVATE).edit()
+        context.getSharedPreferences(stores[4], Context.MODE_PRIVATE).edit()
             .putString("songs_view_mode", "grid")
             .putInt("songs_view_mode_columns", 4).commit()
-        context.getSharedPreferences("player_theme_token_preferences", Context.MODE_PRIVATE).edit()
+        context.getSharedPreferences(stores[5], Context.MODE_PRIVATE).edit()
             .putString("retro_rack.accent", "#FF123456").commit()
     }
+
+    private fun legacyStoreNames(prefix: String): List<String> = listOf(
+        "${prefix}_player_theme",
+        "${prefix}_modern_player",
+        "${prefix}_replay_gain",
+        "${prefix}_library",
+        "${prefix}_library_view",
+        "${prefix}_theme_tokens"
+    )
 }
 
 private suspend fun kotlinx.coroutines.flow.StateFlow<AppPreferencesState>.firstMatching(

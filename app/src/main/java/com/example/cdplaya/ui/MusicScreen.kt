@@ -30,7 +30,7 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
-import com.example.cdplaya.data.TagEditorRepository
+import com.example.cdplaya.data.TagEditorResult
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibrarySortOption
@@ -122,6 +122,9 @@ fun MusicScreen(
     onMovePlaylistSongUpClick: (PlaylistSong) -> Unit,
     onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onTagsEdited: (Song, EditableSongTags) -> Unit,
+    onReadEditableSongTags: (Song) -> EditableSongTags,
+    onGetUnsupportedTagEditingMessage: (Song) -> String?,
+    onWriteTagsAndArtwork: suspend (Song, EditableSongTags, Uri?) -> TagEditorResult,
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
     onStartSleepTimerClick: (Int) -> Unit,
@@ -168,7 +171,6 @@ fun MusicScreen(
     var songsPendingPlaylistAdd by remember { mutableStateOf<List<Song>>(emptyList()) }
     var songPendingTagEdit by remember { mutableStateOf<Song?>(null) }
 
-    val tagEditorRepository = remember { TagEditorRepository() }
     var isTagSaveInProgress by remember { mutableStateOf(false) }
     var hasUnsavedTagChanges by remember { mutableStateOf(false) }
     var isDiscardTagChangesDialogVisible by remember { mutableStateOf(false) }
@@ -176,7 +178,8 @@ fun MusicScreen(
 
     val tagEditorActions = rememberTagEditorActions(
         snackbarHostState = snackbarHostState,
-        tagEditorRepository = tagEditorRepository,
+        onGetUnsupportedEditingMessage = onGetUnsupportedTagEditingMessage,
+        onWriteTagsAndArtwork = onWriteTagsAndArtwork,
         onTagsSaved = { originalSong, editedTags ->
             onTagsEdited(originalSong, editedTags)
         },
@@ -399,14 +402,14 @@ fun MusicScreen(
                 selectedSongForTagEdit.id,
                 selectedSongForTagEdit.filePath
             ) {
-                tagEditorRepository.readTags(selectedSongForTagEdit)
+                onReadEditableSongTags(selectedSongForTagEdit)
             }
 
             val unsupportedTagEditingMessage = remember(
                 selectedSongForTagEdit.id,
                 selectedSongForTagEdit.filePath
             ) {
-                tagEditorRepository.getUnsupportedEditingMessage(selectedSongForTagEdit)
+                onGetUnsupportedTagEditingMessage(selectedSongForTagEdit)
             }
 
             TagEditorScreen(
