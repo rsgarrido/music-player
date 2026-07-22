@@ -22,6 +22,7 @@ enum class SongReferenceMatchType {
     LEGACY
 }
 
+/** Resolves the first matching confidence tier, but never chooses among equal-tier candidates. */
 object SongReferenceResolver {
     fun resolve(
         reference: SongReference,

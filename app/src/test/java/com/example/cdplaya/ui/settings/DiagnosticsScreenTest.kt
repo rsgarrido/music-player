@@ -26,13 +26,19 @@ class DiagnosticsScreenTest {
                 previousCount = 2,
                 forwardCount = 1,
                 waveformFileCount = 5,
-                waveformTotalBytes = 4096
+                waveformTotalBytes = 4096,
+                unresolvedFavoriteCount = 1,
+                unresolvedPlaylistRowCount = 2,
+                unresolvedListeningHistoryCount = 3
             )
         )
 
         assertTrue(summary.contains("Library songs: 42"))
         assertTrue(summary.contains("Current song: Example"))
         assertTrue(summary.contains("Waveform cache: 5 files, 4096 bytes"))
+        assertTrue(summary.contains("Unresolved favorites: 1"))
+        assertTrue(summary.contains("Unresolved playlist rows: 2"))
+        assertTrue(summary.contains("Unresolved history rows: 3"))
         assertFalse(summary.contains("/music/"))
         assertFalse(summary.contains("filePath"))
     }

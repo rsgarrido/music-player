@@ -35,7 +35,7 @@ import coil.compose.AsyncImage
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.AppShellAccent
-import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.ui.library.LibraryItemAction
 import com.example.cdplaya.ui.library.LibraryItemActionSheet
 import com.example.cdplaya.ui.library.LibraryItemActionSheetTarget
@@ -47,7 +47,7 @@ fun PlaylistSongList(
     playlistSongRows: List<PlaylistSong>,
     currentSongId: Long?,
     recentlyAddedSongIds: Set<Long>,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     onSongClick: (Song, List<Song>) -> Unit,
     onPlayNextClick: (Song) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
@@ -76,7 +76,7 @@ fun PlaylistSongList(
             val playlistSong = playlistSongRows.getOrNull(index)
             val isCurrentSong = song.id == currentSongId
             val wasRecentlyAdded = song.id in recentlyAddedSongIds
-            val isFavorite = song.favoriteKey() in favoriteSongKeys
+            val isFavorite = song.membershipKey() in favoriteMembershipKeys
             val canMoveUp = playlistSong != null && index > 0
             val canMoveDown = playlistSong != null && index < playlistSongRows.lastIndex
 

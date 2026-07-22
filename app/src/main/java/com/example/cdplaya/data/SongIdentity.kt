@@ -3,7 +3,13 @@ package com.example.cdplaya.data
 import java.security.MessageDigest
 import java.util.Locale
 
-/** Current-device identity is strong but is not portable to another media database. */
+/**
+ * Identity tiers for a current library song.
+ *
+ * Local identity is current-device MediaStore identity. Source identity describes the file's
+ * current relative location. Portable identity is normalized metadata and duration and can be
+ * ambiguous. Legacy identity preserves the pre-v7 metadata hash solely for compatibility.
+ */
 data class SongIdentity(
     val localKey: String?,
     val sourceKey: String?,

@@ -2,6 +2,7 @@ package com.example.cdplaya.data
 
 import java.security.MessageDigest
 
+/** Pre-Phase-2 metadata identity retained for database and backup compatibility only. */
 fun Song.stableKey(): String {
     return stableSongKey(
         title = title,
@@ -9,10 +10,6 @@ fun Song.stableKey(): String {
         album = album,
         duration = duration
     )
-}
-
-fun Song.favoriteKey(): String {
-    return membershipKey()
 }
 
 fun stableSongKey(

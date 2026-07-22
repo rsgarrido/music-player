@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.ExpandedPlayerThemeHost
 import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
@@ -39,7 +39,7 @@ fun MusicScreenOverlays(
     repeatMode: RepeatMode,
     currentPosition: Int,
     duration: Int,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     isExpandedUpNextSheetVisible: Boolean,
     queuedSongs: List<Song>,
     upcomingSongs: List<Song>,
@@ -111,7 +111,7 @@ fun MusicScreenOverlays(
                 repeatMode = repeatMode,
                 currentPosition = currentPosition,
                 duration = duration,
-                isCurrentSongFavorite = currentSong.favoriteKey() in favoriteSongKeys,
+                isCurrentSongFavorite = currentSong.membershipKey() in favoriteMembershipKeys,
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,

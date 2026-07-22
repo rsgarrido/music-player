@@ -25,7 +25,7 @@ import com.example.cdplaya.data.PlaylistsRepository
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.SongReferenceResolution
 import com.example.cdplaya.data.SongReferenceResolver
-import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.data.sortSongsByDateAddedDescending
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.playlistfile.M3uExportResult
@@ -58,8 +58,16 @@ class LibraryController(
     private val libraryCacheRepository = LibraryCacheRepository(appDatabase.cachedSongDao())
     private val playlistFileRepository = PlaylistFileRepository(applicationContext)
     private var refreshJob: Job? = null
+    private var reconciliationJob: Job? = null
 
     var lastLibraryRefreshResult: com.example.cdplaya.data.LibraryRefreshResult? = null
+        private set
+
+    var unresolvedFavoriteCount: Int = 0
+        private set
+    var unresolvedPlaylistRowCount: Int = 0
+        private set
+    var unresolvedListeningHistoryCount: Int = 0
         private set
 
     var songs by mutableStateOf<List<Song>>(emptyList())
@@ -70,7 +78,7 @@ class LibraryController(
     var selectedLibraryFolders by mutableStateOf<Set<String>>(emptySet())
         private set
 
-    var favoriteSongKeys by mutableStateOf<Set<String>>(emptySet())
+    var favoriteMembershipKeys by mutableStateOf<Set<String>>(emptySet())
         private set
 
     var playlists by mutableStateOf<List<Playlist>>(emptyList())
@@ -92,7 +100,7 @@ class LibraryController(
         private set
 
     fun loadSavedUserData() {
-        loadFavoriteSongKeys()
+        loadFavoriteMembershipKeys()
         loadPlaylists()
     }
 
@@ -159,7 +167,8 @@ class LibraryController(
         originalSong: Song,
         editedTags: EditableSongTags
     ) {
-        coroutineScope.launch {
+        refreshJob?.cancel()
+        refreshJob = coroutineScope.launch {
             favoritesRepository.updateSongReferenceAfterTagEdit(
                 originalSong = originalSong,
                 editedTags = editedTags
@@ -175,7 +184,7 @@ class LibraryController(
                 editedTags = editedTags
             )
 
-            val updatedFavoriteSongKeys = favoritesRepository.getFavoriteSongKeys()
+            val updatedFavoriteMembershipKeys = favoritesRepository.getFavoriteMembershipKeys()
             val updatedPlaylists = playlistsRepository.getPlaylists()
 
             val selectedPlaylistId = selectedPlaylistSongs.firstOrNull()?.playlistId
@@ -188,7 +197,7 @@ class LibraryController(
                 scanFreshLibraryAndUpdateCache(selectedLibraryFolders)
             }
 
-            favoriteSongKeys = updatedFavoriteSongKeys
+            favoriteMembershipKeys = updatedFavoriteMembershipKeys
             playlists = updatedPlaylists
 
             if (updatedSelectedPlaylistSongs != null) {
@@ -199,13 +208,13 @@ class LibraryController(
     }
 
     fun toggleFavorite(song: Song) {
-        val songKey = song.favoriteKey()
-        val shouldFavorite = songKey !in favoriteSongKeys
+        val membershipKey = song.membershipKey()
+        val shouldFavorite = membershipKey !in favoriteMembershipKeys
 
-        favoriteSongKeys = if (shouldFavorite) {
-            favoriteSongKeys + songKey
+        favoriteMembershipKeys = if (shouldFavorite) {
+            favoriteMembershipKeys + membershipKey
         } else {
-            favoriteSongKeys - songKey
+            favoriteMembershipKeys - membershipKey
         }
 
         coroutineScope.launch {
@@ -453,17 +462,22 @@ class LibraryController(
         val restoredData = withContext(Dispatchers.IO) {
             BackupRestoredUserData(
                 selectedLibraryFolders = libraryPreferences.getSelectedFolders(),
-                favoriteSongKeys = favoritesRepository.getFavoriteSongKeys(),
+                favoriteMembershipKeys = favoritesRepository.getFavoriteMembershipKeys(),
                 playlists = playlistsRepository.getPlaylists(),
                 recentlyPlayed = listeningHistoryRepository.getRecentlyPlayed(),
                 mostPlayed = listeningHistoryRepository.getMostPlayed()
             )
         }
-        val folderSelectionChanged =
-            selectedLibraryFolders != restoredData.selectedLibraryFolders
+        val resolvedSelectedFolders = resolveRestoredFolderSelections(
+            restoredData.selectedLibraryFolders
+        )
+        if (resolvedSelectedFolders != restoredData.selectedLibraryFolders) {
+            libraryPreferences.saveSelectedFolders(resolvedSelectedFolders)
+        }
+        val folderSelectionChanged = selectedLibraryFolders != resolvedSelectedFolders
 
-        selectedLibraryFolders = restoredData.selectedLibraryFolders
-        favoriteSongKeys = restoredData.favoriteSongKeys
+        selectedLibraryFolders = resolvedSelectedFolders
+        favoriteMembershipKeys = restoredData.favoriteMembershipKeys
         playlists = restoredData.playlists
         selectedPlaylistName = "Playlist"
         selectedPlaylistSongs = emptyList()
@@ -554,26 +568,38 @@ class LibraryController(
         )
     }
 
-    private fun loadFavoriteSongKeys() {
+    private fun loadFavoriteMembershipKeys() {
         coroutineScope.launch {
-            favoriteSongKeys = favoritesRepository.getFavoriteSongKeys()
+            favoriteMembershipKeys = favoritesRepository.getFavoriteMembershipKeys()
         }
     }
 
     private fun reconcileUserSongReferences(currentSongs: List<Song>) {
-        refreshJob?.cancel()
-        refreshJob = coroutineScope.launch {
+        reconciliationJob?.cancel()
+        reconciliationJob = coroutineScope.launch {
             val reconciled = withContext(Dispatchers.IO) {
-                val favoriteResult = favoritesRepository.reconcileSongReferences(currentSongs)
-                playlistsRepository.reconcileSongReferences(currentSongs)
-                listeningHistoryRepository.reconcileSongReferences(currentSongs)
+                val referenceLibrarySongs = libraryCacheRepository.getAllCachedSongs()
+                    .ifEmpty { currentSongs }
+                val favoriteResult = favoritesRepository.reconcileSongReferences(referenceLibrarySongs)
+                val playlistResult = playlistsRepository.reconcileSongReferences(referenceLibrarySongs)
+                val historyResult = listeningHistoryRepository.reconcileSongReferences(referenceLibrarySongs)
                 val recentlyPlayed = listeningHistoryRepository.getRecentlyPlayed()
                 val mostPlayed = listeningHistoryRepository.getMostPlayed()
-                Triple(favoriteResult.resolvedMembershipKeys, recentlyPlayed, mostPlayed)
+                ReferenceReconciliationData(
+                    favoriteMembershipKeys = favoriteResult.resolvedMembershipKeys,
+                    recentlyPlayed = recentlyPlayed,
+                    mostPlayed = mostPlayed,
+                    unresolvedFavorites = favoriteResult.unresolvedCount + favoriteResult.ambiguousCount,
+                    unresolvedPlaylistRows = playlistResult.unresolvedCount + playlistResult.ambiguousCount,
+                    unresolvedHistoryRows = historyResult.unresolvedCount + historyResult.ambiguousCount
+                )
             }
-            favoriteSongKeys = reconciled.first
-            recentlyPlayedSongs = mapListeningHistoryEntriesToSongs(reconciled.second)
-            mostPlayedSongs = mapListeningHistoryEntriesToSongs(reconciled.third)
+            favoriteMembershipKeys = reconciled.favoriteMembershipKeys
+            recentlyPlayedSongs = mapListeningHistoryEntriesToSongs(reconciled.recentlyPlayed)
+            mostPlayedSongs = mapListeningHistoryEntriesToSongs(reconciled.mostPlayed)
+            unresolvedFavoriteCount = reconciled.unresolvedFavorites
+            unresolvedPlaylistRowCount = reconciled.unresolvedPlaylistRows
+            unresolvedListeningHistoryCount = reconciled.unresolvedHistoryRows
             val selectedPlaylistId = selectedPlaylistSongs.firstOrNull()?.playlistId
             if (selectedPlaylistId != null) {
                 selectedPlaylistSongs = playlistsRepository.getPlaylistSongs(selectedPlaylistId)
@@ -595,12 +621,37 @@ class LibraryController(
                 as? SongReferenceResolution.Resolved)?.song
         }
     }
+
+    private fun resolveRestoredFolderSelections(restored: Set<String>): Set<String> {
+        if (restored.isEmpty()) return emptySet()
+        val available = libraryFolders.map { it.path }.toSet()
+        return restored.mapNotNullTo(mutableSetOf()) { storedPath ->
+            if (storedPath in available) return@mapNotNullTo storedPath
+            val token = storedPath.replace('\\', '/').trim().trim('/')
+            if (token.isBlank()) return@mapNotNullTo null
+            val matches = available.filter { candidate ->
+                val normalizedCandidate = candidate.replace('\\', '/').trimEnd('/')
+                normalizedCandidate.equals(token, ignoreCase = true) ||
+                    normalizedCandidate.endsWith("/$token", ignoreCase = true)
+            }
+            matches.singleOrNull()
+        }
+    }
 }
 
 private data class BackupRestoredUserData(
     val selectedLibraryFolders: Set<String>,
-    val favoriteSongKeys: Set<String>,
+    val favoriteMembershipKeys: Set<String>,
     val playlists: List<Playlist>,
     val recentlyPlayed: List<ListeningHistoryEntry>,
     val mostPlayed: List<ListeningHistoryEntry>
+)
+
+private data class ReferenceReconciliationData(
+    val favoriteMembershipKeys: Set<String>,
+    val recentlyPlayed: List<ListeningHistoryEntry>,
+    val mostPlayed: List<ListeningHistoryEntry>,
+    val unresolvedFavorites: Int,
+    val unresolvedPlaylistRows: Int,
+    val unresolvedHistoryRows: Int
 )

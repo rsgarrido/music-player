@@ -14,7 +14,7 @@ object AppBackupJson {
         encodeDefaults = true
     }
 
-    fun encodeBackup(backup: AppBackup): String = json.encodeToString(backup)
+    fun encodeBackup(backup: AppBackup): String = json.encodeToString(backup.sanitizedForExport())
 
     fun decodeBackup(jsonText: String): AppBackup {
         val backup = try {
@@ -69,6 +69,31 @@ object AppBackupJson {
         )
     }
 }
+
+private fun AppBackup.sanitizedForExport(): AppBackup = copy(
+    preferences = preferences.copy(
+        selectedLibraryFolders = preferences.selectedLibraryFolders
+            .map { it.toPortableFolderSelection() }
+            .filter { it.isNotBlank() }
+    ),
+    favorites = favorites.map { favorite ->
+        favorite.copy(reference = favorite.reference?.withoutAbsolutePath())
+    },
+    playlists = playlists.map { playlist ->
+        playlist.copy(
+            songs = playlist.songs.map { song ->
+                song.copy(reference = song.reference?.withoutAbsolutePath())
+            }
+        )
+    },
+    listeningHistory = listeningHistory.map { history ->
+        history.copy(reference = history.reference?.withoutAbsolutePath())
+    }
+)
+
+private fun BackupSongReference.withoutAbsolutePath(): BackupSongReference = copy(
+    relativePath = relativePath.takeUnless { it.isAbsolutePathLike() }.orEmpty()
+)
 
 private fun BackupFavoriteSong.legacyReference() = BackupSongReference(
     duration = duration,

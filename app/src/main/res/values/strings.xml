@@ -10,6 +10,9 @@
     <string name="diagnostics_app_version">App version</string>
     <string name="diagnostics_library">Library</string>
     <string name="diagnostics_selected_folders">Selected library folders</string>
+    <string name="diagnostics_unresolved_favorites">Unresolved favorites</string>
+    <string name="diagnostics_unresolved_playlist_rows">Unresolved playlist rows</string>
+    <string name="diagnostics_unresolved_history_rows">Unresolved listening history</string>
     <string name="diagnostics_player_theme">Player theme</string>
     <string name="diagnostics_replay_gain">ReplayGain</string>
     <string name="diagnostics_connection">Playback connection</string>
@@ -41,6 +44,8 @@
     <string name="diagnostics_clip_label">CDPlaya diagnostics</string>
     <string name="recently_added">Recently Added</string>
     <string name="recently_added_empty">No recently added songs.</string>
+    <string name="recently_added_filter">Added</string>
+    <string name="sort_date_added">Date added</string>
     <plurals name="diagnostics_song_count">
         <item quantity="one">%d song</item>
         <item quantity="other">%d songs</item>

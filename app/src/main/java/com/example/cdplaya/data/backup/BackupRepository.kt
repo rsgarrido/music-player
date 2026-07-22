@@ -53,7 +53,8 @@ class BackupRepository(
             listeningHistory = listeningHistoryRepository.getListeningHistoryForBackup(),
             preferences = BackupPreferences(
                 selectedLibraryFolders = libraryPreferences.getSelectedFolders()
-                    .filterNot { it.isAbsolutePathLike() }
+                    .map { it.toPortableFolderSelection() }
+                    .filter { it.isNotBlank() }
                     .sorted(),
                 selectedPlayerThemeId = playerThemePreferences.getSelectedPlayerThemeId(),
                 replayGainMode = replayGainPreferences.getReplayGainModeName(),

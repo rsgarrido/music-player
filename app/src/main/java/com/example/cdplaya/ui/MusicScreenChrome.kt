@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.library.LibrarySearchBar
 import com.example.cdplaya.ui.library.LibrarySortDropdown
@@ -141,7 +141,7 @@ fun MiniPlayerSection(
     duration: Int,
     selectedPlayerTheme: PlayerTheme,
     selectedPlayerThemeTokens: PlayerThemeTokens,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -183,7 +183,7 @@ fun MiniPlayerSection(
             onCollapseClick = {},
             onOpenUpNextClick = onOpenUpNextClick,
             isCurrentSongFavorite = currentSong?.let { song ->
-                song.favoriteKey() in favoriteSongKeys
+                song.membershipKey() in favoriteMembershipKeys
             } == true,
             onToggleFavoriteClick = onToggleFavoriteClick
         )

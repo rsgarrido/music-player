@@ -66,7 +66,10 @@ internal data class DiagnosticsSnapshot(
     val previousCount: Int,
     val forwardCount: Int,
     val waveformFileCount: Int,
-    val waveformTotalBytes: Long
+    val waveformTotalBytes: Long,
+    val unresolvedFavoriteCount: Int = 0,
+    val unresolvedPlaylistRowCount: Int = 0,
+    val unresolvedListeningHistoryCount: Int = 0
 )
 
 internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = buildString {
@@ -76,6 +79,9 @@ internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = b
     appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
     appendLine("Library songs: ${snapshot.librarySongCount}")
     appendLine("Selected folders: ${snapshot.selectedFolderCount}")
+    appendLine("Unresolved favorites: ${snapshot.unresolvedFavoriteCount}")
+    appendLine("Unresolved playlist rows: ${snapshot.unresolvedPlaylistRowCount}")
+    appendLine("Unresolved history rows: ${snapshot.unresolvedListeningHistoryCount}")
     appendLine("Player theme: ${snapshot.playerTheme}")
     appendLine("ReplayGain: ${snapshot.replayGainMode}")
     appendLine("Playback connected: ${snapshot.isPlaybackConnected}")
@@ -105,6 +111,9 @@ internal fun DiagnosticsScreen(
     upcomingCount: Int,
     previousCount: Int,
     forwardCount: Int,
+    unresolvedFavoriteCount: Int = 0,
+    unresolvedPlaylistRowCount: Int = 0,
+    unresolvedListeningHistoryCount: Int = 0,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -139,7 +148,10 @@ internal fun DiagnosticsScreen(
         previousCount = previousCount,
         forwardCount = forwardCount,
         waveformFileCount = cacheStats.fileCount,
-        waveformTotalBytes = cacheStats.totalBytes
+        waveformTotalBytes = cacheStats.totalBytes,
+        unresolvedFavoriteCount = unresolvedFavoriteCount,
+        unresolvedPlaylistRowCount = unresolvedPlaylistRowCount,
+        unresolvedListeningHistoryCount = unresolvedListeningHistoryCount
     )
 
     LaunchedEffect(repository, refreshRequest) {
@@ -168,6 +180,9 @@ internal fun DiagnosticsScreen(
             pluralStringResource(R.plurals.diagnostics_song_count, librarySongCount, librarySongCount)
         )
         DiagnosticValue(stringResource(R.string.diagnostics_selected_folders), selectedFolderCount.toString())
+        DiagnosticValue(stringResource(R.string.diagnostics_unresolved_favorites), unresolvedFavoriteCount.toString())
+        DiagnosticValue(stringResource(R.string.diagnostics_unresolved_playlist_rows), unresolvedPlaylistRowCount.toString())
+        DiagnosticValue(stringResource(R.string.diagnostics_unresolved_history_rows), unresolvedListeningHistoryCount.toString())
         DiagnosticValue(stringResource(R.string.diagnostics_player_theme), selectedPlayerTheme.displayName)
         DiagnosticValue(stringResource(R.string.diagnostics_replay_gain), selectedReplayGainMode.displayName)
         DiagnosticValue(

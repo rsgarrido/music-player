@@ -84,7 +84,7 @@ class AppBackupJsonTest {
     @Test
     fun v3Backup_roundTripsAllDurablePreferenceAndReferenceFields() {
         val preferences = BackupPreferences(
-            selectedLibraryFolders = listOf("/Music"),
+            selectedLibraryFolders = listOf("Music"),
             selectedPlayerThemeId = "retro_rack",
             replayGainMode = "TRACK",
             modernArtworkTransitionStyle = "cover_flow",
@@ -200,6 +200,7 @@ class AppBackupJsonTest {
         ).toBackupSongReference()
         val encoded = AppBackupJson.encodeBackup(
             emptyBackup().copy(
+                preferences = BackupPreferences(selectedLibraryFolders = listOf("/private/music")),
                 favorites = listOf(
                     BackupFavoriteSong("legacy", "Track", "Artist", "Album", 1_000L, 1L, reference)
                 )
@@ -208,8 +209,17 @@ class AppBackupJsonTest {
 
         assertEquals("", reference.relativePath)
         assertTrue(!encoded.contains("/storage/"))
+        assertTrue(!encoded.contains("/private/"))
+        assertTrue(encoded.contains("private/music"))
         assertTrue(!encoded.contains("content://"))
         assertTrue(!encoded.contains("mediaStoreId"))
+    }
+
+    @Test
+    fun folderSelectionsBecomePortableRelativeTokens() {
+        assertEquals("Music/Rock", "/storage/emulated/0/Music/Rock".toPortableFolderSelection())
+        assertEquals("Music/Rock", "/storage/ABCD-1234/Music/Rock".toPortableFolderSelection())
+        assertEquals("Music/Rock", "/sdcard/Music/Rock".toPortableFolderSelection())
     }
 
     private fun emptyBackup() = AppBackup(createdAt = 123L)

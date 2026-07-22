@@ -14,6 +14,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.example.cdplaya.R
 import com.example.cdplaya.ui.AppShellIconButton
 import com.example.cdplaya.ui.AppShellAccent
 
@@ -25,6 +27,7 @@ fun LibrarySortDropdown(
     modifier: Modifier = Modifier
 ) {
     var isExpanded by remember { mutableStateOf(false) }
+    val selectedTitle = selectedOption.displayTitle()
 
     Box(modifier = modifier) {
         AppShellIconButton(
@@ -32,7 +35,7 @@ fun LibrarySortDropdown(
                 isExpanded = true
             },
             imageVector = Icons.AutoMirrored.Filled.Sort,
-            contentDescription = "Sort by ${selectedOption.title}",
+            contentDescription = "Sort by $selectedTitle",
             accented = true
         )
 
@@ -43,9 +46,10 @@ fun LibrarySortDropdown(
             }
         ) {
             options.forEach { option ->
+                val optionTitle = option.displayTitle()
                 DropdownMenuItem(
                     text = {
-                        Text(text = option.title)
+                        Text(text = optionTitle)
                     },
                     leadingIcon = {
                         if (selectedOption == option) {
@@ -63,5 +67,14 @@ fun LibrarySortDropdown(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun LibrarySortOption.displayTitle(): String {
+    return if (this == LibrarySortOption.DATE_ADDED) {
+        stringResource(R.string.sort_date_added)
+    } else {
+        title
     }
 }

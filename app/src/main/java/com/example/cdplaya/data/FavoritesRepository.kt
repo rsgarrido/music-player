@@ -11,7 +11,7 @@ import com.example.cdplaya.data.local.FavoriteSongEntity
 class FavoritesRepository(
     private val favoriteSongDao: FavoriteSongDao
 ) {
-    suspend fun getFavoriteSongKeys(): Set<String> {
+    suspend fun getFavoriteMembershipKeys(): Set<String> {
         return favoriteSongDao.getAllFavorites().mapTo(mutableSetOf()) { it.referenceKey }
     }
 

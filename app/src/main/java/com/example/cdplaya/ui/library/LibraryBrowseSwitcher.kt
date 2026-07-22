@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.cdplaya.R
 import com.example.cdplaya.ui.AppShellTypography
 import com.example.cdplaya.ui.AppShellAccent
 
@@ -164,7 +166,7 @@ private fun LibraryFilterPill(
 ) {
     val label = when (tab) {
         LibraryTab.SONGS -> "All"
-        LibraryTab.RECENTLY_ADDED -> "Added"
+        LibraryTab.RECENTLY_ADDED -> stringResource(R.string.recently_added_filter)
         LibraryTab.RECENTLY_PLAYED -> "Recent"
         LibraryTab.MOST_PLAYED -> "Most played"
         else -> tab.title

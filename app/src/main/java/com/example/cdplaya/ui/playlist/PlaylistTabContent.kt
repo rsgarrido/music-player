@@ -20,7 +20,7 @@ fun PlaylistsTabContent(
     selectedPlaylistSongs: List<PlaylistSong>,
     currentSong: Song?,
     recentlyAddedSongIds: Set<Long>,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     onCreatePlaylistClick: () -> Unit,
     onPlaylistClick: (Playlist) -> Unit,
     onDeletePlaylistClick: (Playlist) -> Unit,
@@ -64,7 +64,7 @@ fun PlaylistsTabContent(
             playlistSongRows = selectedPlaylistSongs,
             currentSongId = currentSong?.id,
             recentlyAddedSongIds = recentlyAddedSongIds,
-            favoriteSongKeys = favoriteSongKeys,
+            favoriteMembershipKeys = favoriteMembershipKeys,
             onBackClick = onBackFromPlaylist,
             onPlayAllClick = {
                 onPlaySongsClick(availablePlaylistSongs, false)

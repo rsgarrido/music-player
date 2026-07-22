@@ -38,6 +38,27 @@ internal fun String.isAbsolutePathLike(): Boolean {
     return normalized.startsWith('/') || Regex("^[A-Za-z]:/").containsMatchIn(normalized)
 }
 
+internal fun String.toPortableFolderSelection(): String {
+    val raw = replace('\\', '/').trim()
+    val wasAbsolute = raw.isAbsolutePathLike()
+    val normalized = raw.trim('/')
+    if (normalized.isBlank()) return ""
+    val segments = normalized.split('/').filter { it.isNotBlank() }
+    if (!wasAbsolute) return segments.joinToString("/")
+    return when {
+        segments.size >= 4 && segments[0].equals("storage", true) &&
+            segments[1].equals("emulated", true) && segments[2] == "0" ->
+            segments.drop(3).joinToString("/")
+        segments.size >= 3 && segments[0].equals("storage", true) ->
+            segments.drop(2).joinToString("/")
+        segments.size >= 2 && segments[0].equals("sdcard", true) ->
+            segments.drop(1).joinToString("/")
+        Regex("^[A-Za-z]:$").matches(segments.first()) ->
+            segments.drop(1).joinToString("/")
+        else -> segments.joinToString("/")
+    }
+}
+
 internal fun BackupSongReference.restoredReferenceKey(): String {
     val raw = listOf(
         relativePath,

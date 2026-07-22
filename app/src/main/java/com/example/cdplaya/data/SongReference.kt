@@ -1,5 +1,6 @@
 package com.example.cdplaya.data
 
+/** Persisted evidence used to resolve a song without assuming any one field is globally unique. */
 data class SongReference(
     val mediaStoreId: Long? = null,
     val volumeName: String = "",

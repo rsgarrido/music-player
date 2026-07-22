@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.ui.filterSongsByAlbumSearch
 import com.example.cdplaya.ui.filterSongsByArtistSearch
 import com.example.cdplaya.ui.filterSongsForSearch
@@ -32,7 +32,7 @@ fun SongsTabContent(
     onSongClick: (Song, List<Song>) -> Unit,
     onPlayNextClick: (Song) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
@@ -72,7 +72,7 @@ fun SongsTabContent(
                     onPlayNextClick = onPlayNextClick,
                     onAddToQueueClick = onAddToQueueClick,
                     onToggleFavoriteClick = onToggleFavoriteClick,
-                    favoriteSongKeys = favoriteSongKeys,
+                    favoriteMembershipKeys = favoriteMembershipKeys,
                     onAddToPlaylistClick = onAddToPlaylistClick,
                     onEditSongTagsClick = onEditSongTagsClick,
                     bottomContentPadding = bottomContentPadding,
@@ -85,7 +85,7 @@ fun SongsTabContent(
                     currentSongId = currentSong?.id,
                     gridColumnCount = gridColumnCount,
                     recentlyAddedSongIds = recentlyAddedSongIds,
-                    favoriteSongKeys = favoriteSongKeys,
+                    favoriteMembershipKeys = favoriteMembershipKeys,
                     onSongClick = onSongClick,
                     onPlayNextClick = onPlayNextClick,
                     onAddToQueueClick = onAddToQueueClick,
@@ -103,7 +103,7 @@ fun SongsTabContent(
 @Composable
 fun FavoritesTabContent(
     songs: List<Song>,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     searchQuery: String,
     sortOption: LibrarySortOption,
     currentSong: Song?,
@@ -119,7 +119,7 @@ fun FavoritesTabContent(
     modifier: Modifier = Modifier
 ) {
     val favoriteSongs = songs.filter { song ->
-        song.favoriteKey() in favoriteSongKeys
+        song.membershipKey() in favoriteMembershipKeys
     }
 
     val filteredSongs = filterSongsForSearch(
@@ -160,7 +160,7 @@ fun FavoritesTabContent(
                 songs = displayedSongs,
                 currentSongId = currentSong?.id,
                 recentlyAddedSongIds = recentlyAddedSongIds,
-                favoriteSongKeys = favoriteSongKeys,
+                favoriteMembershipKeys = favoriteMembershipKeys,
                 onSongClick = onSongClick,
                 onPlayNextClick = onPlayNextClick,
                 onAddToQueueClick = onAddToQueueClick,
@@ -192,7 +192,7 @@ fun ArtistsTabContent(
     onAddToQueueClick: (Song) -> Unit,
     onPlayNextSongsClick: (String, List<Song>) -> Unit,
     onAddSongsToQueueClick: (String, List<Song>) -> Unit,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
@@ -316,7 +316,7 @@ fun ArtistsTabContent(
             onSongClick = onSongClick,
             onPlayNextClick = onPlayNextClick,
             onAddToQueueClick = onAddToQueueClick,
-            favoriteSongKeys = favoriteSongKeys,
+            favoriteMembershipKeys = favoriteMembershipKeys,
             onToggleFavoriteClick = onToggleFavoriteClick,
             onAddToPlaylistClick = onAddToPlaylistClick,
             onAddAllToPlaylistClick = {
@@ -347,7 +347,7 @@ fun AlbumsTabContent(
     onAddToQueueClick: (Song) -> Unit,
     onPlayNextSongsClick: (String, List<Song>) -> Unit,
     onAddSongsToQueueClick: (String, List<Song>) -> Unit,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
     onAddSongsToPlaylistClick: (List<Song>) -> Unit,
@@ -475,7 +475,7 @@ fun AlbumsTabContent(
             onSongClick = onSongClick,
             onPlayNextClick = onPlayNextClick,
             onAddToQueueClick = onAddToQueueClick,
-            favoriteSongKeys = favoriteSongKeys,
+            favoriteMembershipKeys = favoriteMembershipKeys,
             onToggleFavoriteClick = onToggleFavoriteClick,
             onAddToPlaylistClick = onAddToPlaylistClick,
             onAddAllToPlaylistClick = {
