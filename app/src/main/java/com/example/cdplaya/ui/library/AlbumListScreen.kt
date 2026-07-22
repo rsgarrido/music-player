@@ -1,6 +1,8 @@
 package com.example.cdplaya.ui.library
 
 import android.R
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
@@ -83,7 +85,14 @@ fun AlbumListScreen(
                 supportingContent = {
                     Text(text = "${album.artistText} • $songCountText")
                 },
-                modifier = Modifier.libraryItemActions(
+                modifier = Modifier
+                    .animateItem(
+                        placementSpec = tween(
+                            durationMillis = LibraryLayoutMotionDurationMillis,
+                            easing = FastOutSlowInEasing
+                        )
+                    )
+                    .libraryItemActions(
                     clickLabel = "Open ${album.title}",
                     onClick = {
                         onAlbumClick(album.key)
@@ -101,7 +110,7 @@ fun AlbumListScreen(
                             onAddToPlaylistClick = onAlbumAddToPlaylistClick
                         )
                     }
-                )
+                    )
             )
         }
     }

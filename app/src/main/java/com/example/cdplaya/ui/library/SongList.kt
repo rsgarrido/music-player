@@ -1,6 +1,8 @@
 package com.example.cdplaya.ui.library
 
 import android.R
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.PaddingValues
@@ -115,7 +117,14 @@ fun SongList(
                         MaterialTheme.colorScheme.surface
                     }
                 ),
-                modifier = Modifier.libraryItemActions(
+                modifier = Modifier
+                    .animateItem(
+                        placementSpec = tween(
+                            durationMillis = LibraryLayoutMotionDurationMillis,
+                            easing = FastOutSlowInEasing
+                        )
+                    )
+                    .libraryItemActions(
                     clickLabel = "Play ${song.title}",
                     onClick = {
                         onSongClick(song, songs)
@@ -132,7 +141,7 @@ fun SongList(
                             onEditSongTagsClick = onEditSongTagsClick
                         )
                     }
-                )
+                    )
             )
         }
     }

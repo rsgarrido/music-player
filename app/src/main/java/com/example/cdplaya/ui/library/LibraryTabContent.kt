@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui.library
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
@@ -59,38 +60,43 @@ fun SongsTabContent(
             modifier = Modifier.padding(16.dp)
         )
     } else {
-        if (viewMode == LibraryViewMode.GRID) {
-            SongGrid(
-                songs = displayedSongs,
-                currentSongId = currentSong?.id,
-                gridColumnCount = gridColumnCount,
-                recentlyAddedSongIds = recentlyAddedSongIds,
-                favoriteSongKeys = favoriteSongKeys,
-                onSongClick = onSongClick,
-                onPlayNextClick = onPlayNextClick,
-                onAddToQueueClick = onAddToQueueClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                onAddToPlaylistClick = onAddToPlaylistClick,
-                onEditSongTagsClick = onEditSongTagsClick,
-                bottomContentPadding = bottomContentPadding,
-                modifier = modifier
-            )
-        } else {
-            SongList(
-                songs = displayedSongs,
-                currentSongId = currentSong?.id,
-                recentlyAddedSongIds = recentlyAddedSongIds,
-                onSongClick = onSongClick,
-                onPlayNextClick = onPlayNextClick,
-                onAddToQueueClick = onAddToQueueClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                favoriteSongKeys = favoriteSongKeys,
-                onAddToPlaylistClick = onAddToPlaylistClick,
-                onEditSongTagsClick = onEditSongTagsClick,
-                bottomContentPadding = bottomContentPadding,
-                modifier = modifier
-            )
-        }
+        LibraryLayoutTransition(
+            viewMode = viewMode,
+            modifier = modifier,
+            listContent = {
+                SongList(
+                    songs = displayedSongs,
+                    currentSongId = currentSong?.id,
+                    recentlyAddedSongIds = recentlyAddedSongIds,
+                    onSongClick = onSongClick,
+                    onPlayNextClick = onPlayNextClick,
+                    onAddToQueueClick = onAddToQueueClick,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    favoriteSongKeys = favoriteSongKeys,
+                    onAddToPlaylistClick = onAddToPlaylistClick,
+                    onEditSongTagsClick = onEditSongTagsClick,
+                    bottomContentPadding = bottomContentPadding,
+                    modifier = Modifier.fillMaxSize()
+                )
+            },
+            gridContent = {
+                SongGrid(
+                    songs = displayedSongs,
+                    currentSongId = currentSong?.id,
+                    gridColumnCount = gridColumnCount,
+                    recentlyAddedSongIds = recentlyAddedSongIds,
+                    favoriteSongKeys = favoriteSongKeys,
+                    onSongClick = onSongClick,
+                    onPlayNextClick = onPlayNextClick,
+                    onAddToQueueClick = onAddToQueueClick,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    onAddToPlaylistClick = onAddToPlaylistClick,
+                    onEditSongTagsClick = onEditSongTagsClick,
+                    bottomContentPadding = bottomContentPadding,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        )
     }
 }
 
@@ -230,34 +236,39 @@ fun ArtistsTabContent(
                     onAddSongsToPlaylistClick(artistSongs)
                 }
 
-            if (viewMode == LibraryViewMode.GRID) {
-                ArtistGridScreen(
-                    songs = artistSearchSongs,
-                    onArtistClick = onArtistSelected,
-                    sortOption = sortOption,
-                    gridColumnCount = gridColumnCount,
-                    onArtistPlayClick = onArtistPlay,
-                    onArtistShuffleClick = onArtistShuffle,
-                    onArtistPlayNextClick = onArtistPlayNext,
-                    onArtistAddToQueueClick = onArtistAddToQueue,
-                    onArtistAddToPlaylistClick = onArtistAddToPlaylist,
-                    bottomContentPadding = bottomContentPadding,
-                    modifier = modifier
-                )
-            } else {
-                ArtistListScreen(
-                    songs = artistSearchSongs,
-                    onArtistClick = onArtistSelected,
-                    sortOption = sortOption,
-                    onArtistPlayClick = onArtistPlay,
-                    onArtistShuffleClick = onArtistShuffle,
-                    onArtistPlayNextClick = onArtistPlayNext,
-                    onArtistAddToQueueClick = onArtistAddToQueue,
-                    onArtistAddToPlaylistClick = onArtistAddToPlaylist,
-                    bottomContentPadding = bottomContentPadding,
-                    modifier = modifier
-                )
-            }
+            LibraryLayoutTransition(
+                viewMode = viewMode,
+                modifier = modifier,
+                listContent = {
+                    ArtistListScreen(
+                        songs = artistSearchSongs,
+                        onArtistClick = onArtistSelected,
+                        sortOption = sortOption,
+                        onArtistPlayClick = onArtistPlay,
+                        onArtistShuffleClick = onArtistShuffle,
+                        onArtistPlayNextClick = onArtistPlayNext,
+                        onArtistAddToQueueClick = onArtistAddToQueue,
+                        onArtistAddToPlaylistClick = onArtistAddToPlaylist,
+                        bottomContentPadding = bottomContentPadding,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                },
+                gridContent = {
+                    ArtistGridScreen(
+                        songs = artistSearchSongs,
+                        onArtistClick = onArtistSelected,
+                        sortOption = sortOption,
+                        gridColumnCount = gridColumnCount,
+                        onArtistPlayClick = onArtistPlay,
+                        onArtistShuffleClick = onArtistShuffle,
+                        onArtistPlayNextClick = onArtistPlayNext,
+                        onArtistAddToQueueClick = onArtistAddToQueue,
+                        onArtistAddToPlaylistClick = onArtistAddToPlaylist,
+                        bottomContentPadding = bottomContentPadding,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            )
         }
     } else {
         val artistSongs = sortSongsForArtistDetail(
@@ -380,34 +391,39 @@ fun AlbumsTabContent(
                     onAddSongsToPlaylistClick(albumSongs)
                 }
 
-            if (viewMode == LibraryViewMode.GRID) {
-                AlbumGridScreen(
-                    songs = albumSearchSongs,
-                    onAlbumClick = onAlbumSelected,
-                    sortOption = sortOption,
-                    gridColumnCount = gridColumnCount,
-                    onAlbumPlayClick = onAlbumPlay,
-                    onAlbumShuffleClick = onAlbumShuffle,
-                    onAlbumPlayNextClick = onAlbumPlayNext,
-                    onAlbumAddToQueueClick = onAlbumAddToQueue,
-                    onAlbumAddToPlaylistClick = onAlbumAddToPlaylist,
-                    bottomContentPadding = bottomContentPadding,
-                    modifier = modifier
-                )
-            } else {
-                AlbumListScreen(
-                    songs = albumSearchSongs,
-                    onAlbumClick = onAlbumSelected,
-                    sortOption = sortOption,
-                    onAlbumPlayClick = onAlbumPlay,
-                    onAlbumShuffleClick = onAlbumShuffle,
-                    onAlbumPlayNextClick = onAlbumPlayNext,
-                    onAlbumAddToQueueClick = onAlbumAddToQueue,
-                    onAlbumAddToPlaylistClick = onAlbumAddToPlaylist,
-                    bottomContentPadding = bottomContentPadding,
-                    modifier = modifier
-                )
-            }
+            LibraryLayoutTransition(
+                viewMode = viewMode,
+                modifier = modifier,
+                listContent = {
+                    AlbumListScreen(
+                        songs = albumSearchSongs,
+                        onAlbumClick = onAlbumSelected,
+                        sortOption = sortOption,
+                        onAlbumPlayClick = onAlbumPlay,
+                        onAlbumShuffleClick = onAlbumShuffle,
+                        onAlbumPlayNextClick = onAlbumPlayNext,
+                        onAlbumAddToQueueClick = onAlbumAddToQueue,
+                        onAlbumAddToPlaylistClick = onAlbumAddToPlaylist,
+                        bottomContentPadding = bottomContentPadding,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                },
+                gridContent = {
+                    AlbumGridScreen(
+                        songs = albumSearchSongs,
+                        onAlbumClick = onAlbumSelected,
+                        sortOption = sortOption,
+                        gridColumnCount = gridColumnCount,
+                        onAlbumPlayClick = onAlbumPlay,
+                        onAlbumShuffleClick = onAlbumShuffle,
+                        onAlbumPlayNextClick = onAlbumPlayNext,
+                        onAlbumAddToQueueClick = onAlbumAddToQueue,
+                        onAlbumAddToPlaylistClick = onAlbumAddToPlaylist,
+                        bottomContentPadding = bottomContentPadding,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            )
         }
     } else {
         val albumSongs = sortSongsByAlbumOrder(

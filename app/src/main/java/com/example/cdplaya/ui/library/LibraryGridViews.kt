@@ -1,6 +1,8 @@
 package com.example.cdplaya.ui.library
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -91,7 +93,13 @@ fun SongGrid(
                         onAddToPlaylistClick = onAddToPlaylistClick,
                         onEditSongTagsClick = onEditSongTagsClick
                     )
-                }
+                },
+                modifier = Modifier.animateItem(
+                    placementSpec = tween(
+                        durationMillis = LibraryLayoutMotionDurationMillis,
+                        easing = FastOutSlowInEasing
+                    )
+                )
             )
         }
     }
@@ -160,7 +168,13 @@ fun AlbumGridScreen(
                         onAddToQueueClick = onAlbumAddToQueueClick,
                         onAddToPlaylistClick = onAlbumAddToPlaylistClick
                     )
-                }
+                },
+                modifier = Modifier.animateItem(
+                    placementSpec = tween(
+                        durationMillis = LibraryLayoutMotionDurationMillis,
+                        easing = FastOutSlowInEasing
+                    )
+                )
             )
         }
     }
@@ -229,7 +243,13 @@ fun ArtistGridScreen(
                         onAddToQueueClick = onArtistAddToQueueClick,
                         onAddToPlaylistClick = onArtistAddToPlaylistClick
                     )
-                }
+                },
+                modifier = Modifier.animateItem(
+                    placementSpec = tween(
+                        durationMillis = LibraryLayoutMotionDurationMillis,
+                        easing = FastOutSlowInEasing
+                    )
+                )
             )
         }
     }
