@@ -1,6 +1,5 @@
 package com.example.cdplaya.ui.library
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,9 +31,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
@@ -58,16 +59,17 @@ fun SongGrid(
     bottomContentPadding: Dp,
     modifier: Modifier = Modifier
 ) {
+    val gridMetrics = libraryGridMetrics(gridColumnCount)
     var actionSheetTarget by remember {
         mutableStateOf<LibraryItemActionSheetTarget?>(null)
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(LibraryGridColumns.normalize(gridColumnCount)),
+        columns = GridCells.Fixed(gridMetrics.columnCount),
         modifier = modifier.fillMaxSize(),
-        contentPadding = libraryGridPadding(bottomContentPadding),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = libraryGridPadding(bottomContentPadding, gridMetrics),
+        horizontalArrangement = Arrangement.spacedBy(gridMetrics.horizontalSpacing),
+        verticalArrangement = Arrangement.spacedBy(gridMetrics.verticalSpacing)
     ) {
         items(
             items = songs,
@@ -80,6 +82,7 @@ fun SongGrid(
                 title = song.title.ifBlank { "Unknown Title" },
                 subtitle = song.artist.ifBlank { "Unknown Artist" },
                 clickLabel = "Play ${song.title}",
+                gridMetrics = gridMetrics,
                 selected = isCurrentSong,
                 onClick = { onSongClick(song, songs) },
                 onShowActions = {
@@ -129,16 +132,17 @@ fun AlbumGridScreen(
     modifier: Modifier = Modifier
 ) {
     val albums = sortedLibraryAlbumGroups(songs, sortOption)
+    val gridMetrics = libraryGridMetrics(gridColumnCount)
     var actionSheetTarget by remember {
         mutableStateOf<LibraryItemActionSheetTarget?>(null)
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(LibraryGridColumns.normalize(gridColumnCount)),
+        columns = GridCells.Fixed(gridMetrics.columnCount),
         modifier = modifier.fillMaxSize(),
-        contentPadding = libraryGridPadding(bottomContentPadding),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = libraryGridPadding(bottomContentPadding, gridMetrics),
+        horizontalArrangement = Arrangement.spacedBy(gridMetrics.horizontalSpacing),
+        verticalArrangement = Arrangement.spacedBy(gridMetrics.verticalSpacing)
     ) {
         items(
             items = albums,
@@ -155,6 +159,7 @@ fun AlbumGridScreen(
                 title = album.title,
                 subtitle = "${album.artistText} • $songCountText",
                 clickLabel = "Open ${album.title}",
+                gridMetrics = gridMetrics,
                 onClick = { onAlbumClick(album.key) },
                 onShowActions = {
                     actionSheetTarget = albumActionSheetTarget(
@@ -204,16 +209,17 @@ fun ArtistGridScreen(
     modifier: Modifier = Modifier
 ) {
     val artists = sortedLibraryArtistGroups(songs, sortOption)
+    val gridMetrics = libraryGridMetrics(gridColumnCount)
     var actionSheetTarget by remember {
         mutableStateOf<LibraryItemActionSheetTarget?>(null)
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(LibraryGridColumns.normalize(gridColumnCount)),
+        columns = GridCells.Fixed(gridMetrics.columnCount),
         modifier = modifier.fillMaxSize(),
-        contentPadding = libraryGridPadding(bottomContentPadding),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = libraryGridPadding(bottomContentPadding, gridMetrics),
+        horizontalArrangement = Arrangement.spacedBy(gridMetrics.horizontalSpacing),
+        verticalArrangement = Arrangement.spacedBy(gridMetrics.verticalSpacing)
     ) {
         items(
             items = artists,
@@ -230,6 +236,7 @@ fun ArtistGridScreen(
                 title = artist.name,
                 subtitle = songCountText,
                 clickLabel = "Open ${artist.name}",
+                gridMetrics = gridMetrics,
                 onClick = { onArtistClick(artist.name) },
                 onShowActions = {
                     actionSheetTarget = artistActionSheetTarget(
@@ -271,96 +278,180 @@ private fun LibraryGridCard(
     title: String,
     subtitle: String?,
     clickLabel: String,
+    gridMetrics: LibraryGridMetrics,
     onClick: () -> Unit,
     onShowActions: () -> Unit,
     modifier: Modifier = Modifier,
     selected: Boolean = false
 ) {
-    Surface(
+    Column(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(gridMetrics.interactionCornerRadius))
             .libraryItemActions(
                 clickLabel = clickLabel,
                 onClick = onClick,
                 onShowActions = onShowActions
             ),
-        shape = RoundedCornerShape(20.dp),
-        color = if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.13f)
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerLow
-        },
-        border = BorderStroke(
-            1.dp,
-            if (selected) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-            } else {
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
-            }
-        )
+        verticalArrangement = Arrangement.spacedBy(gridMetrics.metadataSpacing)
     ) {
-        Column(
-            modifier = Modifier.padding(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(1f)
+                .clip(RoundedCornerShape(gridMetrics.artworkCornerRadius))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
         ) {
-            Box(
+            Icon(
+                imageVector = AppShellIcons.AlbumStack,
+                contentDescription = null,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f)
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            ) {
-                Icon(
-                    imageVector = AppShellIcons.AlbumStack,
-                    contentDescription = null,
+                    .align(Alignment.Center)
+                    .size(gridMetrics.placeholderIconSize),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+            )
+            AsyncImage(
+                model = artworkUri,
+                contentDescription = artworkDescription,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            if (selected) {
+                Box(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(36.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
-                )
-                AsyncImage(
-                    model = artworkUri,
-                    contentDescription = artworkDescription,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                        .align(Alignment.BottomStart)
+                        .padding(start = 8.dp, bottom = 7.dp)
+                        .size(width = gridMetrics.selectedAccentWidth, height = 3.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(MaterialTheme.colorScheme.primary)
                 )
             }
+        }
 
-            Column(
-                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
+        Column(
+            modifier = Modifier.padding(horizontal = gridMetrics.metadataHorizontalPadding),
+            verticalArrangement = Arrangement.spacedBy(1.dp)
+        ) {
+            Text(
+                text = title,
+                modifier = Modifier.heightIn(min = gridMetrics.titleMinimumHeight),
+                style = gridMetrics.titleStyle,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (gridMetrics.showSubtitle && !subtitle.isNullOrBlank()) {
                 Text(
-                    text = title,
-                    style = AppShellTypography.SongTitle,
-                    fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
-                    color = if (selected) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                    maxLines = 2,
+                    text = subtitle,
+                    style = gridMetrics.subtitleStyle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                if (!subtitle.isNullOrBlank()) {
-                    Text(
-                        text = subtitle,
-                        style = AppShellTypography.SongSubtitle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
             }
         }
     }
 }
 
-private fun libraryGridPadding(bottomContentPadding: Dp): PaddingValues {
+private data class LibraryGridMetrics(
+    val columnCount: Int,
+    val horizontalSpacing: Dp,
+    val verticalSpacing: Dp,
+    val contentHorizontalPadding: Dp,
+    val artworkCornerRadius: Dp,
+    val interactionCornerRadius: Dp,
+    val metadataSpacing: Dp,
+    val metadataHorizontalPadding: Dp,
+    val placeholderIconSize: Dp,
+    val selectedAccentWidth: Dp,
+    val titleMinimumHeight: Dp,
+    val titleStyle: TextStyle,
+    val subtitleStyle: TextStyle,
+    val showSubtitle: Boolean
+)
+
+private fun libraryGridMetrics(columnCount: Int): LibraryGridMetrics {
+    return when (LibraryGridColumns.normalize(columnCount)) {
+        2 -> LibraryGridMetrics(
+            columnCount = 2,
+            horizontalSpacing = 12.dp,
+            verticalSpacing = 20.dp,
+            contentHorizontalPadding = 12.dp,
+            artworkCornerRadius = 18.dp,
+            interactionCornerRadius = 18.dp,
+            metadataSpacing = 8.dp,
+            metadataHorizontalPadding = 2.dp,
+            placeholderIconSize = 36.dp,
+            selectedAccentWidth = 30.dp,
+            titleMinimumHeight = 18.dp,
+            titleStyle = AppShellTypography.SongTitle,
+            subtitleStyle = AppShellTypography.SongSubtitle,
+            showSubtitle = true
+        )
+
+        3 -> LibraryGridMetrics(
+            columnCount = 3,
+            horizontalSpacing = 10.dp,
+            verticalSpacing = 17.dp,
+            contentHorizontalPadding = 10.dp,
+            artworkCornerRadius = 15.dp,
+            interactionCornerRadius = 15.dp,
+            metadataSpacing = 6.dp,
+            metadataHorizontalPadding = 1.dp,
+            placeholderIconSize = 30.dp,
+            selectedAccentWidth = 26.dp,
+            titleMinimumHeight = 17.dp,
+            titleStyle = AppShellTypography.SongTitle.copy(
+                fontSize = 13.sp,
+                lineHeight = 17.sp
+            ),
+            subtitleStyle = AppShellTypography.SongSubtitle.copy(
+                fontSize = 11.sp,
+                lineHeight = 14.sp
+            ),
+            showSubtitle = true
+        )
+
+        else -> LibraryGridMetrics(
+            columnCount = 4,
+            horizontalSpacing = 8.dp,
+            verticalSpacing = 14.dp,
+            contentHorizontalPadding = 8.dp,
+            artworkCornerRadius = 12.dp,
+            interactionCornerRadius = 12.dp,
+            metadataSpacing = 5.dp,
+            metadataHorizontalPadding = 0.dp,
+            placeholderIconSize = 24.dp,
+            selectedAccentWidth = 22.dp,
+            titleMinimumHeight = 28.dp,
+            titleStyle = AppShellTypography.SongTitle.copy(
+                fontSize = 11.sp,
+                lineHeight = 14.sp,
+                letterSpacing = 0.sp
+            ),
+            subtitleStyle = AppShellTypography.SongSubtitle.copy(
+                fontSize = 10.sp,
+                lineHeight = 12.sp
+            ),
+            showSubtitle = false
+        )
+    }
+}
+
+private fun libraryGridPadding(
+    bottomContentPadding: Dp,
+    gridMetrics: LibraryGridMetrics
+): PaddingValues {
     return PaddingValues(
-        start = 12.dp,
+        start = gridMetrics.contentHorizontalPadding,
         top = 8.dp,
-        end = 12.dp,
+        end = gridMetrics.contentHorizontalPadding,
         bottom = bottomContentPadding
     )
 }
