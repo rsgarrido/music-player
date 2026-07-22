@@ -59,7 +59,7 @@ class AppPreferencesRepository private constructor(
         .catch { error ->
             if (error is IOException) emit(emptyPreferences()) else throw error
         }
-        .map(::decode)
+        .map(::decodeAppPreferences)
         .stateIn(scope, SharingStarted.Eagerly, AppPreferencesState())
 
     suspend fun awaitLoadedState(): AppPreferencesState = state.filter { it.isLoaded }.first()
@@ -172,7 +172,7 @@ class AppPreferencesRepository private constructor(
     }
 }
 
-private fun decode(preferences: Preferences): AppPreferencesState = AppPreferencesState(
+internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState = AppPreferencesState(
     selectedPlayerTheme = PlayerTheme.fromId(preferences[Keys.selectedPlayerTheme]),
     playerThemeTokenOverrides = PlayerTheme.entries.associateWith { emptyOverrides() }
         .mapValues { (theme, _) ->

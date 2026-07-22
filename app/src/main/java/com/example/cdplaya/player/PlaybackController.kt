@@ -455,6 +455,12 @@ class PlaybackController(
         savePlayerState()
         progressHandler.removeCallbacks(progressRunnable)
         musicPlayer.release()
+        upcomingSongsValue = emptyList()
+        _progressState.value = PlaybackProgressUiState.Empty
+        _uiState.value = PlaybackUiState.Disconnected.copy(
+            isShuffleEnabled = isShuffleEnabled,
+            repeatMode = repeatMode
+        )
         PlaybackLibraryBridge.unregister(this)
     }
 

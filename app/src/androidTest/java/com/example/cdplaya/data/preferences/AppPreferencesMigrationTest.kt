@@ -4,6 +4,9 @@ import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.datastore.preferences.SharedPreferencesMigration
+import androidx.datastore.preferences.core.mutablePreferencesOf
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibraryViewCategory
@@ -24,6 +27,21 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AppPreferencesMigrationTest {
+    @Test
+    fun existingDataStoreValueWinsOverLegacyValue() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val storeName = "existing_value_wins_${System.nanoTime()}"
+        context.getSharedPreferences(storeName, Context.MODE_PRIVATE).edit()
+            .putString("selected_player_theme", PlayerTheme.RETRO_RACK.id)
+            .commit()
+        val key = stringPreferencesKey("selected_player_theme")
+        val currentData = mutablePreferencesOf(key to PlayerTheme.POCKET_FLIP.id)
+
+        val migrated = SharedPreferencesMigration(context, storeName).migrate(currentData)
+
+        assertEquals(PlayerTheme.POCKET_FLIP.id, migrated[key])
+    }
+
     @Test
     fun legacyStoresMigrateAndDataStoreBecomesTheSingleSourceOfTruth() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()

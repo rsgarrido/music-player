@@ -28,6 +28,7 @@ import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.data.sortSongsByDateAddedDescending
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
+import com.example.cdplaya.data.backup.BackupRepository
 import com.example.cdplaya.data.playlistfile.M3uExportResult
 import com.example.cdplaya.data.playlistfile.PlaylistFileRepository
 import com.example.cdplaya.data.playlistfile.PlaylistImportResult
@@ -72,9 +73,9 @@ class LibraryController(
     private val applicationContext = context.applicationContext
 
     private val appPreferencesRepository = AppPreferencesRepository.getInstance(applicationContext)
-    internal val favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
-    internal val playlistsRepository = PlaylistsRepository(appDatabase.playlistDao())
-    internal val listeningHistoryRepository = ListeningHistoryRepository(
+    private val favoritesRepository = FavoritesRepository(appDatabase.favoriteSongDao())
+    private val playlistsRepository = PlaylistsRepository(appDatabase.playlistDao())
+    private val listeningHistoryRepository = ListeningHistoryRepository(
         appDatabase.songPlayStatsDao()
     )
     private val libraryCacheRepository = LibraryCacheRepository(appDatabase.cachedSongDao())
@@ -87,6 +88,14 @@ class LibraryController(
     private var libraryPublishCount = 0L
     private val publicationTracker = LibraryPublicationTracker()
     private val libraryScanMutex = Mutex()
+
+    internal fun createBackupRepository(): BackupRepository = BackupRepository(
+        context = applicationContext,
+        favoritesRepository = favoritesRepository,
+        playlistsRepository = playlistsRepository,
+        listeningHistoryRepository = listeningHistoryRepository,
+        appPreferencesRepository = appPreferencesRepository
+    )
 
     private val _uiState = MutableStateFlow(LibraryUiState.Empty)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()

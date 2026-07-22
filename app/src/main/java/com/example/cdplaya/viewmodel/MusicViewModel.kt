@@ -185,13 +185,7 @@ class MusicViewModel(
     val playbackProgressUiState = playbackController.progressState
     val sleepTimerUiState = sleepTimerController.uiState
 
-    private val backupRepository = BackupRepository(
-        context = appContext,
-        favoritesRepository = libraryController.favoritesRepository,
-        playlistsRepository = libraryController.playlistsRepository,
-        listeningHistoryRepository = libraryController.listeningHistoryRepository,
-        appPreferencesRepository = appPreferencesRepository
-    )
+    private val backupRepository = libraryController.createBackupRepository()
 
     init {
         val listeningHistoryRepository = ListeningHistoryRepository(

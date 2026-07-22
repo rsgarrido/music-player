@@ -1,7 +1,5 @@
 package com.example.cdplaya.ui.library
 
-import android.content.Context
-import android.content.SharedPreferences
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,12 +18,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -84,133 +76,6 @@ fun LibraryTab.viewCategory(): LibraryViewCategory? {
         LibraryTab.ALBUMS -> LibraryViewCategory.ALBUMS
         LibraryTab.ARTISTS -> LibraryViewCategory.ARTISTS
         else -> null
-    }
-}
-
-class LibraryViewPreferences internal constructor(
-    private val preferences: SharedPreferences
-) {
-    constructor(context: Context) : this(
-        context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
-    )
-
-    fun getViewMode(category: LibraryViewCategory): LibraryViewMode {
-        val storedValue = runCatching {
-            preferences.getString(category.storageKey, null)
-        }.getOrNull()
-
-        return LibraryViewMode.fromStorageValue(storedValue)
-    }
-
-    fun saveViewMode(category: LibraryViewCategory, mode: LibraryViewMode) {
-        preferences.edit()
-            .putString(category.storageKey, mode.storageValue)
-            .apply()
-    }
-
-    fun getGridColumnCount(category: LibraryViewCategory): Int {
-        val storedValue = runCatching {
-            preferences.getInt(category.gridColumnStorageKey, LibraryGridColumns.DEFAULT)
-        }.getOrDefault(LibraryGridColumns.DEFAULT)
-
-        return LibraryGridColumns.normalize(storedValue)
-    }
-
-    fun saveGridColumnCount(category: LibraryViewCategory, columnCount: Int) {
-        preferences.edit()
-            .putInt(category.gridColumnStorageKey, LibraryGridColumns.normalize(columnCount))
-            .apply()
-    }
-
-    private companion object {
-        const val PREFERENCES_NAME = "library_view_preferences"
-    }
-}
-
-internal val LibraryViewCategory.gridColumnStorageKey: String
-    get() = "${storageKey}_columns"
-
-@Stable
-class LibraryViewModeState internal constructor(
-    private val preferences: LibraryViewPreferences
-) {
-    private var songsMode by mutableStateOf(
-        preferences.getViewMode(LibraryViewCategory.SONGS)
-    )
-    private var albumsMode by mutableStateOf(
-        preferences.getViewMode(LibraryViewCategory.ALBUMS)
-    )
-    private var artistsMode by mutableStateOf(
-        preferences.getViewMode(LibraryViewCategory.ARTISTS)
-    )
-    private var songsGridColumns by mutableStateOf(
-        preferences.getGridColumnCount(LibraryViewCategory.SONGS)
-    )
-    private var albumsGridColumns by mutableStateOf(
-        preferences.getGridColumnCount(LibraryViewCategory.ALBUMS)
-    )
-    private var artistsGridColumns by mutableStateOf(
-        preferences.getGridColumnCount(LibraryViewCategory.ARTISTS)
-    )
-
-    fun modeFor(tab: LibraryTab): LibraryViewMode {
-        return when (tab.viewCategory()) {
-            LibraryViewCategory.SONGS -> songsMode
-            LibraryViewCategory.ALBUMS -> albumsMode
-            LibraryViewCategory.ARTISTS -> artistsMode
-            null -> LibraryViewMode.LIST
-        }
-    }
-
-    fun toggle(tab: LibraryTab) {
-        val category = tab.viewCategory() ?: return
-        val nextMode = modeFor(tab).toggled()
-
-        when (category) {
-            LibraryViewCategory.SONGS -> songsMode = nextMode
-            LibraryViewCategory.ALBUMS -> albumsMode = nextMode
-            LibraryViewCategory.ARTISTS -> artistsMode = nextMode
-        }
-
-        preferences.saveViewMode(category, nextMode)
-    }
-
-    fun gridColumnCountFor(tab: LibraryTab): Int {
-        return when (tab.viewCategory()) {
-            LibraryViewCategory.SONGS -> songsGridColumns
-            LibraryViewCategory.ALBUMS -> albumsGridColumns
-            LibraryViewCategory.ARTISTS -> artistsGridColumns
-            null -> LibraryGridColumns.DEFAULT
-        }
-    }
-
-    fun select(tab: LibraryTab, option: LibraryViewOption) {
-        val category = tab.viewCategory() ?: return
-
-        when (category) {
-            LibraryViewCategory.SONGS -> songsMode = option.viewMode
-            LibraryViewCategory.ALBUMS -> albumsMode = option.viewMode
-            LibraryViewCategory.ARTISTS -> artistsMode = option.viewMode
-        }
-        preferences.saveViewMode(category, option.viewMode)
-
-        option.gridColumnCount?.let { columnCount ->
-            val normalizedCount = LibraryGridColumns.normalize(columnCount)
-            when (category) {
-                LibraryViewCategory.SONGS -> songsGridColumns = normalizedCount
-                LibraryViewCategory.ALBUMS -> albumsGridColumns = normalizedCount
-                LibraryViewCategory.ARTISTS -> artistsGridColumns = normalizedCount
-            }
-            preferences.saveGridColumnCount(category, normalizedCount)
-        }
-    }
-}
-
-@Composable
-fun rememberLibraryViewModeState(): LibraryViewModeState {
-    val applicationContext = LocalContext.current.applicationContext
-    return remember(applicationContext) {
-        LibraryViewModeState(LibraryViewPreferences(applicationContext))
     }
 }
 
