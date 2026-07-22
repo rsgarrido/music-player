@@ -10,7 +10,7 @@ class AppBackupJsonTest {
     fun encodeBackup_includesCurrentSchemaVersion() {
         val encoded = AppBackupJson.encodeBackup(emptyBackup())
 
-        assertTrue(encoded.contains("\"schemaVersion\": 2"))
+        assertTrue(encoded.contains("\"schemaVersion\": 3"))
     }
 
     @Test
@@ -57,7 +57,7 @@ class AppBackupJsonTest {
     }
 
     @Test
-    fun decodeBackup_migratesV1PreferencesToV2Defaults() {
+    fun decodeBackup_migratesV1PreferencesAndReferencesToV3() {
         val decoded = AppBackupJson.decodeBackup(
             """
             {
@@ -72,7 +72,7 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(2, decoded.schemaVersion)
+        assertEquals(3, decoded.schemaVersion)
         assertEquals("slide", decoded.preferences.modernArtworkTransitionStyle)
         assertEquals("classic_bar", decoded.preferences.modernSeekbarStyle)
         assertEquals(emptyMap<String, BackupPlayerThemeTokenOverrides>(), decoded.preferences.playerThemeTokenOverrides)
@@ -82,7 +82,7 @@ class AppBackupJsonTest {
     }
 
     @Test
-    fun v2Backup_roundTripsAllDurablePreferenceFields() {
+    fun v3Backup_roundTripsAllDurablePreferenceAndReferenceFields() {
         val preferences = BackupPreferences(
             selectedLibraryFolders = listOf("/Music"),
             selectedPlayerThemeId = "retro_rack",
@@ -103,22 +103,62 @@ class AppBackupJsonTest {
             albumsGridColumnCount = 3,
             artistsGridColumnCount = 2
         )
-        val backup = emptyBackup().copy(preferences = preferences)
+        val reference = BackupSongReference(
+            relativePath = "Music/Album/",
+            displayName = "track.flac",
+            fileSizeBytes = 42L,
+            duration = 1_000L,
+            title = "Track",
+            artist = "Artist",
+            album = "Album",
+            legacyStableKey = "legacy",
+            portableKey = "portable:v1:key"
+        )
+        val backup = emptyBackup().copy(
+            preferences = preferences,
+            favorites = listOf(
+                BackupFavoriteSong("legacy", "Track", "Artist", "Album", 1_000L, 3L, reference)
+            )
+        )
 
         val decoded = AppBackupJson.decodeBackup(AppBackupJson.encodeBackup(backup))
 
         assertEquals(preferences, decoded.preferences)
+        assertEquals(reference, decoded.favorites.single().reference)
+    }
+
+    @Test
+    fun v2FixtureStillRestoresAsLegacyReference() {
+        val decoded = AppBackupJson.decodeBackup(
+            """
+            {
+              "schemaVersion": 2,
+              "createdAt": 123,
+              "favorites": [{
+                "songKey": "old-key",
+                "title": "Track",
+                "artist": "Artist",
+                "album": "Album",
+                "duration": 1000,
+                "createdAt": 9
+              }]
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(3, decoded.schemaVersion)
+        assertEquals("old-key", decoded.favorites.single().reference?.legacyStableKey)
     }
 
     @Test
     fun decodeBackup_rejectsUnsupportedSchemaVersion() {
         val exception = expectIllegalArgumentException {
             AppBackupJson.decodeBackup(
-                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 3))
+                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 4))
             )
         }
 
-        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 3"))
+        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 4"))
     }
 
     @Test
@@ -143,6 +183,33 @@ class AppBackupJsonTest {
 
         assertTrue(!encoded.contains("waveform", ignoreCase = true))
         assertTrue(!encoded.contains("cache", ignoreCase = true))
+    }
+
+    @Test
+    fun portableSongReferenceOmitsAbsoluteAndDeviceLocalPaths() {
+        val reference = com.example.cdplaya.data.SongReference(
+            mediaStoreId = 44L,
+            contentUri = "content://media/external/audio/44",
+            relativePath = "/storage/emulated/0/Music",
+            displayName = "track.flac",
+            title = "Track",
+            artist = "Artist",
+            album = "Album",
+            duration = 1_000L,
+            portableKey = "portable:v1:key"
+        ).toBackupSongReference()
+        val encoded = AppBackupJson.encodeBackup(
+            emptyBackup().copy(
+                favorites = listOf(
+                    BackupFavoriteSong("legacy", "Track", "Artist", "Album", 1_000L, 1L, reference)
+                )
+            )
+        )
+
+        assertEquals("", reference.relativePath)
+        assertTrue(!encoded.contains("/storage/"))
+        assertTrue(!encoded.contains("content://"))
+        assertTrue(!encoded.contains("mediaStoreId"))
     }
 
     private fun emptyBackup() = AppBackup(createdAt = 123L)

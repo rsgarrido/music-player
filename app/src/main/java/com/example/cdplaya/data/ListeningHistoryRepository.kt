@@ -1,6 +1,10 @@
 package com.example.cdplaya.data
 
 import com.example.cdplaya.data.backup.BackupListeningHistoryEntry
+import com.example.cdplaya.data.backup.BackupSongReference
+import com.example.cdplaya.data.backup.restoredReferenceKey
+import com.example.cdplaya.data.backup.toBackupSongReference
+import com.example.cdplaya.data.backup.toSongReference
 import com.example.cdplaya.data.local.SongPlayStatsDao
 import com.example.cdplaya.data.local.SongPlayStatsEntity
 import kotlin.math.max
@@ -25,7 +29,8 @@ class ListeningHistoryRepository(
                 duration = stats.duration,
                 playCount = stats.playCount,
                 firstPlayedAt = stats.firstPlayedAt,
-                lastPlayedAt = stats.lastPlayedAt
+                lastPlayedAt = stats.lastPlayedAt,
+                reference = stats.toSongReference().toBackupSongReference()
             )
         }
     }
@@ -153,24 +158,35 @@ private fun newStats(song: Song, referenceKey: String, now: Long): SongPlayStats
     )
 }
 
-private fun BackupListeningHistoryEntry.toLegacyEntity() = SongPlayStatsEntity(
-    referenceKey = "legacy:$songKey",
-    songKey = songKey,
-    title = title,
-    artist = artist,
-    album = album,
-    duration = duration,
+private fun BackupListeningHistoryEntry.toLegacyEntity(): SongPlayStatsEntity {
+    val backupReference = reference ?: BackupSongReference(
+        duration = duration,
+        title = title,
+        artist = artist,
+        album = album,
+        legacyStableKey = songKey,
+        portableKey = portableMetadataKey(title, artist, album, duration).orEmpty()
+    )
+    val restoredReference = backupReference.toSongReference()
+    return SongPlayStatsEntity(
+    referenceKey = backupReference.restoredReferenceKey(),
+    songKey = restoredReference.legacyStableKey.ifBlank { songKey },
+    title = restoredReference.title.ifBlank { title },
+    artist = restoredReference.artist.ifBlank { artist },
+    album = restoredReference.album.ifBlank { album },
+    duration = restoredReference.duration.takeIf { it > 0L } ?: duration,
     playCount = playCount,
     firstPlayedAt = firstPlayedAt,
     lastPlayedAt = lastPlayedAt,
     mediaStoreId = null,
     volumeName = "",
     contentUri = "",
-    relativePath = "",
-    displayName = "",
-    fileSizeBytes = 0L,
+    relativePath = restoredReference.relativePath,
+    displayName = restoredReference.displayName,
+    fileSizeBytes = restoredReference.fileSizeBytes,
     dateModifiedEpochSeconds = 0L,
-    albumArtist = "",
-    portableKey = portableMetadataKey(title, artist, album, duration).orEmpty(),
-    portableKeyVersion = SongIdentity.PORTABLE_KEY_VERSION
-)
+    albumArtist = restoredReference.albumArtist,
+    portableKey = restoredReference.portableKey,
+    portableKeyVersion = restoredReference.portableKeyVersion
+    )
+}
