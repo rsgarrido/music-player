@@ -5,7 +5,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 object AppBackupJson {
-    const val CURRENT_SCHEMA_VERSION = 1
+    const val CURRENT_SCHEMA_VERSION = 2
+    private const val OLDEST_SUPPORTED_SCHEMA_VERSION = 1
 
     private val json = Json {
         prettyPrint = true
@@ -22,11 +23,33 @@ object AppBackupJson {
             throw IllegalArgumentException("Invalid CDPlaya backup JSON.", exception)
         }
 
-        require(backup.schemaVersion == CURRENT_SCHEMA_VERSION) {
+        require(backup.schemaVersion in OLDEST_SUPPORTED_SCHEMA_VERSION..CURRENT_SCHEMA_VERSION) {
             "Unsupported CDPlaya backup schema version ${backup.schemaVersion}; " +
-                "expected $CURRENT_SCHEMA_VERSION."
+                "supported versions are $OLDEST_SUPPORTED_SCHEMA_VERSION through " +
+                "$CURRENT_SCHEMA_VERSION."
         }
 
-        return backup
+        return if (backup.schemaVersion == CURRENT_SCHEMA_VERSION) {
+            backup
+        } else {
+            migrateV1ToV2(backup)
+        }
+    }
+
+    private fun migrateV1ToV2(backup: AppBackup): AppBackup {
+        return backup.copy(
+            schemaVersion = CURRENT_SCHEMA_VERSION,
+            preferences = backup.preferences.copy(
+                modernArtworkTransitionStyle = "slide",
+                modernSeekbarStyle = "classic_bar",
+                playerThemeTokenOverrides = emptyMap(),
+                songsViewMode = "list",
+                albumsViewMode = "list",
+                artistsViewMode = "list",
+                songsGridColumnCount = 2,
+                albumsGridColumnCount = 2,
+                artistsGridColumnCount = 2
+            )
+        )
     }
 }

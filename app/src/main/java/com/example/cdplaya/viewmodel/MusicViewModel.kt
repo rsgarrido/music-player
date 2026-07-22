@@ -179,7 +179,9 @@ class MusicViewModel(
         listeningHistoryRepository = libraryController.listeningHistoryRepository,
         libraryPreferences = libraryController.libraryPreferences,
         playerThemePreferences = playerThemePreferences,
-        replayGainPreferences = replayGainPreferences
+        replayGainPreferences = replayGainPreferences,
+        modernPlayerPreferences = modernPlayerPreferences,
+        playerThemeTokenPreferences = playerThemeTokenPreferences
     )
 
     init {

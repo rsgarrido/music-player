@@ -10,7 +10,7 @@ class AppBackupJsonTest {
     fun encodeBackup_includesCurrentSchemaVersion() {
         val encoded = AppBackupJson.encodeBackup(emptyBackup())
 
-        assertTrue(encoded.contains("\"schemaVersion\": 1"))
+        assertTrue(encoded.contains("\"schemaVersion\": 2"))
     }
 
     @Test
@@ -33,7 +33,7 @@ class AppBackupJsonTest {
         val decoded = AppBackupJson.decodeBackup(
             """
             {
-              "schemaVersion": 1,
+              "schemaVersion": 2,
               "createdAt": 123,
               "appName": "CDPlaya",
               "favorites": [],
@@ -57,14 +57,68 @@ class AppBackupJsonTest {
     }
 
     @Test
+    fun decodeBackup_migratesV1PreferencesToV2Defaults() {
+        val decoded = AppBackupJson.decodeBackup(
+            """
+            {
+              "schemaVersion": 1,
+              "createdAt": 123,
+              "preferences": {
+                "selectedLibraryFolders": ["/Music"],
+                "selectedPlayerThemeId": "classic_wheel",
+                "replayGainMode": "OFF"
+              }
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(2, decoded.schemaVersion)
+        assertEquals("slide", decoded.preferences.modernArtworkTransitionStyle)
+        assertEquals("classic_bar", decoded.preferences.modernSeekbarStyle)
+        assertEquals(emptyMap<String, BackupPlayerThemeTokenOverrides>(), decoded.preferences.playerThemeTokenOverrides)
+        assertEquals("list", decoded.preferences.songsViewMode)
+        assertEquals(2, decoded.preferences.songsGridColumnCount)
+        assertEquals("classic_wheel", decoded.preferences.selectedPlayerThemeId)
+    }
+
+    @Test
+    fun v2Backup_roundTripsAllDurablePreferenceFields() {
+        val preferences = BackupPreferences(
+            selectedLibraryFolders = listOf("/Music"),
+            selectedPlayerThemeId = "retro_rack",
+            replayGainMode = "TRACK",
+            modernArtworkTransitionStyle = "cover_flow",
+            modernSeekbarStyle = "waveform_glow",
+            playerThemeTokenOverrides = mapOf(
+                "retro_rack" to BackupPlayerThemeTokenOverrides(
+                    shellArgb = 0xFF010203L,
+                    accentArgb = 0xFFAABBCCL,
+                    secondaryAccentArgb = 0xFF102030L
+                )
+            ),
+            songsViewMode = "grid",
+            albumsViewMode = "list",
+            artistsViewMode = "grid",
+            songsGridColumnCount = 4,
+            albumsGridColumnCount = 3,
+            artistsGridColumnCount = 2
+        )
+        val backup = emptyBackup().copy(preferences = preferences)
+
+        val decoded = AppBackupJson.decodeBackup(AppBackupJson.encodeBackup(backup))
+
+        assertEquals(preferences, decoded.preferences)
+    }
+
+    @Test
     fun decodeBackup_rejectsUnsupportedSchemaVersion() {
         val exception = expectIllegalArgumentException {
             AppBackupJson.decodeBackup(
-                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 2))
+                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 3))
             )
         }
 
-        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 2"))
+        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 3"))
     }
 
     @Test
@@ -81,6 +135,14 @@ class AppBackupJsonTest {
         }
 
         assertEquals("Invalid CDPlaya backup JSON.", exception.message)
+    }
+
+    @Test
+    fun encodedBackup_doesNotContainWaveformOrDerivedCacheData() {
+        val encoded = AppBackupJson.encodeBackup(emptyBackup())
+
+        assertTrue(!encoded.contains("waveform", ignoreCase = true))
+        assertTrue(!encoded.contains("cache", ignoreCase = true))
     }
 
     private fun emptyBackup() = AppBackup(createdAt = 123L)
