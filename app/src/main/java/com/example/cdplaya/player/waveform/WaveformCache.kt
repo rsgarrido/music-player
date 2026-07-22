@@ -8,7 +8,9 @@ import java.io.File
 
 class WaveformCache(
     private val directory: File,
-    private val memoryEntryLimit: Int = DEFAULT_MEMORY_ENTRY_LIMIT
+    private val memoryEntryLimit: Int = DEFAULT_MEMORY_ENTRY_LIMIT,
+    private val maximumDiskBytes: Long = DEFAULT_MAXIMUM_DISK_BYTES,
+    private val maintenanceTargetBytes: Long = DEFAULT_MAINTENANCE_TARGET_BYTES
 ) {
     private val memoryCache = object : LinkedHashMap<String, WaveformData>(
         memoryEntryLimit,
@@ -50,6 +52,7 @@ class WaveformCache(
             return null
         }
 
+        runCatching { cacheFile.setLastModified(System.currentTimeMillis()) }
         memoryCache[sourceKey] = data
         return data
     }
@@ -90,6 +93,57 @@ class WaveformCache(
         }
     }
 
+    @Synchronized
+    fun getStats(): WaveformCacheStats {
+        val files = cacheFiles()
+        return WaveformCacheStats(
+            fileCount = files.size,
+            totalBytes = files.sumOf { file -> runCatching { file.length() }.getOrDefault(0L) }
+        )
+    }
+
+    @Synchronized
+    fun clear(): WaveformCacheStats {
+        memoryCache.clear()
+        cacheFiles(includeTemporaryFiles = true).forEach { file ->
+            runCatching { file.delete() }
+        }
+        return getStats()
+    }
+
+    @Synchronized
+    fun maintain(): WaveformCacheStats {
+        cacheFiles(includeTemporaryFiles = true)
+            .filter { file -> file.extension == TEMPORARY_FILE_EXTENSION }
+            .forEach { file -> runCatching { file.delete() } }
+
+        val files = cacheFiles()
+        var totalBytes = files.sumOf { file ->
+            runCatching { file.length() }.getOrDefault(0L)
+        }
+        if (totalBytes > maximumDiskBytes) {
+            files.sortedBy { file ->
+                runCatching { file.lastModified() }.getOrDefault(0L)
+            }.forEach { file ->
+                if (totalBytes <= maintenanceTargetBytes) return@forEach
+                val fileBytes = runCatching { file.length() }.getOrDefault(0L)
+                if (runCatching { file.delete() }.getOrDefault(false)) {
+                    totalBytes = (totalBytes - fileBytes).coerceAtLeast(0L)
+                }
+            }
+        }
+        return getStats()
+    }
+
+    private fun cacheFiles(includeTemporaryFiles: Boolean = false): List<File> {
+        return directory.listFiles()?.filter { file ->
+            file.isFile && (
+                file.extension == CACHE_FILE_EXTENSION ||
+                    (includeTemporaryFiles && file.extension == TEMPORARY_FILE_EXTENSION)
+                )
+        }.orEmpty()
+    }
+
     private fun cacheFile(sourceKey: String): File {
         return File(directory, "$sourceKey.bin")
     }
@@ -101,9 +155,18 @@ class WaveformCache(
 
     companion object {
         private const val CACHE_MAGIC = 0x57415645
-        private const val CACHE_FORMAT_VERSION = 1
+        const val CACHE_FORMAT_VERSION = 1
         private const val MAX_CACHED_AMPLITUDES = 1024
         private const val DEFAULT_MEMORY_ENTRY_LIMIT = 8
         private const val SHA_256_HEX_LENGTH = 64
+        private const val CACHE_FILE_EXTENSION = "bin"
+        private const val TEMPORARY_FILE_EXTENSION = "tmp"
+        const val DEFAULT_MAXIMUM_DISK_BYTES = 64L * 1024L * 1024L
+        const val DEFAULT_MAINTENANCE_TARGET_BYTES = DEFAULT_MAXIMUM_DISK_BYTES * 4L / 5L
     }
 }
+
+data class WaveformCacheStats(
+    val fileCount: Int,
+    val totalBytes: Long
+)

@@ -99,8 +99,21 @@ class WaveformRepository internal constructor(
                 ?: return@withLock null
             val data = WaveformData(amplitudes = amplitudes, sourceKey = sourceKey)
             cache.write(data)
+            cache.maintain()
             data
         }
+    }
+
+    suspend fun getCacheStats(): WaveformCacheStats = withContext(ioDispatcher) {
+        cache.getStats()
+    }
+
+    suspend fun clearDiskCache(): WaveformCacheStats = withContext(ioDispatcher) {
+        loadMutex.withLock { cache.clear() }
+    }
+
+    suspend fun maintainDiskCache(): WaveformCacheStats = withContext(ioDispatcher) {
+        loadMutex.withLock { cache.maintain() }
     }
 
     suspend fun prefetch(songs: List<Song>) {
