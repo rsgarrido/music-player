@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "cdplaya"
 include(":app")
+include(":benchmark")
