@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.cdplaya.R
 import com.example.cdplaya.ui.AppShellTypography
 import com.example.cdplaya.ui.AppShellAccent
 
@@ -37,6 +39,7 @@ val primaryLibraryTabs = listOf(
 val songCollectionTabs = listOf(
     LibraryTab.SONGS,
     LibraryTab.FAVORITES,
+    LibraryTab.RECENTLY_ADDED,
     LibraryTab.RECENTLY_PLAYED,
     LibraryTab.MOST_PLAYED
 )
@@ -44,6 +47,7 @@ val songCollectionTabs = listOf(
 fun LibraryTab.primaryBrowseTab(): LibraryTab? {
     return when (this) {
         LibraryTab.FAVORITES,
+        LibraryTab.RECENTLY_ADDED,
         LibraryTab.RECENTLY_PLAYED,
         LibraryTab.MOST_PLAYED -> LibraryTab.SONGS
 
@@ -162,6 +166,7 @@ private fun LibraryFilterPill(
 ) {
     val label = when (tab) {
         LibraryTab.SONGS -> "All"
+        LibraryTab.RECENTLY_ADDED -> stringResource(R.string.recently_added_filter)
         LibraryTab.RECENTLY_PLAYED -> "Recent"
         LibraryTab.MOST_PLAYED -> "Most played"
         else -> tab.title

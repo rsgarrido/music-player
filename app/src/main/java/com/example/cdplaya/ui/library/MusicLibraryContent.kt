@@ -9,6 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.cdplaya.R
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
@@ -34,7 +36,7 @@ fun MusicLibraryContent(
     selectedPlaylistSongs: List<PlaylistSong>,
     currentSong: Song?,
     recentlyAddedSongIds: Set<Long>,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     queuedSongs: List<Song>,
     upcomingSongs: List<Song>,
     isShuffleEnabled: Boolean,
@@ -68,6 +70,7 @@ fun MusicLibraryContent(
     onMovePlaylistSongDownClick: (PlaylistSong) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
     recentlyPlayedSongs: List<Song>,
+    recentlyAddedSongs: List<Song>,
     mostPlayedSongs: List<Song>,
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
@@ -85,7 +88,7 @@ fun MusicLibraryContent(
                 onSongClick = onSongClick,
                 onPlayNextClick = onPlayNextClick,
                 onAddToQueueClick = onAddToQueueClick,
-                favoriteSongKeys = favoriteSongKeys,
+                favoriteMembershipKeys = favoriteMembershipKeys,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onEditSongTagsClick = onEditSongTagsClick,
@@ -112,7 +115,7 @@ fun MusicLibraryContent(
                 onAddToQueueClick = onAddToQueueClick,
                 onPlayNextSongsClick = onPlayNextSongsClick,
                 onAddSongsToQueueClick = onAddSongsToQueueClick,
-                favoriteSongKeys = favoriteSongKeys,
+                favoriteMembershipKeys = favoriteMembershipKeys,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
@@ -140,7 +143,7 @@ fun MusicLibraryContent(
                 onAddToQueueClick = onAddToQueueClick,
                 onPlayNextSongsClick = onPlayNextSongsClick,
                 onAddSongsToQueueClick = onAddSongsToQueueClick,
-                favoriteSongKeys = favoriteSongKeys,
+                favoriteMembershipKeys = favoriteMembershipKeys,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
@@ -153,7 +156,7 @@ fun MusicLibraryContent(
         LibraryTab.FAVORITES -> {
             FavoritesTabContent(
                 songs = songs,
-                favoriteSongKeys = favoriteSongKeys,
+                favoriteMembershipKeys = favoriteMembershipKeys,
                 searchQuery = searchQuery,
                 sortOption = selectedFavoriteSortOption,
                 currentSong = currentSong,
@@ -194,7 +197,7 @@ fun MusicLibraryContent(
                 selectedPlaylistSongs = selectedPlaylistSongs,
                 currentSong = currentSong,
                 recentlyAddedSongIds = recentlyAddedSongIds,
-                favoriteSongKeys = favoriteSongKeys,
+                favoriteMembershipKeys = favoriteMembershipKeys,
                 onCreatePlaylistClick = onCreatePlaylistClick,
                 onRenamePlaylistClick = onRenamePlaylistClick,
                 onPlaylistClick = onPlaylistClick,
@@ -227,7 +230,35 @@ fun MusicLibraryContent(
                     songs = recentlyPlayedSongs,
                     currentSongId = currentSong?.id,
                     recentlyAddedSongIds = recentlyAddedSongIds,
-                    favoriteSongKeys = favoriteSongKeys,
+                    favoriteMembershipKeys = favoriteMembershipKeys,
+                    onSongClick = onSongClick,
+                    onPlayNextClick = onPlayNextClick,
+                    onAddToQueueClick = onAddToQueueClick,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    onAddToPlaylistClick = onAddToPlaylistClick,
+                    onEditSongTagsClick = onEditSongTagsClick,
+                    bottomContentPadding = bottomContentPadding,
+                    modifier = modifier
+                )
+            }
+        }
+
+        LibraryTab.RECENTLY_ADDED -> {
+            val displayedSongs = com.example.cdplaya.ui.filterSongsForSearch(
+                recentlyAddedSongs,
+                searchQuery
+            )
+            if (displayedSongs.isEmpty()) {
+                EmptyHistoryMessage(
+                    message = stringResource(R.string.recently_added_empty),
+                    modifier = modifier
+                )
+            } else {
+                SongList(
+                    songs = displayedSongs,
+                    currentSongId = currentSong?.id,
+                    recentlyAddedSongIds = recentlyAddedSongIds,
+                    favoriteMembershipKeys = favoriteMembershipKeys,
                     onSongClick = onSongClick,
                     onPlayNextClick = onPlayNextClick,
                     onAddToQueueClick = onAddToQueueClick,
@@ -251,7 +282,7 @@ fun MusicLibraryContent(
                     songs = mostPlayedSongs,
                     currentSongId = currentSong?.id,
                     recentlyAddedSongIds = recentlyAddedSongIds,
-                    favoriteSongKeys = favoriteSongKeys,
+                    favoriteMembershipKeys = favoriteMembershipKeys,
                     onSongClick = onSongClick,
                     onPlayNextClick = onPlayNextClick,
                     onAddToQueueClick = onAddToQueueClick,

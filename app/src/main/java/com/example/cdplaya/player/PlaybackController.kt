@@ -9,6 +9,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.SongReferenceResolution
+import com.example.cdplaya.data.SongReferenceResolver
+import com.example.cdplaya.data.toSongReference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.player.replaygain.ReplayGainRepository
 import com.example.cdplaya.player.replaygain.replayGainVolumeMultiplier
@@ -131,12 +134,12 @@ class PlaybackController(
 
     fun handleLibrarySongsChanged(updatedSongs: List<Song>) {
         librarySongs = updatedSongs
+        val previousCurrentSong = currentSong
+        val refreshedCurrentSong = previousCurrentSong?.let { song ->
+            replacementSong(song, updatedSongs)
+        }
 
-        val validSongIds = updatedSongs.map { song ->
-            song.id
-        }.toSet()
-
-        if (currentSong != null && currentSong?.id !in validSongIds) {
+        if (previousCurrentSong != null && refreshedCurrentSong == null) {
             musicPlayer.stop()
             musicPlayer.setVolume(1f)
             currentSong = null
@@ -144,21 +147,30 @@ class PlaybackController(
             currentPosition = 0
             duration = 0
             upcomingSongs = emptyList()
+        } else if (refreshedCurrentSong != null) {
+            currentSong = refreshedCurrentSong
         }
 
-        playbackQueueManager.removeInvalidSongs(validSongIds)
-
-        playbackNavigationHistory.removeInvalidSongs(validSongIds)
-
-        playbackContextSongs = playbackContextSongs.filter { song ->
-            song.id in validSongIds
-        }
+        playbackQueueManager.replaceQueue(
+            replaceSongReferences(playbackQueue.toList(), updatedSongs)
+        )
+        playbackNavigationHistory.replacePreviousSongs(
+            replaceSongReferences(playbackNavigationHistory.getPreviousSongs(), updatedSongs)
+        )
+        playbackNavigationHistory.replaceNextSongs(
+            replaceSongReferences(playbackNavigationHistory.getNextSongs(), updatedSongs)
+        )
+        playbackContextSongs = replaceSongReferences(playbackContextSongs, updatedSongs)
+        upcomingSongs = replaceSongReferences(upcomingSongs, updatedSongs)
 
         if (playbackContextSongs.isEmpty()) {
             playbackContextSongs = librarySongs
         }
 
         if (currentSong != null) {
+            if (currentSong != previousCurrentSong) {
+                musicPlayer.updateCurrentSongMetadata(requireNotNull(currentSong))
+            }
             syncServicePlaylistKeepingCurrent()
         }
 
@@ -854,4 +866,22 @@ class PlaybackController(
     companion object {
         private const val PREVIOUS_RESTART_THRESHOLD_MS = 3_000
     }
+}
+
+internal fun replacementSong(song: Song, updatedSongs: List<Song>): Song? {
+    updatedSongs.firstOrNull { candidate ->
+        candidate.id == song.id &&
+            (song.volumeName.isBlank() || candidate.volumeName == song.volumeName)
+    }?.let { return it }
+    return when (val resolution = SongReferenceResolver.resolve(song.toSongReference(), updatedSongs)) {
+        is SongReferenceResolution.Resolved -> resolution.song
+        else -> null
+    }
+}
+
+internal fun replaceSongReferences(
+    songs: List<Song>,
+    updatedSongs: List<Song>
+): List<Song> {
+    return songs.mapNotNull { song -> replacementSong(song, updatedSongs) }
 }

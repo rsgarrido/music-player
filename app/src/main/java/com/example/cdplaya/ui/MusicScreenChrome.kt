@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.library.LibrarySearchBar
 import com.example.cdplaya.ui.library.LibrarySortDropdown
@@ -141,7 +141,7 @@ fun MiniPlayerSection(
     duration: Int,
     selectedPlayerTheme: PlayerTheme,
     selectedPlayerThemeTokens: PlayerThemeTokens,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -183,7 +183,7 @@ fun MiniPlayerSection(
             onCollapseClick = {},
             onOpenUpNextClick = onOpenUpNextClick,
             isCurrentSongFavorite = currentSong?.let { song ->
-                song.favoriteKey() in favoriteSongKeys
+                song.membershipKey() in favoriteMembershipKeys
             } == true,
             onToggleFavoriteClick = onToggleFavoriteClick
         )
@@ -222,6 +222,7 @@ fun LibrarySortAction(
     val shouldShowSortDropdown =
         selectedLibraryTab == LibraryTab.SONGS ||
                 selectedLibraryTab == LibraryTab.FAVORITES ||
+                selectedLibraryTab == LibraryTab.RECENTLY_ADDED ||
                 selectedLibraryTab == LibraryTab.ARTISTS && selectedArtistName == null ||
                 selectedLibraryTab == LibraryTab.ALBUMS && selectedAlbumFolderPath == null
 
@@ -229,6 +230,7 @@ fun LibrarySortAction(
         val selectedSortOption = when (selectedLibraryTab) {
             LibraryTab.SONGS -> selectedSongSortOption
             LibraryTab.FAVORITES -> selectedFavoriteSortOption
+            LibraryTab.RECENTLY_ADDED -> LibrarySortOption.DATE_ADDED
             LibraryTab.ARTISTS -> selectedArtistSortOption
             LibraryTab.ALBUMS -> selectedAlbumSortOption
             LibraryTab.PLAYLISTS -> selectedSongSortOption
@@ -242,7 +244,8 @@ fun LibrarySortAction(
             LibraryTab.FAVORITES -> listOf(
                 LibrarySortOption.TITLE,
                 LibrarySortOption.ARTIST,
-                LibrarySortOption.ALBUM
+                LibrarySortOption.ALBUM,
+                LibrarySortOption.DATE_ADDED
             )
 
             LibraryTab.ARTISTS -> listOf(
@@ -257,6 +260,7 @@ fun LibrarySortAction(
             )
 
             LibraryTab.PLAYLISTS,
+            LibraryTab.RECENTLY_ADDED,
             LibraryTab.RECENTLY_PLAYED,
             LibraryTab.MOST_PLAYED,
             LibraryTab.QUEUE -> emptyList()
@@ -269,6 +273,7 @@ fun LibrarySortAction(
                 when (selectedLibraryTab) {
                     LibraryTab.SONGS -> onSongSortOptionSelected(option)
                     LibraryTab.FAVORITES -> onFavoriteSortOptionSelected(option)
+                    LibraryTab.RECENTLY_ADDED -> Unit
                     LibraryTab.ARTISTS -> onArtistSortOptionSelected(option)
                     LibraryTab.ALBUMS -> onAlbumSortOptionSelected(option)
                     LibraryTab.PLAYLISTS -> Unit

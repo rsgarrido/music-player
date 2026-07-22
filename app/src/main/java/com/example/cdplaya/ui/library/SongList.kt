@@ -35,7 +35,7 @@ import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.AppShellAccent
-import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.ui.getDisplayTrackNumber
 
 @Composable
@@ -43,7 +43,7 @@ fun SongList(
     songs: List<Song>,
     currentSongId: Long?,
     recentlyAddedSongIds: Set<Long>,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     onSongClick: (Song, List<Song>) -> Unit,
     onPlayNextClick: (Song) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
@@ -69,7 +69,7 @@ fun SongList(
         ) { song ->
             val isCurrentSong = song.id == currentSongId
             val wasRecentlyAdded = song.id in recentlyAddedSongIds
-            val isFavorite = song.favoriteKey() in favoriteSongKeys
+            val isFavorite = song.membershipKey() in favoriteMembershipKeys
 
             ListItem(
                 leadingContent = {

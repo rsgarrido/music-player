@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.ui.AppShellIcons
 import com.example.cdplaya.ui.AppShellAccent
 import com.example.cdplaya.ui.AppShellTypography
@@ -49,7 +49,7 @@ fun SongGrid(
     currentSongId: Long?,
     gridColumnCount: Int,
     recentlyAddedSongIds: Set<Long>,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     onSongClick: (Song, List<Song>) -> Unit,
     onPlayNextClick: (Song) -> Unit,
     onAddToQueueClick: (Song) -> Unit,
@@ -89,7 +89,7 @@ fun SongGrid(
                     actionSheetTarget = songActionSheetTarget(
                         song = song,
                         wasRecentlyAdded = song.id in recentlyAddedSongIds,
-                        isFavorite = song.favoriteKey() in favoriteSongKeys,
+                        isFavorite = song.membershipKey() in favoriteMembershipKeys,
                         onPlayNextClick = onPlayNextClick,
                         onAddToQueueClick = onAddToQueueClick,
                         onToggleFavoriteClick = onToggleFavoriteClick,

@@ -18,7 +18,7 @@ fun PlaylistsTabContent(
     selectedPlaylistSongs: List<PlaylistSong>,
     currentSong: Song?,
     recentlyAddedSongIds: Set<Long>,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
     onCreatePlaylistClick: () -> Unit,
     onPlaylistClick: (Playlist) -> Unit,
     onDeletePlaylistClick: (Playlist) -> Unit,
@@ -51,11 +51,7 @@ fun PlaylistsTabContent(
             modifier = modifier
         )
     } else {
-        val availablePlaylistSongs = selectedPlaylistSongs.mapNotNull { playlistSong ->
-            songs.firstOrNull { song ->
-                song.stableKey() == playlistSong.songKey
-            }
-        }
+        val availablePlaylistSongs = selectedPlaylistSongs.mapNotNull(PlaylistSong::resolvedSong)
 
         PlaylistDetailScreen(
             playlistName = selectedPlaylistName,
@@ -63,7 +59,7 @@ fun PlaylistsTabContent(
             playlistSongRows = selectedPlaylistSongs,
             currentSongId = currentSong?.id,
             recentlyAddedSongIds = recentlyAddedSongIds,
-            favoriteSongKeys = favoriteSongKeys,
+            favoriteMembershipKeys = favoriteMembershipKeys,
             onBackClick = onBackFromPlaylist,
             onPlayAllClick = {
                 onPlaySongsClick(availablePlaylistSongs, false)

@@ -8,5 +8,12 @@ data class ListeningHistoryEntry(
     val duration: Long,
     val playCount: Int,
     val firstPlayedAt: Long,
-    val lastPlayedAt: Long
+    val lastPlayedAt: Long,
+    val reference: SongReference = SongReference(
+        title = title,
+        artist = artist,
+        album = album,
+        duration = duration,
+        legacyStableKey = songKey
+    )
 )

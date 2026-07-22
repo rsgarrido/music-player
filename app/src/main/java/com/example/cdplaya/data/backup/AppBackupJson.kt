@@ -5,7 +5,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 object AppBackupJson {
-    const val CURRENT_SCHEMA_VERSION = 2
+    const val CURRENT_SCHEMA_VERSION = 3
     private const val OLDEST_SUPPORTED_SCHEMA_VERSION = 1
 
     private val json = Json {
@@ -14,7 +14,7 @@ object AppBackupJson {
         encodeDefaults = true
     }
 
-    fun encodeBackup(backup: AppBackup): String = json.encodeToString(backup)
+    fun encodeBackup(backup: AppBackup): String = json.encodeToString(backup.sanitizedForExport())
 
     fun decodeBackup(jsonText: String): AppBackup {
         val backup = try {
@@ -29,16 +29,13 @@ object AppBackupJson {
                 "$CURRENT_SCHEMA_VERSION."
         }
 
-        return if (backup.schemaVersion == CURRENT_SCHEMA_VERSION) {
-            backup
-        } else {
-            migrateV1ToV2(backup)
-        }
+        val v2 = if (backup.schemaVersion == 1) migrateV1ToV2(backup) else backup
+        return if (v2.schemaVersion == 2) migrateV2ToV3(v2) else v2
     }
 
     private fun migrateV1ToV2(backup: AppBackup): AppBackup {
         return backup.copy(
-            schemaVersion = CURRENT_SCHEMA_VERSION,
+            schemaVersion = 2,
             preferences = backup.preferences.copy(
                 modernArtworkTransitionStyle = "slide",
                 modernSeekbarStyle = "classic_bar",
@@ -52,4 +49,72 @@ object AppBackupJson {
             )
         )
     }
+
+    private fun migrateV2ToV3(backup: AppBackup): AppBackup {
+        return backup.copy(
+            schemaVersion = CURRENT_SCHEMA_VERSION,
+            favorites = backup.favorites.map { favorite ->
+                favorite.copy(reference = favorite.reference ?: favorite.legacyReference())
+            },
+            playlists = backup.playlists.map { playlist ->
+                playlist.copy(
+                    songs = playlist.songs.map { song ->
+                        song.copy(reference = song.reference ?: song.legacyReference())
+                    }
+                )
+            },
+            listeningHistory = backup.listeningHistory.map { history ->
+                history.copy(reference = history.reference ?: history.legacyReference())
+            }
+        )
+    }
 }
+
+private fun AppBackup.sanitizedForExport(): AppBackup = copy(
+    preferences = preferences.copy(
+        selectedLibraryFolders = preferences.selectedLibraryFolders
+            .map { it.toPortableFolderSelection() }
+            .filter { it.isNotBlank() }
+    ),
+    favorites = favorites.map { favorite ->
+        favorite.copy(reference = favorite.reference?.withoutAbsolutePath())
+    },
+    playlists = playlists.map { playlist ->
+        playlist.copy(
+            songs = playlist.songs.map { song ->
+                song.copy(reference = song.reference?.withoutAbsolutePath())
+            }
+        )
+    },
+    listeningHistory = listeningHistory.map { history ->
+        history.copy(reference = history.reference?.withoutAbsolutePath())
+    }
+)
+
+private fun BackupSongReference.withoutAbsolutePath(): BackupSongReference = copy(
+    relativePath = relativePath.takeUnless { it.isAbsolutePathLike() }.orEmpty()
+)
+
+private fun BackupFavoriteSong.legacyReference() = BackupSongReference(
+    duration = duration,
+    title = title,
+    artist = artist,
+    album = album,
+    legacyStableKey = songKey
+)
+
+private fun BackupPlaylistSong.legacyReference() = BackupSongReference(
+    duration = duration,
+    title = title,
+    artist = artist,
+    album = album,
+    legacyStableKey = songKey
+)
+
+private fun BackupListeningHistoryEntry.legacyReference() = BackupSongReference(
+    duration = duration,
+    title = title,
+    artist = artist,
+    album = album,
+    legacyStableKey = songKey
+)

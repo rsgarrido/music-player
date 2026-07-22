@@ -24,5 +24,12 @@ data class CachedSongEntity(
     val folderPath: String,
     val albumArtUriString: String?,
     val albumArtist: String,
+    val volumeName: String,
+    val displayName: String,
+    val relativePath: String,
+    val fileSizeBytes: Long,
+    val dateAddedEpochSeconds: Long,
+    val dateModifiedEpochSeconds: Long,
+    val artworkEnrichmentVersion: Int,
     val cachedAt: Long
 )

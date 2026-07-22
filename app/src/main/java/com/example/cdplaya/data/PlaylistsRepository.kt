@@ -2,6 +2,9 @@ package com.example.cdplaya.data
 
 import com.example.cdplaya.data.backup.BackupPlaylist
 import com.example.cdplaya.data.backup.BackupPlaylistSong
+import com.example.cdplaya.data.backup.BackupSongReference
+import com.example.cdplaya.data.backup.toBackupSongReference
+import com.example.cdplaya.data.backup.toSongReference
 import com.example.cdplaya.data.local.PlaylistDao
 import com.example.cdplaya.data.local.PlaylistEntity
 import com.example.cdplaya.data.local.PlaylistSongEntity
@@ -39,7 +42,8 @@ class PlaylistsRepository(
                             artist = playlistSong.artist,
                             album = playlistSong.album,
                             duration = playlistSong.duration,
-                            addedAt = playlistSong.addedAt
+                            addedAt = playlistSong.addedAt,
+                            reference = playlistSong.toSongReference().toBackupSongReference()
                         )
                     }
             )
@@ -70,16 +74,7 @@ class PlaylistsRepository(
             if (playlist.songs.isNotEmpty()) {
                 playlistDao.insertPlaylistSongs(
                     playlist.songs.map { playlistSong ->
-                        PlaylistSongEntity(
-                            playlistId = newPlaylistId,
-                            songKey = playlistSong.songKey,
-                            position = playlistSong.position,
-                            title = playlistSong.title,
-                            artist = playlistSong.artist,
-                            album = playlistSong.album,
-                            duration = playlistSong.duration,
-                            addedAt = playlistSong.addedAt
-                        )
+                        playlistSong.toEntity(newPlaylistId)
                     }
                 )
             }
@@ -100,7 +95,8 @@ class PlaylistsRepository(
                 title = playlistSong.title,
                 artist = playlistSong.artist,
                 album = playlistSong.album,
-                duration = playlistSong.duration
+                duration = playlistSong.duration,
+                reference = playlistSong.toSongReference()
             )
         }
     }
@@ -224,14 +220,10 @@ class PlaylistsRepository(
         val firstPosition = playlistDao.getLastPositionForPlaylist(playlistId) + 1
 
         val playlistSongEntities = songs.mapIndexed { index, song ->
-            PlaylistSongEntity(
+            playlistSongEntity(
                 playlistId = playlistId,
-                songKey = song.stableKey(),
                 position = firstPosition + index,
-                title = song.title,
-                artist = song.artist,
-                album = song.album,
-                duration = song.duration,
+                song = song,
                 addedAt = now
             )
         }
@@ -331,28 +323,101 @@ class PlaylistsRepository(
         originalSong: Song,
         editedTags: EditableSongTags
     ) {
-        val oldSongKey = originalSong.stableKey()
-
-        val newTitle = editedTags.title.trim()
-        val newArtist = editedTags.artist.trim()
-        val newAlbum = editedTags.album.trim()
-
-        val newSongKey = stableSongKey(
-            title = newTitle,
-            artist = newArtist,
-            album = newAlbum,
-            duration = originalSong.duration
+        val updatedSong = originalSong.copy(
+            title = editedTags.title.trim(),
+            artist = editedTags.artist.trim(),
+            album = editedTags.album.trim()
         )
-
-        playlistDao.updatePlaylistSongReferences(
-            oldSongKey = oldSongKey,
-            newSongKey = newSongKey,
-            title = newTitle,
-            artist = newArtist,
-            album = newAlbum,
-            duration = originalSong.duration
-        )
+        val originalIndex = SongReferenceIndex.build(listOf(originalSong))
+        val updates = playlistDao.getAllPlaylistSongEntities().mapNotNull { playlistSong ->
+            if (originalIndex.resolve(playlistSong.toSongReference())
+                is SongReferenceResolution.Resolved
+            ) {
+                playlistSong.withSongReference(updatedSong).takeIf { it != playlistSong }
+            } else null
+        }
+        if (updates.isNotEmpty()) playlistDao.updatePlaylistSongs(updates)
     }
+
+    suspend fun reconcileSongReferences(songs: Collection<Song>): SongReferenceReconciliation {
+        return reconcileSongReferences(SongReferenceIndex.build(songs))
+    }
+
+    internal suspend fun reconcileSongReferences(
+        index: SongReferenceIndex
+    ): SongReferenceReconciliation {
+        val plan = SongReferenceReconciliationPlanner.planPlaylists(index, loadReferenceRows())
+        applyReferenceBackfill(plan)
+        return plan.result
+    }
+
+    internal suspend fun loadReferenceRows(): List<PlaylistSongEntity> =
+        playlistDao.getAllPlaylistSongEntities()
+
+    internal suspend fun applyReferenceBackfill(plan: PlaylistReferenceBackfill) {
+        if (plan.rows.isNotEmpty()) playlistDao.updatePlaylistSongs(plan.rows)
+    }
+}
+
+private fun BackupPlaylistSong.toEntity(playlistId: Long): PlaylistSongEntity {
+    val backupReference = reference ?: BackupSongReference(
+        duration = duration,
+        title = title,
+        artist = artist,
+        album = album,
+        legacyStableKey = songKey,
+        portableKey = portableMetadataKey(title, artist, album, duration).orEmpty()
+    )
+    val restoredReference = backupReference.toSongReference()
+    return PlaylistSongEntity(
+        playlistId = playlistId,
+        songKey = restoredReference.legacyStableKey.ifBlank { songKey },
+        position = position,
+        title = restoredReference.title.ifBlank { title },
+        artist = restoredReference.artist.ifBlank { artist },
+        album = restoredReference.album.ifBlank { album },
+        duration = restoredReference.duration.takeIf { it > 0L } ?: duration,
+        addedAt = addedAt,
+        mediaStoreId = null,
+        volumeName = "",
+        contentUri = "",
+        relativePath = restoredReference.relativePath,
+        displayName = restoredReference.displayName,
+        fileSizeBytes = restoredReference.fileSizeBytes,
+        dateModifiedEpochSeconds = 0L,
+        albumArtist = restoredReference.albumArtist,
+        portableKey = restoredReference.portableKey,
+        portableKeyVersion = restoredReference.portableKeyVersion
+    )
+}
+
+private fun playlistSongEntity(
+    playlistId: Long,
+    position: Int,
+    song: Song,
+    addedAt: Long
+): PlaylistSongEntity {
+    val reference = song.toSongReference()
+    return PlaylistSongEntity(
+        playlistId = playlistId,
+        songKey = reference.legacyStableKey,
+        position = position,
+        title = reference.title,
+        artist = reference.artist,
+        album = reference.album,
+        duration = reference.duration,
+        addedAt = addedAt,
+        mediaStoreId = reference.mediaStoreId,
+        volumeName = reference.volumeName,
+        contentUri = reference.contentUri,
+        relativePath = reference.relativePath,
+        displayName = reference.displayName,
+        fileSizeBytes = reference.fileSizeBytes,
+        dateModifiedEpochSeconds = reference.dateModifiedEpochSeconds,
+        albumArtist = reference.albumArtist,
+        portableKey = reference.portableKey,
+        portableKeyVersion = reference.portableKeyVersion
+    )
 }
 
 internal fun uniquePlaylistName(

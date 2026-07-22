@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.recentlyAddedShelfSongs
 import com.example.cdplaya.ui.AppShellTypography
 import com.example.cdplaya.ui.MusicScreenHeader
 import com.example.cdplaya.ui.library.LibraryTab
@@ -30,6 +31,7 @@ import com.example.cdplaya.ui.library.LibraryTab
 fun HomeScreen(
     permissionGranted: Boolean,
     recentlyPlayedSongs: List<Song>,
+    recentlyAddedSongs: List<Song>,
     favoriteSongs: List<Song>,
     currentSongId: Long?,
     songCount: Int,
@@ -39,6 +41,7 @@ fun HomeScreen(
     onSettingsClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
     onRecentlyPlayedSongClick: (Song) -> Unit,
+    onRecentlyAddedSongClick: (Song) -> Unit,
     onFavoriteSongClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
     bottomContentPadding: Dp = 24.dp
@@ -113,6 +116,17 @@ fun HomeScreen(
             }
         }
 
+        val visibleRecentlyAddedSongs = recentlyAddedShelfSongs(recentlyAddedSongs)
+        if (visibleRecentlyAddedSongs.isNotEmpty()) {
+            item {
+                HomeRecentlyAddedShelf(
+                    songs = visibleRecentlyAddedSongs,
+                    onSeeAllClick = { onOpenLibrary(LibraryTab.RECENTLY_ADDED) },
+                    onSongClick = onRecentlyAddedSongClick
+                )
+            }
+        }
+
         if (favoriteSongs.isNotEmpty()) {
             item {
                 HomeFavoritesShelf(
@@ -125,7 +139,9 @@ fun HomeScreen(
             }
         }
 
-        if (permissionGranted && recentlyPlayedSongs.isEmpty() && favoriteSongs.isEmpty()) {
+        if (permissionGranted && recentlyPlayedSongs.isEmpty() &&
+            visibleRecentlyAddedSongs.isEmpty() && favoriteSongs.isEmpty()
+        ) {
             item {
                 Text(
                     text = "Choose something from Library to start building your listening history.",

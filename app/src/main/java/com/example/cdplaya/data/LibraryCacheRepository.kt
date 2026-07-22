@@ -26,6 +26,10 @@ class LibraryCacheRepository(
         )
     }
 
+    suspend fun getAllCachedSongs(): List<Song> {
+        return cachedSongDao.getAllCachedSongs().map { it.toSong() }
+    }
+
     suspend fun replaceCachedSongs(songs: List<Song>) {
         val cachedAt = System.currentTimeMillis()
 
@@ -59,7 +63,14 @@ fun CachedSongEntity.toSong(): Song {
             ?.let { uriString ->
                 Uri.parse(uriString)
             },
-        albumArtist = albumArtist
+        albumArtist = albumArtist,
+        volumeName = volumeName,
+        displayName = displayName,
+        relativePath = relativePath,
+        fileSizeBytes = fileSizeBytes,
+        dateAddedEpochSeconds = dateAddedEpochSeconds,
+        dateModifiedEpochSeconds = dateModifiedEpochSeconds,
+        artworkEnrichmentVersion = artworkEnrichmentVersion
     )
 }
 
@@ -76,6 +87,13 @@ fun Song.toCachedSongEntity(cachedAt: Long): CachedSongEntity {
         folderPath = folderPath,
         albumArtUriString = albumArtUri?.toString(),
         albumArtist = albumArtist,
+        volumeName = volumeName,
+        displayName = displayName,
+        relativePath = relativePath,
+        fileSizeBytes = fileSizeBytes,
+        dateAddedEpochSeconds = dateAddedEpochSeconds,
+        dateModifiedEpochSeconds = dateModifiedEpochSeconds,
+        artworkEnrichmentVersion = artworkEnrichmentVersion,
         cachedAt = cachedAt
     )
 }

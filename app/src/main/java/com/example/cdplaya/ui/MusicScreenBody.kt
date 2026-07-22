@@ -30,7 +30,7 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
-import com.example.cdplaya.data.favoriteKey
+import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.home.HomeScreen
@@ -71,7 +71,10 @@ fun MusicScreenBody(
     upcomingSongs: List<Song>,
     libraryFolders: List<LibraryFolder>,
     selectedLibraryFolders: Set<String>,
-    favoriteSongKeys: Set<String>,
+    favoriteMembershipKeys: Set<String>,
+    unresolvedFavoriteCount: Int,
+    unresolvedPlaylistRowCount: Int,
+    unresolvedListeningHistoryCount: Int,
     playlists: List<Playlist>,
     selectedPlaylistName: String,
     selectedPlaylistSongs: List<PlaylistSong>,
@@ -85,6 +88,7 @@ fun MusicScreenBody(
     selectedArtistSortOption: LibrarySortOption,
     selectedAlbumSortOption: LibrarySortOption,
     selectedFavoriteSortOption: LibrarySortOption,
+    recentlyAddedLibrarySongs: List<Song>,
     recentlyAddedSongIds: Set<Long>,
     isPlayerExpanded: Boolean,
     isFolderScreenVisible: Boolean,
@@ -196,6 +200,9 @@ fun MusicScreenBody(
                 upcomingCount = upcomingSongs.size,
                 previousCount = previousHistoryCount,
                 forwardCount = forwardHistoryCount,
+                unresolvedFavoriteCount = unresolvedFavoriteCount,
+                unresolvedPlaylistRowCount = unresolvedPlaylistRowCount,
+                unresolvedListeningHistoryCount = unresolvedListeningHistoryCount,
                 onBackClick = onDiagnosticsBackClick,
                 modifier = modifier
                     .fillMaxSize()
@@ -264,8 +271,9 @@ fun MusicScreenBody(
                 HomeScreen(
                     permissionGranted = permissionGranted,
                     recentlyPlayedSongs = recentlyPlayedSongs,
+                    recentlyAddedSongs = recentlyAddedLibrarySongs,
                     favoriteSongs = songs.filter { song ->
-                        song.favoriteKey() in favoriteSongKeys
+                        song.membershipKey() in favoriteMembershipKeys
                     },
                     currentSongId = currentSong?.id,
                     songCount = songs.size,
@@ -285,11 +293,14 @@ fun MusicScreenBody(
                     onRecentlyPlayedSongClick = { song ->
                         onSongClick(song, recentlyPlayedSongs)
                     },
+                    onRecentlyAddedSongClick = { song ->
+                        onSongClick(song, recentlyAddedLibrarySongs)
+                    },
                     onFavoriteSongClick = { song ->
                         onSongClick(
                             song,
                             songs.filter { candidate ->
-                                candidate.favoriteKey() in favoriteSongKeys
+                                candidate.membershipKey() in favoriteMembershipKeys
                             }
                         )
                     },
@@ -403,7 +414,7 @@ fun MusicScreenBody(
                             selectedPlaylistSongs = selectedPlaylistSongs,
                             currentSong = currentSong,
                             recentlyAddedSongIds = recentlyAddedSongIds,
-                            favoriteSongKeys = favoriteSongKeys,
+                            favoriteMembershipKeys = favoriteMembershipKeys,
                             queuedSongs = queuedSongs,
                             upcomingSongs = upcomingSongs,
                             isShuffleEnabled = isShuffleEnabled,
@@ -445,6 +456,7 @@ fun MusicScreenBody(
                             onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                             onEditSongTagsClick = onEditSongTagsClick,
                             recentlyPlayedSongs = recentlyPlayedSongs,
+                            recentlyAddedSongs = recentlyAddedLibrarySongs,
                             mostPlayedSongs = mostPlayedSongs,
                             bottomContentPadding = bottomContentPadding,
                             modifier = Modifier.weight(1f)

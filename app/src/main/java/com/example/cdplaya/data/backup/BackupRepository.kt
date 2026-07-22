@@ -52,7 +52,10 @@ class BackupRepository(
             playlists = playlistsRepository.getPlaylistsForBackup(),
             listeningHistory = listeningHistoryRepository.getListeningHistoryForBackup(),
             preferences = BackupPreferences(
-                selectedLibraryFolders = libraryPreferences.getSelectedFolders().sorted(),
+                selectedLibraryFolders = libraryPreferences.getSelectedFolders()
+                    .map { it.toPortableFolderSelection() }
+                    .filter { it.isNotBlank() }
+                    .sorted(),
                 selectedPlayerThemeId = playerThemePreferences.getSelectedPlayerThemeId(),
                 replayGainMode = replayGainPreferences.getReplayGainModeName(),
                 modernArtworkTransitionStyle =

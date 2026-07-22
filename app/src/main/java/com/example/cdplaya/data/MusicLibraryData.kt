@@ -4,7 +4,9 @@ import java.io.File
 
 data class MusicLibraryData(
     val songs: List<Song>,
-    val libraryFolders: List<LibraryFolder>
+    val libraryFolders: List<LibraryFolder>,
+    /** Complete snapshot used for identity reconciliation even when folder filtering is active. */
+    val referenceSongs: List<Song> = songs
 )
 
 fun buildMusicLibraryData(
@@ -21,7 +23,8 @@ fun buildMusicLibraryData(
 
     return MusicLibraryData(
         songs = filteredSongs,
-        libraryFolders = buildLibraryFolders(allSongs)
+        libraryFolders = buildLibraryFolders(allSongs),
+        referenceSongs = allSongs
     )
 }
 

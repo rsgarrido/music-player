@@ -2,6 +2,7 @@ package com.example.cdplaya.ui
 
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.library.LibrarySortOption
+import com.example.cdplaya.data.sortSongsByDateAddedDescending
 
 fun filterSongsForSearch(
     songs: List<Song>,
@@ -151,6 +152,8 @@ fun sortSongsForLibrary(
         LibrarySortOption.SONG_COUNT -> {
             songs
         }
+
+        LibrarySortOption.DATE_ADDED -> sortSongsByDateAddedDescending(songs)
     }
 }
 

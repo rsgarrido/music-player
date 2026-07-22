@@ -12,7 +12,7 @@ import androidx.room.RoomDatabase
         SongPlayStatsEntity::class,
         CachedSongEntity::class
     ],
-    version = 5,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

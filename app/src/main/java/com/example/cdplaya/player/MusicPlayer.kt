@@ -187,6 +187,20 @@ class MusicPlayer(private val context: Context) {
         )
     }
 
+    fun updateCurrentSongMetadata(song: Song) {
+        currentSong = song
+        currentPlaylist = currentPlaylist.map { existing ->
+            if (existing.id == song.id) song else existing
+        }
+
+        val playerController = controller ?: return
+        val currentIndex = playerController.currentMediaItemIndex
+        if (currentIndex < 0) return
+        val updatedItem = song.toMediaItem()
+        if (playerController.getMediaItemAt(currentIndex) == updatedItem) return
+        playerController.replaceMediaItem(currentIndex, updatedItem)
+    }
+
     fun isPlaying(): Boolean {
         return controller?.isPlaying == true
     }

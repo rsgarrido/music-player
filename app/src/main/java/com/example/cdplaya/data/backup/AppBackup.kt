@@ -45,7 +45,8 @@ data class BackupFavoriteSong(
     val artist: String,
     val album: String,
     val duration: Long,
-    val createdAt: Long
+    val createdAt: Long,
+    val reference: BackupSongReference? = null
 )
 
 @Serializable
@@ -64,7 +65,8 @@ data class BackupPlaylistSong(
     val artist: String,
     val album: String,
     val duration: Long,
-    val addedAt: Long
+    val addedAt: Long,
+    val reference: BackupSongReference? = null
 )
 
 @Serializable
@@ -76,5 +78,21 @@ data class BackupListeningHistoryEntry(
     val duration: Long,
     val playCount: Int,
     val firstPlayedAt: Long,
-    val lastPlayedAt: Long
+    val lastPlayedAt: Long,
+    val reference: BackupSongReference? = null
+)
+
+@Serializable
+data class BackupSongReference(
+    val relativePath: String = "",
+    val displayName: String = "",
+    val fileSizeBytes: Long = 0L,
+    val duration: Long = 0L,
+    val title: String = "",
+    val artist: String = "",
+    val album: String = "",
+    val albumArtist: String = "",
+    val legacyStableKey: String = "",
+    val portableKey: String = "",
+    val portableKeyVersion: Int = 1
 )
