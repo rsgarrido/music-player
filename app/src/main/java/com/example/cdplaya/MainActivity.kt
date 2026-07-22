@@ -110,8 +110,4 @@ class MainActivity : ComponentActivity() {
         super.onPause()
         musicViewModel.savePlayerState()
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-    }
 }

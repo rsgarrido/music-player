@@ -99,7 +99,7 @@ class WaveformRepository internal constructor(
                 ?: return@withLock null
             val data = WaveformData(amplitudes = amplitudes, sourceKey = sourceKey)
             cache.write(data)
-            cache.maintain()
+            cache.maintain { coroutineContext.ensureActive() }
             data
         }
     }
@@ -109,11 +109,11 @@ class WaveformRepository internal constructor(
     }
 
     suspend fun clearDiskCache(): WaveformCacheStats = withContext(ioDispatcher) {
-        loadMutex.withLock { cache.clear() }
+        loadMutex.withLock { cache.clear { coroutineContext.ensureActive() } }
     }
 
     suspend fun maintainDiskCache(): WaveformCacheStats = withContext(ioDispatcher) {
-        loadMutex.withLock { cache.maintain() }
+        loadMutex.withLock { cache.maintain { coroutineContext.ensureActive() } }
     }
 
     suspend fun prefetch(songs: List<Song>) {

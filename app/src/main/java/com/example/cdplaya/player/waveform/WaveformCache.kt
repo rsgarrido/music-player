@@ -25,7 +25,10 @@ class WaveformCache(
     @Synchronized
     fun read(sourceKey: String): WaveformData? {
         if (!isSafeSourceKey(sourceKey)) return null
-        memoryCache[sourceKey]?.let { return it }
+        memoryCache[sourceKey]?.let { data ->
+            runCatching { cacheFile(sourceKey).setLastModified(System.currentTimeMillis()) }
+            return data
+        }
 
         val cacheFile = cacheFile(sourceKey)
         if (!cacheFile.isFile) return null
@@ -103,19 +106,23 @@ class WaveformCache(
     }
 
     @Synchronized
-    fun clear(): WaveformCacheStats {
+    fun clear(ensureActive: () -> Unit = {}): WaveformCacheStats {
         memoryCache.clear()
         cacheFiles(includeTemporaryFiles = true).forEach { file ->
+            ensureActive()
             runCatching { file.delete() }
         }
         return getStats()
     }
 
     @Synchronized
-    fun maintain(): WaveformCacheStats {
+    fun maintain(ensureActive: () -> Unit = {}): WaveformCacheStats {
         cacheFiles(includeTemporaryFiles = true)
             .filter { file -> file.extension == TEMPORARY_FILE_EXTENSION }
-            .forEach { file -> runCatching { file.delete() } }
+            .forEach { file ->
+                ensureActive()
+                runCatching { file.delete() }
+            }
 
         val files = cacheFiles()
         var totalBytes = files.sumOf { file ->
@@ -125,6 +132,7 @@ class WaveformCache(
             files.sortedBy { file ->
                 runCatching { file.lastModified() }.getOrDefault(0L)
             }.forEach { file ->
+                ensureActive()
                 if (totalBytes <= maintenanceTargetBytes) return@forEach
                 val fileBytes = runCatching { file.length() }.getOrDefault(0L)
                 if (runCatching { file.delete() }.getOrDefault(false)) {

@@ -415,7 +415,24 @@ class PlaybackController(
 
         val restoredSong = librarySongs.firstOrNull { song ->
             song.id == savedSongId
-        } ?: return
+        }
+        if (restoredSong == null) {
+            val songsById = librarySongs.associateBy { song -> song.id }
+            playbackQueueManager.replaceQueue(
+                playerStateStorage.getQueueSongIds().mapNotNull(songsById::get)
+            )
+            playbackNavigationHistory.replacePreviousSongs(
+                playerStateStorage.getPreviousSongIds().mapNotNull(songsById::get)
+            )
+            playbackNavigationHistory.replaceNextSongs(
+                playerStateStorage.getNextSongIds().mapNotNull(songsById::get)
+            )
+            playbackContextSongs = playerStateStorage.getPlaybackContextSongIds()
+                .mapNotNull(songsById::get)
+                .ifEmpty { librarySongs }
+            savePlayerState()
+            return
+        }
 
         currentSong = restoredSong
         duration = restoredSong.duration.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()

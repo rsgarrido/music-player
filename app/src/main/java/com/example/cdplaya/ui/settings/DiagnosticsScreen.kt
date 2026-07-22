@@ -48,7 +48,7 @@ import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
-data class DiagnosticsSnapshot(
+internal data class DiagnosticsSnapshot(
     val appVersionName: String,
     val appVersionCode: Long,
     val librarySongCount: Int,
@@ -91,7 +91,7 @@ internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = b
 }
 
 @Composable
-fun DiagnosticsScreen(
+internal fun DiagnosticsScreen(
     librarySongCount: Int,
     selectedFolderCount: Int,
     selectedPlayerTheme: PlayerTheme,
@@ -118,6 +118,8 @@ fun DiagnosticsScreen(
     var showClearConfirmation by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     val version = remember(context) { context.appVersion() }
+    val copiedMessage = stringResource(R.string.diagnostics_copied)
+    val cacheClearedMessage = stringResource(R.string.diagnostics_cache_cleared)
 
     val snapshot = DiagnosticsSnapshot(
         appVersionName = version.first,
@@ -219,7 +221,7 @@ fun DiagnosticsScreen(
             OutlinedButton(
                 onClick = {
                     context.copyToClipboard(formatDiagnosticsSummary(snapshot))
-                    statusMessage = context.getString(R.string.diagnostics_copied)
+                    statusMessage = copiedMessage
                 },
                 modifier = Modifier.weight(1f)
             ) { Text(stringResource(R.string.diagnostics_copy)) }
@@ -245,7 +247,7 @@ fun DiagnosticsScreen(
                         scope.launch {
                             try {
                                 cacheStats = repository.clearDiskCache()
-                                statusMessage = context.getString(R.string.diagnostics_cache_cleared)
+                                statusMessage = cacheClearedMessage
                             } catch (cancellation: CancellationException) {
                                 throw cancellation
                             } finally {
@@ -281,8 +283,8 @@ private fun Context.appVersion(): Pair<String, Long> {
             @Suppress("DEPRECATION")
             info.versionCode.toLong()
         }
-        info.versionName.orEmpty().ifBlank { "Unknown" } to code
-    }.getOrDefault("Unknown" to 0L)
+        info.versionName.orEmpty().ifBlank { getString(R.string.diagnostics_unknown) } to code
+    }.getOrDefault(getString(R.string.diagnostics_unknown) to 0L)
 }
 
 private fun Context.copyToClipboard(text: String) {
