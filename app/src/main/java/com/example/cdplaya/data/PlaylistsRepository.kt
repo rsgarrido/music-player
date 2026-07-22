@@ -328,38 +328,34 @@ class PlaylistsRepository(
             artist = editedTags.artist.trim(),
             album = editedTags.album.trim()
         )
-        playlistDao.getAllPlaylistSongEntities().forEach { playlistSong ->
-            if (SongReferenceResolver.resolve(playlistSong.toSongReference(), listOf(originalSong))
+        val originalIndex = SongReferenceIndex.build(listOf(originalSong))
+        val updates = playlistDao.getAllPlaylistSongEntities().mapNotNull { playlistSong ->
+            if (originalIndex.resolve(playlistSong.toSongReference())
                 is SongReferenceResolution.Resolved
             ) {
-                playlistDao.updatePlaylistSong(playlistSong.withSongReference(updatedSong))
-            }
+                playlistSong.withSongReference(updatedSong).takeIf { it != playlistSong }
+            } else null
         }
+        if (updates.isNotEmpty()) playlistDao.updatePlaylistSongs(updates)
     }
 
     suspend fun reconcileSongReferences(songs: Collection<Song>): SongReferenceReconciliation {
-        var unresolved = 0
-        var ambiguous = 0
-        var backfilled = 0
-        playlistDao.getAllPlaylistSongEntities().forEach { playlistSong ->
-            when (val result = SongReferenceResolver.resolve(playlistSong.toSongReference(), songs)) {
-                is SongReferenceResolution.Resolved -> {
-                    val updated = playlistSong.withSongReference(result.song)
-                    if (updated != playlistSong) {
-                        playlistDao.updatePlaylistSong(updated)
-                        backfilled += 1
-                    }
-                }
+        return reconcileSongReferences(SongReferenceIndex.build(songs))
+    }
 
-                is SongReferenceResolution.Ambiguous -> ambiguous += 1
-                SongReferenceResolution.NotFound -> unresolved += 1
-            }
-        }
-        return SongReferenceReconciliation(
-            unresolvedCount = unresolved,
-            ambiguousCount = ambiguous,
-            backfilledCount = backfilled
-        )
+    internal suspend fun reconcileSongReferences(
+        index: SongReferenceIndex
+    ): SongReferenceReconciliation {
+        val plan = SongReferenceReconciliationPlanner.planPlaylists(index, loadReferenceRows())
+        applyReferenceBackfill(plan)
+        return plan.result
+    }
+
+    internal suspend fun loadReferenceRows(): List<PlaylistSongEntity> =
+        playlistDao.getAllPlaylistSongEntities()
+
+    internal suspend fun applyReferenceBackfill(plan: PlaylistReferenceBackfill) {
+        if (plan.rows.isNotEmpty()) playlistDao.updatePlaylistSongs(plan.rows)
     }
 }
 

@@ -15,5 +15,7 @@ data class PlaylistSong(
         album = album,
         duration = duration,
         legacyStableKey = songKey
-    )
+    ),
+    /** Pre-resolved off the main thread for playlist rendering and playback actions. */
+    val resolvedSong: Song? = null
 )

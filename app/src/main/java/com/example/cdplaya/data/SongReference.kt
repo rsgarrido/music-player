@@ -36,8 +36,29 @@ fun Song.toSongReference(): SongReference {
         albumArtist = albumArtist,
         legacyStableKey = identity.legacyKey,
         portableKey = identity.portableKey.orEmpty()
-    )
+    ).normalizedForPersistence()
 }
+
+internal fun SongReference.normalizedForPersistence(): SongReference = copy(
+    mediaStoreId = mediaStoreId?.takeIf { it > 0L },
+    volumeName = volumeName.normalizedPersistedText(),
+    contentUri = contentUri.normalizedPersistedText(),
+    relativePath = relativePath.normalizedPersistedText(),
+    displayName = displayName.normalizedPersistedText(),
+    fileSizeBytes = fileSizeBytes.coerceAtLeast(0L),
+    dateModifiedEpochSeconds = dateModifiedEpochSeconds.coerceAtLeast(0L),
+    duration = duration.coerceAtLeast(0L),
+    title = title.normalizedPersistedText(),
+    artist = artist.normalizedPersistedText(),
+    album = album.normalizedPersistedText(),
+    albumArtist = albumArtist.normalizedPersistedText(),
+    legacyStableKey = legacyStableKey.normalizedPersistedText(),
+    portableKey = portableKey.normalizedPersistedText(),
+    portableKeyVersion = portableKeyVersion.takeIf { it > 0 }
+        ?: SongIdentity.PORTABLE_KEY_VERSION
+)
+
+private fun String.normalizedPersistedText(): String = trim().takeIf { it.isNotBlank() }.orEmpty()
 
 fun SongReference.hasPersistedIdentity(): Boolean {
     return mediaStoreId != null || contentUri.isNotBlank() ||

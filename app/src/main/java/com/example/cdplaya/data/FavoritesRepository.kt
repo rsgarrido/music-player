@@ -16,33 +16,22 @@ class FavoritesRepository(
     }
 
     suspend fun reconcileSongReferences(songs: Collection<Song>): SongReferenceReconciliation {
-        val memberships = mutableSetOf<String>()
-        var unresolved = 0
-        var ambiguous = 0
-        var backfilled = 0
+        return reconcileSongReferences(SongReferenceIndex.build(songs))
+    }
 
-        favoriteSongDao.getAllFavorites().forEach { favorite ->
-            when (val result = SongReferenceResolver.resolve(favorite.toSongReference(), songs)) {
-                is SongReferenceResolution.Resolved -> {
-                    val membershipKey = result.song.membershipKey()
-                    memberships += membershipKey
-                    val updated = favorite.withSongReference(result.song)
-                    if (updated != favorite) {
-                        persistReconciledFavorite(favorite, updated)
-                        backfilled += 1
-                    }
-                }
+    internal suspend fun reconcileSongReferences(
+        index: SongReferenceIndex
+    ): SongReferenceReconciliation {
+        val plan = SongReferenceReconciliationPlanner.planFavorites(index, loadReferenceRows())
+        applyReferenceBackfill(plan)
+        return plan.result
+    }
 
-                is SongReferenceResolution.Ambiguous -> ambiguous += 1
-                SongReferenceResolution.NotFound -> unresolved += 1
-            }
-        }
-        return SongReferenceReconciliation(
-            resolvedMembershipKeys = memberships,
-            unresolvedCount = unresolved,
-            ambiguousCount = ambiguous,
-            backfilledCount = backfilled
-        )
+    internal suspend fun loadReferenceRows(): List<FavoriteSongEntity> =
+        favoriteSongDao.getAllFavorites()
+
+    internal suspend fun applyReferenceBackfill(plan: FavoriteReferenceBackfill) {
+        favoriteSongDao.applyReferenceBackfill(plan.oldReferenceKeys, plan.rows)
     }
 
     suspend fun getFavoritesForBackup(): List<BackupFavoriteSong> {
@@ -103,8 +92,9 @@ class FavoritesRepository(
             artist = editedTags.artist.trim(),
             album = editedTags.album.trim()
         )
+        val originalIndex = SongReferenceIndex.build(listOf(originalSong))
         favoriteSongDao.getAllFavorites().forEach { favorite ->
-            if (SongReferenceResolver.resolve(favorite.toSongReference(), listOf(originalSong))
+            if (originalIndex.resolve(favorite.toSongReference())
                 is SongReferenceResolution.Resolved
             ) {
                 persistReconciledFavorite(favorite, favorite.withSongReference(updatedSong))

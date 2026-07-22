@@ -27,7 +27,9 @@ data class SongIdentity(
     }
 }
 
-fun Song.songIdentity(): SongIdentity {
+fun Song.songIdentity(): SongIdentity = cachedIdentity
+
+internal fun buildSongIdentity(song: Song): SongIdentity = with(song) {
     val contentUri = uri.toString().trim()
     val normalizedVolume = volumeName.identityNormalized()
     val normalizedRelativePath = relativePath.identityPathNormalized()
@@ -52,7 +54,7 @@ fun Song.songIdentity(): SongIdentity {
     }
     val portableRaw = portableMetadataRaw(title, artist, album, duration)
 
-    return SongIdentity(
+    SongIdentity(
         localKey = localRaw?.versionedHash("local", SongIdentity.LOCAL_KEY_VERSION),
         sourceKey = sourceRaw?.versionedHash("source", SongIdentity.SOURCE_KEY_VERSION),
         fileSignatureKey = signatureRaw?.versionedHash("file", 1),

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 
 @Dao
 interface FavoriteSongDao {
@@ -16,6 +17,18 @@ interface FavoriteSongDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFavorites(favorites: List<FavoriteSongEntity>)
+
+    @Query("DELETE FROM favorite_songs WHERE referenceKey IN (:referenceKeys)")
+    suspend fun deleteFavoritesByReferenceKeys(referenceKeys: List<String>)
+
+    @Transaction
+    suspend fun applyReferenceBackfill(
+        oldReferenceKeys: List<String>,
+        favorites: List<FavoriteSongEntity>
+    ) {
+        if (oldReferenceKeys.isNotEmpty()) deleteFavoritesByReferenceKeys(oldReferenceKeys)
+        if (favorites.isNotEmpty()) insertFavorites(favorites)
+    }
 
     @Query("SELECT COUNT(*) FROM favorite_songs WHERE referenceKey = :referenceKey")
     suspend fun countFavoriteByReferenceKey(referenceKey: String): Int

@@ -59,7 +59,7 @@ internal fun SongPlayStatsEntity.toSongReference() = SongReference(
 )
 
 internal fun FavoriteSongEntity.withSongReference(song: Song): FavoriteSongEntity {
-    val reference = song.toSongReference()
+    val reference = song.toSongReference().normalizedForPersistence()
     return copy(
         referenceKey = song.membershipKey(),
         songKey = reference.legacyStableKey,
@@ -81,7 +81,7 @@ internal fun FavoriteSongEntity.withSongReference(song: Song): FavoriteSongEntit
 }
 
 internal fun PlaylistSongEntity.withSongReference(song: Song): PlaylistSongEntity {
-    val reference = song.toSongReference()
+    val reference = song.toSongReference().normalizedForPersistence()
     return copy(
         songKey = reference.legacyStableKey,
         title = reference.title,
@@ -102,7 +102,7 @@ internal fun PlaylistSongEntity.withSongReference(song: Song): PlaylistSongEntit
 }
 
 internal fun SongPlayStatsEntity.withSongReference(song: Song): SongPlayStatsEntity {
-    val reference = song.toSongReference()
+    val reference = song.toSongReference().normalizedForPersistence()
     return copy(
         referenceKey = song.membershipKey(),
         songKey = reference.legacyStableKey,
@@ -127,5 +127,6 @@ data class SongReferenceReconciliation(
     val resolvedMembershipKeys: Set<String> = emptySet(),
     val unresolvedCount: Int = 0,
     val ambiguousCount: Int = 0,
-    val backfilledCount: Int = 0
+    val backfilledCount: Int = 0,
+    val inspectedCount: Int = 0
 )

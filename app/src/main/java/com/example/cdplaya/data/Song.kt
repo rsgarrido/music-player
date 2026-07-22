@@ -20,4 +20,9 @@ data class Song(
     val fileSizeBytes: Long = 0L,
     val dateAddedEpochSeconds: Long = 0L,
     val dateModifiedEpochSeconds: Long = 0L
-)
+) {
+    /** Warmed by [SongReferenceIndex] off the main thread for cheap UI membership checks. */
+    internal val cachedIdentity: SongIdentity by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        buildSongIdentity(this)
+    }
+}

@@ -66,8 +66,9 @@ class ListeningHistoryRepository(
             artist = editedTags.artist.trim(),
             album = editedTags.album.trim()
         )
+        val originalIndex = SongReferenceIndex.build(listOf(originalSong))
         songPlayStatsDao.getRecentlyPlayed().forEach { stats ->
-            if (SongReferenceResolver.resolve(stats.toSongReference(), listOf(originalSong))
+            if (originalIndex.resolve(stats.toSongReference())
                 is SongReferenceResolution.Resolved
             ) {
                 persistReconciledStats(stats, stats.withSongReference(updatedSong))
@@ -76,28 +77,22 @@ class ListeningHistoryRepository(
     }
 
     suspend fun reconcileSongReferences(songs: Collection<Song>): SongReferenceReconciliation {
-        var unresolved = 0
-        var ambiguous = 0
-        var backfilled = 0
-        songPlayStatsDao.getRecentlyPlayed().forEach { stats ->
-            when (val result = SongReferenceResolver.resolve(stats.toSongReference(), songs)) {
-                is SongReferenceResolution.Resolved -> {
-                    val updated = stats.withSongReference(result.song)
-                    if (updated != stats) {
-                        persistReconciledStats(stats, updated)
-                        backfilled += 1
-                    }
-                }
+        return reconcileSongReferences(SongReferenceIndex.build(songs))
+    }
 
-                is SongReferenceResolution.Ambiguous -> ambiguous += 1
-                SongReferenceResolution.NotFound -> unresolved += 1
-            }
-        }
-        return SongReferenceReconciliation(
-            unresolvedCount = unresolved,
-            ambiguousCount = ambiguous,
-            backfilledCount = backfilled
-        )
+    internal suspend fun reconcileSongReferences(
+        index: SongReferenceIndex
+    ): SongReferenceReconciliation {
+        val plan = SongReferenceReconciliationPlanner.planHistory(index, loadReferenceRows())
+        applyReferenceBackfill(plan)
+        return plan.result
+    }
+
+    internal suspend fun loadReferenceRows(): List<SongPlayStatsEntity> =
+        songPlayStatsDao.getRecentlyPlayed()
+
+    internal suspend fun applyReferenceBackfill(plan: HistoryReferenceBackfill) {
+        songPlayStatsDao.applyReferenceBackfill(plan.oldReferenceKeys, plan.rows)
     }
 
     private suspend fun persistReconciledStats(
