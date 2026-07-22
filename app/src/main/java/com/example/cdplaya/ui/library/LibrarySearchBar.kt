@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.ui.AppShellTypography
 import com.example.cdplaya.ui.AppShellIcons
+import com.example.cdplaya.ui.AppShellAccent
 
 @Composable
 fun LibrarySearchBar(
@@ -62,11 +63,11 @@ fun LibrarySearchBar(
             unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            focusedBorderColor = AppShellAccent,
             unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
+            focusedLeadingIconColor = AppShellAccent,
             unfocusedLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            cursorColor = MaterialTheme.colorScheme.primary
+            cursorColor = AppShellAccent
         )
     )
 }

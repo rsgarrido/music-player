@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.ui.AppShellIconButton
+import com.example.cdplaya.ui.AppShellAccent
 import com.example.cdplaya.ui.AppShellIcons
 import com.example.cdplaya.ui.AppShellTypography
 
@@ -231,7 +232,8 @@ fun LibraryViewOptionsButton(
         } else {
             AppShellIcons.GridView
         },
-        contentDescription = description
+        contentDescription = description,
+        accented = true
     )
 }
 
@@ -259,7 +261,7 @@ fun LibraryViewOptionsSheet(
             Text(
                 text = "VIEW OPTIONS",
                 style = AppShellTypography.Eyebrow,
-                color = MaterialTheme.colorScheme.primary,
+                color = AppShellAccent,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
             )
 
@@ -296,14 +298,14 @@ private fun LibraryViewOptionRow(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+            AppShellAccent.copy(alpha = 0.14f)
         } else {
             MaterialTheme.colorScheme.surfaceContainerLow
         },
         border = BorderStroke(
             1.dp,
             if (isSelected) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.62f)
+                AppShellAccent.copy(alpha = 0.62f)
             } else {
                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.54f)
             }
@@ -319,7 +321,7 @@ private fun LibraryViewOptionRow(
                 contentDescription = null,
                 modifier = Modifier.size(22.dp),
                 tint = if (isSelected) {
-                    MaterialTheme.colorScheme.primary
+                    AppShellAccent
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 }
@@ -335,7 +337,7 @@ private fun LibraryViewOptionRow(
                     imageVector = Icons.Filled.Check,
                     contentDescription = "Selected",
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = AppShellAccent
                 )
             }
         }

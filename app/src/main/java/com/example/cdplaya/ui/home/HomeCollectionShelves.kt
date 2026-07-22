@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.AppShellIcons
+import com.example.cdplaya.ui.AppShellAccent
 import com.example.cdplaya.ui.AppShellTypography
 
 @Composable
@@ -130,7 +131,7 @@ private fun HomeCollectionSectionHeader(
             Text(
                 text = "SEE ALL  ›",
                 style = AppShellTypography.CompactAction,
-                color = MaterialTheme.colorScheme.primary
+                color = AppShellAccent
             )
         }
     }
@@ -190,7 +191,7 @@ private fun HomeFeaturedSongCard(
                 Text(
                     text = "LAST PLAYED",
                     style = AppShellTypography.Eyebrow,
-                    color = MaterialTheme.colorScheme.primary
+                    color = AppShellAccent
                 )
                 Text(
                     text = song.title,

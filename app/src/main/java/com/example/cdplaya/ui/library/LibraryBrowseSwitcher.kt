@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.ui.AppShellTypography
+import com.example.cdplaya.ui.AppShellAccent
 
 val primaryLibraryTabs = listOf(
     LibraryTab.SONGS,
@@ -121,12 +122,12 @@ private fun LibraryPrimaryTab(
     Surface(
         modifier = modifier.height(42.dp),
         color = if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+            AppShellAccent.copy(alpha = 0.16f)
         } else {
             Color.Transparent
         },
         contentColor = if (selected) {
-            MaterialTheme.colorScheme.primary
+            AppShellAccent
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
@@ -170,19 +171,19 @@ private fun LibraryFilterPill(
         modifier = modifier.height(34.dp),
         shape = RoundedCornerShape(14.dp),
         color = if (selected) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+            AppShellAccent.copy(alpha = 0.16f)
         } else {
             MaterialTheme.colorScheme.surfaceContainerLow
         },
         contentColor = if (selected) {
-            MaterialTheme.colorScheme.primary
+            AppShellAccent
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
         border = BorderStroke(
             1.dp,
             if (selected) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.42f)
+                AppShellAccent.copy(alpha = 0.42f)
             } else {
                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f)
             }

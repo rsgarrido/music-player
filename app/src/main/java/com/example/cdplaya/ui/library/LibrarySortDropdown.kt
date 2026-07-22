@@ -15,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.example.cdplaya.ui.AppShellIconButton
+import com.example.cdplaya.ui.AppShellAccent
 
 @Composable
 fun LibrarySortDropdown(
@@ -31,7 +32,8 @@ fun LibrarySortDropdown(
                 isExpanded = true
             },
             imageVector = Icons.AutoMirrored.Filled.Sort,
-            contentDescription = "Sort by ${selectedOption.title}"
+            contentDescription = "Sort by ${selectedOption.title}",
+            accented = true
         )
 
         DropdownMenu(
@@ -49,7 +51,8 @@ fun LibrarySortDropdown(
                         if (selectedOption == option) {
                             Icon(
                                 imageVector = Icons.Filled.Check,
-                                contentDescription = "Selected"
+                                contentDescription = "Selected",
+                                tint = AppShellAccent
                             )
                         }
                     },

@@ -13,7 +13,7 @@ import kotlin.math.max
 fun Modifier.appShellBackground(): Modifier {
     val background = MaterialTheme.colorScheme.surfaceContainerLowest
     val surface = MaterialTheme.colorScheme.surfaceContainerLow
-    val accent = MaterialTheme.colorScheme.primary
+    val accent = AppShellAccent
 
     return drawWithCache {
         val baseGradient = Brush.verticalGradient(

@@ -101,19 +101,19 @@ fun AppShellIconButton(
         modifier = modifier.size(40.dp),
         shape = RoundedCornerShape(14.dp),
         color = if (accented) {
-            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+            AppShellAccent.copy(alpha = 0.15f)
         } else {
             MaterialTheme.colorScheme.surfaceContainerHigh
         },
         contentColor = if (accented) {
-            MaterialTheme.colorScheme.primary
+            AppShellAccent
         } else {
             MaterialTheme.colorScheme.onSurfaceVariant
         },
         border = BorderStroke(
             1.dp,
             if (accented) {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.36f)
+                AppShellAccent.copy(alpha = 0.36f)
             } else {
                 MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
             }
