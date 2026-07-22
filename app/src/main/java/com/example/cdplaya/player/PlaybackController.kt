@@ -4,9 +4,6 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.SongReferenceResolution
@@ -15,8 +12,14 @@ import com.example.cdplaya.data.toSongReference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.player.replaygain.ReplayGainRepository
 import com.example.cdplaya.player.replaygain.replayGainVolumeMultiplier
+import com.example.cdplaya.ui.state.PlaybackProgressUiState
+import com.example.cdplaya.ui.state.PlaybackUiState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 
 class PlaybackController(
@@ -38,31 +41,71 @@ class PlaybackController(
     private var playbackContextSongs: List<Song> = emptyList()
     private var replayGainMode: ReplayGainMode = ReplayGainMode.OFF
     private var replayGainRequestId = 0
-    val playbackQueue = playbackQueueManager.playbackQueue
+    private val _uiState = MutableStateFlow(
+        PlaybackUiState.Disconnected.copy(
+            isShuffleEnabled = playerStateStorage.isShuffleEnabled(),
+            repeatMode = playerStateStorage.getRepeatMode()
+        )
+    )
+    val uiState: StateFlow<PlaybackUiState> = _uiState.asStateFlow()
 
-    var currentSong by mutableStateOf<Song?>(null)
-        private set
+    private val _progressState = MutableStateFlow(PlaybackProgressUiState.Empty)
+    val progressState: StateFlow<PlaybackProgressUiState> = _progressState.asStateFlow()
 
-    var isPlaying by mutableStateOf(false)
-        private set
+    private val playbackQueue: MutableList<Song>
+        get() = playbackQueueManager.playbackQueue
+    private var currentSong: Song?
+        get() = _uiState.value.currentSong
+        set(value) {
+            _uiState.update { state -> state.copy(currentSong = value) }
+            publishDerivedPlaybackState()
+        }
+    private var isPlaying: Boolean
+        get() = _uiState.value.isPlaying
+        set(value) = _uiState.update { state -> state.copy(isPlaying = value) }
+    private var isShuffleEnabled: Boolean
+        get() = _uiState.value.isShuffleEnabled
+        set(value) = _uiState.update { state -> state.copy(isShuffleEnabled = value) }
+    private var repeatMode: RepeatMode
+        get() = _uiState.value.repeatMode
+        set(value) = _uiState.update { state -> state.copy(repeatMode = value) }
+    private var upcomingSongsValue: List<Song> = emptyList()
+    private var upcomingSongs: List<Song>
+        get() = upcomingSongsValue
+        set(value) {
+            upcomingSongsValue = value.toList()
+            publishDerivedPlaybackState()
+        }
+    private var currentPosition: Int
+        get() = _progressState.value.currentPosition
+        set(value) = _progressState.update { state -> state.copy(currentPosition = value) }
+    private var duration: Int
+        get() = _progressState.value.duration
+        set(value) = _progressState.update { state -> state.copy(duration = value) }
+    private var isPlayerConnected: Boolean
+        get() = _uiState.value.isConnected
+        set(value) = _uiState.update { state -> state.copy(isConnected = value) }
 
-    var isShuffleEnabled by mutableStateOf(playerStateStorage.isShuffleEnabled())
-        private set
-
-    var repeatMode by mutableStateOf(playerStateStorage.getRepeatMode())
-        private set
-
-    var upcomingSongs by mutableStateOf<List<Song>>(emptyList())
-        private set
-
-    var currentPosition by mutableStateOf(0)
-        private set
-
-    var duration by mutableStateOf(0)
-        private set
-
-    var isPlayerConnected by mutableStateOf(false)
-        private set
+    private fun publishDerivedPlaybackState() {
+        _uiState.update { state ->
+            val queuedSongs = playbackQueue.toList()
+            val queuedSongCount = playbackQueueManager.getQueuedSongCountExcludingCurrent(
+                currentSongId = state.currentSong?.id
+            )
+            state.copy(
+                queuedSongs = queuedSongs,
+                previousHistoryCount = playbackNavigationHistory.getPreviousSongIds().size,
+                forwardHistoryCount = playbackNavigationHistory.getNextSongIds().size,
+                previousPreviewSong = playbackNavigationHistory.peekPreviousSong(),
+                nextPreviewSong = playbackNavigationHistory.peekNextSong()
+                    ?: queuedSongs.firstOrNull()
+                    ?: upcomingSongsValue.firstOrNull(),
+                // The UI's "coming up" list excludes items already represented by the queue.
+                // Keep that computation out of progress updates.
+                upcomingSongs = upcomingSongsValue.drop(queuedSongCount)
+            )
+        }
+    }
 
     private val progressHandler = Handler(Looper.getMainLooper())
 
@@ -154,6 +197,7 @@ class PlaybackController(
         playbackQueueManager.replaceQueue(
             replaceSongReferences(playbackQueue.toList(), updatedSongs)
         )
+        publishDerivedPlaybackState()
         playbackNavigationHistory.replacePreviousSongs(
             replaceSongReferences(playbackNavigationHistory.getPreviousSongs(), updatedSongs)
         )
@@ -766,6 +810,7 @@ class PlaybackController(
     private fun syncServicePlaylistKeepingCurrent(
         preserveExistingShuffleOrder: Boolean = true
     ) {
+        publishDerivedPlaybackState()
         val song = currentSong ?: return
 
         val refreshedUpcomingSongs = refreshUpcomingSongs(

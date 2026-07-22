@@ -20,6 +20,8 @@ fun MusicRoute(
 ) {
     val playbackController = musicViewModel.playbackController
     val libraryController = musicViewModel.libraryController
+    val playbackUiState by playbackController.uiState.collectAsState()
+    val playbackProgressUiState by playbackController.progressState.collectAsState()
     val libraryUiState by libraryController.uiState.collectAsState()
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
@@ -47,19 +49,19 @@ fun MusicRoute(
         recentlyAddedLibrarySongs = libraryUiState.recentlyAddedSongs,
         mostPlayedSongs = libraryUiState.mostPlayedSongs,
         permissionGranted = permissionGranted,
-        currentSong = playbackController.currentSong,
-        isPlayerConnected = playbackController.isPlayerConnected,
-        previousHistoryCount = playbackController.getPreviousHistoryCount(),
-        forwardHistoryCount = playbackController.getForwardHistoryCount(),
-        previousPreviewSong = playbackController.getPreviousSongForPreview(),
-        nextPreviewSong = playbackController.getNextSongForPreview(),
-        isPlaying = playbackController.isPlaying,
-        isShuffleEnabled = playbackController.isShuffleEnabled,
-        repeatMode = playbackController.repeatMode,
-        currentPosition = playbackController.currentPosition,
-        duration = playbackController.duration,
-        queuedSongs = playbackController.playbackQueue,
-        upcomingSongs = playbackController.getComingUpSongsForDisplay(),
+        currentSong = playbackUiState.currentSong,
+        isPlayerConnected = playbackUiState.isConnected,
+        previousHistoryCount = playbackUiState.previousHistoryCount,
+        forwardHistoryCount = playbackUiState.forwardHistoryCount,
+        previousPreviewSong = playbackUiState.previousPreviewSong,
+        nextPreviewSong = playbackUiState.nextPreviewSong,
+        isPlaying = playbackUiState.isPlaying,
+        isShuffleEnabled = playbackUiState.isShuffleEnabled,
+        repeatMode = playbackUiState.repeatMode,
+        currentPosition = playbackProgressUiState.currentPosition,
+        duration = playbackProgressUiState.duration,
+        queuedSongs = playbackUiState.queuedSongs,
+        upcomingSongs = playbackUiState.upcomingSongs,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
         libraryFolders = libraryUiState.folders,
