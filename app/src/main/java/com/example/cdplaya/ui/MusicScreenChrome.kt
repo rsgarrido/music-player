@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.favoriteKey
 import com.example.cdplaya.player.RepeatMode
@@ -137,6 +138,7 @@ fun MiniPlayerSection(
     repeatMode: RepeatMode,
     currentPosition: Int,
     duration: Int,
+    selectedPlayerTheme: PlayerTheme,
     favoriteSongKeys: Set<String>,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
@@ -167,6 +169,7 @@ fun MiniPlayerSection(
             repeatMode = repeatMode,
             currentPosition = currentPosition,
             duration = duration,
+            selectedPlayerTheme = selectedPlayerTheme,
             onPlayPauseClick = onPlayPauseClick,
             onPreviousClick = onPreviousClick,
             onNextClick = onNextClick,

@@ -592,6 +592,7 @@ fun MusicScreen(
                 repeatMode = repeatMode,
                 currentPosition = currentPosition,
                 duration = duration,
+                selectedPlayerTheme = selectedPlayerTheme,
                 favoriteSongKeys = favoriteSongKeys,
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
