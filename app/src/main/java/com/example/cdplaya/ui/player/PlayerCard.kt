@@ -13,6 +13,7 @@ import com.example.cdplaya.ui.player.mini.MiniPlayerCallbacks
 import com.example.cdplaya.ui.player.mini.MiniPlayerHost
 import com.example.cdplaya.ui.player.mini.MiniPlayerState
 import com.example.cdplaya.ui.player.modern.ModernExpandedPlayer
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 
 @Composable
 fun PlayerCard(
@@ -24,6 +25,7 @@ fun PlayerCard(
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
     selectedPlayerTheme: PlayerTheme = PlayerTheme.DEFAULT,
+    selectedPlayerThemeTokens: PlayerThemeTokens? = null,
     modifier: Modifier = Modifier,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
@@ -71,6 +73,7 @@ fun PlayerCard(
     } else {
         MiniPlayerHost(
             selectedPlayerTheme = selectedPlayerTheme,
+            tokens = selectedPlayerThemeTokens,
             state = MiniPlayerState(
                 currentSong = currentSong,
                 isPlaying = isPlaying,

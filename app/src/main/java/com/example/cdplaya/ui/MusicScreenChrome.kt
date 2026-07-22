@@ -32,6 +32,7 @@ import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.player.PlayerCard
 import com.example.cdplaya.ui.player.SleepTimerStatusBanner
+import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 
 @Composable
 fun MusicScreenHeader(
@@ -139,6 +140,7 @@ fun MiniPlayerSection(
     currentPosition: Int,
     duration: Int,
     selectedPlayerTheme: PlayerTheme,
+    selectedPlayerThemeTokens: PlayerThemeTokens,
     favoriteSongKeys: Set<String>,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
@@ -170,6 +172,7 @@ fun MiniPlayerSection(
             currentPosition = currentPosition,
             duration = duration,
             selectedPlayerTheme = selectedPlayerTheme,
+            selectedPlayerThemeTokens = selectedPlayerThemeTokens,
             onPlayPauseClick = onPlayPauseClick,
             onPreviousClick = onPreviousClick,
             onNextClick = onNextClick,
