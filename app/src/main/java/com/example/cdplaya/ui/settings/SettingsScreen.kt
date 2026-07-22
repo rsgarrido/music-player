@@ -28,8 +28,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.R
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
@@ -47,6 +49,7 @@ fun SettingsScreen(
     onLibraryFoldersClick: () -> Unit,
     onExportBackupClick: () -> Unit,
     onRestoreBackupClick: () -> Unit,
+    onDiagnosticsClick: () -> Unit,
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
     onSleepTimerClick: () -> Unit,
@@ -184,6 +187,26 @@ fun SettingsScreen(
             modifier = Modifier.clickable {
                 onRestoreBackupClick()
             }
+        )
+
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+
+        SettingsSectionTitle(text = stringResource(R.string.settings_support))
+
+        ListItem(
+            headlineContent = { Text(text = stringResource(R.string.settings_diagnostics)) },
+            supportingContent = {
+                Text(text = stringResource(R.string.settings_diagnostics_summary))
+            },
+            trailingContent = {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    contentDescription = stringResource(R.string.settings_open_diagnostics)
+                )
+            },
+            modifier = Modifier.clickable(onClick = onDiagnosticsClick)
         )
 
         HorizontalDivider(

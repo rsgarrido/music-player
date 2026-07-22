@@ -56,6 +56,9 @@ fun MusicScreen(
     songs: List<Song>,
     permissionGranted: Boolean,
     currentSong: Song?,
+    isPlayerConnected: Boolean,
+    previousHistoryCount: Int,
+    forwardHistoryCount: Int,
     previousPreviewSong: Song?,
     nextPreviewSong: Song?,
     isPlaying: Boolean,
@@ -139,6 +142,7 @@ fun MusicScreen(
         mutableStateOf<PlaybackLaunchContext>(PlaybackLaunchContext.Home)
     }
     var isSettingsScreenVisible by rememberSaveable { mutableStateOf(false) }
+    var isDiagnosticsScreenVisible by rememberSaveable { mutableStateOf(false) }
     var isExpandedUpNextSheetVisible by rememberSaveable { mutableStateOf(false) }
     var selectedArtistName by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedAlbumFolderPath by rememberSaveable { mutableStateOf<String?>(null) }
@@ -295,6 +299,7 @@ fun MusicScreen(
                 isExpandedUpNextSheetVisible ||
                 isPlayerExpanded ||
                 isFolderScreenVisible ||
+                isDiagnosticsScreenVisible ||
                 isSettingsScreenVisible ||
                 selectedArtistName != null ||
                 selectedAlbumFolderPath != null ||
@@ -316,6 +321,11 @@ fun MusicScreen(
 
             isFolderScreenVisible -> {
                 isFolderScreenVisible = false
+                isSettingsScreenVisible = true
+            }
+
+            isDiagnosticsScreenVisible -> {
+                isDiagnosticsScreenVisible = false
                 isSettingsScreenVisible = true
             }
 
@@ -355,10 +365,12 @@ fun MusicScreen(
         val shouldShowBottomMiniPlayer = currentSong != null &&
                 !isPlayerExpanded &&
                 !isFolderScreenVisible &&
+                !isDiagnosticsScreenVisible &&
                 !isSettingsScreenVisible &&
                 selectedSongForTagEdit == null
         val shouldShowBottomNavigation = !isPlayerExpanded &&
                 !isFolderScreenVisible &&
+                !isDiagnosticsScreenVisible &&
                 !isSettingsScreenVisible &&
                 selectedSongForTagEdit == null
         val navigationBarInset = WindowInsets.navigationBars
@@ -420,6 +432,9 @@ fun MusicScreen(
                 songs = songs,
                 permissionGranted = permissionGranted,
                 currentSong = currentSong,
+                isPlayerConnected = isPlayerConnected,
+                previousHistoryCount = previousHistoryCount,
+                forwardHistoryCount = forwardHistoryCount,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
@@ -447,6 +462,7 @@ fun MusicScreen(
                 isPlayerExpanded = isPlayerExpanded,
                 isFolderScreenVisible = isFolderScreenVisible,
                 isSettingsScreenVisible = isSettingsScreenVisible,
+                isDiagnosticsScreenVisible = isDiagnosticsScreenVisible,
                 queueSnackbarActions = queueSnackbarActions,
                 onSettingsClick = {
                     isSettingsScreenVisible = true
@@ -465,6 +481,14 @@ fun MusicScreen(
                 },
                 onSettingsBackClick = {
                     isSettingsScreenVisible = false
+                },
+                onDiagnosticsClick = {
+                    isSettingsScreenVisible = false
+                    isDiagnosticsScreenVisible = true
+                },
+                onDiagnosticsBackClick = {
+                    isDiagnosticsScreenVisible = false
+                    isSettingsScreenVisible = true
                 },
                 onLibraryFoldersClick = {
                     isSettingsScreenVisible = false

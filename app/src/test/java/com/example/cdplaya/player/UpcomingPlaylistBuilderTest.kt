@@ -50,6 +50,71 @@ class UpcomingPlaylistBuilderTest {
         assertEquals(listOf(songC, songB, songA), upcoming)
     }
 
+    @Test
+    fun explicitQueuePrecedesNormalUpcomingContext() {
+        val builder = UpcomingPlaylistBuilder()
+        val songs = (1L..5L).map(::song)
+
+        val upcoming = builder.buildUpcomingPlaylistAfterCurrent(
+            startSong = songs[1],
+            playbackSourceSongs = songs.take(4),
+            queuedSongsAfterCurrent = listOf(songs[4], songs[0]),
+            currentUpcomingSongs = emptyList(),
+            isShuffleEnabled = false,
+            repeatMode = RepeatMode.OFF,
+            preserveExistingShuffleOrder = false
+        )
+
+        assertEquals(listOf(songs[4], songs[0], songs[2], songs[3]), upcoming)
+    }
+
+    @Test
+    fun repeatOffUsesRemainingContextOnceAndRepeatAllWrapsOrder() {
+        val builder = UpcomingPlaylistBuilder()
+        val songs = (1L..4L).map(::song)
+
+        val repeatOff = builder.buildUpcomingPlaylistAfterCurrent(
+            songs[2], songs, emptyList(), emptyList(), false, RepeatMode.OFF, false
+        )
+        val repeatAll = builder.buildUpcomingPlaylistAfterCurrent(
+            songs[2], songs, emptyList(), emptyList(), false, RepeatMode.ALL, false
+        )
+
+        assertEquals(listOf(songs[3], songs[0], songs[1]), repeatOff)
+        assertEquals(repeatOff, repeatAll)
+    }
+
+    @Test
+    fun exhaustedMissingContextPreservesExistingUpcoming() {
+        val builder = UpcomingPlaylistBuilder()
+        val current = song(99)
+        val existing = listOf(song(2), song(3))
+
+        val upcoming = builder.buildUpcomingPlaylistAfterCurrent(
+            current, listOf(song(1)), emptyList(), existing, false, RepeatMode.OFF, true
+        )
+
+        assertEquals(existing, upcoming)
+    }
+
+    @Test
+    fun duplicateQueueEntriesArePreservedAndExcludedFromContextById() {
+        val builder = UpcomingPlaylistBuilder()
+        val queued = song(2)
+
+        val upcoming = builder.buildUpcomingPlaylistAfterCurrent(
+            startSong = song(1),
+            playbackSourceSongs = listOf(song(1), song(2), song(2), song(3)),
+            queuedSongsAfterCurrent = listOf(queued, queued),
+            currentUpcomingSongs = emptyList(),
+            isShuffleEnabled = false,
+            repeatMode = RepeatMode.OFF,
+            preserveExistingShuffleOrder = false
+        )
+
+        assertEquals(listOf(2L, 2L, 3L), upcoming.map { it.id })
+    }
+
     private fun song(id: Long): Song {
         return Song(
             id = id,

@@ -1,12 +1,15 @@
 package com.example.cdplaya.player
 
 import android.app.PendingIntent
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.OptIn
 import android.content.Intent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.LibraryResult
@@ -23,6 +26,50 @@ class PlaybackService : MediaLibraryService() {
 
     private var mediaSession: MediaLibrarySession? = null
     private lateinit var player: ExoPlayer
+    private lateinit var playerStateStorage: PlayerStateStorage
+    private val checkpointHandler = Handler(Looper.getMainLooper())
+    private val checkpointRunnable = object : Runnable {
+        override fun run() {
+            saveServicePlaybackState()
+            if (::player.isInitialized && player.isPlaying) {
+                checkpointHandler.postDelayed(
+                    this,
+                    PlaybackStateCheckpointPolicy.DEFAULT_INTERVAL_MILLIS
+                )
+            }
+        }
+    }
+    private val persistenceListener = object : Player.Listener {
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            saveServicePlaybackState()
+        }
+
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            checkpointHandler.removeCallbacks(checkpointRunnable)
+            if (isPlaying) {
+                checkpointHandler.postDelayed(
+                    checkpointRunnable,
+                    PlaybackStateCheckpointPolicy.DEFAULT_INTERVAL_MILLIS
+                )
+            } else {
+                saveServicePlaybackState()
+            }
+        }
+
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int
+        ) {
+            if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                saveServicePlaybackState()
+            }
+        }
+
+        override fun onRepeatModeChanged(repeatMode: Int) {
+            saveServicePlaybackState()
+        }
+    }
 
     private val libraryCallback = object : MediaLibrarySession.Callback {
         override fun onGetLibraryRoot(
@@ -119,6 +166,8 @@ class PlaybackService : MediaLibraryService() {
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
             .build()
+        playerStateStorage = PlayerStateStorage(this)
+        player.addListener(persistenceListener)
 
         val sessionActivity = PendingIntent.getActivity(
             this,
@@ -139,10 +188,30 @@ class PlaybackService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
+        checkpointHandler.removeCallbacks(checkpointRunnable)
+        saveServicePlaybackState()
+        player.removeListener(persistenceListener)
         mediaSession?.release()
         mediaSession = null
         player.release()
         super.onDestroy()
+    }
+
+    private fun saveServicePlaybackState() {
+        if (!::player.isInitialized || !::playerStateStorage.isInitialized) return
+        val songId = player.currentMediaItem?.mediaId?.toLongOrNull() ?: return
+        val repeatMode = when (player.repeatMode) {
+            Player.REPEAT_MODE_ALL -> RepeatMode.ALL
+            Player.REPEAT_MODE_ONE -> RepeatMode.ONE
+            else -> RepeatMode.OFF
+        }
+        playerStateStorage.saveServicePlaybackState(
+            currentSongId = songId,
+            currentPosition = player.currentPosition
+                .coerceIn(0L, Int.MAX_VALUE.toLong())
+                .toInt(),
+            repeatMode = repeatMode
+        )
     }
 
     private fun buildBrowseTree(): AutoBrowseNode {

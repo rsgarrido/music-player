@@ -22,7 +22,7 @@ internal fun rememberExpandedPlayerWaveformData(
     prefetchSongs: List<Song> = emptyList()
 ): WaveformData? {
     val appContext = LocalContext.current.applicationContext
-    val repository = remember(appContext) { WaveformRepository(appContext) }
+    val repository = remember(appContext) { WaveformRepository.shared(appContext) }
     var waveformData by remember(
         currentSong?.id,
         currentSong?.filePath,

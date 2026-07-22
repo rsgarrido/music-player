@@ -99,8 +99,21 @@ class WaveformRepository internal constructor(
                 ?: return@withLock null
             val data = WaveformData(amplitudes = amplitudes, sourceKey = sourceKey)
             cache.write(data)
+            cache.maintain { coroutineContext.ensureActive() }
             data
         }
+    }
+
+    suspend fun getCacheStats(): WaveformCacheStats = withContext(ioDispatcher) {
+        cache.getStats()
+    }
+
+    suspend fun clearDiskCache(): WaveformCacheStats = withContext(ioDispatcher) {
+        loadMutex.withLock { cache.clear { coroutineContext.ensureActive() } }
+    }
+
+    suspend fun maintainDiskCache(): WaveformCacheStats = withContext(ioDispatcher) {
+        loadMutex.withLock { cache.maintain { coroutineContext.ensureActive() } }
     }
 
     suspend fun prefetch(songs: List<Song>) {
@@ -124,5 +137,16 @@ class WaveformRepository internal constructor(
         const val DEFAULT_ANALYZED_BAR_COUNT = 512
         const val MAX_PREFETCH_COUNT = 2
         const val WAVEFORM_CACHE_DIRECTORY = "waveforms"
+
+        @Volatile
+        private var sharedInstance: WaveformRepository? = null
+
+        fun shared(context: Context): WaveformRepository {
+            return sharedInstance ?: synchronized(this) {
+                sharedInstance ?: WaveformRepository(context.applicationContext).also { repository ->
+                    sharedInstance = repository
+                }
+            }
+        }
     }
 }

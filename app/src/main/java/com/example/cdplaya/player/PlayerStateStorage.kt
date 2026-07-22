@@ -1,16 +1,21 @@
 package com.example.cdplaya.player
 
 import android.content.Context
-class PlayerStateStorage(context: Context) {
+import android.content.SharedPreferences
 
-    private val preferences = context.getSharedPreferences(
-        "player_state",
-        Context.MODE_PRIVATE
+class PlayerStateStorage internal constructor(
+    private val preferences: SharedPreferences
+) {
+
+    constructor(context: Context) : this(
+        context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
     )
 
     fun getCurrentSongId(): Long? {
-        val id = preferences.getLong(KEY_CURRENT_SONG_ID, NO_SONG_ID)
-        return if (id == NO_SONG_ID) null else id
+        val id = runCatching {
+            preferences.getLong(KEY_CURRENT_SONG_ID, NO_SONG_ID)
+        }.getOrDefault(NO_SONG_ID)
+        return id.takeIf { it >= 0L }
     }
 
     fun saveState(
@@ -25,7 +30,7 @@ class PlayerStateStorage(context: Context) {
     ) {
         preferences.edit()
             .putLong(KEY_CURRENT_SONG_ID, currentSongId ?: NO_SONG_ID)
-            .putInt(KEY_CURRENT_POSITION, currentPosition)
+            .putInt(KEY_CURRENT_POSITION, currentPosition.coerceAtLeast(0))
             .putBoolean(KEY_SHUFFLE_ENABLED, isShuffleEnabled)
             .putString(KEY_REPEAT_MODE, repeatMode.name)
             .putString(KEY_PREVIOUS_HISTORY, previousSongIds.joinToString(","))
@@ -35,20 +40,38 @@ class PlayerStateStorage(context: Context) {
             .apply()
     }
 
+    fun saveServicePlaybackState(
+        currentSongId: Long,
+        currentPosition: Int,
+        repeatMode: RepeatMode
+    ) {
+        preferences.edit()
+            .putLong(KEY_CURRENT_SONG_ID, currentSongId)
+            .putInt(KEY_CURRENT_POSITION, currentPosition.coerceAtLeast(0))
+            .putString(KEY_REPEAT_MODE, repeatMode.name)
+            .apply()
+    }
+
     fun getQueueSongIds(): List<Long> {
         return getSongIds(KEY_QUEUE)
     }
 
     fun getCurrentPosition(): Int {
-        return preferences.getInt(KEY_CURRENT_POSITION, 0)
+        return runCatching {
+            preferences.getInt(KEY_CURRENT_POSITION, 0)
+        }.getOrDefault(0).coerceAtLeast(0)
     }
 
     fun isShuffleEnabled(): Boolean {
-        return preferences.getBoolean(KEY_SHUFFLE_ENABLED, false)
+        return runCatching {
+            preferences.getBoolean(KEY_SHUFFLE_ENABLED, false)
+        }.getOrDefault(false)
     }
 
     fun getRepeatMode(): RepeatMode {
-        val savedMode = preferences.getString(KEY_REPEAT_MODE, RepeatMode.OFF.name)
+        val savedMode = runCatching {
+            preferences.getString(KEY_REPEAT_MODE, RepeatMode.OFF.name)
+        }.getOrNull()
 
         return try {
             RepeatMode.valueOf(savedMode ?: RepeatMode.OFF.name)
@@ -66,7 +89,9 @@ class PlayerStateStorage(context: Context) {
     }
 
     private fun getSongIds(key: String): List<Long> {
-        val savedIds = preferences.getString(key, "") ?: ""
+        val savedIds = runCatching {
+            preferences.getString(key, "")
+        }.getOrNull().orEmpty()
 
         if (savedIds.isBlank()) {
             return emptyList()
@@ -75,7 +100,7 @@ class PlayerStateStorage(context: Context) {
         return savedIds
             .split(",")
             .mapNotNull { id ->
-                id.toLongOrNull()
+                id.toLongOrNull()?.takeIf { parsedId -> parsedId >= 0L }
             }
     }
 
@@ -84,6 +109,7 @@ class PlayerStateStorage(context: Context) {
     }
 
     companion object {
+        private const val PREFERENCES_NAME = "player_state"
         private const val KEY_CURRENT_SONG_ID = "current_song_id"
         private const val KEY_CURRENT_POSITION = "current_position"
         private const val KEY_SHUFFLE_ENABLED = "shuffle_enabled"

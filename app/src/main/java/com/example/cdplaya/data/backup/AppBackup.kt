@@ -17,7 +17,25 @@ data class AppBackup(
 data class BackupPreferences(
     val selectedLibraryFolders: List<String> = emptyList(),
     val selectedPlayerThemeId: String = "",
-    val replayGainMode: String = ""
+    val replayGainMode: String = "",
+    val modernArtworkTransitionStyle: String = "slide",
+    val modernSeekbarStyle: String = "classic_bar",
+    val playerThemeTokenOverrides: Map<String, BackupPlayerThemeTokenOverrides> = emptyMap(),
+    val songsViewMode: String = "list",
+    val albumsViewMode: String = "list",
+    val artistsViewMode: String = "list",
+    val songsGridColumnCount: Int = 2,
+    val albumsGridColumnCount: Int = 2,
+    val artistsGridColumnCount: Int = 2
+)
+
+@Serializable
+data class BackupPlayerThemeTokenOverrides(
+    val shellArgb: Long? = null,
+    val accentArgb: Long? = null,
+    val displayBackgroundArgb: Long? = null,
+    val displayTextArgb: Long? = null,
+    val secondaryAccentArgb: Long? = null
 )
 
 @Serializable

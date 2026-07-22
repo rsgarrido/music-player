@@ -1,3 +1,50 @@
 <resources>
     <string name="app_name">cdplaya</string>
+    <string name="settings_support">Support</string>
+    <string name="settings_diagnostics">Diagnostics</string>
+    <string name="settings_diagnostics_summary">Playback status and safe cache controls</string>
+    <string name="settings_open_diagnostics">Open diagnostics</string>
+    <string name="diagnostics_title">Diagnostics</string>
+    <string name="diagnostics_unknown">Unknown</string>
+    <string name="diagnostics_back">Back</string>
+    <string name="diagnostics_app_version">App version</string>
+    <string name="diagnostics_library">Library</string>
+    <string name="diagnostics_selected_folders">Selected library folders</string>
+    <string name="diagnostics_player_theme">Player theme</string>
+    <string name="diagnostics_replay_gain">ReplayGain</string>
+    <string name="diagnostics_connection">Playback connection</string>
+    <string name="diagnostics_connected">Connected</string>
+    <string name="diagnostics_disconnected">Disconnected</string>
+    <string name="diagnostics_current_song">Current song</string>
+    <string name="diagnostics_none">None</string>
+    <string name="diagnostics_playback_state">Playback state</string>
+    <string name="diagnostics_playing">Playing</string>
+    <string name="diagnostics_paused">Paused</string>
+    <string name="diagnostics_position">Position / duration</string>
+    <string name="diagnostics_queue">Queue items</string>
+    <string name="diagnostics_upcoming">Upcoming items</string>
+    <string name="diagnostics_history">Previous / forward history</string>
+    <string name="diagnostics_waveform_cache">Waveform cache</string>
+    <string name="diagnostics_cache_files">Cached files</string>
+    <string name="diagnostics_cache_size">Cache size</string>
+    <string name="diagnostics_cache_format">Cache format version</string>
+    <string name="diagnostics_analysis_buckets">Analysis buckets</string>
+    <string name="diagnostics_refresh">Refresh</string>
+    <string name="diagnostics_copy">Copy summary</string>
+    <string name="diagnostics_copied">Diagnostic summary copied.</string>
+    <string name="diagnostics_clear_cache">Clear waveform cache</string>
+    <string name="diagnostics_clear_cache_title">Clear waveform cache?</string>
+    <string name="diagnostics_clear_cache_message">Cached waveform analysis will be removed and regenerated only when needed. Playback will not be affected.</string>
+    <string name="diagnostics_cache_cleared">Waveform cache cleared.</string>
+    <string name="diagnostics_clear">Clear</string>
+    <string name="diagnostics_cancel">Cancel</string>
+    <string name="diagnostics_clip_label">CDPlaya diagnostics</string>
+    <plurals name="diagnostics_song_count">
+        <item quantity="one">%d song</item>
+        <item quantity="other">%d songs</item>
+    </plurals>
+    <plurals name="diagnostics_file_count">
+        <item quantity="one">%d file</item>
+        <item quantity="other">%d files</item>
+    </plurals>
 </resources>
