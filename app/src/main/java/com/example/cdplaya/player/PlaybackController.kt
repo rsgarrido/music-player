@@ -58,7 +58,7 @@ class PlaybackController(
     var duration by mutableStateOf(0)
         private set
 
-    var isPlayerConnected = false
+    var isPlayerConnected by mutableStateOf(false)
         private set
 
     private val progressHandler = Handler(Looper.getMainLooper())
@@ -371,6 +371,14 @@ class PlaybackController(
         return playbackNavigationHistory.peekNextSong()
             ?: playbackQueue.firstOrNull()
             ?: upcomingSongs.firstOrNull()
+    }
+
+    fun getPreviousHistoryCount(): Int {
+        return playbackNavigationHistory.getPreviousSongIds().size
+    }
+
+    fun getForwardHistoryCount(): Int {
+        return playbackNavigationHistory.getNextSongIds().size
     }
 
     fun savePlayerState() {

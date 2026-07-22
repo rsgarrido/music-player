@@ -52,12 +52,16 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.settings.SettingsScreen
+import com.example.cdplaya.ui.settings.DiagnosticsScreen
 
 @Composable
 fun MusicScreenBody(
     songs: List<Song>,
     permissionGranted: Boolean,
     currentSong: Song?,
+    isPlayerConnected: Boolean,
+    previousHistoryCount: Int,
+    forwardHistoryCount: Int,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -85,11 +89,14 @@ fun MusicScreenBody(
     isPlayerExpanded: Boolean,
     isFolderScreenVisible: Boolean,
     isSettingsScreenVisible: Boolean,
+    isDiagnosticsScreenVisible: Boolean,
     queueSnackbarActions: QueueSnackbarActions,
     onSettingsClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
     onFolderBackClick: () -> Unit,
     onSettingsBackClick: () -> Unit,
+    onDiagnosticsClick: () -> Unit,
+    onDiagnosticsBackClick: () -> Unit,
     onLibraryFoldersClick: () -> Unit,
     onExportBackupClick: () -> Unit,
     onRestoreBackupClick: () -> Unit,
@@ -174,6 +181,29 @@ fun MusicScreenBody(
             )
         }
 
+        isDiagnosticsScreenVisible -> {
+            DiagnosticsScreen(
+                librarySongCount = songs.size,
+                selectedFolderCount = selectedLibraryFolders.size,
+                selectedPlayerTheme = selectedPlayerTheme,
+                selectedReplayGainMode = selectedReplayGainMode,
+                isPlaybackConnected = isPlayerConnected,
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                currentPosition = currentPosition,
+                duration = duration,
+                queueCount = queuedSongs.size,
+                upcomingCount = upcomingSongs.size,
+                previousCount = previousHistoryCount,
+                forwardCount = forwardHistoryCount,
+                onBackClick = onDiagnosticsBackClick,
+                modifier = modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+            )
+        }
+
         isSettingsScreenVisible -> {
             SettingsScreen(
                 totalSongCount = songs.size,
@@ -183,6 +213,7 @@ fun MusicScreenBody(
                 onLibraryFoldersClick = onLibraryFoldersClick,
                 onExportBackupClick = onExportBackupClick,
                 onRestoreBackupClick = onRestoreBackupClick,
+                onDiagnosticsClick = onDiagnosticsClick,
                 isSleepTimerActive = isSleepTimerActive,
                 sleepTimerDisplayText = sleepTimerDisplayText,
                 onSleepTimerClick = onSleepTimerClick,

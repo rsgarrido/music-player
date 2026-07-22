@@ -137,5 +137,16 @@ class WaveformRepository internal constructor(
         const val DEFAULT_ANALYZED_BAR_COUNT = 512
         const val MAX_PREFETCH_COUNT = 2
         const val WAVEFORM_CACHE_DIRECTORY = "waveforms"
+
+        @Volatile
+        private var sharedInstance: WaveformRepository? = null
+
+        fun shared(context: Context): WaveformRepository {
+            return sharedInstance ?: synchronized(this) {
+                sharedInstance ?: WaveformRepository(context.applicationContext).also { repository ->
+                    sharedInstance = repository
+                }
+            }
+        }
     }
 }
