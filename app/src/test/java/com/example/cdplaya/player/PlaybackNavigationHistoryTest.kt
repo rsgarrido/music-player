@@ -54,6 +54,40 @@ class PlaybackNavigationHistoryTest {
         assertEquals(emptyList<Long>(), history.getNextSongIds())
     }
 
+    @Test
+    fun invalidSongsAreRemovedFromBothDirections() {
+        val history = PlaybackNavigationHistory()
+        history.replacePreviousSongs(listOf(song(1), song(2), song(3)))
+        history.replaceNextSongs(listOf(song(4), song(2), song(5)))
+
+        history.removeInvalidSongs(setOf(1L, 4L, 5L))
+
+        assertEquals(listOf(1L), history.getPreviousSongIds())
+        assertEquals(listOf(4L, 5L), history.getNextSongIds())
+    }
+
+    @Test
+    fun previousPushesDepartedSongsOntoForwardHistoryInOrder() {
+        val history = PlaybackNavigationHistory()
+        history.replacePreviousSongs(listOf(song(1), song(2)))
+
+        assertEquals(2L, history.popPreviousSongAndPushCurrent(song(3))?.id)
+        assertEquals(1L, history.popPreviousSongAndPushCurrent(song(2))?.id)
+        assertEquals(listOf(3L, 2L), history.getNextSongIds())
+        assertEquals(2L, history.popNextSong()?.id)
+        assertEquals(3L, history.popNextSong()?.id)
+    }
+
+    @Test
+    fun replacementPreservesDuplicatesAndExactOrder() {
+        val history = PlaybackNavigationHistory()
+        history.replacePreviousSongs(listOf(song(1), song(2), song(1)))
+        history.replaceNextSongs(listOf(song(3), song(3), song(4)))
+
+        assertEquals(listOf(1L, 2L, 1L), history.getPreviousSongIds())
+        assertEquals(listOf(3L, 3L, 4L), history.getNextSongIds())
+    }
+
     private fun song(id: Long): Song {
         return Song(
             id = id,
