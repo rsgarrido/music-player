@@ -12,11 +12,16 @@ import com.example.cdplaya.data.toSongReference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.player.replaygain.ReplayGainRepository
 import com.example.cdplaya.player.replaygain.replayGainVolumeMultiplier
+import com.example.cdplaya.player.replaygain.selectReplayGainDb
+import com.example.cdplaya.player.audio.AdvancedAudioRuntimeBridge
+import com.example.cdplaya.player.audio.AudioOutputUiState
 import com.example.cdplaya.performance.PerformanceTraceNames
 import com.example.cdplaya.performance.tracePerformance
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.PlaybackUiState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,9 +33,6 @@ class PlaybackController(
     context: Context,
     private val coroutineScope: CoroutineScope
 ) {
-    init {
-        PlaybackLibraryBridge.register(this)
-    }
     private val musicPlayer = MusicPlayer(context)
     private val playerStateStorage = PlayerStateStorage(context)
     private val playbackHistoryRecorder = PlaybackHistoryRecorder(coroutineScope)
@@ -53,6 +55,11 @@ class PlaybackController(
 
     private val _progressState = MutableStateFlow(PlaybackProgressUiState.Empty)
     val progressState: StateFlow<PlaybackProgressUiState> = _progressState.asStateFlow()
+
+    private val _audioOutputState = MutableStateFlow(AudioOutputUiState())
+    val audioOutputState: StateFlow<AudioOutputUiState> = _audioOutputState.asStateFlow()
+    private var advancedAudioRuntimeCollectionJob: Job? = null
+    private var advancedAudioRuntimeCollectionStartCount = 0
 
     private val playbackQueue: MutableList<Song>
         get() = playbackQueueManager.playbackQueue
@@ -136,6 +143,31 @@ class PlaybackController(
         }
     }
 
+    init {
+        PlaybackLibraryBridge.register(this)
+        startAdvancedAudioRuntimeCollection()
+    }
+
+    private fun startAdvancedAudioRuntimeCollection() {
+        if (advancedAudioRuntimeCollectionJob != null) return
+        advancedAudioRuntimeCollectionStartCount += 1
+        advancedAudioRuntimeCollectionJob = coroutineScope.launch(
+            start = CoroutineStart.UNDISPATCHED
+        ) {
+            AdvancedAudioRuntimeBridge.state.collect { runtime ->
+                _audioOutputState.update { current ->
+                    current.copy(
+                        sourceFormat = runtime.sourceFormat,
+                        routeInfo = runtime.routeInfo,
+                        offloadState = runtime.offloadState,
+                        audioSessionId = runtime.audioSessionId,
+                        isPlayerConnected = runtime.isPlayerConnected
+                    )
+                }
+            }
+        }
+    }
+
     fun connect() {
         tracePerformance(PerformanceTraceNames.PLAYBACK_CONNECT) {
             musicPlayer.connect {
@@ -168,6 +200,7 @@ class PlaybackController(
 
     fun setReplayGainMode(mode: ReplayGainMode) {
         replayGainMode = mode
+        _audioOutputState.update { state -> state.copy(replayGainMode = mode) }
         applyReplayGainForCurrentSong()
     }
 
@@ -434,11 +467,14 @@ class PlaybackController(
     }
 
     fun release() {
+        advancedAudioRuntimeCollectionJob?.cancel()
+        advancedAudioRuntimeCollectionJob = null
         savePlayerState()
         progressHandler.removeCallbacks(progressRunnable)
         musicPlayer.release()
         upcomingSongsValue = emptyList()
         _progressState.value = PlaybackProgressUiState.Empty
+        _audioOutputState.value = AudioOutputUiState()
         _uiState.value = PlaybackUiState.Disconnected.copy(
             isShuffleEnabled = isShuffleEnabled,
             repeatMode = repeatMode
@@ -823,17 +859,28 @@ class PlaybackController(
 
         if (song == null || requestedMode == ReplayGainMode.OFF) {
             musicPlayer.setVolume(1f)
+            _audioOutputState.update { state ->
+                state.copy(replayGainDb = null, appliedVolumeMultiplier = 1f)
+            }
             return
         }
 
         val requestedIsAlbumPlaybackContext = isAlbumPlaybackContextForSong(song)
 
         musicPlayer.setVolume(1f)
+        _audioOutputState.update { state ->
+            state.copy(replayGainDb = null, appliedVolumeMultiplier = 1f)
+        }
 
         coroutineScope.launch {
             val replayGainInfo = replayGainRepository.getReplayGainInfo(song)
 
             val volumeMultiplier = replayGainVolumeMultiplier(
+                replayGainInfo = replayGainInfo,
+                replayGainMode = requestedMode,
+                isAlbumPlaybackContext = requestedIsAlbumPlaybackContext
+            )
+            val gainDb = selectReplayGainDb(
                 replayGainInfo = replayGainInfo,
                 replayGainMode = requestedMode,
                 isAlbumPlaybackContext = requestedIsAlbumPlaybackContext
@@ -852,6 +899,12 @@ class PlaybackController(
                 isStillSamePlaybackContext
             ) {
                 musicPlayer.setVolume(volumeMultiplier)
+                _audioOutputState.update { state ->
+                    state.copy(
+                        replayGainDb = gainDb,
+                        appliedVolumeMultiplier = volumeMultiplier
+                    )
+                }
             }
         }
     }

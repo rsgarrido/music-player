@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.example.cdplaya.data.PlayerTheme
+import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibraryViewMode
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
@@ -20,6 +21,7 @@ class AppPreferencesStateTest {
         val preferences = mutablePreferencesOf(
             stringPreferencesKey("selected_player_theme") to "missing-theme",
             stringPreferencesKey("replay_gain_mode") to "LOUDER_THAN_INFINITY",
+            stringPreferencesKey("audio_offload_preference") to "REQUIRED",
             stringPreferencesKey("artwork_transition_style") to "missing-transition",
             stringPreferencesKey("seekbar_style") to "missing-seekbar",
             intPreferencesKey("songs_view_mode_columns") to 99
@@ -29,6 +31,7 @@ class AppPreferencesStateTest {
 
         assertEquals(PlayerTheme.DEFAULT, state.selectedPlayerTheme)
         assertEquals(ReplayGainMode.OFF, state.replayGainMode)
+        assertEquals(AudioOffloadPreference.DISABLED, state.audioOffloadPreference)
         assertEquals(ModernArtworkTransitionStyle.SLIDE, state.modernArtworkTransitionStyle)
         assertEquals(ModernSeekbarStyle.CLASSIC_BAR, state.modernSeekbarStyle)
         assertEquals(2, state.songsGridColumnCount)
@@ -53,5 +56,19 @@ class AppPreferencesStateTest {
         assertEquals(setOf("Music", "Card/Music"), state.selectedLibraryFolders)
         assertEquals(LibraryViewMode.GRID, state.songsViewMode)
         assertEquals(3, state.songsGridColumnCount)
+    }
+
+    @Test
+    fun automaticOffloadPreferenceDecodesWithoutChangingOtherSettings() {
+        val preferences = mutablePreferencesOf(
+            stringPreferencesKey("audio_offload_preference") to "AUTOMATIC",
+            stringPreferencesKey("selected_player_theme") to PlayerTheme.RETRO_RACK.id
+        )
+
+        val state = decodeAppPreferences(preferences)
+
+        assertEquals(AudioOffloadPreference.AUTOMATIC, state.audioOffloadPreference)
+        assertEquals(PlayerTheme.RETRO_RACK, state.selectedPlayerTheme)
+        assertEquals(ReplayGainMode.OFF, state.replayGainMode)
     }
 }

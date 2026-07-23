@@ -26,6 +26,10 @@ fun MusicRoute(
         musicViewModel.playerAppearanceUiState.collectAsStateWithLifecycle()
     val libraryAppearanceUiState by
         musicViewModel.libraryAppearanceUiState.collectAsStateWithLifecycle()
+    val audioOffloadPreference by
+        musicViewModel.audioOffloadPreference.collectAsStateWithLifecycle()
+    val audioOutputUiState by
+        musicViewModel.audioOutputUiState.collectAsStateWithLifecycle()
     if (!playerAppearanceUiState.isLoaded || !libraryAppearanceUiState.isLoaded) return
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
@@ -225,6 +229,9 @@ fun MusicRoute(
         onReplayGainModeSelected = { replayGainMode ->
             musicViewModel.selectReplayGainMode(replayGainMode)
         },
+        selectedAudioOffloadPreference = audioOffloadPreference,
+        onAudioOffloadPreferenceSelected = musicViewModel::selectAudioOffloadPreference,
+        audioOutputUiState = audioOutputUiState,
         onReadEditableSongTags = musicViewModel::readEditableSongTags,
         onGetUnsupportedTagEditingMessage = musicViewModel::getUnsupportedTagEditingMessage,
         onWriteTagsAndArtwork = musicViewModel::writeTagsAndArtwork,

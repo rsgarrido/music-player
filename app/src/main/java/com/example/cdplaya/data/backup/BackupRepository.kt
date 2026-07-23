@@ -11,6 +11,7 @@ import com.example.cdplaya.data.PlaylistsRepository
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.data.preferences.AppPreferencesState
+import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewMode
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
@@ -50,6 +51,7 @@ class BackupRepository(
                     .sorted(),
                 selectedPlayerThemeId = appPreferences.selectedPlayerTheme.id,
                 replayGainMode = appPreferences.replayGainMode.name,
+                audioOffloadPreference = appPreferences.audioOffloadPreference.name,
                 modernArtworkTransitionStyle =
                     appPreferences.modernArtworkTransitionStyle.storageValue,
                 modernSeekbarStyle = appPreferences.modernSeekbarStyle.storageValue,
@@ -175,6 +177,9 @@ class BackupRepository(
                 ),
                 replayGainMode = runCatching { ReplayGainMode.valueOf(preferences.replayGainMode) }
                     .getOrDefault(ReplayGainMode.OFF),
+                audioOffloadPreference = AudioOffloadPreference.fromStorageValue(
+                    preferences.audioOffloadPreference
+                ),
                 selectedLibraryFolders = preferences.selectedLibraryFolders.toSet(),
                 songsViewMode = LibraryViewMode.fromStorageValue(preferences.songsViewMode),
                 albumsViewMode = LibraryViewMode.fromStorageValue(preferences.albumsViewMode),

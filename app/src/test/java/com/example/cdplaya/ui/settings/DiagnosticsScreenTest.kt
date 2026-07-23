@@ -34,12 +34,20 @@ class DiagnosticsScreenTest {
         )
 
         assertTrue(summary.contains("Library songs: 42"))
-        assertTrue(summary.contains("Current song: Example"))
+        assertTrue(summary.contains("Current media: Present"))
+        assertFalse(summary.contains("Example"))
+        assertFalse(summary.contains("Artist"))
+        assertTrue(summary.contains("Audio source: Unknown"))
+        assertTrue(summary.contains("Offload preference: Disabled"))
+        assertTrue(summary.contains("Source information describes"))
         assertTrue(summary.contains("Waveform cache: 5 files, 4096 bytes"))
         assertTrue(summary.contains("Unresolved favorites: 1"))
         assertTrue(summary.contains("Unresolved playlist rows: 2"))
         assertTrue(summary.contains("Unresolved history rows: 3"))
         assertFalse(summary.contains("/music/"))
         assertFalse(summary.contains("filePath"))
+        assertFalse(summary.contains("bit-perfect", ignoreCase = true))
+        assertFalse(summary.contains("hardware output", ignoreCase = true))
+        assertFalse(summary.contains("Bluetooth address", ignoreCase = true))
     }
 }

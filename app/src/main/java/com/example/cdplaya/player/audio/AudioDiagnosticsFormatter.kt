@@ -1,0 +1,69 @@
+package com.example.cdplaya.player.audio
+
+import java.util.Locale
+
+fun formatAudioSource(format: AudioSourceFormat?): String {
+    format ?: return "Unknown"
+    val parts = buildList {
+        format.sampleMimeType?.let { add(friendlyCodecName(it, format.codecs)) }
+            ?: format.codecs?.let(::add)
+        format.sourceBitDepth?.let { add("$it-bit source") }
+        format.sampleRateHz?.let { add(formatSampleRate(it)) }
+        format.channelCount?.let { channels ->
+            add(if (channels == 1) "1 channel" else "$channels channels")
+        }
+        format.bitrateBitsPerSecond?.let { bitrate ->
+            add("${bitrate / 1_000} kbps source")
+        }
+    }
+    return parts.joinToString(" · ").ifBlank { "Unknown" }
+}
+
+fun formatAudioRoute(route: AudioRouteInfo): String = when (route.category) {
+    AudioRouteCategory.BUILT_IN_SPEAKER -> "Built-in speaker"
+    AudioRouteCategory.WIRED_HEADPHONES -> "Wired headphones/headset"
+    AudioRouteCategory.USB -> "USB audio"
+    AudioRouteCategory.BLUETOOTH_CLASSIC -> "Bluetooth audio"
+    AudioRouteCategory.BLUETOOTH_LE -> "Bluetooth LE audio"
+    AudioRouteCategory.HDMI -> "HDMI audio"
+    AudioRouteCategory.REMOTE_CAST -> "Remote/cast"
+    AudioRouteCategory.OTHER -> "Other audio route"
+    AudioRouteCategory.UNKNOWN -> "Unknown"
+}
+
+fun formatAudioOffloadStatus(state: AudioOffloadRuntimeState): String = when (state.status) {
+    AudioOffloadStatus.DISABLED -> "Disabled"
+    AudioOffloadStatus.REQUESTED_NOT_ACTIVE ->
+        "Automatic requested — not active for the current playback"
+    AudioOffloadStatus.ACTIVE -> "Active"
+    AudioOffloadStatus.ACTIVE_SLEEPING -> "Active — processor sleeping"
+}
+
+fun formatAudioCompatibility(state: AudioOutputUiState): String {
+    return buildList {
+        if (state.isGaplessSupportRequired) add("Gapless support required")
+        add("Playback-speed support not required")
+        add("ReplayGain uses player volume")
+    }.joinToString(" · ")
+}
+
+private fun friendlyCodecName(mimeType: String, codecs: String?): String = when (mimeType) {
+    "audio/flac" -> "FLAC"
+    "audio/mpeg" -> "MP3"
+    "audio/mp4a-latm" -> "AAC"
+    "audio/opus" -> "Opus"
+    "audio/vorbis" -> "Vorbis"
+    "audio/raw" -> "PCM"
+    "audio/ac3" -> "AC-3"
+    "audio/eac3" -> "E-AC-3"
+    else -> codecs?.takeIf { it.isNotBlank() } ?: mimeType
+}
+
+private fun formatSampleRate(sampleRateHz: Int): String {
+    val kilohertz = sampleRateHz / 1_000.0
+    return if (sampleRateHz % 1_000 == 0) {
+        "${sampleRateHz / 1_000} kHz"
+    } else {
+        String.format(Locale.ROOT, "%.1f kHz", kilohertz)
+    }
+}

@@ -41,6 +41,11 @@ import com.example.cdplaya.R
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.player.audio.AudioOutputUiState
+import com.example.cdplaya.player.audio.formatAudioCompatibility
+import com.example.cdplaya.player.audio.formatAudioOffloadStatus
+import com.example.cdplaya.player.audio.formatAudioRoute
+import com.example.cdplaya.player.audio.formatAudioSource
 import com.example.cdplaya.player.waveform.WaveformCache
 import com.example.cdplaya.player.waveform.WaveformCacheStats
 import com.example.cdplaya.player.waveform.WaveformRepository
@@ -69,7 +74,8 @@ internal data class DiagnosticsSnapshot(
     val waveformTotalBytes: Long,
     val unresolvedFavoriteCount: Int = 0,
     val unresolvedPlaylistRowCount: Int = 0,
-    val unresolvedListeningHistoryCount: Int = 0
+    val unresolvedListeningHistoryCount: Int = 0,
+    val audioOutputUiState: AudioOutputUiState = AudioOutputUiState()
 )
 
 internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = buildString {
@@ -85,12 +91,34 @@ internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = b
     appendLine("Player theme: ${snapshot.playerTheme}")
     appendLine("ReplayGain: ${snapshot.replayGainMode}")
     appendLine("Playback connected: ${snapshot.isPlaybackConnected}")
-    appendLine("Current song: ${snapshot.currentSongTitle ?: "None"}")
-    appendLine("Current artist: ${snapshot.currentSongArtist ?: "None"}")
+    appendLine("Current media: ${if (snapshot.currentSongTitle == null) "None" else "Present"}")
     appendLine("Playback state: ${if (snapshot.isPlaying) "Playing" else "Paused"}")
     appendLine("Position: ${snapshot.currentPositionMs} / ${snapshot.durationMs} ms")
     appendLine("Queue / upcoming: ${snapshot.queueCount} / ${snapshot.upcomingCount}")
     appendLine("Previous / forward: ${snapshot.previousCount} / ${snapshot.forwardCount}")
+    appendLine("Audio source: ${formatAudioSource(snapshot.audioOutputUiState.sourceFormat)}")
+    appendLine("Audio route: ${formatAudioRoute(snapshot.audioOutputUiState.routeInfo)}")
+    appendLine(
+        "Audio route scope: " +
+            if (snapshot.audioOutputUiState.routeInfo.isLocalPlayback) "Local" else "Remote"
+    )
+    appendLine(
+        "Offload preference: " +
+            snapshot.audioOutputUiState.offloadState.requestedPreference.displayName
+    )
+    appendLine(
+        "Offload actual: ${formatAudioOffloadStatus(snapshot.audioOutputUiState.offloadState)}"
+    )
+    appendLine(
+        "Sleeping for offload: " +
+            snapshot.audioOutputUiState.offloadState.isSleepingForOffload
+    )
+    appendLine("Audio compatibility: ${formatAudioCompatibility(snapshot.audioOutputUiState)}")
+    snapshot.audioOutputUiState.audioSessionId?.let { appendLine("Audio session: $it") }
+    appendLine(
+        "Audio note: Source information describes the current file/renderer input; " +
+            "Android or the connected device may mix, process, resample, or transmit it differently."
+    )
     appendLine("Waveform cache: ${snapshot.waveformFileCount} files, ${snapshot.waveformTotalBytes} bytes")
     appendLine("Waveform format: ${WaveformCache.CACHE_FORMAT_VERSION}")
     append("Waveform buckets: ${WaveformRepository.DEFAULT_ANALYZED_BAR_COUNT}")
@@ -102,6 +130,7 @@ internal fun DiagnosticsScreen(
     selectedFolderCount: Int,
     selectedPlayerTheme: PlayerTheme,
     selectedReplayGainMode: ReplayGainMode,
+    audioOutputUiState: AudioOutputUiState,
     isPlaybackConnected: Boolean,
     currentSong: Song?,
     isPlaying: Boolean,
@@ -151,7 +180,8 @@ internal fun DiagnosticsScreen(
         waveformTotalBytes = cacheStats.totalBytes,
         unresolvedFavoriteCount = unresolvedFavoriteCount,
         unresolvedPlaylistRowCount = unresolvedPlaylistRowCount,
-        unresolvedListeningHistoryCount = unresolvedListeningHistoryCount
+        unresolvedListeningHistoryCount = unresolvedListeningHistoryCount,
+        audioOutputUiState = audioOutputUiState
     )
 
     LaunchedEffect(repository, refreshRequest) {
@@ -185,6 +215,46 @@ internal fun DiagnosticsScreen(
         DiagnosticValue(stringResource(R.string.diagnostics_unresolved_history_rows), unresolvedListeningHistoryCount.toString())
         DiagnosticValue(stringResource(R.string.diagnostics_player_theme), selectedPlayerTheme.displayName)
         DiagnosticValue(stringResource(R.string.diagnostics_replay_gain), selectedReplayGainMode.displayName)
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        Text(
+            text = "Audio output",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+        DiagnosticValue("Source format", formatAudioSource(audioOutputUiState.sourceFormat))
+        DiagnosticValue("Route", formatAudioRoute(audioOutputUiState.routeInfo))
+        DiagnosticValue(
+            "Route scope",
+            if (audioOutputUiState.routeInfo.isLocalPlayback) "Local" else "Remote"
+        )
+        DiagnosticValue(
+            "Audio offload preference",
+            audioOutputUiState.offloadState.requestedPreference.displayName
+        )
+        DiagnosticValue(
+            "Audio offload",
+            formatAudioOffloadStatus(audioOutputUiState.offloadState)
+        )
+        DiagnosticValue("Compatibility", formatAudioCompatibility(audioOutputUiState))
+        audioOutputUiState.replayGainDb?.let { gain ->
+            DiagnosticValue("ReplayGain value", String.format(Locale.ROOT, "%.2f dB", gain))
+        }
+        audioOutputUiState.appliedVolumeMultiplier?.let { multiplier ->
+            DiagnosticValue(
+                "Applied player volume",
+                String.format(Locale.ROOT, "%.3fx", multiplier)
+            )
+        }
+        audioOutputUiState.audioSessionId?.let { sessionId ->
+            DiagnosticValue("Audio session", sessionId.toString())
+        }
+        Text(
+            text = "Source information describes the current audio file/renderer input. " +
+                "Android and the connected device may still mix, process, resample, or " +
+                "transmit audio through a different format.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
         DiagnosticValue(
             stringResource(R.string.diagnostics_connection),
             stringResource(if (isPlaybackConnected) R.string.diagnostics_connected else R.string.diagnostics_disconnected)

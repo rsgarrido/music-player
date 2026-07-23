@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewMode
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
@@ -62,6 +63,7 @@ class AppPreferencesMigrationTest {
         assertEquals(ModernArtworkTransitionStyle.PARALLAX, migrated.modernArtworkTransitionStyle)
         assertEquals(ModernSeekbarStyle.THICK_CAPSULE, migrated.modernSeekbarStyle)
         assertEquals(ReplayGainMode.TRACK, migrated.replayGainMode)
+        assertEquals(AudioOffloadPreference.DISABLED, migrated.audioOffloadPreference)
         assertEquals(setOf("Music", "Podcasts"), migrated.selectedLibraryFolders)
         assertEquals(LibraryViewMode.GRID, migrated.songsViewMode)
         assertEquals(4, migrated.songsGridColumnCount)
@@ -80,11 +82,19 @@ class AppPreferencesMigrationTest {
             repository.setModernSeekbarStyle(
                 if (index == 19) ModernSeekbarStyle.SEGMENTED else ModernSeekbarStyle.SLIM_LINE
             )
+            repository.setAudioOffloadPreference(
+                if (index == 19) {
+                    AudioOffloadPreference.AUTOMATIC
+                } else {
+                    AudioOffloadPreference.DISABLED
+                }
+            )
         }
         val updated = withTimeout(5_000) {
             repository.state.firstMatching {
                 it.selectedPlayerTheme == PlayerTheme.POCKET_FLIP &&
-                    it.modernSeekbarStyle == ModernSeekbarStyle.SEGMENTED
+                    it.modernSeekbarStyle == ModernSeekbarStyle.SEGMENTED &&
+                    it.audioOffloadPreference == AudioOffloadPreference.AUTOMATIC
             }
         }
         assertEquals(2, updated.songsGridColumnCount)
