@@ -12,6 +12,8 @@ import com.example.cdplaya.data.toSongReference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.player.replaygain.ReplayGainRepository
 import com.example.cdplaya.player.replaygain.replayGainVolumeMultiplier
+import com.example.cdplaya.player.audio.AdvancedAudioRuntimeBridge
+import com.example.cdplaya.player.audio.AudioOutputUiState
 import com.example.cdplaya.performance.PerformanceTraceNames
 import com.example.cdplaya.performance.tracePerformance
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
@@ -30,6 +32,19 @@ class PlaybackController(
 ) {
     init {
         PlaybackLibraryBridge.register(this)
+        coroutineScope.launch {
+            AdvancedAudioRuntimeBridge.state.collect { runtime ->
+                _audioOutputState.update { current ->
+                    current.copy(
+                        sourceFormat = runtime.sourceFormat,
+                        routeInfo = runtime.routeInfo,
+                        offloadState = runtime.offloadState,
+                        audioSessionId = runtime.audioSessionId,
+                        isPlayerConnected = runtime.isPlayerConnected
+                    )
+                }
+            }
+        }
     }
     private val musicPlayer = MusicPlayer(context)
     private val playerStateStorage = PlayerStateStorage(context)
@@ -53,6 +68,9 @@ class PlaybackController(
 
     private val _progressState = MutableStateFlow(PlaybackProgressUiState.Empty)
     val progressState: StateFlow<PlaybackProgressUiState> = _progressState.asStateFlow()
+
+    private val _audioOutputState = MutableStateFlow(AudioOutputUiState())
+    val audioOutputState: StateFlow<AudioOutputUiState> = _audioOutputState.asStateFlow()
 
     private val playbackQueue: MutableList<Song>
         get() = playbackQueueManager.playbackQueue
@@ -168,6 +186,7 @@ class PlaybackController(
 
     fun setReplayGainMode(mode: ReplayGainMode) {
         replayGainMode = mode
+        _audioOutputState.update { state -> state.copy(replayGainMode = mode) }
         applyReplayGainForCurrentSong()
     }
 

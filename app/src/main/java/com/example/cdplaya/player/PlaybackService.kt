@@ -17,9 +17,24 @@ import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import com.example.cdplaya.MainActivity
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.preferences.AppPreferencesRepository
+import com.example.cdplaya.performance.PerformanceTraceNames
+import com.example.cdplaya.performance.tracePerformance
+import com.example.cdplaya.player.audio.AdvancedAudioRuntimeBridge
+import com.example.cdplaya.player.audio.AudioOffloadPreference
+import com.example.cdplaya.player.audio.toMedia3AudioOffloadPreferences
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 @OptIn(UnstableApi::class)
 class PlaybackService : MediaLibraryService() {
@@ -27,6 +42,8 @@ class PlaybackService : MediaLibraryService() {
     private var mediaSession: MediaLibrarySession? = null
     private lateinit var player: ExoPlayer
     private lateinit var playerStateStorage: PlayerStateStorage
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private lateinit var appPreferencesRepository: AppPreferencesRepository
     private val checkpointHandler = Handler(Looper.getMainLooper())
     private val checkpointRunnable = object : Runnable {
         override fun run() {
@@ -68,6 +85,20 @@ class PlaybackService : MediaLibraryService() {
 
         override fun onRepeatModeChanged(repeatMode: Int) {
             saveServicePlaybackState()
+        }
+    }
+
+    private val audioOffloadListener = object : ExoPlayer.AudioOffloadListener {
+        override fun onOffloadedPlayback(isOffloadedPlayback: Boolean) {
+            tracePerformance(PerformanceTraceNames.AUDIO_OFFLOAD_STATE_CHANGED) {
+                AdvancedAudioRuntimeBridge.updateOffloadPlayback(isOffloadedPlayback)
+            }
+        }
+
+        override fun onSleepingForOffloadChanged(isSleepingForOffload: Boolean) {
+            tracePerformance(PerformanceTraceNames.AUDIO_OFFLOAD_SLEEPING_CHANGED) {
+                AdvancedAudioRuntimeBridge.updateSleepingForOffload(isSleepingForOffload)
+            }
         }
     }
 
@@ -166,8 +197,13 @@ class PlaybackService : MediaLibraryService() {
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
             .build()
+        appPreferencesRepository = AppPreferencesRepository.getInstance(this)
         playerStateStorage = PlayerStateStorage(this)
         player.addListener(persistenceListener)
+        player.addAudioOffloadListener(audioOffloadListener)
+        applyAudioOffloadPreference(AudioOffloadPreference.DISABLED)
+        AdvancedAudioRuntimeBridge.onPlayerConnected(AudioOffloadPreference.DISABLED)
+        observeAudioOffloadPreference()
 
         val sessionActivity = PendingIntent.getActivity(
             this,
@@ -191,10 +227,36 @@ class PlaybackService : MediaLibraryService() {
         checkpointHandler.removeCallbacks(checkpointRunnable)
         saveServicePlaybackState()
         player.removeListener(persistenceListener)
+        player.removeAudioOffloadListener(audioOffloadListener)
+        serviceScope.cancel()
         mediaSession?.release()
         mediaSession = null
         player.release()
+        AdvancedAudioRuntimeBridge.disconnect()
         super.onDestroy()
+    }
+
+    private fun observeAudioOffloadPreference() {
+        serviceScope.launch {
+            appPreferencesRepository.state
+                .filter { preferences -> preferences.isLoaded }
+                .map { preferences -> preferences.audioOffloadPreference }
+                .distinctUntilChanged()
+                .collectLatest(::applyAudioOffloadPreference)
+        }
+    }
+
+    private fun applyAudioOffloadPreference(preference: AudioOffloadPreference) {
+        tracePerformance(PerformanceTraceNames.AUDIO_OFFLOAD_PREFERENCE_APPLIED) {
+            val updatedParameters = player.trackSelectionParameters
+                .buildUpon()
+                .setAudioOffloadPreferences(preference.toMedia3AudioOffloadPreferences())
+                .build()
+            if (player.trackSelectionParameters != updatedParameters) {
+                player.trackSelectionParameters = updatedParameters
+            }
+            AdvancedAudioRuntimeBridge.updateOffloadPreference(preference)
+        }
     }
 
     private fun saveServicePlaybackState() {

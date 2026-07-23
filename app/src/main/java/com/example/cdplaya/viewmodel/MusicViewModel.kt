@@ -217,6 +217,7 @@ class MusicViewModel(
     val libraryUiState = libraryController.uiState
     val playbackUiState = playbackController.uiState
     val playbackProgressUiState = playbackController.progressState
+    val audioOutputUiState = playbackController.audioOutputState
     val sleepTimerUiState = sleepTimerController.uiState
 
     private val backupRepository = libraryController.createBackupRepository()
