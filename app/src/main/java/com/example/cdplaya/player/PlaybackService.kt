@@ -33,7 +33,7 @@ import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.audio.AudioRouteCategory
 import com.example.cdplaya.player.audio.mapAudioRoute
 import com.example.cdplaya.player.audio.mapAudioSourceFormat
-import com.example.cdplaya.player.audio.toMedia3AudioOffloadPreferences
+import com.example.cdplaya.player.audio.withAudioOffloadPreference
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -311,9 +311,7 @@ class PlaybackService : MediaLibraryService() {
     private fun applyAudioOffloadPreference(preference: AudioOffloadPreference) {
         tracePerformance(PerformanceTraceNames.AUDIO_OFFLOAD_PREFERENCE_APPLIED) {
             val updatedParameters = player.trackSelectionParameters
-                .buildUpon()
-                .setAudioOffloadPreferences(preference.toMedia3AudioOffloadPreferences())
-                .build()
+                .withAudioOffloadPreference(preference)
             if (player.trackSelectionParameters != updatedParameters) {
                 player.trackSelectionParameters = updatedParameters
             }

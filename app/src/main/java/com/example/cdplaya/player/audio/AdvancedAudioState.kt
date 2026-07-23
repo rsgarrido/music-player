@@ -44,10 +44,10 @@ data class AudioOffloadRuntimeState(
 ) {
     val status: AudioOffloadStatus
         get() = when {
-            requestedPreference == AudioOffloadPreference.DISABLED ->
-                AudioOffloadStatus.DISABLED
             isSleepingForOffload -> AudioOffloadStatus.ACTIVE_SLEEPING
             isOffloadedPlayback -> AudioOffloadStatus.ACTIVE
+            requestedPreference == AudioOffloadPreference.DISABLED ->
+                AudioOffloadStatus.DISABLED
             else -> AudioOffloadStatus.REQUESTED_NOT_ACTIVE
         }
 

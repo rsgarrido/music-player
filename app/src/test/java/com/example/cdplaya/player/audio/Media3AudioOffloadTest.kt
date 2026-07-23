@@ -32,4 +32,21 @@ class Media3AudioOffloadTest {
                 TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_REQUIRED
         )
     }
+
+    @Test
+    fun livePreferenceChangePreservesUnrelatedTrackSelectionParameters() {
+        val before = TrackSelectionParameters.Builder()
+            .setMaxAudioBitrate(320_000)
+            .setMaxAudioChannelCount(2)
+            .build()
+
+        val after = before.withAudioOffloadPreference(AudioOffloadPreference.AUTOMATIC)
+
+        assertEquals(before.maxAudioBitrate, after.maxAudioBitrate)
+        assertEquals(before.maxAudioChannelCount, after.maxAudioChannelCount)
+        assertEquals(
+            TrackSelectionParameters.AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED,
+            after.audioOffloadPreferences.audioOffloadMode
+        )
+    }
 }

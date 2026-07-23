@@ -19,3 +19,10 @@ internal fun AudioOffloadPreference.toMedia3AudioOffloadPreferences():
         .setIsSpeedChangeSupportRequired(false)
         .build()
 }
+
+@OptIn(UnstableApi::class)
+internal fun TrackSelectionParameters.withAudioOffloadPreference(
+    preference: AudioOffloadPreference
+): TrackSelectionParameters = buildUpon()
+    .setAudioOffloadPreferences(preference.toMedia3AudioOffloadPreferences())
+    .build()
