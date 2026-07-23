@@ -1,8 +1,11 @@
 package com.example.cdplaya.player.audio
 
+import androidx.annotation.OptIn
 import androidx.media3.common.Format
 import androidx.media3.common.MimeTypes
+import androidx.media3.common.util.UnstableApi
 
+@OptIn(UnstableApi::class)
 internal fun mapAudioSourceFormat(format: Format): AudioSourceFormat? {
     val mimeType = sanitizeKnownText(format.sampleMimeType)
     val mapped = AudioSourceFormat(

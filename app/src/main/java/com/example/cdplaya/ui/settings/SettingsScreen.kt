@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
@@ -114,7 +114,7 @@ fun SettingsScreen(
         ) {
             IconButton(onClick = onBackClick) {
                 Icon(
-                    imageVector = Icons.Filled.ArrowBack,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back"
                 )
             }
@@ -136,7 +136,7 @@ fun SettingsScreen(
             },
             trailingContent = {
                 Icon(
-                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Open library folders"
                 )
             },
@@ -169,7 +169,7 @@ fun SettingsScreen(
             },
             trailingContent = {
                 Icon(
-                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Export backup"
                 )
             },
@@ -187,7 +187,7 @@ fun SettingsScreen(
             },
             trailingContent = {
                 Icon(
-                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Restore backup"
                 )
             },
@@ -209,7 +209,7 @@ fun SettingsScreen(
             },
             trailingContent = {
                 Icon(
-                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = stringResource(R.string.settings_open_diagnostics)
                 )
             },
@@ -240,7 +240,7 @@ fun SettingsScreen(
             },
             trailingContent = {
                 Icon(
-                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Open ReplayGain settings"
                 )
             },
@@ -263,7 +263,7 @@ fun SettingsScreen(
             },
             trailingContent = {
                 Icon(
-                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Open audio offload settings"
                 )
             },
@@ -319,7 +319,7 @@ fun SettingsScreen(
                 },
                 trailingContent = {
                     Icon(
-                        imageVector = Icons.Filled.KeyboardArrowRight,
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Choose artwork transition style"
                     )
                 },
@@ -337,7 +337,7 @@ fun SettingsScreen(
                 },
                 trailingContent = {
                     Icon(
-                        imageVector = Icons.Filled.KeyboardArrowRight,
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Choose modern player seekbar style"
                     )
                 },
@@ -357,7 +357,7 @@ fun SettingsScreen(
                 },
                 trailingContent = {
                     Icon(
-                        imageVector = Icons.Filled.KeyboardArrowRight,
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Customize theme colors"
                     )
                 },

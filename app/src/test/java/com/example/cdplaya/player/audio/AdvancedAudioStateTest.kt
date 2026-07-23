@@ -1,5 +1,6 @@
 package com.example.cdplaya.player.audio
 
+import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -76,5 +77,22 @@ class AdvancedAudioStateTest {
 
         assertEquals(first, second)
         assertTrue(first === first)
+    }
+
+    @Test
+    fun publicAudioStateContainsNoAndroidOrMedia3Objects() {
+        val stateClasses = listOf(
+            AudioOffloadRuntimeState::class.java,
+            AudioSourceFormat::class.java,
+            AudioRouteInfo::class.java,
+            AudioOutputUiState::class.java
+        )
+
+        stateClasses.flatMap { type ->
+            type.declaredFields.filterNot { field -> Modifier.isStatic(field.modifiers) }
+        }.forEach { field ->
+            assertFalse(field.type.name.startsWith("android."))
+            assertFalse(field.type.name.startsWith("androidx.media3."))
+        }
     }
 }

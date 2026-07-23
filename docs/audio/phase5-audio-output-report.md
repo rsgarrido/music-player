@@ -188,8 +188,16 @@ new compatibility review.
 
 ## 20. Limitations
 
-The debug build and focused automated tests completed, and the APK installed on the physical
-device. Interactive playback validation was not completed because the device was locked and
-dozing. Therefore this report makes no device-specific claim about codec compatibility, actual
-offload activation, sleeping-for-offload, gapless transitions, ReplayGain during offload,
-background stability, Android Auto, battery use, or thermal behavior.
+Automated checkpoint validation completed with:
+
+- all debug unit tests passing;
+- debug APK and debug Android-test APK assembly passing;
+- lint passing;
+- app benchmark APK and benchmark test APK assembly passing;
+- all 12 connected Android tests passing on the SM-S908U1; and
+- the debug APK installing over the existing app without clearing app data.
+
+Interactive playback validation was not completed because the device was locked and dozing.
+Therefore this report makes no device-specific claim about codec compatibility, actual offload
+activation, sleeping-for-offload, gapless transitions, ReplayGain during offload, background
+stability, Android Auto, battery use, or thermal behavior.
