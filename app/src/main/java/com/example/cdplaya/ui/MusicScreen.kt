@@ -33,6 +33,7 @@ import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.TagEditorResult
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.audio.AudioOffloadPreference
+import com.example.cdplaya.player.audio.AudioOutputUiState
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
@@ -145,6 +146,7 @@ fun MusicScreen(
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     selectedAudioOffloadPreference: AudioOffloadPreference,
     onAudioOffloadPreferenceSelected: (AudioOffloadPreference) -> Unit,
+    audioOutputUiState: AudioOutputUiState,
     libraryAppearanceUiState: LibraryAppearanceUiState,
     onLibraryViewOptionSelected: (LibraryViewCategory, LibraryViewOption) -> Unit,
     mostPlayedSongs: List<Song>
@@ -630,6 +632,7 @@ fun MusicScreen(
                 onReplayGainModeSelected = onReplayGainModeSelected,
                 selectedAudioOffloadPreference = selectedAudioOffloadPreference,
                 onAudioOffloadPreferenceSelected = onAudioOffloadPreferenceSelected,
+                audioOutputUiState = audioOutputUiState,
                 libraryAppearanceUiState = libraryAppearanceUiState,
                 onLibraryViewOptionSelected = onLibraryViewOptionSelected,
                 bottomContentPadding = bottomContentPadding,

@@ -12,6 +12,7 @@ import com.example.cdplaya.data.toSongReference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.player.replaygain.ReplayGainRepository
 import com.example.cdplaya.player.replaygain.replayGainVolumeMultiplier
+import com.example.cdplaya.player.replaygain.selectReplayGainDb
 import com.example.cdplaya.player.audio.AdvancedAudioRuntimeBridge
 import com.example.cdplaya.player.audio.AudioOutputUiState
 import com.example.cdplaya.performance.PerformanceTraceNames
@@ -842,17 +843,28 @@ class PlaybackController(
 
         if (song == null || requestedMode == ReplayGainMode.OFF) {
             musicPlayer.setVolume(1f)
+            _audioOutputState.update { state ->
+                state.copy(replayGainDb = null, appliedVolumeMultiplier = 1f)
+            }
             return
         }
 
         val requestedIsAlbumPlaybackContext = isAlbumPlaybackContextForSong(song)
 
         musicPlayer.setVolume(1f)
+        _audioOutputState.update { state ->
+            state.copy(replayGainDb = null, appliedVolumeMultiplier = 1f)
+        }
 
         coroutineScope.launch {
             val replayGainInfo = replayGainRepository.getReplayGainInfo(song)
 
             val volumeMultiplier = replayGainVolumeMultiplier(
+                replayGainInfo = replayGainInfo,
+                replayGainMode = requestedMode,
+                isAlbumPlaybackContext = requestedIsAlbumPlaybackContext
+            )
+            val gainDb = selectReplayGainDb(
                 replayGainInfo = replayGainInfo,
                 replayGainMode = requestedMode,
                 isAlbumPlaybackContext = requestedIsAlbumPlaybackContext
@@ -871,6 +883,12 @@ class PlaybackController(
                 isStillSamePlaybackContext
             ) {
                 musicPlayer.setVolume(volumeMultiplier)
+                _audioOutputState.update { state ->
+                    state.copy(
+                        replayGainDb = gainDb,
+                        appliedVolumeMultiplier = volumeMultiplier
+                    )
+                }
             }
         }
     }

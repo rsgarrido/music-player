@@ -33,6 +33,7 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.audio.AudioOffloadPreference
+import com.example.cdplaya.player.audio.AudioOutputUiState
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.home.HomeScreen
 import com.example.cdplaya.ui.library.FolderSelectionScreen
@@ -170,6 +171,7 @@ fun MusicScreenBody(
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     selectedAudioOffloadPreference: AudioOffloadPreference,
     onAudioOffloadPreferenceSelected: (AudioOffloadPreference) -> Unit,
+    audioOutputUiState: AudioOutputUiState,
     libraryAppearanceUiState: LibraryAppearanceUiState,
     onLibraryViewOptionSelected: (LibraryViewCategory, LibraryViewOption) -> Unit,
     bottomContentPadding: Dp = 24.dp,
@@ -202,6 +204,7 @@ fun MusicScreenBody(
                 selectedFolderCount = selectedLibraryFolders.size,
                 selectedPlayerTheme = selectedPlayerTheme,
                 selectedReplayGainMode = selectedReplayGainMode,
+                audioOutputUiState = audioOutputUiState,
                 isPlaybackConnected = isPlayerConnected,
                 currentSong = currentSong,
                 isPlaying = isPlaying,
