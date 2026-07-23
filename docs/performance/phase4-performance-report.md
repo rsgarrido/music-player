@@ -3,15 +3,15 @@
 ## Measurement environment
 
 1. **Project branch:** `performance-baseline-checkpoint-v1`
-2. **Project commit:** Use `git rev-parse HEAD` immediately before each hardware run and record it here. No hardware run was available while this report was authored.
-3. **Device model:** Not measured — no compatible connected device was available.
-4. **Android version:** Not measured — no compatible connected device was available.
+2. **Measured project state:** app source at `18cee21` (`Complete performance checkpoint`) plus the benchmark-harness fixes and generated profiles included by the device-validation closeout commit.
+3. **Device model:** Samsung `SM-S908U1`, 12 GB RAM, eight CPU cores.
+4. **Android version:** Android 16, API 36.
 5. **Build variant:** `benchmark` app build: non-debuggable, shell-profileable, debug-signed locally, release minification/resource-shrinking settings inherited (both currently disabled).
 6. **App version:** `1.0` (`versionCode` 1).
-7. **Library size:** Not measured — no compatible connected device was available.
-8. **Screen refresh rate:** Not measured — no compatible connected device was available.
-9. **Battery/charging state:** Not measured — no compatible connected device was available.
-10. **Brightness/audio output:** Not measured — no compatible connected device was available.
+7. **Library size:** 370 songs, 32 albums, and 24 artists visible to the benchmark build.
+8. **Screen refresh rate:** Not recorded during the completed runs.
+9. **Battery/charging state:** The session began at 69% and approximately 37.3 °C while powered; the long session later reached 100%. USB/charging state was not controlled, so results are local engineering measurements rather than laboratory comparisons.
+10. **Brightness/audio output:** Not recorded. The device and local library were kept consistent within each completed suite.
 
 ## Tool versions and run configuration
 
@@ -25,7 +25,7 @@
 - Default full iterations: 10 (`cdplaya.fullIterations` overrides)
 - Default smoke iterations: 2 (`cdplaya.smokeIterations` overrides)
 
-The stable Baseline Profile plugin 1.4.1 reports that its declared compatibility testing predates AGP 9.0. The module and generated tasks compile under AGP 9.2.1, but connected profile collection remains a required device validation.
+The stable Baseline Profile plugin 1.4.1 reports that its declared compatibility testing predates AGP 9.0. Despite that warning, the module compiled under AGP 9.2.1, connected profile collection completed, both generated files were non-empty, and the release-like APK contained the compiled profile assets.
 
 ## Pre-optimization inspection
 
@@ -51,45 +51,46 @@ These changes are supported by source inspection and deterministic cadence/lifec
 
 ### StartupTimingMetric
 
-| Scenario | Result |
-|---|---|
-| Cold startup | Not measured — no compatible connected device was available. |
-| Warm startup | Not measured — no compatible connected device was available. |
-| Hot startup | Not measured — no compatible connected device was available. |
+The complete startup class passed all three cases with 10 iterations each in one device session.
+
+| Scenario | Minimum | Median | Maximum |
+|---|---:|---:|---:|
+| Cold existing-install startup | 346.0 ms | 389.0 ms | 491.8 ms |
+| Warm existing-install startup | 137.4 ms | 164.5 ms | 394.2 ms |
+| Hot existing-install startup | 76.5 ms | 102.6 ms | 122.8 ms |
+
+The separate two-iteration smoke suite also passed. Its cold-start minimum/median/maximum was 428.9/431.4/433.9 ms. The Home-scroll smoke case reported frame CPU P50/P95 of 7.57/11.42 ms and frame-overrun P50/P95 of 7.30/11.19 ms (68 and 81 frames in the two samples).
 
 ### FrameTimingMetric critical journeys
 
-| Journey | Result |
+| Journey set | Completed validation |
 |---|---|
-| Home launch/vertical scroll | Not measured — no compatible connected device was available. |
-| Songs list/grid scroll | Not measured — no compatible connected device was available. |
-| Albums and artists scroll/detail | Not measured — no compatible connected device was available. |
-| Search/query/results scroll | Not measured — no compatible connected device was available. |
-| Modern expand/collapse and track swipe | Not measured — no compatible connected device was available. |
-| Queue open/manipulation | Not measured — no compatible connected device was available. |
-| Theme switching | Not measured — no compatible connected device was available. |
-| Pocket Flip sustained | Not measured — no compatible connected device was available. |
-| Pocket Cassette sustained | Not measured — no compatible connected device was available. |
-| Classic Wheel control | Not measured — no compatible connected device was available. |
-| Return to app shell during playback | Not measured — no compatible connected device was available. |
+| Home, Songs list/grid, Albums, Artists, Search, album detail, artist detail | All paths passed device validation. The full measurement invocation completed 10 iterations for these paths. |
+| Modern expand/collapse and track swipe, queue, theme switch, Pocket Flip, Classic Wheel, return to shell | All paths passed device validation. The full measurement invocation completed 10 iterations for these paths. |
+| Pocket Cassette sustained | The full-class invocation exposed a paused-playback setup condition and therefore produced no RenderThread slices. After playback became an explicit precondition, the targeted 10-iteration retry passed. |
+
+The diagnostic class run initially passed 14 of 16 journeys at one iteration. Album detail and Classic Wheel then passed targeted one-iteration retries after selector and static-control fixes. A later full measurement invocation ran for approximately 43 minutes: 15 journey methods completed their 10 iterations, while Pocket Cassette exposed the setup issue described above and subsequently passed its targeted 10-iteration retry. Another attempted full-class rerun was manually cancelled around its midpoint to release the phone; it is excluded from completed results.
+
+Exact percentile values for the full journey cases are not reported because later connected invocations replaced the raw Gradle output directory before a stable summary was retained. The successful test status is recorded, but missing frame metrics are not reconstructed or invented.
 
 ### Visualizer before/after, memory, CPU, and thermal
 
-- Pocket Flip before/after: Not measured — no compatible connected device was available.
-- Pocket Cassette before/after: Not measured — no compatible connected device was available.
-- Classic Wheel control: Not measured — no compatible connected device was available.
-- Memory observations: Not measured — no compatible connected device was available.
-- CPU/Perfetto observations: Not measured — no compatible connected device was available.
-- Thermal observations: Not measured — no compatible connected device was available.
+- Pocket Flip before/after: Not measured comparably. The pre-optimization state was not captured on this device, so no hardware improvement is claimed.
+- Pocket Cassette before/after: Not measured comparably. The completed post-change journey validation does not provide a before/after result.
+- Classic Wheel control: The corrected control journey passed, but its raw percentile summary was not retained.
+- Memory observations: No stable memory metric was collected.
+- CPU/Perfetto observations: Macrobenchmark generated traces for completed iterations, but no retained, comparable CPU summary was analyzed. Source inspection and deterministic tests—not a CPU measurement—support the 30 Hz cadence conclusion.
+- Thermal observations: No controlled, comparable ten-minute thermal run completed. The original heating concern remains a real-device follow-up; no thermal improvement is claimed.
 
 ### Baseline Profile comparison
 
-- No-compilation result: Not measured — no compatible connected device was available.
-- Baseline Profile result: Not measured — no compatible connected device was available.
-- Generated `baseline-prof.txt`: Not generated — no compatible connected device was available; no rules were fabricated.
-- Generated `startup-prof.txt`: Not generated — no compatible connected device was available; no rules were fabricated.
+- No-compilation cold startup (10 iterations): minimum 425.6 ms, median 468.1 ms, maximum 507.5 ms.
+- Baseline Profile cold startup (10 iterations, `BaselineProfileMode.Require`): minimum 409.0 ms, median 482.7 ms, maximum 719.4 ms.
+- The Baseline Profile median was 14.6 ms (3.1%) slower in this run. This does **not** demonstrate a startup improvement; background work, ordering, and device variance remain possible contributors.
+- Generated `baseline-prof.txt`: 33,942 generated profile rules (3,745,170 bytes).
+- Generated `startup-prof.txt`: 26,810 generated profile rules (2,792,178 bytes).
 
-On a connected API 33+ physical device, the plugin copies generated files to `app/src/release/generated/baselineProfiles/`. APK packaging can then be verified by inspecting `assets/dexopt/baseline.prof` and `assets/dexopt/baseline.profm` in the release-like APK.
+Both generated files are tracked under `app/src/release/generated/baselineProfiles/`. Every non-empty line matched generated profile-rule syntax, and no build log or error payload was present. The release-like APK was inspected and contained `assets/dexopt/baseline.prof` and `assets/dexopt/baseline.profm`; the required-mode comparison also confirmed that a Baseline Profile was available for compilation.
 
 ## Reproduction commands
 
@@ -99,20 +100,20 @@ On a connected API 33+ physical device, the plugin copies generated files to `ap
 
 # Reduced smoke suite
 .\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest `
-  -Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.MacrobenchmarkSmokeSuite
+  "-Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.MacrobenchmarkSmokeSuite"
 
 # Full startup and frame suites
 .\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest `
-  -Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.StartupBenchmarks
+  "-Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.StartupBenchmarks"
 .\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest `
-  -Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.JourneyBenchmarks
+  "-Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.JourneyBenchmarks"
 
 # Generate Baseline and focused Startup Profiles
 .\gradlew.bat :app:generateReleaseBaselineProfile
 
 # Same-device compilation comparison
 .\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest `
-  -Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.BaselineProfileComparisonBenchmarks
+  "-Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.BaselineProfileComparisonBenchmarks"
 ```
 
 Benchmark JSON and traces are written below `benchmark/build/outputs/`; connected reports are below `benchmark/build/reports/androidTests/connected/`. Do not commit these artifacts.
@@ -132,20 +133,24 @@ Use the same physical device, benchmark build, track, playback state, brightness
 
 ## Automated validation
 
-The final host-side validation completed successfully on July 22, 2026:
+The final closeout validation completed successfully on July 22, 2026:
 
 ```powershell
 .\gradlew.bat testDebugUnitTest assembleDebug assembleDebugAndroidTest lintDebug `
   :app:assembleBenchmark :benchmark:assembleBenchmarkBenchmark --stacktrace
+.\gradlew.bat connectedDebugAndroidTest --stacktrace
 ```
 
-Gradle reported `BUILD SUCCESSFUL` with 164 actionable tasks (75 executed and 89 up-to-date). This validates unit tests, Kotlin compilation, debug app and instrumentation APK assembly, debug lint, the non-debuggable benchmark app APK, and the benchmark test APK. The merged benchmark manifest contains `<profileable android:shell="true" />` and no `android:debuggable="true"` application override. `git diff --check` passed, and no build directory, APK, app bundle, Perfetto trace, or trace file is tracked by Git.
+The combined host/build command reported `BUILD SUCCESSFUL` with 164 actionable tasks (13 executed and 151 up-to-date). `connectedDebugAndroidTest` then passed 12 tests on the `SM-S908U1` and reported `BUILD SUCCESSFUL` with 69 actionable tasks. The AndroidX Test Services setup printed a harmless `No UID for androidx.test.services` app-ops message before the successful connected run.
 
-An ADB device check returned an empty device list. Consequently, `connectedDebugAndroidTest`, connected Macrobenchmark suites, Baseline/Startup Profile generation, and profile-content inspection were intentionally not run; they are device-only checks, not host validation failures.
+The merged benchmark manifest contains `<profileable android:shell="true" />` and no debuggable application attribute. APK signature verification reported the local `Android Debug` certificate, while the production release configuration remained untouched. APK inspection reconfirmed both compiled dexopt profile assets. `git diff --check` passed. No build directory, APK, app bundle, Perfetto trace, benchmark JSON, or connected-test build report is tracked by Git.
 
 ## Limitations and remaining concerns
 
-- No compatible device was connected, so Macrobenchmark execution, profile generation, APK profile-content inspection, memory metrics, Perfetto evidence, visual cadence validation, and thermal comparisons remain pending.
-- The 30 Hz cadence preserves the intended retro motion mathematically, but real-device visual review at 60 Hz and adaptive/120 Hz is still required.
+- Exact full-journey percentile summaries were not retained before subsequent connected invocations replaced the raw output directory. Successful test completion is documented, but those values are intentionally omitted.
+- The later repeated full-journey invocation was cancelled and is not represented as a completed measurement.
+- No controlled before/after CPU, memory, power, or thermal comparison completed; no improvement in those dimensions is claimed.
+- The 30 Hz cadence preserves the intended retro motion mathematically and is covered by deterministic tests, but visual review at both fixed 60 Hz and adaptive/120 Hz is still desirable.
+- Charging, brightness, audio route, and refresh-rate state were not controlled or fully recorded during the long device session.
 - Baseline Profile plugin 1.4.1’s AGP 9.2.1 warning should be rechecked when a newer stable plugin declares AGP 9 support.
-- No additional startup/list/Compose optimization commit was created because no trace or benchmark evidence justified one.
+- The same-device Baseline Profile comparison did not show a median startup improvement, so it should be repeated under a tighter device protocol before drawing a performance conclusion.

@@ -32,18 +32,23 @@ Task discovery with AGP 9.2.1 and Baseline Profile plugin 1.4.1 produced these c
 .\gradlew.bat :app:generateReleaseBaselineProfile
 ```
 
-Run only the smoke suite or profile comparison with instrumentation class filtering:
+Run an individual suite with quoted instrumentation class filtering (PowerShell requires the
+quotes around dotted `-P` property names):
 
 ```powershell
 .\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest `
-  -Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.MacrobenchmarkSmokeSuite
+  "-Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.MacrobenchmarkSmokeSuite"
 .\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest `
-  -Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.BaselineProfileComparisonBenchmarks
+  "-Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.BaselineProfileComparisonBenchmarks"
+.\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest `
+  "-Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.StartupBenchmarks"
+.\gradlew.bat :benchmark:connectedBenchmarkBenchmarkAndroidTest `
+  "-Pandroid.testInstrumentationRunnerArguments.class=com.example.cdplaya.benchmark.JourneyBenchmarks"
+.\gradlew.bat :app:generateReleaseBaselineProfile
 ```
 
-Use
-instrumentation arguments `cdplaya.smokeIterations` and `cdplaya.fullIterations` to override the
-default 2-iteration smoke and 10-iteration full suites.
+Use instrumentation arguments `cdplaya.smokeIterations` and `cdplaya.fullIterations` to override
+the default 2-iteration smoke and 10-iteration full suites.
 
 Gradle writes benchmark JSON and Perfetto traces below `benchmark/build/outputs/` and connected
 test results below `benchmark/build/reports/androidTests/connected/`. Generated profile sources

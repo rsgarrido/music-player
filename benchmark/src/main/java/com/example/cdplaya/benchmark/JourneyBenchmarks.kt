@@ -22,10 +22,10 @@ class JourneyBenchmarks {
     )
 
     @Test
-    fun librarySongsListScroll() = measureLibrarySection("Songs")
+    fun librarySongsListScroll() = measureLibrarySection("Songs", "List")
 
     @Test
-    fun librarySongsGridScroll() = measureLibrarySection("Songs")
+    fun librarySongsGridScroll() = measureLibrarySection("Songs", "Grid: 3 columns")
 
     @Test
     fun albumsScroll() = measureLibrarySection("Albums")
@@ -43,10 +43,10 @@ class JourneyBenchmarks {
     )
 
     @Test
-    fun albumTracksScroll() = measureLibrarySection("Albums")
+    fun albumTracksScroll() = measureLibraryDetail("Albums")
 
     @Test
-    fun artistAlbumsAndTracksScroll() = measureLibrarySection("Artists")
+    fun artistAlbumsAndTracksScroll() = measureLibraryDetail("Artists")
 
     @Test
     fun modernPlayerExpandAndCollapse() = measureExpandedPlayer(
@@ -60,7 +60,7 @@ class JourneyBenchmarks {
 
     @Test
     fun expandedQueueOpenAndManipulate() = measureExpandedPlayer(
-        theme = "CDPlaya Default"
+        theme = "Pocket Flip"
     ) {
         openQueue()
         scrollForward(2)
@@ -84,7 +84,7 @@ class JourneyBenchmarks {
 
     @Test
     fun classicWheelExpandedControl() = measureExpandedPlayer("Classic Wheel") {
-        keepAnimatedPlayerVisible()
+        exerciseStaticPlayerControl()
     }
 
     @Test
@@ -93,10 +93,24 @@ class JourneyBenchmarks {
         scrollForward(2)
     }
 
-    private fun measureLibrarySection(section: String) = measureJourney(
+    private fun measureLibrarySection(
+        section: String,
+        viewOption: String? = null
+    ) = measureJourney(
         setup = {
             selectLibrary()
             selectLibrarySection(section)
+            viewOption?.let(::selectLibraryView)
+        },
+        measure = { scrollForward() }
+    )
+
+    private fun measureLibraryDetail(section: String) = measureJourney(
+        setup = {
+            selectLibrary()
+            selectLibrarySection(section)
+            selectLibraryView("Grid: 3 columns")
+            openFirstLibraryItem()
         },
         measure = { scrollForward() }
     )
@@ -107,7 +121,9 @@ class JourneyBenchmarks {
     ) = measureJourney(
         setup = {
             selectExpandedPlayerTheme(theme)
+            startPlaybackFromFirstSong()
             expandPlayer()
+            ensurePlaybackRunning()
         },
         measure = measure
     )

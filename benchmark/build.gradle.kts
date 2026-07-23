@@ -20,7 +20,6 @@ android {
     buildTypes {
         create("benchmark") {
             isDebuggable = true
-            matchingFallbacks += listOf("release")
         }
     }
 
