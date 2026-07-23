@@ -20,6 +20,8 @@ import com.example.cdplaya.performance.tracePerformance
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.PlaybackUiState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,22 +33,6 @@ class PlaybackController(
     context: Context,
     private val coroutineScope: CoroutineScope
 ) {
-    init {
-        PlaybackLibraryBridge.register(this)
-        coroutineScope.launch {
-            AdvancedAudioRuntimeBridge.state.collect { runtime ->
-                _audioOutputState.update { current ->
-                    current.copy(
-                        sourceFormat = runtime.sourceFormat,
-                        routeInfo = runtime.routeInfo,
-                        offloadState = runtime.offloadState,
-                        audioSessionId = runtime.audioSessionId,
-                        isPlayerConnected = runtime.isPlayerConnected
-                    )
-                }
-            }
-        }
-    }
     private val musicPlayer = MusicPlayer(context)
     private val playerStateStorage = PlayerStateStorage(context)
     private val playbackHistoryRecorder = PlaybackHistoryRecorder(coroutineScope)
@@ -72,6 +58,8 @@ class PlaybackController(
 
     private val _audioOutputState = MutableStateFlow(AudioOutputUiState())
     val audioOutputState: StateFlow<AudioOutputUiState> = _audioOutputState.asStateFlow()
+    private var advancedAudioRuntimeCollectionJob: Job? = null
+    private var advancedAudioRuntimeCollectionStartCount = 0
 
     private val playbackQueue: MutableList<Song>
         get() = playbackQueueManager.playbackQueue
@@ -151,6 +139,31 @@ class PlaybackController(
                 }
 
                 progressHandler.postDelayed(this, 500)
+            }
+        }
+    }
+
+    init {
+        PlaybackLibraryBridge.register(this)
+        startAdvancedAudioRuntimeCollection()
+    }
+
+    private fun startAdvancedAudioRuntimeCollection() {
+        if (advancedAudioRuntimeCollectionJob != null) return
+        advancedAudioRuntimeCollectionStartCount += 1
+        advancedAudioRuntimeCollectionJob = coroutineScope.launch(
+            start = CoroutineStart.UNDISPATCHED
+        ) {
+            AdvancedAudioRuntimeBridge.state.collect { runtime ->
+                _audioOutputState.update { current ->
+                    current.copy(
+                        sourceFormat = runtime.sourceFormat,
+                        routeInfo = runtime.routeInfo,
+                        offloadState = runtime.offloadState,
+                        audioSessionId = runtime.audioSessionId,
+                        isPlayerConnected = runtime.isPlayerConnected
+                    )
+                }
             }
         }
     }
@@ -454,11 +467,14 @@ class PlaybackController(
     }
 
     fun release() {
+        advancedAudioRuntimeCollectionJob?.cancel()
+        advancedAudioRuntimeCollectionJob = null
         savePlayerState()
         progressHandler.removeCallbacks(progressRunnable)
         musicPlayer.release()
         upcomingSongsValue = emptyList()
         _progressState.value = PlaybackProgressUiState.Empty
+        _audioOutputState.value = AudioOutputUiState()
         _uiState.value = PlaybackUiState.Disconnected.copy(
             isShuffleEnabled = isShuffleEnabled,
             repeatMode = repeatMode
