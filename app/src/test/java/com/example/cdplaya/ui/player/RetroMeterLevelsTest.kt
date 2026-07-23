@@ -68,6 +68,14 @@ class RetroMeterLevelsTest {
     }
 
     @Test
+    fun localSilenceCanGateVisualizerUpdates() {
+        val amplitudes = listOf(0.8f, 0.8f, 0f, 0f, 0f, 0.7f)
+
+        assertTrue(isRetroMeterEffectivelySilent(amplitudes, 50_000L, 100_000L))
+        assertTrue(!isRetroMeterEffectivelySilent(amplitudes, 0L, 100_000L))
+    }
+
+    @Test
     fun meterReleasesImmediatelyWhenCurrentEnergyIsSilent() {
         val amplitudes = listOf(1f, 1f, 1f, 1f, 0f, 0f, 0f, 0f, 0f)
         val levels = buildLevels(
@@ -114,6 +122,33 @@ class RetroMeterLevelsTest {
 
         requireNotNull(levels)
         assertTrue(levels.all { level -> level.isFinite() && level in 0f..1f })
+    }
+
+    @Test
+    fun callerOwnedMeterBufferIsReusedAcrossUpdates() {
+        val output = FloatArray(2)
+        val firstUpdated = fillRetroMeterLevels(
+            output = output,
+            amplitudes = List(32) { 0.5f },
+            currentPositionMs = 10_000L,
+            durationMs = 100_000L,
+            animationPhase = 0.1f,
+            isPlaying = true,
+            songSeed = 7L
+        )
+        val firstValues = output.copyOf()
+        val secondUpdated = fillRetroMeterLevels(
+            output = output,
+            amplitudes = List(32) { 0.8f },
+            currentPositionMs = 10_000L,
+            durationMs = 100_000L,
+            animationPhase = 0.2f,
+            isPlaying = true,
+            songSeed = 7L
+        )
+
+        assertTrue(firstUpdated && secondUpdated)
+        assertNotEquals(firstValues.toList(), output.toList())
     }
 
     private fun buildLevels(

@@ -6,6 +6,8 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import java.io.File
+import com.example.cdplaya.performance.PerformanceTraceNames
+import com.example.cdplaya.performance.tracePerformance
 
 
 class MusicRepository(private val context: Context) {
@@ -24,15 +26,20 @@ class MusicRepository(private val context: Context) {
         cachedSongs: List<Song>,
         forceArtworkRefreshIds: Set<Long> = emptySet()
     ): LibraryRefreshResult {
-        val indexSongs = runCatching { querySongIndex() }.getOrNull()
+        val indexSongs = runCatching {
+            tracePerformance(PerformanceTraceNames.MEDIASTORE_INDEX_QUERY) { querySongIndex() }
+        }.getOrNull()
         LibraryRefreshEngine.fallbackForIncompleteScan(cachedSongs, indexSongs)?.let { return it }
         checkNotNull(indexSongs)
         val embeddedArtworkResolver = EmbeddedArtworkResolver(context)
-        cachedSongs.filter { it.id in forceArtworkRefreshIds }
-            .forEach(embeddedArtworkResolver::invalidate)
+        tracePerformance(PerformanceTraceNames.ARTWORK_REPAIR_BATCH) {
+            cachedSongs.filter { it.id in forceArtworkRefreshIds }
+                .forEach(embeddedArtworkResolver::invalidate)
+        }
         var albumArtByFolder: Map<String, Uri>? = null
         val artworkRepairKeys = mutableSetOf<String>()
-        val result = LibraryRefreshEngine.refresh(
+        val result = tracePerformance(PerformanceTraceNames.LIBRARY_CLASSIFICATION) {
+            LibraryRefreshEngine.refresh(
             cachedSongs = cachedSongs,
             indexSongs = indexSongs,
             requiresEnrichment = { cached, current ->
@@ -53,8 +60,8 @@ class MusicRepository(private val context: Context) {
                     ),
                     artworkEnrichmentVersion = CURRENT_ARTWORK_ENRICHMENT_VERSION
                 )
-            }
-        )
+            })
+        }
         return result.copy(artworkRepairCount = artworkRepairKeys.size)
     }
 

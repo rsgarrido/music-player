@@ -49,6 +49,7 @@ import com.example.cdplaya.player.waveform.WaveformData
 internal fun PocketFlipDisplayHalf(
     currentSong: Song?,
     waveformData: WaveformData?,
+    isVisualizerWorkAllowed: Boolean,
     isPlaying: Boolean,
     currentPosition: Int,
     duration: Int,
@@ -107,6 +108,7 @@ internal fun PocketFlipDisplayHalf(
                 PocketFlipLcdMeter(
                     currentSong = currentSong,
                     waveformData = waveformData,
+                    isVisualizerWorkAllowed = isVisualizerWorkAllowed,
                     isPlaying = isPlaying,
                     currentPosition = currentPosition,
                     duration = duration,

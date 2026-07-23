@@ -1,8 +1,5 @@
 package com.example.cdplaya.ui.player.pocketcassette
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,7 +33,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
-import kotlinx.coroutines.isActive
+import com.example.cdplaya.performance.PerformanceTraceNames
+import com.example.cdplaya.performance.VisualizerPerformanceCounters
+import com.example.cdplaya.performance.tracePerformance
+import com.example.cdplaya.ui.player.RETRO_VISUALIZER_CADENCE_HZ
+import com.example.cdplaya.ui.player.rememberBoundedVisualizerPhase
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -46,30 +46,19 @@ import kotlin.math.sin
 internal fun PocketCassetteWindow(
     currentSong: Song?,
     isPlaying: Boolean,
+    isVisualizerWorkAllowed: Boolean,
     currentPosition: Int,
     duration: Int,
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
     val colors = PocketCassetteColors
-    val reelRotation = remember { Animatable(0f) }
     val playbackProgress = if (duration > 0) {
         (currentPosition.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
     } else {
         0f
     }
     val trackLabelHeight = if (compact) 78.dp else 90.dp
-
-    LaunchedEffect(isPlaying) {
-        if (isPlaying) {
-            while (isActive) {
-                reelRotation.animateTo(
-                    targetValue = reelRotation.value + 360f,
-                    animationSpec = tween(durationMillis = 4_800, easing = LinearEasing)
-                )
-            }
-        }
-    }
 
     Box(
         modifier = modifier
@@ -139,7 +128,8 @@ internal fun PocketCassetteWindow(
                 )
 
                 PocketCassetteMechanism(
-                    rotation = reelRotation.value,
+                    isPlaying = isPlaying,
+                    isVisualizerWorkAllowed = isVisualizerWorkAllowed,
                     playbackProgress = playbackProgress,
                     compact = compact,
                     modifier = Modifier
@@ -176,13 +166,23 @@ internal fun PocketCassetteWindow(
 
 @Composable
 private fun PocketCassetteMechanism(
-    rotation: Float,
+    isPlaying: Boolean,
+    isVisualizerWorkAllowed: Boolean,
     playbackProgress: Float,
     compact: Boolean,
     modifier: Modifier = Modifier
 ) {
     val colors = PocketCassetteColors
+    val phase = rememberBoundedVisualizerPhase(
+        animationEnabled = isPlaying && isVisualizerWorkAllowed,
+        targetCadenceHz = RETRO_VISUALIZER_CADENCE_HZ,
+        cycleDurationMillis = 4_800,
+        updateTraceName = PerformanceTraceNames.POCKET_CASSETTE_UPDATE
+    )
     Canvas(modifier = modifier) {
+        tracePerformance(PerformanceTraceNames.POCKET_CASSETTE_DRAW) {
+        VisualizerPerformanceCounters.onDraw()
+        val rotation = phase.value * 360f
         val leftCenter = Offset(size.width * 0.29f, size.height * 0.44f)
         val rightCenter = Offset(size.width * 0.71f, size.height * 0.44f)
         val radius = min(size.width * 0.155f, size.height * if (compact) 0.27f else 0.25f)
@@ -221,10 +221,7 @@ private fun PocketCassetteMechanism(
             strokeWidth = 3.dp.toPx()
         )
 
-        listOf(
-            Offset(leftCenter.x - radius * 0.28f, rollerY),
-            Offset(rightCenter.x + radius * 0.28f, rollerY)
-        ).forEach { rollerCenter ->
+        fun drawRoller(rollerCenter: Offset) {
             drawCircle(
                 color = colors.reelHub,
                 radius = rollerRadius,
@@ -237,6 +234,8 @@ private fun PocketCassetteMechanism(
                 style = Stroke(width = 1.dp.toPx())
             )
         }
+        drawRoller(Offset(leftCenter.x - radius * 0.28f, rollerY))
+        drawRoller(Offset(rightCenter.x + radius * 0.28f, rollerY))
 
         drawReel(
             center = leftCenter,
@@ -265,6 +264,7 @@ private fun PocketCassetteMechanism(
             end = Offset(size.width / 2f + headWidth * 0.35f, rollerY + radius * 0.02f),
             strokeWidth = 1.dp.toPx()
         )
+        }
     }
 }
 

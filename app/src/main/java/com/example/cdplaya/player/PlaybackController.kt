@@ -12,6 +12,8 @@ import com.example.cdplaya.data.toSongReference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.player.replaygain.ReplayGainRepository
 import com.example.cdplaya.player.replaygain.replayGainVolumeMultiplier
+import com.example.cdplaya.performance.PerformanceTraceNames
+import com.example.cdplaya.performance.tracePerformance
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.PlaybackUiState
 import kotlinx.coroutines.CoroutineScope
@@ -135,13 +137,15 @@ class PlaybackController(
     }
 
     fun connect() {
-        musicPlayer.connect {
+        tracePerformance(PerformanceTraceNames.PLAYBACK_CONNECT) {
+            musicPlayer.connect {
             isPlayerConnected = true
             musicPlayer.setShuffleEnabled(isShuffleEnabled)
             musicPlayer.setRepeatMode(repeatMode)
 
             if (librarySongs.isNotEmpty()) {
                 restorePlayerState()
+            }
             }
         }
 
@@ -194,9 +198,11 @@ class PlaybackController(
             currentSong = refreshedCurrentSong
         }
 
-        playbackQueueManager.replaceQueue(
-            replaceSongReferences(playbackQueue.toList(), updatedSongs)
-        )
+        tracePerformance(PerformanceTraceNames.PLAYBACK_QUEUE_REPLACEMENT) {
+            playbackQueueManager.replaceQueue(
+                replaceSongReferences(playbackQueue.toList(), updatedSongs)
+            )
+        }
         publishDerivedPlaybackState()
         playbackNavigationHistory.replacePreviousSongs(
             replaceSongReferences(playbackNavigationHistory.getPreviousSongs(), updatedSongs)
@@ -213,7 +219,9 @@ class PlaybackController(
 
         if (currentSong != null) {
             if (currentSong != previousCurrentSong) {
-                musicPlayer.updateCurrentSongMetadata(requireNotNull(currentSong))
+                tracePerformance(PerformanceTraceNames.PLAYBACK_METADATA_REPLACEMENT) {
+                    musicPlayer.updateCurrentSongMetadata(requireNotNull(currentSong))
+                }
             }
             syncServicePlaylistKeepingCurrent()
         }

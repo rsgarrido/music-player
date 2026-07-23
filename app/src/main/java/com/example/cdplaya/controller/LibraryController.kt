@@ -36,6 +36,8 @@ import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.data.playlistfile.defaultImportedPlaylistName
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.PlaybackLibraryBridge
+import com.example.cdplaya.performance.PerformanceTraceNames
+import com.example.cdplaya.performance.tracePerformance
 import com.example.cdplaya.ui.state.LibraryUiState
 import com.example.cdplaya.ui.state.libraryUiState
 import kotlinx.coroutines.CoroutineScope
@@ -142,6 +144,7 @@ class LibraryController(
         refreshJob?.cancel()
         refreshJob = coroutineScope.launch {
             val savedSelectedFolders = appPreferencesRepository.awaitLoadedState().selectedLibraryFolders
+            tracePerformance(PerformanceTraceNames.PREFERENCES_READY) { Unit }
             selectedLibraryFolders = savedSelectedFolders
 
             val hasCachedSongs = withContext(Dispatchers.IO) {
@@ -153,7 +156,8 @@ class LibraryController(
 
                 publishLibraryData(
                     libraryData = cachedLibraryData,
-                    reconcilePlayback = false
+                    reconcilePlayback = false,
+                    traceName = PerformanceTraceNames.CACHE_FIRST_PUBLICATION
                 )
             }
 
@@ -569,21 +573,32 @@ class LibraryController(
 
     private suspend fun publishLibraryData(
         libraryData: MusicLibraryData,
-        reconcilePlayback: Boolean
+        reconcilePlayback: Boolean,
+        traceName: String = PerformanceTraceNames.LIBRARY_PUBLICATION
     ) {
         if (!publicationTracker.shouldPublish(libraryData)) return
         val indexedSnapshot = withContext(Dispatchers.Default) {
-            IndexedLibrarySnapshot(
-                index = SongReferenceIndex.build(libraryData.referenceSongs),
-                visibleMembershipKeys = libraryData.songs.mapTo(mutableSetOf()) {
-                    it.membershipKey()
-                }
-            )
+            tracePerformance(PerformanceTraceNames.LIBRARY_INDEX_CONSTRUCTION) {
+                IndexedLibrarySnapshot(
+                    index = SongReferenceIndex.build(libraryData.referenceSongs),
+                    visibleMembershipKeys = libraryData.songs.mapTo(mutableSetOf()) {
+                        it.membershipKey()
+                    }
+                )
+            }
         }
+        publishLibrarySnapshot(libraryData, reconcilePlayback, indexedSnapshot, traceName)
+    }
+
+    private fun publishLibrarySnapshot(
+        libraryData: MusicLibraryData,
+        reconcilePlayback: Boolean,
+        indexedSnapshot: IndexedLibrarySnapshot,
+        traceName: String
+    ) = tracePerformance(traceName) {
         songReferenceIndex = indexedSnapshot.index
         visibleSongMembershipKeys = indexedSnapshot.visibleMembershipKeys
         libraryPublishCount += 1
-
         val publishedSongs = libraryData.songs.toList()
         _uiState.update { current ->
             libraryUiState(
@@ -624,10 +639,12 @@ class LibraryController(
             val repository = MusicRepository(applicationContext)
             val cachedSongs = libraryCacheRepository.getAllCachedSongs()
             val startedAt = SystemClock.elapsedRealtime()
-            val refreshResult = repository.refreshLibrary(
-                cachedSongs = cachedSongs,
-                forceArtworkRefreshIds = forceArtworkRefreshIds
-            )
+            val refreshResult = tracePerformance(PerformanceTraceNames.LIBRARY_ENRICHMENT) {
+                repository.refreshLibrary(
+                    cachedSongs = cachedSongs,
+                    forceArtworkRefreshIds = forceArtworkRefreshIds
+                )
+            }
             lastLibraryRefreshResult = refreshResult
 
             if (applicationContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
@@ -689,7 +706,9 @@ class LibraryController(
                     )
                 }
                 val plan = withContext(Dispatchers.Default) {
-                    SongReferenceReconciliationPlanner.plan(index, persistedRows)
+                    tracePerformance(PerformanceTraceNames.RECONCILIATION_PLAN) {
+                        SongReferenceReconciliationPlanner.plan(index, persistedRows)
+                    }
                 }
                 val storedResults = withContext(Dispatchers.IO) {
                     appDatabase.withTransaction {

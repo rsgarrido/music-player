@@ -24,6 +24,7 @@ fun ExpandedPlayerThemeHost(
     nextPreviewSong: Song?,
     modernArtworkTransitionStyle: ModernArtworkTransitionStyle,
     modernSeekbarStyle: ModernSeekbarStyle,
+    isVisualizerWorkAllowed: Boolean,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -131,6 +132,7 @@ fun ExpandedPlayerThemeHost(
             RetroRackExpandedPlayer(
                 currentSong = currentSong,
                 waveformData = waveformData,
+                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
@@ -156,6 +158,7 @@ fun ExpandedPlayerThemeHost(
             PocketFlipExpandedPlayer(
                 currentSong = currentSong,
                 waveformData = waveformData,
+                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
@@ -178,6 +181,7 @@ fun ExpandedPlayerThemeHost(
         PlayerTheme.POCKET_CASSETTE -> {
             PocketCassetteExpandedPlayer(
                 currentSong = currentSong,
+                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
