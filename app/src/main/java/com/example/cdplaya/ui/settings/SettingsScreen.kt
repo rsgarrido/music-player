@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.R
 import com.example.cdplaya.data.PlayerTheme
+import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
@@ -64,6 +65,8 @@ fun SettingsScreen(
     onModernSeekbarStyleSelected: (ModernSeekbarStyle) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
+    selectedAudioOffloadPreference: AudioOffloadPreference,
+    onAudioOffloadPreferenceSelected: (AudioOffloadPreference) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var isPlayerThemeDialogVisible by remember {
@@ -71,6 +74,10 @@ fun SettingsScreen(
     }
 
     var isReplayGainDialogVisible by remember {
+        mutableStateOf(false)
+    }
+
+    var isAudioOffloadDialogVisible by remember {
         mutableStateOf(false)
     }
 
@@ -244,6 +251,36 @@ fun SettingsScreen(
 
         ListItem(
             headlineContent = {
+                Text(text = "Audio offload")
+            },
+            supportingContent = {
+                Text(
+                    text = "${selectedAudioOffloadPreference.displayName}. " +
+                        "Automatic uses offload only when the device, route, file, " +
+                        "and required playback behavior support it. Unsupported playback " +
+                        "falls back normally."
+                )
+            },
+            trailingContent = {
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowRight,
+                    contentDescription = "Open audio offload settings"
+                )
+            },
+            modifier = Modifier.clickable {
+                isAudioOffloadDialogVisible = true
+            }
+        )
+
+        Text(
+            text = "Offload may reduce power use during long background playback. " +
+                "Some future audio effects may require normal decoded playback.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+        )
+
+        ListItem(
+            headlineContent = {
                 Text(text = "Sleep Timer")
             },
             supportingContent = {
@@ -379,6 +416,57 @@ fun SettingsScreen(
                             isReplayGainDialogVisible = false
                         }
                     ) {
+                        Text(text = "Close")
+                    }
+                }
+            )
+        }
+
+        if (isAudioOffloadDialogVisible) {
+            AlertDialog(
+                onDismissRequest = {
+                    isAudioOffloadDialogVisible = false
+                },
+                title = {
+                    Text(text = "Audio offload")
+                },
+                text = {
+                    Column {
+                        AudioOffloadPreference.entries.forEach { preference ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onAudioOffloadPreferenceSelected(preference)
+                                        isAudioOffloadDialogVisible = false
+                                    }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedAudioOffloadPreference == preference,
+                                    onClick = {
+                                        onAudioOffloadPreferenceSelected(preference)
+                                        isAudioOffloadDialogVisible = false
+                                    }
+                                )
+                                Column(modifier = Modifier.padding(start = 4.dp)) {
+                                    Text(text = preference.displayName)
+                                    Text(
+                                        text = if (preference == AudioOffloadPreference.AUTOMATIC) {
+                                            "Use offload when compatible and otherwise play normally."
+                                        } else {
+                                            "Use normal decoded playback."
+                                        },
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { isAudioOffloadDialogVisible = false }) {
                         Text(text = "Close")
                     }
                 }

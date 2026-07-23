@@ -15,6 +15,7 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.example.cdplaya.data.PlayerTheme
+import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibraryGridColumns
 import com.example.cdplaya.ui.library.LibraryViewCategory
@@ -41,6 +42,7 @@ data class AppPreferencesState(
         ModernArtworkTransitionStyle.SLIDE,
     val modernSeekbarStyle: ModernSeekbarStyle = ModernSeekbarStyle.CLASSIC_BAR,
     val replayGainMode: ReplayGainMode = ReplayGainMode.OFF,
+    val audioOffloadPreference: AudioOffloadPreference = AudioOffloadPreference.DISABLED,
     val selectedLibraryFolders: Set<String> = emptySet(),
     val songsViewMode: LibraryViewMode = LibraryViewMode.LIST,
     val albumsViewMode: LibraryViewMode = LibraryViewMode.LIST,
@@ -80,6 +82,10 @@ class AppPreferencesRepository private constructor(
         it[Keys.replayGainMode] = mode.name
     }
 
+    suspend fun setAudioOffloadPreference(preference: AudioOffloadPreference) = edit {
+        it[Keys.audioOffloadPreference] = preference.name
+    }
+
     suspend fun setSelectedLibraryFolders(folders: Set<String>) = edit {
         it[Keys.selectedLibraryFolders] = folders.toSet()
     }
@@ -116,6 +122,7 @@ class AppPreferencesRepository private constructor(
             restored.modernArtworkTransitionStyle.storageValue
         preferences[Keys.modernSeekbarStyle] = restored.modernSeekbarStyle.storageValue
         preferences[Keys.replayGainMode] = restored.replayGainMode.name
+        preferences[Keys.audioOffloadPreference] = restored.audioOffloadPreference.name
         preferences[Keys.selectedLibraryFolders] = restored.selectedLibraryFolders.toSet()
         LibraryViewCategory.entries.forEach { category ->
             val (mode, columns) = restored.libraryView(category)
@@ -192,6 +199,9 @@ internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState
     replayGainMode = runCatching {
         ReplayGainMode.valueOf(preferences[Keys.replayGainMode].orEmpty())
     }.getOrDefault(ReplayGainMode.OFF),
+    audioOffloadPreference = AudioOffloadPreference.fromStorageValue(
+        preferences[Keys.audioOffloadPreference]
+    ),
     selectedLibraryFolders = preferences[Keys.selectedLibraryFolders]?.toSet().orEmpty(),
     songsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.songsViewMode]),
     albumsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.albumsViewMode]),
@@ -239,6 +249,7 @@ private object Keys {
     val modernArtworkTransitionStyle = stringPreferencesKey("artwork_transition_style")
     val modernSeekbarStyle = stringPreferencesKey("seekbar_style")
     val replayGainMode = stringPreferencesKey("replay_gain_mode")
+    val audioOffloadPreference = stringPreferencesKey("audio_offload_preference")
     val selectedLibraryFolders = stringSetPreferencesKey("selected_folders")
     val songsViewMode = stringPreferencesKey("songs_view_mode")
     val albumsViewMode = stringPreferencesKey("albums_view_mode")

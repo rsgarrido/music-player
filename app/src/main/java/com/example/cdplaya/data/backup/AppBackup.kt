@@ -18,6 +18,7 @@ data class BackupPreferences(
     val selectedLibraryFolders: List<String> = emptyList(),
     val selectedPlayerThemeId: String = "",
     val replayGainMode: String = "",
+    val audioOffloadPreference: String = "",
     val modernArtworkTransitionStyle: String = "slide",
     val modernSeekbarStyle: String = "classic_bar",
     val playerThemeTokenOverrides: Map<String, BackupPlayerThemeTokenOverrides> = emptyMap(),

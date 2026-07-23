@@ -32,6 +32,7 @@ import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
+import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.home.HomeScreen
 import com.example.cdplaya.ui.library.FolderSelectionScreen
@@ -167,6 +168,8 @@ fun MusicScreenBody(
     onModernSeekbarStyleSelected: (ModernSeekbarStyle) -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
+    selectedAudioOffloadPreference: AudioOffloadPreference,
+    onAudioOffloadPreferenceSelected: (AudioOffloadPreference) -> Unit,
     libraryAppearanceUiState: LibraryAppearanceUiState,
     onLibraryViewOptionSelected: (LibraryViewCategory, LibraryViewOption) -> Unit,
     bottomContentPadding: Dp = 24.dp,
@@ -244,6 +247,8 @@ fun MusicScreenBody(
                 onModernSeekbarStyleSelected = onModernSeekbarStyleSelected,
                 selectedReplayGainMode = selectedReplayGainMode,
                 onReplayGainModeSelected = onReplayGainModeSelected,
+                selectedAudioOffloadPreference = selectedAudioOffloadPreference,
+                onAudioOffloadPreferenceSelected = onAudioOffloadPreferenceSelected,
                 modifier = modifier
                     .fillMaxSize()
                     .statusBarsPadding()

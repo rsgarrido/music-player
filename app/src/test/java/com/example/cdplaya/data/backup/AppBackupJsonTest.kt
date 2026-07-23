@@ -2,6 +2,7 @@ package com.example.cdplaya.data.backup
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import com.example.cdplaya.player.audio.AudioOffloadPreference
 import org.junit.Assert.fail
 import org.junit.Test
 
@@ -54,6 +55,10 @@ class AppBackupJsonTest {
         assertEquals(listOf("/Music"), decoded.preferences.selectedLibraryFolders)
         assertEquals("classic", decoded.preferences.selectedPlayerThemeId)
         assertEquals("album", decoded.preferences.replayGainMode)
+        assertEquals(
+            AudioOffloadPreference.DISABLED,
+            AudioOffloadPreference.fromStorageValue(decoded.preferences.audioOffloadPreference)
+        )
     }
 
     @Test
@@ -87,6 +92,7 @@ class AppBackupJsonTest {
             selectedLibraryFolders = listOf("Music"),
             selectedPlayerThemeId = "retro_rack",
             replayGainMode = "TRACK",
+            audioOffloadPreference = "AUTOMATIC",
             modernArtworkTransitionStyle = "cover_flow",
             modernSeekbarStyle = "waveform_glow",
             playerThemeTokenOverrides = mapOf(

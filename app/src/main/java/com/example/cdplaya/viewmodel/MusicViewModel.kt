@@ -27,6 +27,7 @@ import com.example.cdplaya.data.playlistfile.M3uExportResult
 import com.example.cdplaya.data.playlistfile.PlaylistImportResult
 import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.player.PlaybackController
+import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenOverrides
@@ -94,6 +95,14 @@ class MusicViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, LibraryAppearanceUiState())
 
+    val audioOffloadPreference = appPreferencesRepository.state
+        .map { preferences -> preferences.audioOffloadPreference }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            AudioOffloadPreference.DISABLED
+        )
+
     fun selectPlayerTheme(playerTheme: PlayerTheme) {
         viewModelScope.launch { appPreferencesRepository.setSelectedPlayerTheme(playerTheme) }
     }
@@ -152,6 +161,12 @@ class MusicViewModel(
 
     fun selectReplayGainMode(replayGainMode: ReplayGainMode) {
         viewModelScope.launch { appPreferencesRepository.setReplayGainMode(replayGainMode) }
+    }
+
+    fun selectAudioOffloadPreference(preference: AudioOffloadPreference) {
+        viewModelScope.launch {
+            appPreferencesRepository.setAudioOffloadPreference(preference)
+        }
     }
 
     fun selectLibraryViewOption(category: LibraryViewCategory, option: LibraryViewOption) {
