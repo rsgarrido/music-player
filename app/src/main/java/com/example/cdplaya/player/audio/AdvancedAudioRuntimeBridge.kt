@@ -64,6 +64,18 @@ internal object AdvancedAudioRuntimeBridge {
         }
     }
 
+    fun updateSourceFormat(sourceFormat: AudioSourceFormat?) {
+        _state.update { current -> current.copy(sourceFormat = sourceFormat) }
+    }
+
+    fun updateRouteInfo(routeInfo: AudioRouteInfo) {
+        _state.update { current -> current.copy(routeInfo = routeInfo) }
+    }
+
+    fun updateAudioSessionId(audioSessionId: Int?) {
+        _state.update { current -> current.copy(audioSessionId = audioSessionId) }
+    }
+
     fun disconnect() {
         _state.value = AudioOutputRuntimeSnapshot()
     }
