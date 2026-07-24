@@ -1,5 +1,7 @@
 package com.example.cdplaya.player.equalizer.dsp
 
+import java.util.Collections
+
 /**
  * Immutable equalizer configuration in processing order.
  */
@@ -8,7 +10,8 @@ internal class EqualizerConfiguration(
     val preampDb: Double,
     filters: List<EqualizerFilterSpec>
 ) {
-    val filters: List<EqualizerFilterSpec> = filters.toList()
+    val filters: List<EqualizerFilterSpec> =
+        Collections.unmodifiableList(filters.toList())
 
     init {
         require(preampDb.isFinite()) {
@@ -49,4 +52,3 @@ internal class EqualizerConfiguration(
             "filters=$filters)"
     }
 }
-
