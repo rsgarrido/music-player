@@ -12,6 +12,8 @@ import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.data.preferences.AppPreferencesState
 import com.example.cdplaya.player.audio.AudioOffloadPreference
+import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
+import com.example.cdplaya.player.equalizer.UserEqualizerPreset
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewMode
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
@@ -61,7 +63,10 @@ class BackupRepository(
                 artistsViewMode = appPreferences.artistsViewMode.storageValue,
                 songsGridColumnCount = appPreferences.songsGridColumnCount,
                 albumsGridColumnCount = appPreferences.albumsGridColumnCount,
-                artistsGridColumnCount = appPreferences.artistsGridColumnCount
+                artistsGridColumnCount = appPreferences.artistsGridColumnCount,
+                equalizer = appPreferences
+                    .equalizerPreferences
+                    .toBackupEqualizerPreferences()
             )
         )
     }
@@ -187,6 +192,9 @@ class BackupRepository(
                 songsGridColumnCount = preferences.songsGridColumnCount,
                 albumsGridColumnCount = preferences.albumsGridColumnCount,
                 artistsGridColumnCount = preferences.artistsGridColumnCount,
+                equalizerPreferences =
+                    preferences.equalizer
+                        .toEqualizerPreferencesState(),
                 isLoaded = true
             )
         )
@@ -196,6 +204,46 @@ class BackupRepository(
         const val APP_NAME = "CDPlaya"
     }
 }
+
+private fun EqualizerPreferencesState
+    .toBackupEqualizerPreferences() =
+    BackupEqualizerPreferences(
+        enabled = enabled,
+        preampDb = preampDb,
+        automaticHeadroomEnabled =
+            automaticHeadroomEnabled,
+        bandGainsDb = bandGainsDb.toList(),
+        userPresets = userPresets.map { preset ->
+            BackupEqualizerPreset(
+                id = preset.id,
+                name = preset.name,
+                preampDb = preset.preampDb,
+                automaticHeadroomEnabled =
+                    preset.automaticHeadroomEnabled,
+                bandGainsDb = preset.bandGainsDb.toList()
+            )
+        }
+    )
+
+private fun BackupEqualizerPreferences
+    .toEqualizerPreferencesState() =
+    EqualizerPreferencesState(
+        enabled = enabled,
+        preampDb = preampDb,
+        automaticHeadroomEnabled =
+            automaticHeadroomEnabled,
+        bandGainsDb = bandGainsDb,
+        userPresets = userPresets.map { preset ->
+            UserEqualizerPreset(
+                id = preset.id,
+                name = preset.name.trim(),
+                preampDb = preset.preampDb,
+                automaticHeadroomEnabled =
+                    preset.automaticHeadroomEnabled,
+                bandGainsDb = preset.bandGainsDb
+            )
+        }
+    )
 
 private fun Color?.toBackupArgbIfSupported(isSupported: Boolean): Long? {
     return if (isSupported && this != null) toArgb().toUInt().toLong() else null

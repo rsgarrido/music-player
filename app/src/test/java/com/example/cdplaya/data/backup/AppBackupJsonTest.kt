@@ -11,7 +11,7 @@ class AppBackupJsonTest {
     fun encodeBackup_includesCurrentSchemaVersion() {
         val encoded = AppBackupJson.encodeBackup(emptyBackup())
 
-        assertTrue(encoded.contains("\"schemaVersion\": 3"))
+        assertTrue(encoded.contains("\"schemaVersion\": 4"))
     }
 
     @Test
@@ -62,7 +62,7 @@ class AppBackupJsonTest {
     }
 
     @Test
-    fun decodeBackup_migratesV1PreferencesAndReferencesToV3() {
+    fun decodeBackup_migratesV1PreferencesAndReferencesToV4() {
         val decoded = AppBackupJson.decodeBackup(
             """
             {
@@ -77,17 +77,21 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(3, decoded.schemaVersion)
+        assertEquals(4, decoded.schemaVersion)
         assertEquals("slide", decoded.preferences.modernArtworkTransitionStyle)
         assertEquals("classic_bar", decoded.preferences.modernSeekbarStyle)
         assertEquals(emptyMap<String, BackupPlayerThemeTokenOverrides>(), decoded.preferences.playerThemeTokenOverrides)
         assertEquals("list", decoded.preferences.songsViewMode)
         assertEquals(2, decoded.preferences.songsGridColumnCount)
         assertEquals("classic_wheel", decoded.preferences.selectedPlayerThemeId)
+        assertEquals(
+            BackupEqualizerPreferences(),
+            decoded.preferences.equalizer
+        )
     }
 
     @Test
-    fun v3Backup_roundTripsAllDurablePreferenceAndReferenceFields() {
+    fun v4Backup_roundTripsAllDurablePreferenceAndReferenceFields() {
         val preferences = BackupPreferences(
             selectedLibraryFolders = listOf("Music"),
             selectedPlayerThemeId = "retro_rack",
@@ -152,7 +156,7 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(3, decoded.schemaVersion)
+        assertEquals(4, decoded.schemaVersion)
         assertEquals("old-key", decoded.favorites.single().reference?.legacyStableKey)
     }
 
@@ -160,11 +164,11 @@ class AppBackupJsonTest {
     fun decodeBackup_rejectsUnsupportedSchemaVersion() {
         val exception = expectIllegalArgumentException {
             AppBackupJson.decodeBackup(
-                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 4))
+                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 5))
             )
         }
 
-        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 4"))
+        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 5"))
     }
 
     @Test
@@ -172,6 +176,83 @@ class AppBackupJsonTest {
         val backup = emptyBackup()
 
         assertEquals(backup, AppBackupJson.decodeBackup(AppBackupJson.encodeBackup(backup)))
+    }
+
+    @Test
+    fun v4EqualizerAndUserPresetsRoundTripWithoutRuntimeState() {
+        val equalizer = BackupEqualizerPreferences(
+            enabled = true,
+            preampDb = -2.5,
+            automaticHeadroomEnabled = false,
+            bandGainsDb = listOf(
+                4.0, 3.5, 2.5, 1.0, 0.0,
+                -0.5, -1.0, -1.5, -2.0, -2.5
+            ),
+            userPresets = listOf(
+                BackupEqualizerPreset(
+                    id = "stable-id",
+                    name = "Road",
+                    preampDb = -1.0,
+                    automaticHeadroomEnabled = true,
+                    bandGainsDb = List(10) { index ->
+                        index / 10.0
+                    }
+                )
+            )
+        )
+        val encoded = AppBackupJson.encodeBackup(
+            emptyBackup().copy(
+                preferences = BackupPreferences(
+                    equalizer = equalizer
+                )
+            )
+        )
+        val decoded = AppBackupJson.decodeBackup(encoded)
+
+        assertEquals(
+            equalizer,
+            decoded.preferences.equalizer
+        )
+        assertTrue(!encoded.contains("comparisonBypassed"))
+        assertTrue(!encoded.contains("runtimeState"))
+        assertTrue(!encoded.contains("Bass Lift"))
+    }
+
+    @Test
+    fun malformedEqualizerBandCountsAndReservedNamesAreRejected() {
+        val malformed = emptyBackup().copy(
+            preferences = BackupPreferences(
+                equalizer = BackupEqualizerPreferences(
+                    bandGainsDb = List(9) { 0.0 }
+                )
+            )
+        )
+        expectIllegalArgumentException {
+            AppBackupJson.decodeBackup(
+                AppBackupJson.encodeBackup(malformed)
+            )
+        }
+
+        val reserved = emptyBackup().copy(
+            preferences = BackupPreferences(
+                equalizer = BackupEqualizerPreferences(
+                    userPresets = listOf(
+                        BackupEqualizerPreset(
+                            id = "id",
+                            name = "bass lift",
+                            preampDb = 0.0,
+                            automaticHeadroomEnabled = true,
+                            bandGainsDb = List(10) { 0.0 }
+                        )
+                    )
+                )
+            )
+        )
+        expectIllegalArgumentException {
+            AppBackupJson.decodeBackup(
+                AppBackupJson.encodeBackup(reserved)
+            )
+        }
     }
 
     @Test

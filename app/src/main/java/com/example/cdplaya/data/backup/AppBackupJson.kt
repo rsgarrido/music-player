@@ -1,11 +1,12 @@
 package com.example.cdplaya.data.backup
 
+import com.example.cdplaya.player.equalizer.GraphicEqualizerPresets
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 object AppBackupJson {
-    const val CURRENT_SCHEMA_VERSION = 3
+    const val CURRENT_SCHEMA_VERSION = 4
     private const val OLDEST_SUPPORTED_SCHEMA_VERSION = 1
 
     private val json = Json {
@@ -29,8 +30,18 @@ object AppBackupJson {
                 "$CURRENT_SCHEMA_VERSION."
         }
 
-        val v2 = if (backup.schemaVersion == 1) migrateV1ToV2(backup) else backup
-        return if (v2.schemaVersion == 2) migrateV2ToV3(v2) else v2
+        var migrated = backup
+        if (migrated.schemaVersion == 1) {
+            migrated = migrateV1ToV2(migrated)
+        }
+        if (migrated.schemaVersion == 2) {
+            migrated = migrateV2ToV3(migrated)
+        }
+        if (migrated.schemaVersion == 3) {
+            migrated = migrateV3ToV4(migrated)
+        }
+        validateEqualizerBackup(migrated.preferences.equalizer)
+        return migrated
     }
 
     private fun migrateV1ToV2(backup: AppBackup): AppBackup {
@@ -52,7 +63,7 @@ object AppBackupJson {
 
     private fun migrateV2ToV3(backup: AppBackup): AppBackup {
         return backup.copy(
-            schemaVersion = CURRENT_SCHEMA_VERSION,
+            schemaVersion = 3,
             favorites = backup.favorites.map { favorite ->
                 favorite.copy(reference = favorite.reference ?: favorite.legacyReference())
             },
@@ -67,6 +78,75 @@ object AppBackupJson {
                 history.copy(reference = history.reference ?: history.legacyReference())
             }
         )
+    }
+
+    private fun migrateV3ToV4(backup: AppBackup): AppBackup {
+        return backup.copy(
+            schemaVersion = CURRENT_SCHEMA_VERSION,
+            preferences = backup.preferences.copy(
+                equalizer = BackupEqualizerPreferences()
+            )
+        )
+    }
+
+    private fun validateEqualizerBackup(
+        equalizer: BackupEqualizerPreferences
+    ) {
+        require(equalizer.bandGainsDb.size == 10) {
+            "Backup equalizer must contain exactly 10 band gains."
+        }
+        require(
+            equalizer.preampDb.isFinite() &&
+                equalizer.preampDb in -15.0..6.0
+        ) {
+            "Backup equalizer preamp is invalid."
+        }
+        require(
+            equalizer.bandGainsDb.all { gain ->
+                gain.isFinite() && gain in -12.0..12.0
+            }
+        ) {
+            "Backup equalizer band gain is invalid."
+        }
+        equalizer.userPresets.forEach { preset ->
+            require(preset.bandGainsDb.size == 10) {
+                "Backup equalizer preset must contain exactly 10 band gains."
+            }
+            require(
+                preset.id.isNotBlank() &&
+                    preset.name.isNotBlank() &&
+                    preset.name.length <= 40 &&
+                    preset.preampDb.isFinite() &&
+                    preset.preampDb in -15.0..6.0 &&
+                    preset.bandGainsDb.all { gain ->
+                        gain.isFinite() && gain in -12.0..12.0
+                    }
+            ) {
+                "Backup equalizer preset is invalid."
+            }
+        }
+        require(
+            equalizer.userPresets
+                .map { preset -> preset.id }
+                .distinct().size ==
+                equalizer.userPresets.size
+        ) {
+            "Backup equalizer preset IDs must be unique."
+        }
+        val presetNames = equalizer.userPresets.map { preset ->
+            preset.name.trim().lowercase()
+        }
+        require(presetNames.distinct().size == presetNames.size) {
+            "Backup equalizer preset names must be unique."
+        }
+        require(
+            presetNames.none { name ->
+                name in GraphicEqualizerPresets
+                    .builtInNamesLowercase
+            }
+        ) {
+            "Backup equalizer preset name conflicts with a built-in."
+        }
     }
 }
 
