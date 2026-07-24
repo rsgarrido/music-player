@@ -1,5 +1,6 @@
 package com.example.cdplaya.player.audio
 
+import com.example.cdplaya.player.equalizer.EqualizerPlanApplicationMode
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -104,6 +105,37 @@ class AudioDiagnosticsFormatterTest {
         assertTrue(
             formatAudioCompatibility(active)
                 .contains("Equalizer requires decoded PCM")
+        )
+    }
+
+    @Test
+    fun equalizerTimingDistinguishesCrossfadeFromMedia3Flush() {
+        val crossfade = EqualizerRuntimeState(
+            lastPlanApplicationMode =
+                EqualizerPlanApplicationMode.CROSSFADE,
+            lastTransitionFrameCount = 882,
+            lastTransitionDurationMillis = 20.0,
+            planPreparationLatencyMillis = 7L,
+            planApplicationLatencyMillis = 18L
+        )
+        val flushed = crossfade.copy(
+            lastPlanApplicationMode =
+                EqualizerPlanApplicationMode.DIRECT_AFTER_FLUSH,
+            lastTransitionFrameCount = 0,
+            lastTransitionDurationMillis = 0.0
+        )
+
+        assertEquals(
+            "20.00 ms crossfade (882 frames)",
+            formatEqualizerPlanApplication(crossfade)
+        )
+        assertEquals(
+            "Direct after Media3 flush",
+            formatEqualizerPlanApplication(flushed)
+        )
+        assertEquals(
+            "7 ms preparation · 18 ms to DSP application",
+            formatEqualizerPlanLatency(crossfade)
         )
     }
 }

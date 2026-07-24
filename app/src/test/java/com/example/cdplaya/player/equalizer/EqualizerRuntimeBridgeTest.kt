@@ -174,6 +174,19 @@ class EqualizerRuntimeBridgeTest {
                 ?.processorFormat
                 ?.sampleRateHz
         )
+        EqualizerRuntimeBridge.publishStateForTest()
+        assertEquals(
+            second.version,
+            EqualizerRuntimeBridge.state.value.preparedPlanVersion
+        )
+        assertTrue(
+            requireNotNull(
+                EqualizerRuntimeBridge
+                    .state
+                    .value
+                    .planPreparationLatencyMillis
+            ) >= 0L
+        )
         assertEquals(
             null,
             EqualizerRuntimeBridge.latestCompatiblePath(format48)

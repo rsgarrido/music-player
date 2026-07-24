@@ -156,7 +156,11 @@ internal class EqualizerAudioProcessor(
 
         currentPath = runtimeBridge.latestCompatiblePath(format)
         currentPath?.reset()
-        runtimeBridge.publishAppliedPlan(currentPath?.plan)
+        runtimeBridge.publishAppliedPlan(
+            plan = currentPath?.plan,
+            applicationMode =
+                EqualizerPlanApplicationMode.DIRECT_AFTER_FLUSH
+        )
         runtimeBridge.publishTransitionInProgress(false)
         runtimeBridge.publishProcessorConfigured(
             configured = true,
@@ -216,7 +220,11 @@ internal class EqualizerAudioProcessor(
         ) {
             currentPath = latest
             currentPath?.reset()
-            runtimeBridge.publishAppliedPlan(latest.plan)
+            runtimeBridge.publishAppliedPlan(
+                plan = latest.plan,
+                applicationMode =
+                    EqualizerPlanApplicationMode.DIRECT_BYPASS
+            )
             runtimeBridge.publishProcessorConfigured(
                 configured = true,
                 bypassed = true
@@ -228,7 +236,10 @@ internal class EqualizerAudioProcessor(
         pendingPath = latest
         transitionState.start(format.sampleRateHz)
         lastTransitionFrameCount = transitionState.totalFrameCount
-        runtimeBridge.publishTransitionInProgress(true)
+        runtimeBridge.publishTransitionStarted(
+            totalFrameCount = transitionState.totalFrameCount,
+            sampleRateHz = format.sampleRateHz
+        )
     }
 
     private fun isExactBypass(): Boolean {
@@ -310,7 +321,11 @@ internal class EqualizerAudioProcessor(
             currentPath = pendingPath
             pendingPath = null
             transitionState.cancel()
-            runtimeBridge.publishAppliedPlan(currentPath?.plan)
+            runtimeBridge.publishAppliedPlan(
+                plan = currentPath?.plan,
+                applicationMode =
+                    EqualizerPlanApplicationMode.CROSSFADE
+            )
             runtimeBridge.publishTransitionInProgress(false)
             runtimeBridge.publishProcessorConfigured(
                 configured = true,

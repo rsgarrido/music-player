@@ -79,6 +79,42 @@ class EqualizerTransitionTest {
             1L,
             EqualizerRuntimeBridge.state.value.appliedPlanVersion
         )
+        assertEquals(
+            EqualizerPlanApplicationMode.CROSSFADE,
+            EqualizerRuntimeBridge.state.value.lastPlanApplicationMode
+        )
+        assertEquals(
+            960,
+            EqualizerRuntimeBridge.state.value.lastTransitionFrameCount
+        )
+        assertEquals(
+            20.0,
+            EqualizerRuntimeBridge.state.value.lastTransitionDurationMillis,
+            0.0
+        )
+    }
+
+    @Test
+    fun largeBufferCrossfadeEndsAfter20msRatherThanSpanningTheBuffer() {
+        val processor = bypassProcessor(channelCount = 1)
+        EqualizerRuntimeBridge.installPreparedPathForTest(
+            activePlan(
+                version = 1L,
+                preampDb = -6.020_599_913_279_624
+            ).createProcessingPath()
+        )
+
+        processor.queueInput(
+            shortBuffer(ShortArray(4_800) { 10_000 })
+        )
+        val output = processor.output.toShortArray()
+
+        assertTrue(output[0] > output[959])
+        assertEquals(5_000, output[959].toInt())
+        output.drop(960).forEach { sample ->
+            assertEquals(5_000, sample.toInt())
+        }
+        assertEquals(960, processor.transitionFrameCount())
     }
 
     @Test
@@ -112,6 +148,10 @@ class EqualizerTransitionTest {
             2L,
             EqualizerRuntimeBridge.state.value.appliedPlanVersion
         )
+        assertEquals(
+            EqualizerPlanApplicationMode.CROSSFADE,
+            EqualizerRuntimeBridge.state.value.lastPlanApplicationMode
+        )
     }
 
     @Test
@@ -132,6 +172,15 @@ class EqualizerTransitionTest {
         assertEquals(
             2L,
             EqualizerRuntimeBridge.state.value.appliedPlanVersion
+        )
+        assertEquals(
+            EqualizerPlanApplicationMode.CROSSFADE,
+            EqualizerRuntimeBridge.state.value.lastPlanApplicationMode
+        )
+        assertEquals(
+            20.0,
+            EqualizerRuntimeBridge.state.value.lastTransitionDurationMillis,
+            0.0
         )
     }
 
@@ -231,6 +280,10 @@ class EqualizerTransitionTest {
         assertEquals(
             2L,
             EqualizerRuntimeBridge.state.value.appliedPlanVersion
+        )
+        assertEquals(
+            EqualizerPlanApplicationMode.DIRECT_AFTER_FLUSH,
+            EqualizerRuntimeBridge.state.value.lastPlanApplicationMode
         )
     }
 

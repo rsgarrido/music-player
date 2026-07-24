@@ -48,6 +48,8 @@ import com.example.cdplaya.player.audio.formatAudioOffloadStatus
 import com.example.cdplaya.player.audio.formatAudioRoute
 import com.example.cdplaya.player.audio.formatAudioSource
 import com.example.cdplaya.player.audio.formatEqualizerProcessorFormat
+import com.example.cdplaya.player.audio.formatEqualizerPlanApplication
+import com.example.cdplaya.player.audio.formatEqualizerPlanLatency
 import com.example.cdplaya.player.audio.formatEqualizerStatus
 import com.example.cdplaya.player.equalizer.DebugEqualizerConfigurations
 import com.example.cdplaya.player.waveform.WaveformCache
@@ -123,9 +125,19 @@ internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = b
         "Equalizer processor: ${formatEqualizerProcessorFormat(equalizer)}"
     )
     appendLine(
-        "Equalizer requested/applied version: " +
+        "Equalizer requested/prepared/applied version: " +
             "${equalizer.configurationVersion} / " +
+            (equalizer.preparedPlanVersion?.toString() ?: "None") +
+            " / " +
             (equalizer.appliedPlanVersion?.toString() ?: "None")
+    )
+    appendLine(
+        "Equalizer DSP adoption: " +
+            formatEqualizerPlanApplication(equalizer)
+    )
+    appendLine(
+        "Equalizer control-to-DSP timing: " +
+            formatEqualizerPlanLatency(equalizer)
     )
     appendLine(
         "Equalizer valid/ignored filters: " +
@@ -152,6 +164,10 @@ internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = b
     appendLine(
         "Audio note: Source information describes the current file/renderer input; " +
             "Android or the connected device may mix, process, resample, or transmit it differently."
+    )
+    appendLine(
+        "EQ timing note: DSP application timing excludes PCM already buffered by " +
+            "Media3, AudioTrack, or the output route."
     )
     appendLine("Waveform cache: ${snapshot.waveformFileCount} files, ${snapshot.waveformTotalBytes} bytes")
     appendLine("Waveform format: ${WaveformCache.CACHE_FORMAT_VERSION}")
@@ -281,9 +297,19 @@ internal fun DiagnosticsScreen(
             formatEqualizerProcessorFormat(equalizer)
         )
         DiagnosticValue(
-            "Equalizer requested/applied version",
+            "Equalizer requested/prepared/applied version",
             "${equalizer.configurationVersion} / " +
+                (equalizer.preparedPlanVersion?.toString() ?: "None") +
+                " / " +
                 (equalizer.appliedPlanVersion?.toString() ?: "None")
+        )
+        DiagnosticValue(
+            "Equalizer DSP adoption",
+            formatEqualizerPlanApplication(equalizer)
+        )
+        DiagnosticValue(
+            "Equalizer control → DSP timing",
+            formatEqualizerPlanLatency(equalizer)
         )
         DiagnosticValue(
             "Equalizer valid/ignored filters",
@@ -308,6 +334,17 @@ internal fun DiagnosticsScreen(
         DiagnosticValue(
             "Equalizer scratch growth",
             equalizer.scratchBufferGrowthCount.toString()
+        )
+        Text(
+            text = "DSP timing ends when the processor writes the transition. " +
+                "PCM already buffered by Media3, AudioTrack, or the active route " +
+                "can delay when that 20 ms crossfade is heard. Switching offload " +
+                "eligibility can additionally cause a Media3 flush.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(
+                horizontal = 16.dp,
+                vertical = 8.dp
+            )
         )
         if (isDebugBuild) {
             DebugEqualizerVerificationControls()

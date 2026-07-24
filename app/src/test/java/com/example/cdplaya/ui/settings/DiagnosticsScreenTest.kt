@@ -42,6 +42,16 @@ class DiagnosticsScreenTest {
         assertTrue(summary.contains("Equalizer: Bypassed"))
         assertTrue(summary.contains("Equalizer processor: Unconfigured"))
         assertTrue(
+            summary.contains(
+                "Equalizer requested/prepared/applied version"
+            )
+        )
+        assertTrue(
+            summary.contains(
+                "DSP application timing excludes PCM already buffered"
+            )
+        )
+        assertTrue(
             summary.contains("User offload preference allowed")
         )
         assertTrue(summary.contains("Source information describes"))

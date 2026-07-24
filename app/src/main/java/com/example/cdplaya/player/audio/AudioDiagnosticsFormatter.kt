@@ -1,5 +1,6 @@
 package com.example.cdplaya.player.audio
 
+import com.example.cdplaya.player.equalizer.EqualizerPlanApplicationMode
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import java.util.Locale
 
@@ -74,6 +75,38 @@ fun formatEqualizerProcessorFormat(
         "$channelCount channels"
     }
     return "PCM16, ${formatSampleRate(sampleRateHz)}, $channels"
+}
+
+fun formatEqualizerPlanApplication(
+    state: EqualizerRuntimeState
+): String {
+    return when (state.lastPlanApplicationMode) {
+        EqualizerPlanApplicationMode.NONE -> "None"
+        EqualizerPlanApplicationMode.CROSSFADE -> {
+            String.format(
+                Locale.ROOT,
+                "%.2f ms crossfade (%d frames)",
+                state.lastTransitionDurationMillis,
+                state.lastTransitionFrameCount
+            )
+        }
+        EqualizerPlanApplicationMode.DIRECT_AFTER_FLUSH ->
+            "Direct after Media3 flush"
+        EqualizerPlanApplicationMode.DIRECT_BYPASS ->
+            "Direct bypass update (no DSP change)"
+    }
+}
+
+fun formatEqualizerPlanLatency(
+    state: EqualizerRuntimeState
+): String {
+    val preparation = state.planPreparationLatencyMillis
+        ?.let { "$it ms preparation" }
+        ?: "Preparation pending"
+    val application = state.planApplicationLatencyMillis
+        ?.let { "$it ms to DSP application" }
+        ?: "DSP application pending"
+    return "$preparation · $application"
 }
 
 private fun friendlyCodecName(mimeType: String, codecs: String?): String = when (mimeType) {

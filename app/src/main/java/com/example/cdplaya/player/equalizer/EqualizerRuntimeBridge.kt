@@ -31,11 +31,21 @@ internal object EqualizerRuntimeBridge {
         AtomicReference<EqualizerProcessorFormat?>(null)
     private val preparedPath =
         AtomicReference<PreparedEqualizerProcessingPath?>(null)
+    private val latestRequestVersion = AtomicLong(0L)
+    private val latestRequestNanos = AtomicLong(0L)
+    private val latestPreparedVersion = AtomicLong(-1L)
+    private val latestPreparedNanos = AtomicLong(0L)
 
     private val processorConfigured = AtomicBoolean(false)
     private val processorBypassed = AtomicBoolean(true)
     private val transitionInProgress = AtomicBoolean(false)
     private val appliedPlan = AtomicReference<PreparedEqualizerPlan?>(null)
+    private val latestAppliedVersion = AtomicLong(-1L)
+    private val latestAppliedNanos = AtomicLong(0L)
+    private val lastPlanApplicationMode =
+        AtomicReference(EqualizerPlanApplicationMode.NONE)
+    private val lastTransitionFrameCount = AtomicInteger(0)
+    private val lastTransitionSampleRateHz = AtomicInteger(0)
     private val scratchBufferGrowthCount = AtomicInteger(0)
 
     private val _state = MutableStateFlow(EqualizerRuntimeState())
@@ -57,8 +67,12 @@ internal object EqualizerRuntimeBridge {
         coordinatorJob = null
         requestedSnapshot.set(EqualizerRuntimeSnapshot.DEFAULT)
         versionCounter.set(0L)
+        latestRequestVersion.set(0L)
+        latestRequestNanos.set(0L)
         processorFormat.set(null)
         preparedPath.set(null)
+        latestPreparedVersion.set(-1L)
+        latestPreparedNanos.set(0L)
         clearProcessorTelemetry()
         _state.value = EqualizerRuntimeState()
     }
@@ -67,8 +81,11 @@ internal object EqualizerRuntimeBridge {
         configuration: EqualizerConfiguration,
         automaticHeadroomEnabled: Boolean
     ): EqualizerRuntimeSnapshot {
+        val version = versionCounter.incrementAndGet()
+        latestRequestVersion.set(version)
+        latestRequestNanos.set(System.nanoTime())
         val snapshot = EqualizerRuntimeSnapshot(
-            version = versionCounter.incrementAndGet(),
+            version = version,
             configuration = configuration,
             automaticHeadroomEnabled = automaticHeadroomEnabled
         )
@@ -105,9 +122,37 @@ internal object EqualizerRuntimeBridge {
         processorBypassed.set(bypassed)
     }
 
-    fun publishAppliedPlan(plan: PreparedEqualizerPlan?) {
+    fun publishAppliedPlan(
+        plan: PreparedEqualizerPlan?,
+        applicationMode: EqualizerPlanApplicationMode
+    ) {
+        val previousVersion = appliedPlan.get()?.sourceSnapshotVersion
         appliedPlan.set(plan)
         processorBypassed.set(plan?.bypassed ?: true)
+        if (
+            plan != null &&
+            plan.sourceSnapshotVersion != previousVersion
+        ) {
+            latestAppliedVersion.set(plan.sourceSnapshotVersion)
+            latestAppliedNanos.set(System.nanoTime())
+            lastPlanApplicationMode.set(applicationMode)
+            if (
+                applicationMode !=
+                EqualizerPlanApplicationMode.CROSSFADE
+            ) {
+                lastTransitionFrameCount.set(0)
+                lastTransitionSampleRateHz.set(0)
+            }
+        }
+    }
+
+    fun publishTransitionStarted(
+        totalFrameCount: Int,
+        sampleRateHz: Int
+    ) {
+        lastTransitionFrameCount.set(totalFrameCount)
+        lastTransitionSampleRateHz.set(sampleRateHz)
+        transitionInProgress.set(true)
     }
 
     fun publishTransitionInProgress(inProgress: Boolean) {
@@ -123,6 +168,11 @@ internal object EqualizerRuntimeBridge {
         processorBypassed.set(true)
         transitionInProgress.set(false)
         appliedPlan.set(null)
+        latestAppliedVersion.set(-1L)
+        latestAppliedNanos.set(0L)
+        lastPlanApplicationMode.set(EqualizerPlanApplicationMode.NONE)
+        lastTransitionFrameCount.set(0)
+        lastTransitionSampleRateHz.set(0)
         scratchBufferGrowthCount.set(0)
     }
 
@@ -168,6 +218,8 @@ internal object EqualizerRuntimeBridge {
                     requestedSnapshot.get() === snapshot &&
                     processorFormat.get() == format
                 ) {
+                    latestPreparedVersion.set(snapshot.version)
+                    latestPreparedNanos.set(System.nanoTime())
                     preparedPath.set(path)
                     preparedSnapshotVersion = snapshot.version
                     preparedFormat = format
@@ -183,6 +235,11 @@ internal object EqualizerRuntimeBridge {
         val format = processorFormat.get()
         val latestPlan = preparedPath.get()?.plan
         val applied = appliedPlan.get()
+        val requestVersion = latestRequestVersion.get()
+        val requestNanos = latestRequestNanos.get()
+        val transitionFrameCount = lastTransitionFrameCount.get()
+        val transitionSampleRateHz =
+            lastTransitionSampleRateHz.get()
         val latestMatchesRequest =
             latestPlan?.sourceSnapshotVersion == snapshot.version &&
                 latestPlan.processorFormat == format
@@ -207,7 +264,31 @@ internal object EqualizerRuntimeBridge {
             bypassed = processorBypassed.get() && !requiresDecodedPcm,
             transitionInProgress = transitionInProgress.get(),
             configurationVersion = snapshot.version,
+            preparedPlanVersion = latestPlan?.sourceSnapshotVersion,
             appliedPlanVersion = applied?.sourceSnapshotVersion,
+            planPreparationLatencyMillis = matchingLatencyMillis(
+                snapshotVersion = snapshot.version,
+                requestVersion = requestVersion,
+                requestNanos = requestNanos,
+                eventVersion = latestPreparedVersion.get(),
+                eventNanos = latestPreparedNanos.get()
+            ),
+            planApplicationLatencyMillis = matchingLatencyMillis(
+                snapshotVersion = snapshot.version,
+                requestVersion = requestVersion,
+                requestNanos = requestNanos,
+                eventVersion = latestAppliedVersion.get(),
+                eventNanos = latestAppliedNanos.get()
+            ),
+            lastPlanApplicationMode =
+                lastPlanApplicationMode.get(),
+            lastTransitionFrameCount =
+                transitionFrameCount,
+            lastTransitionDurationMillis =
+                transitionDurationMillis(
+                    frameCount = transitionFrameCount,
+                    sampleRateHz = transitionSampleRateHz
+                ),
             sampleRateHz = format?.sampleRateHz,
             channelCount = format?.channelCount,
             validFilterCount = diagnosticPlan?.validFilterCount ?: 0,
@@ -225,4 +306,32 @@ internal object EqualizerRuntimeBridge {
             _state.value = nextState
         }
     }
+
+    private fun matchingLatencyMillis(
+        snapshotVersion: Long,
+        requestVersion: Long,
+        requestNanos: Long,
+        eventVersion: Long,
+        eventNanos: Long
+    ): Long? {
+        if (
+            snapshotVersion != requestVersion ||
+            snapshotVersion != eventVersion ||
+            requestNanos <= 0L ||
+            eventNanos < requestNanos
+        ) {
+            return null
+        }
+        return (eventNanos - requestNanos) / NANOS_PER_MILLISECOND
+    }
+
+    private fun transitionDurationMillis(
+        frameCount: Int,
+        sampleRateHz: Int
+    ): Double {
+        if (frameCount <= 0 || sampleRateHz <= 0) return 0.0
+        return frameCount * 1_000.0 / sampleRateHz
+    }
+
+    private const val NANOS_PER_MILLISECOND = 1_000_000L
 }
