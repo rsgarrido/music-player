@@ -256,6 +256,17 @@ fun MusicRoute(
             onAutomaticHeadroomChanged =
                 musicViewModel::
                     setEqualizerAutomaticHeadroomEnabled,
+            onLimiterEnabledChanged =
+                musicViewModel::setLimiterEnabled,
+            onPreviewLimiterCeiling =
+                musicViewModel::previewLimiterCeiling,
+            onCommitLimiterCeiling =
+                musicViewModel::commitLimiterCeiling,
+            onCancelLimiterCeilingPreview =
+                musicViewModel::
+                    cancelLimiterCeilingPreview,
+            onResetLimiterMeters =
+                musicViewModel::resetLimiterMeters,
             onApplyBuiltInPreset =
                 musicViewModel::applyBuiltInEqualizerPreset,
             onApplyUserPreset =

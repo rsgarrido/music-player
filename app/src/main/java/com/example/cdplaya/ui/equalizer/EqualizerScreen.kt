@@ -21,6 +21,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
@@ -45,6 +46,9 @@ import com.example.cdplaya.player.equalizer.MIN_EQUALIZER_PREAMP_DB
 import com.example.cdplaya.player.equalizer.UserEqualizerPreset
 import com.example.cdplaya.player.equalizer.dsp.GraphicEqualizerDefaults
 import com.example.cdplaya.player.equalizer.normalizeEqualizerDb
+import com.example.cdplaya.player.equalizer.limiter.MAX_LIMITER_CEILING_DBFS
+import com.example.cdplaya.player.equalizer.limiter.MIN_LIMITER_CEILING_DBFS
+import java.util.Locale
 import kotlin.math.round
 
 @Composable
@@ -70,6 +74,12 @@ internal fun EqualizerScreen(
     }
     var fineEditTarget by remember {
         mutableStateOf<FineEditTarget?>(null)
+    }
+    var limiterCeilingDialogVisible by remember {
+        mutableStateOf(false)
+    }
+    var limiterCeilingDialogInitialValue by remember {
+        mutableDoubleStateOf(-1.0)
     }
     val preferences = state.editablePreferences
     var latestPreampDragValue by remember(
@@ -263,7 +273,8 @@ internal fun EqualizerScreen(
             },
             supportingContent = {
                 Text(
-                    "Reduces the signal before equalization when " +
+                    "Primary gain-safety stage. Reduces the signal " +
+                        "before equalization when " +
                         "the combined curve is predicted to exceed " +
                         "digital full scale."
                 )
@@ -288,6 +299,130 @@ internal fun EqualizerScreen(
             Text(
                 text = "The predicted response exceeds 0 dB. " +
                     "PCM16 saturation is not a limiter.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+        Text(
+            text = "Limiter",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        ListItem(
+            headlineContent = { Text("Sample-peak limiter") },
+            supportingContent = {
+                Text(
+                    "Channel-linked gain safety after the equalizer. " +
+                        "Enabling it adds 5 ms of audio latency."
+                )
+            },
+            trailingContent = {
+                Switch(
+                    checked = preferences.limiterEnabled,
+                    onCheckedChange =
+                        actions.onLimiterEnabledChanged,
+                    modifier = Modifier.semantics {
+                        contentDescription =
+                            "Sample-peak limiter enabled"
+                    }
+                )
+            }
+        )
+        var latestLimiterCeiling by remember(
+            preferences.limiterCeilingDbfs
+        ) {
+            mutableDoubleStateOf(
+                preferences.limiterCeilingDbfs
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+        ) {
+            Slider(
+                value =
+                    preferences.limiterCeilingDbfs.toFloat(),
+                onValueChange = { value ->
+                    latestLimiterCeiling =
+                        (round(value * 10.0) / 10.0)
+                    actions.onPreviewLimiterCeiling(
+                        latestLimiterCeiling
+                    )
+                },
+                onValueChangeFinished = {
+                    actions.onCommitLimiterCeiling(
+                        latestLimiterCeiling
+                    )
+                },
+                valueRange =
+                    MIN_LIMITER_CEILING_DBFS.toFloat()..
+                        MAX_LIMITER_CEILING_DBFS.toFloat(),
+                steps = 29,
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics {
+                        contentDescription =
+                            "Limiter ceiling, " +
+                                formatLimiterDb(
+                                    preferences
+                                        .limiterCeilingDbfs
+                                )
+                    }
+            )
+            TextButton(
+                onClick = {
+                    limiterCeilingDialogInitialValue =
+                        preferences.limiterCeilingDbfs
+                    limiterCeilingDialogVisible = true
+                }
+            ) {
+                Text(
+                    formatLimiterDb(
+                        preferences.limiterCeilingDbfs
+                    )
+                )
+            }
+        }
+        LimiterMeters(
+            state = state,
+            limiterEnabled = preferences.limiterEnabled,
+            onReset = actions.onResetLimiterMeters
+        )
+        Text(
+            text = "Fixed lookahead: 5 ms · Release: 100 ms",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Text(
+            text = "This is a sample-peak safety limiter, not a " +
+                "true-peak limiter. Inter-sample peaks can still exceed " +
+                "the selected ceiling.",
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier
+                .padding(
+                    horizontal = 16.dp,
+                    vertical = 8.dp
+                )
+                .semantics {
+                    contentDescription =
+                        "Sample-peak limiter disclaimer. " +
+                            "This is not a true-peak limiter."
+                }
+        )
+        if (
+            !preferences.limiterEnabled &&
+            state.runtimeState.saturatedSampleCount > 0L
+        ) {
+            Text(
+                text = "PCM16 output saturation has been observed. " +
+                    "Saturation is not limiting.",
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -352,6 +487,15 @@ internal fun EqualizerScreen(
                     "PCM active to avoid offload or renderer churn.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        } else if (preferences.limiterEnabled) {
+            Text(
+                text = "Disable the limiter for exact A/B comparison.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical = 12.dp
+                )
             )
         }
 
@@ -486,7 +630,139 @@ internal fun EqualizerScreen(
             }
         )
     }
+    if (limiterCeilingDialogVisible) {
+        EqualizerValueDialog(
+            title = "Limiter ceiling",
+            initialValueDb =
+                limiterCeilingDialogInitialValue,
+            minimumDb = MIN_LIMITER_CEILING_DBFS,
+            maximumDb = MAX_LIMITER_CEILING_DBFS,
+            onPreview =
+                actions.onPreviewLimiterCeiling,
+            onCancel = {
+                actions.onCancelLimiterCeilingPreview(
+                    limiterCeilingDialogInitialValue
+                )
+                limiterCeilingDialogVisible = false
+            },
+            onApply = { value ->
+                actions.onCommitLimiterCeiling(value)
+                limiterCeilingDialogVisible = false
+            }
+        )
+    }
 }
+
+@Composable
+private fun LimiterMeters(
+    state: EqualizerScreenState,
+    limiterEnabled: Boolean,
+    onReset: () -> Unit
+) {
+    val runtime = state.runtimeState
+    Column(
+        modifier = Modifier.padding(
+            horizontal = 16.dp,
+            vertical = 8.dp
+        )
+    ) {
+        LimiterMeter(
+            label = "Pre-limiter peak",
+            valueDb = runtime.preLimiterPeakDbfs,
+            progress = meterProgress(runtime.preLimiterPeakDbfs)
+        )
+        LimiterMeter(
+            label = "Post-limiter peak",
+            valueDb = runtime.postLimiterPeakDbfs,
+            progress = meterProgress(runtime.postLimiterPeakDbfs)
+        )
+        LimiterMeter(
+            label = "Gain reduction",
+            valueDb = runtime.currentGainReductionDb,
+            progress =
+                (runtime.currentGainReductionDb / 12.0)
+                    .toFloat()
+                    .coerceIn(0f, 1f),
+            positive = true
+        )
+        Text(
+            "Recent maximum reduction: " +
+                formatLimiterDb(
+                    runtime.maximumRecentGainReductionDb,
+                    positive = true
+                )
+        )
+        Text(
+            "Over-range samples: ${runtime.overRangeSampleCount} · " +
+                "Saturated samples: ${runtime.saturatedSampleCount}",
+            modifier = Modifier.semantics {
+                contentDescription =
+                    "Over-range sample count, " +
+                        "${runtime.overRangeSampleCount}. " +
+                        "Saturated sample count, " +
+                        runtime.saturatedSampleCount
+            }
+        )
+        Text(
+            "Active/reduced frames: " +
+                "${runtime.limiterActiveFrameCount} / " +
+                runtime.limiterReducedFrameCount
+        )
+        if (limiterEnabled) {
+            Text(
+                if (runtime.limiterPrimed) {
+                    "Limiter primed"
+                } else {
+                    "Limiter priming"
+                }
+            )
+        }
+        TextButton(
+            onClick = onReset,
+            modifier = Modifier.semantics {
+                contentDescription =
+                    "Reset limiter meters and counters"
+            }
+        ) {
+            Text("Reset limiter meters")
+        }
+    }
+}
+
+@Composable
+private fun LimiterMeter(
+    label: String,
+    valueDb: Double,
+    progress: Float,
+    positive: Boolean = false
+) {
+    Text(
+        "$label: ${formatLimiterDb(valueDb, positive)}",
+        style = MaterialTheme.typography.bodyMedium
+    )
+    LinearProgressIndicator(
+        progress = { progress },
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics {
+                contentDescription =
+                    "$label, ${formatLimiterDb(valueDb, positive)}"
+            }
+    )
+}
+
+private fun meterProgress(valueDb: Double): Float =
+    ((valueDb.coerceIn(-60.0, 0.0) + 60.0) / 60.0)
+        .toFloat()
+
+private fun formatLimiterDb(
+    value: Double,
+    positive: Boolean = false
+): String = String.format(
+    Locale.ROOT,
+    if (positive) "%.1f dB" else "%.1f dBFS",
+    value
+)
 
 @Composable
 private fun EqualizerAnalysisStatus(

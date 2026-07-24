@@ -60,4 +60,24 @@ class EqualizerScreenStateTest {
             ).comparisonAvailable
         )
     }
+
+    @Test
+    fun limiterMakesExactComparisonUnavailableUntilDisabled() {
+        val active = EqualizerPreferencesState(
+            enabled = true,
+            limiterEnabled = true
+        ).withBandGainDb(0, 4.0)
+
+        assertFalse(
+            EqualizerScreenState(
+                editablePreferences = active
+            ).comparisonAvailable
+        )
+        assertTrue(
+            EqualizerScreenState(
+                editablePreferences =
+                    active.withLimiterEnabled(false)
+            ).comparisonAvailable
+        )
+    }
 }

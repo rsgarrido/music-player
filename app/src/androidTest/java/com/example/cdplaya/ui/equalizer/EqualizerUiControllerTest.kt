@@ -178,4 +178,74 @@ class EqualizerUiControllerTest {
                 EqualizerRuntimeBridge.release()
             }
         }
+
+    @Test
+    fun limiterPreviewCommitAndComparisonAvailabilityStayTruthful() {
+        runBlocking {
+            EqualizerRuntimeBridge.release()
+            val context = ApplicationProvider
+                .getApplicationContext<Context>()
+            val scope = CoroutineScope(
+                SupervisorJob() + Dispatchers.Unconfined
+            )
+            val repository =
+                AppPreferencesRepository.create(
+                    context = context,
+                    scope = scope,
+                    dataStoreFileName =
+                        "limiter_${System.nanoTime()}.preferences_pb",
+                    legacyStores = emptyList()
+                )
+            val controller = EqualizerUiController(
+                preferencesRepository = repository,
+                runtimeState =
+                    MutableStateFlow(EqualizerRuntimeState()),
+                scope = scope
+            )
+            try {
+                withTimeout(5_000) {
+                    controller.state.first { it.isLoaded }
+                }
+                controller.previewLimiterCeiling(-2.4)
+                assertEquals(
+                    -2.4,
+                    EqualizerRuntimeBridge.requestedSnapshot()
+                        .limiterConfiguration.ceilingDbfs,
+                    0.0
+                )
+                assertEquals(
+                    -1.0,
+                    repository.state.value.equalizerPreferences
+                        .limiterCeilingDbfs,
+                    0.0
+                )
+
+                controller.commitLimiterCeiling(-2.4)
+                controller.setLimiterEnabled(true)
+                val enabled = withTimeout(5_000) {
+                    controller.state.first { state ->
+                        state.editablePreferences.limiterEnabled &&
+                            state.editablePreferences
+                                .limiterCeilingDbfs == -2.4
+                    }
+                }
+                assertFalse(enabled.comparisonAvailable)
+                assertTrue(
+                    EqualizerRuntimeBridge.requestedSnapshot()
+                        .limiterConfiguration.enabled
+                )
+
+                controller.setLimiterEnabled(false)
+                withTimeout(5_000) {
+                    repository.state.first { state ->
+                        !state.equalizerPreferences.limiterEnabled
+                    }
+                }
+            } finally {
+                controller.release()
+                scope.cancel()
+                EqualizerRuntimeBridge.release()
+            }
+        }
+    }
 }

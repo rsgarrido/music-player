@@ -314,6 +314,27 @@ class MusicViewModel(
             .setAutomaticHeadroomEnabled(enabled)
     }
 
+    fun setLimiterEnabled(enabled: Boolean) {
+        equalizerUiController.setLimiterEnabled(enabled)
+    }
+
+    fun previewLimiterCeiling(ceilingDbfs: Double) {
+        equalizerUiController.previewLimiterCeiling(ceilingDbfs)
+    }
+
+    fun commitLimiterCeiling(ceilingDbfs: Double) {
+        equalizerUiController.commitLimiterCeiling(ceilingDbfs)
+    }
+
+    fun cancelLimiterCeilingPreview(ceilingDbfs: Double) {
+        equalizerUiController
+            .cancelLimiterCeilingPreview(ceilingDbfs)
+    }
+
+    fun resetLimiterMeters() {
+        equalizerUiController.resetLimiterMeters()
+    }
+
     fun applyBuiltInEqualizerPreset(index: Int) {
         equalizerUiController.applyBuiltInPreset(index)
     }

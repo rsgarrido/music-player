@@ -7,6 +7,7 @@ import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import com.example.cdplaya.player.equalizer.UserEqualizerPreset
 import com.example.cdplaya.player.equalizer.applyPreset
 import com.example.cdplaya.player.equalizer.toDspConfiguration
+import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -162,6 +163,45 @@ internal class EqualizerUiController(
         commitEditablePreferences()
     }
 
+    fun setLimiterEnabled(enabled: Boolean) {
+        if (enabled) {
+            EqualizerRuntimeBridge.setComparisonState(
+                sessionActive = false,
+                bypassed = false
+            )
+        }
+        val updated = _state.value.editablePreferences
+            .withLimiterEnabled(enabled)
+        updatePreview(updated, markDirty = false)
+        pendingCommit = updated
+        scope.launch {
+            preferencesRepository.setLimiterEnabled(enabled)
+        }
+    }
+
+    fun previewLimiterCeiling(ceilingDbfs: Double) {
+        updatePreview(
+            _state.value.editablePreferences
+                .withLimiterCeilingDbfs(ceilingDbfs)
+        )
+    }
+
+    fun commitLimiterCeiling(ceilingDbfs: Double) {
+        previewLimiterCeiling(ceilingDbfs)
+        commitEditablePreferences()
+    }
+
+    fun cancelLimiterCeilingPreview(ceilingDbfs: Double) {
+        cancelPreview(
+            _state.value.editablePreferences
+                .withLimiterCeilingDbfs(ceilingDbfs)
+        )
+    }
+
+    fun resetLimiterMeters() {
+        EqualizerRuntimeBridge.requestLimiterMeterReset()
+    }
+
     fun applyBuiltInPreset(index: Int) {
         val preset = builtInEqualizerPresets[index]
         updatePreview(
@@ -287,11 +327,8 @@ internal class EqualizerUiController(
         val settled = _state.value.editablePreferences
         beginPendingCommit(settled)
         scope.launch {
-            preferencesRepository.replaceEqualizerCurve(
-                preampDb = settled.preampDb,
-                automaticHeadroomEnabled =
-                    settled.automaticHeadroomEnabled,
-                bandGainsDb = settled.bandGainsDb
+            preferencesRepository.replaceEqualizerPreferences(
+                settled
             )
         }
     }
@@ -333,7 +370,11 @@ internal class EqualizerUiController(
                 enabledOverride = enabledOverride
             ),
             automaticHeadroomEnabled =
-                preferences.automaticHeadroomEnabled
+                preferences.automaticHeadroomEnabled,
+            limiterConfiguration = LimiterConfiguration(
+                enabled = preferences.limiterEnabled,
+                ceilingDbfs = preferences.limiterCeilingDbfs
+            )
         )
     }
 }
@@ -346,5 +387,8 @@ private fun EqualizerPreferencesState
         preampDb.toBits() == other.preampDb.toBits() &&
         automaticHeadroomEnabled ==
             other.automaticHeadroomEnabled &&
-        bandGainsDb == other.bandGainsDb
+        bandGainsDb == other.bandGainsDb &&
+        limiterEnabled == other.limiterEnabled &&
+        limiterCeilingDbfs.toBits() ==
+            other.limiterCeilingDbfs.toBits()
 }

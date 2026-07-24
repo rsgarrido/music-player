@@ -6,8 +6,11 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -61,6 +64,8 @@ class EqualizerScreenTest {
         ).assertDoesNotExist()
         composeRule.onNodeWithText("Bass test")
             .assertDoesNotExist()
+        composeRule.onNodeWithText("Sample-peak limiter")
+            .assertExists()
     }
 
     @Test
@@ -92,6 +97,66 @@ class EqualizerScreenTest {
         }
     }
 
+    @Test
+    fun enabledLimiterShowsMetersDisablesAbAndResetsCounters() {
+        var resetRequested = false
+        composeRule.setContent {
+            MaterialTheme {
+                EqualizerScreen(
+                    state = EqualizerScreenState(
+                        editablePreferences =
+                            EqualizerPreferencesState(
+                                enabled = true,
+                                limiterEnabled = true
+                            ).withBandGainDb(0, 4.0),
+                        runtimeState = EqualizerRuntimeState(
+                            limiterEffectivelyActive = true,
+                            limiterPrimed = true,
+                            preLimiterPeakDbfs = 0.7,
+                            postLimiterPeakDbfs = -1.0,
+                            currentGainReductionDb = 2.4,
+                            maximumRecentGainReductionDb = 3.1,
+                            overRangeSampleCount = 8,
+                            saturatedSampleCount = 2
+                        ),
+                        isLoaded = true
+                    ),
+                    actions = noOpActions().copy(
+                        onResetLimiterMeters = {
+                            resetRequested = true
+                        }
+                    )
+                )
+            }
+        }
+
+        composeRule.onNodeWithText(
+            "Disable the limiter for exact A/B comparison."
+        ).assertExists()
+        composeRule.onNode(
+            hasContentDescription(
+                "Pre-limiter peak",
+                substring = true
+            )
+        ).assertExists()
+        composeRule.onNode(
+            hasContentDescription(
+                "Gain reduction",
+                substring = true
+            )
+        ).assertExists()
+        composeRule.onNode(
+            hasContentDescription(
+                "Reset limiter meters and counters"
+            )
+        )
+            .performScrollTo()
+            .performClick()
+        composeRule.runOnIdle {
+            assertTrue(resetRequested)
+        }
+    }
+
     private fun noOpActions() = EqualizerUiActions(
         onBack = {},
         onEnabledChanged = {},
@@ -102,6 +167,11 @@ class EqualizerScreenTest {
         onCommitPreamp = {},
         onCancelPreampPreview = {},
         onAutomaticHeadroomChanged = {},
+        onLimiterEnabledChanged = {},
+        onPreviewLimiterCeiling = {},
+        onCommitLimiterCeiling = {},
+        onCancelLimiterCeilingPreview = {},
+        onResetLimiterMeters = {},
         onApplyBuiltInPreset = {},
         onApplyUserPreset = {},
         onSaveUserPreset = {},
