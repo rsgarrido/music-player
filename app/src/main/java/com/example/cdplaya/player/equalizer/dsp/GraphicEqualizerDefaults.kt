@@ -2,6 +2,7 @@ package com.example.cdplaya.player.equalizer.dsp
 
 internal object GraphicEqualizerDefaults {
     const val Q = 1.41
+    const val BAND_COUNT = 10
 
     private val standardFrequenciesHz = doubleArrayOf(
         31.0,

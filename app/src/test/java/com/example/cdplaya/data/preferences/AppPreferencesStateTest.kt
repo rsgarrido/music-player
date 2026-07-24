@@ -2,6 +2,8 @@ package com.example.cdplaya.data.preferences
 
 import androidx.compose.ui.graphics.Color
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -70,5 +72,39 @@ class AppPreferencesStateTest {
         assertEquals(AudioOffloadPreference.AUTOMATIC, state.audioOffloadPreference)
         assertEquals(PlayerTheme.RETRO_RACK, state.selectedPlayerTheme)
         assertEquals(ReplayGainMode.OFF, state.replayGainMode)
+    }
+
+    @Test
+    fun equalizerDefaultsAndStoredNumericBandsDecodeInStableOrder() {
+        val defaults = decodeAppPreferences(
+            mutablePreferencesOf()
+        ).equalizerPreferences
+        assertTrue(!defaults.enabled)
+        assertEquals(0.0, defaults.preampDb, 0.0)
+        assertTrue(defaults.automaticHeadroomEnabled)
+        assertEquals(List(10) { 0.0 }, defaults.bandGainsDb)
+
+        val stored = mutablePreferencesOf(
+            booleanPreferencesKey("equalizer_enabled") to true,
+            doublePreferencesKey("equalizer_preamp_db") to -2.26,
+            booleanPreferencesKey(
+                "equalizer_automatic_headroom"
+            ) to false,
+            *Array(10) { index ->
+                doublePreferencesKey(
+                    "equalizer_band_${index}_db"
+                ) to index / 10.0
+            }
+        )
+        val equalizer = decodeAppPreferences(stored)
+            .equalizerPreferences
+
+        assertTrue(equalizer.enabled)
+        assertEquals(-2.3, equalizer.preampDb, 0.0)
+        assertTrue(!equalizer.automaticHeadroomEnabled)
+        assertEquals(
+            List(10) { index -> index / 10.0 },
+            equalizer.bandGainsDb
+        )
     }
 }
