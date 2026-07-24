@@ -1,0 +1,52 @@
+package com.example.cdplaya.player.equalizer.dsp
+
+/**
+ * Immutable equalizer configuration in processing order.
+ */
+internal class EqualizerConfiguration(
+    val enabled: Boolean,
+    val preampDb: Double,
+    filters: List<EqualizerFilterSpec>
+) {
+    val filters: List<EqualizerFilterSpec> = filters.toList()
+
+    init {
+        require(preampDb.isFinite()) {
+            "preampDb must be finite"
+        }
+    }
+
+    val isEffectivelyFlat: Boolean
+        get() {
+            if (!enabled) return true
+            if (!isEffectivelyZeroDb(preampDb)) return false
+
+            return filters.none { filter ->
+                filter.enabled && !isEffectivelyZeroDb(filter.gainDb)
+            }
+        }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is EqualizerConfiguration) return false
+
+        return enabled == other.enabled &&
+            preampDb == other.preampDb &&
+            filters == other.filters
+    }
+
+    override fun hashCode(): Int {
+        var result = enabled.hashCode()
+        result = 31 * result + preampDb.hashCode()
+        result = 31 * result + filters.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "EqualizerConfiguration(" +
+            "enabled=$enabled, " +
+            "preampDb=$preampDb, " +
+            "filters=$filters)"
+    }
+}
+
