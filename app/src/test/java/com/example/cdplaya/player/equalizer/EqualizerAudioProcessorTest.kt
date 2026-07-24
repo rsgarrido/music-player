@@ -1,6 +1,7 @@
 package com.example.cdplaya.player.equalizer
 
 import androidx.media3.common.C
+import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.AudioProcessor.AudioFormat
 import androidx.media3.common.audio.AudioProcessor.StreamMetadata
 import androidx.media3.common.audio.AudioProcessor.UnhandledAudioFormatException
@@ -103,6 +104,15 @@ class EqualizerAudioProcessorTest {
         processor.queueInput(directBuffer(bytes))
 
         assertArrayEquals(bytes, processor.output.toByteArray())
+    }
+
+    @Test
+    fun emptyMedia3InputDoesNotAttemptToCopyTheSharedEmptyBuffer() {
+        val processor = configuredProcessor(channelCount = 2)
+
+        processor.queueInput(AudioProcessor.EMPTY_BUFFER)
+
+        assertFalse(processor.output.hasRemaining())
     }
 
     @Test

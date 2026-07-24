@@ -76,6 +76,9 @@ internal class EqualizerAudioProcessor(
         require(inputByteCount % frameSizeBytes == 0) {
             "PCM16 input must contain complete audio frames"
         }
+        if (inputByteCount == 0) {
+            return
+        }
         val frameCount = inputByteCount / frameSizeBytes
         val sampleCount = frameCount * format.channelCount
         considerLatestPreparedPath(format)
