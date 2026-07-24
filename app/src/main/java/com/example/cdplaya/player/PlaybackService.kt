@@ -39,6 +39,7 @@ import com.example.cdplaya.player.equalizer.EqualizerAudioProcessor
 import com.example.cdplaya.player.equalizer.EqualizerRenderersFactory
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeBridge
 import com.example.cdplaya.player.equalizer.toDspConfiguration
+import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -320,15 +321,31 @@ class PlaybackService : MediaLibraryService() {
                 .filter { preferences -> preferences.isLoaded }
                 .map { preferences -> preferences.audioOffloadPreference },
                 EqualizerRuntimeBridge.state
-                    .map { state -> state.requiresDecodedPcm }
-            ) { preference, requiresDecodedPcm ->
-                preference to requiresDecodedPcm
+                    .map { state ->
+                        AudioProcessingRequirements(
+                            equalizerEffectivelyActive =
+                                state.effectivelyActive &&
+                                    !state.limiterEffectivelyActive,
+                            limiterEffectivelyActive =
+                                state.limiterRequestedEnabled ||
+                                    state.limiterEffectivelyActive,
+                            comparisonSessionActive =
+                                state.comparisonSessionActive
+                        )
+                    }
+            ) { preference, requirements ->
+                preference to requirements
             }
                 .distinctUntilChanged()
-                .collectLatest { (preference, requiresDecodedPcm) ->
+                .collectLatest { (preference, requirements) ->
                     applyAudioProcessingPolicy(
                         userPreference = preference,
-                        equalizerEffectivelyActive = requiresDecodedPcm
+                        equalizerEffectivelyActive =
+                            requirements.equalizerEffectivelyActive,
+                        limiterEffectivelyActive =
+                            requirements.limiterEffectivelyActive,
+                        comparisonSessionActive =
+                            requirements.comparisonSessionActive
                     )
                 }
         }
@@ -358,7 +375,16 @@ class PlaybackService : MediaLibraryService() {
                                 .toDspConfiguration(),
                         automaticHeadroomEnabled =
                             equalizerPreferences
-                                .automaticHeadroomEnabled
+                                .automaticHeadroomEnabled,
+                        limiterConfiguration =
+                            LimiterConfiguration(
+                                enabled =
+                                    equalizerPreferences
+                                        .limiterEnabled,
+                                ceilingDbfs =
+                                    equalizerPreferences
+                                        .limiterCeilingDbfs
+                            )
                     )
                 }
         }
@@ -369,18 +395,27 @@ class PlaybackService : MediaLibraryService() {
     ) {
         applyAudioProcessingPolicy(
             userPreference = preference,
-            equalizerEffectivelyActive = false
+            equalizerEffectivelyActive = false,
+            limiterEffectivelyActive = false,
+            comparisonSessionActive = false
         )
     }
 
     private fun applyAudioProcessingPolicy(
         userPreference: AudioOffloadPreference,
-        equalizerEffectivelyActive: Boolean
+        equalizerEffectivelyActive: Boolean,
+        limiterEffectivelyActive: Boolean,
+        comparisonSessionActive: Boolean
     ) {
         tracePerformance(PerformanceTraceNames.AUDIO_OFFLOAD_PREFERENCE_APPLIED) {
             val decision = AudioProcessingPolicy.evaluate(
                 userOffloadPreference = userPreference,
-                equalizerEffectivelyActive = equalizerEffectivelyActive
+                equalizerEffectivelyActive =
+                    equalizerEffectivelyActive,
+                limiterEffectivelyActive =
+                    limiterEffectivelyActive,
+                comparisonSessionActive =
+                    comparisonSessionActive
             )
             val updatedParameters = player.trackSelectionParameters
                 .withAudioOffloadPreference(
@@ -394,6 +429,12 @@ class PlaybackService : MediaLibraryService() {
             )
         }
     }
+
+    private data class AudioProcessingRequirements(
+        val equalizerEffectivelyActive: Boolean,
+        val limiterEffectivelyActive: Boolean,
+        val comparisonSessionActive: Boolean
+    )
 
     private fun publishAudioRoute() {
         val route = if (isRemotePlayback) {

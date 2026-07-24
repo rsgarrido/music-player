@@ -30,5 +30,21 @@ data class EqualizerRuntimeState(
     val ignoredFilterCount: Int = 0,
     val automaticHeadroomDb: Double = 0.0,
     val requiresDecodedPcm: Boolean = false,
-    val scratchBufferGrowthCount: Int = 0
+    val scratchBufferGrowthCount: Int = 0,
+    val limiterRequestedEnabled: Boolean = false,
+    val limiterEffectivelyActive: Boolean = false,
+    val limiterCeilingDbfs: Double = -1.0,
+    val limiterLookaheadFrames: Int = 0,
+    val limiterLookaheadMilliseconds: Double = 0.0,
+    val limiterReleaseMilliseconds: Double = 100.0,
+    val limiterPrimed: Boolean = false,
+    val preLimiterPeakDbfs: Double = -120.0,
+    val postLimiterPeakDbfs: Double = -120.0,
+    val currentGainReductionDb: Double = 0.0,
+    val maximumRecentGainReductionDb: Double = 0.0,
+    val overRangeSampleCount: Long = 0L,
+    val saturatedSampleCount: Long = 0L,
+    val limiterActiveFrameCount: Long = 0L,
+    val limiterReducedFrameCount: Long = 0L,
+    val limiterReprimeCount: Int = 0
 )

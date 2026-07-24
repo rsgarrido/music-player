@@ -24,6 +24,8 @@ class EqualizerPreferencesStateTest {
             assertEquals(0.0, gain, 0.0)
         }
         assertTrue(state.userPresets.isEmpty())
+        assertFalse(state.limiterEnabled)
+        assertEquals(-1.0, state.limiterCeilingDbfs, 0.0)
     }
 
     @Test
@@ -136,6 +138,25 @@ class EqualizerPreferencesStateTest {
                 (filter as EqualizerFilterSpec.Peaking).q,
                 0.0
             )
+        }
+    }
+
+    @Test
+    fun limiterSettingsNormalizeAndRemainGlobalAcrossCurveChanges() {
+        val state = EqualizerPreferencesState(
+            limiterEnabled = true,
+            limiterCeilingDbfs = -1.26
+        )
+            .withBandGainDb(0, 4.0)
+            .withPreampDb(-2.0)
+
+        assertTrue(state.limiterEnabled)
+        assertEquals(-1.3, state.limiterCeilingDbfs, 0.0)
+        assertThrows(IllegalArgumentException::class.java) {
+            state.withLimiterCeilingDbfs(Double.NaN)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            state.withLimiterCeilingDbfs(-3.1)
         }
     }
 }

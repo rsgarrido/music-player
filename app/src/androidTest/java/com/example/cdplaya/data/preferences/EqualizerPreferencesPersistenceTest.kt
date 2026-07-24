@@ -47,6 +47,8 @@ class EqualizerPreferencesPersistenceTest {
                             enabled = true,
                             preampDb = -2.26,
                             automaticHeadroomEnabled = false,
+                            limiterEnabled = true,
+                            limiterCeilingDbfs = -2.26,
                             bandGainsDb = List(10) { index ->
                                 index - 4.0
                             }
@@ -90,6 +92,12 @@ class EqualizerPreferencesPersistenceTest {
                 assertEquals(-2.3, equalizer.preampDb, 0.0)
                 assertFalse(
                     equalizer.automaticHeadroomEnabled
+                )
+                assertTrue(equalizer.limiterEnabled)
+                assertEquals(
+                    -2.3,
+                    equalizer.limiterCeilingDbfs,
+                    0.0
                 )
                 assertEquals(
                     List(10) { index -> index - 4.0 },

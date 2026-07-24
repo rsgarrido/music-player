@@ -3,6 +3,8 @@ package com.example.cdplaya.player.equalizer
 import androidx.media3.common.C
 import com.example.cdplaya.player.equalizer.dsp.EqualizerConfiguration
 import com.example.cdplaya.player.equalizer.dsp.EqualizerFilterSpec
+import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
+import com.example.cdplaya.player.equalizer.limiter.LimiterMeterSnapshot
 import java.lang.reflect.Modifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -74,6 +76,40 @@ class EqualizerRuntimeBridgeTest {
         assertTrue(state.requiresDecodedPcm)
         assertEquals(snapshot.version, state.configurationVersion)
         assertEquals(null, state.appliedPlanVersion)
+    }
+
+    @Test
+    fun limiterRequestRequiresDecodedPcmBeforePreparationAndPublishesFormat() {
+        val format = format(96_000)
+        EqualizerRuntimeBridge.publishProcessorFormat(format)
+        EqualizerRuntimeBridge.start(scope)
+        val snapshot = EqualizerRuntimeBridge.requestConfiguration(
+            configuration = EqualizerConfiguration(
+                enabled = false,
+                preampDb = 0.0,
+                filters = emptyList()
+            ),
+            automaticHeadroomEnabled = true,
+            limiterConfiguration = LimiterConfiguration(
+                enabled = true,
+                ceilingDbfs = -2.0
+            )
+        )
+
+        assertTrue(EqualizerRuntimeBridge.state.value.requiresDecodedPcm)
+        waitUntil {
+            EqualizerRuntimeBridge
+                .latestCompatibleLimiterConfiguration(format)
+                ?.configurationVersion == snapshot.version
+        }
+        EqualizerRuntimeBridge.publishStateForTest()
+        val state = EqualizerRuntimeBridge.state.value
+
+        assertTrue(state.limiterRequestedEnabled)
+        assertEquals(-2.0, state.limiterCeilingDbfs, 0.0)
+        assertEquals(480, state.limiterLookaheadFrames)
+        assertEquals(5.0, state.limiterLookaheadMilliseconds, 0.0)
+        assertEquals(100.0, state.limiterReleaseMilliseconds, 0.0)
     }
 
     @Test
@@ -279,6 +315,26 @@ class EqualizerRuntimeBridgeTest {
         EqualizerRuntimeBridge.publishStateForTest()
 
         assertSame(first, EqualizerRuntimeBridge.state.value)
+    }
+
+    @Test
+    fun inactiveLimiterDisplaysTheSameHeldPeakBeforeAndAfterLimiter() {
+        EqualizerRuntimeBridge.publishLimiterMeterSnapshot(
+            LimiterMeterSnapshot(
+                preLimiterPeakDbfs = -9.0,
+                postLimiterPeakDbfs = -2.0
+            )
+        )
+
+        EqualizerRuntimeBridge.publishStateForTest()
+
+        val state = EqualizerRuntimeBridge.state.value
+        assertFalse(state.limiterEffectivelyActive)
+        assertEquals(
+            state.preLimiterPeakDbfs,
+            state.postLimiterPeakDbfs,
+            0.0
+        )
     }
 
     @Test

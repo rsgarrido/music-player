@@ -1,6 +1,9 @@
 package com.example.cdplaya.player.equalizer
 
 import com.example.cdplaya.player.equalizer.dsp.GraphicEqualizerDefaults
+import com.example.cdplaya.player.equalizer.limiter.DEFAULT_LIMITER_CEILING_DBFS
+import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
+import com.example.cdplaya.player.equalizer.limiter.normalizeLimiterCeilingDbfs
 import java.util.Collections
 import kotlin.math.round
 
@@ -10,7 +13,9 @@ class EqualizerPreferencesState(
     automaticHeadroomEnabled: Boolean = true,
     bandGainsDb: List<Double> =
         List(GraphicEqualizerDefaults.BAND_COUNT) { 0.0 },
-    userPresets: List<UserEqualizerPreset> = emptyList()
+    userPresets: List<UserEqualizerPreset> = emptyList(),
+    limiterEnabled: Boolean = false,
+    limiterCeilingDbfs: Double = DEFAULT_LIMITER_CEILING_DBFS
 ) {
     val enabled: Boolean = enabled
     val preampDb: Double =
@@ -21,6 +26,12 @@ class EqualizerPreferencesState(
         normalizeBandGains(bandGainsDb)
     val userPresets: List<UserEqualizerPreset> =
         Collections.unmodifiableList(userPresets.toList())
+    val limiterEnabled: Boolean = limiterEnabled
+    val limiterCeilingDbfs: Double =
+        LimiterConfiguration(
+            enabled = limiterEnabled,
+            ceilingDbfs = limiterCeilingDbfs
+        ).ceilingDbfs
 
     init {
         require(
@@ -56,6 +67,17 @@ class EqualizerPreferencesState(
         value: Boolean
     ): EqualizerPreferencesState =
         copy(automaticHeadroomEnabled = value)
+
+    fun withLimiterEnabled(value: Boolean): EqualizerPreferencesState =
+        copy(limiterEnabled = value)
+
+    fun withLimiterCeilingDbfs(
+        value: Double
+    ): EqualizerPreferencesState =
+        copy(
+            limiterCeilingDbfs =
+                normalizeLimiterCeilingDbfs(value)
+        )
 
     fun withBandGainDb(
         index: Int,
@@ -101,14 +123,18 @@ class EqualizerPreferencesState(
             this.automaticHeadroomEnabled,
         bandGainsDb: List<Double> = this.bandGainsDb,
         userPresets: List<UserEqualizerPreset> =
-            this.userPresets
+            this.userPresets,
+        limiterEnabled: Boolean = this.limiterEnabled,
+        limiterCeilingDbfs: Double = this.limiterCeilingDbfs
     ): EqualizerPreferencesState = EqualizerPreferencesState(
         enabled = enabled,
         preampDb = preampDb,
         automaticHeadroomEnabled =
             automaticHeadroomEnabled,
         bandGainsDb = bandGainsDb,
-        userPresets = userPresets
+        userPresets = userPresets,
+        limiterEnabled = limiterEnabled,
+        limiterCeilingDbfs = limiterCeilingDbfs
     )
 
     override fun equals(other: Any?): Boolean =
@@ -119,7 +145,10 @@ class EqualizerPreferencesState(
             automaticHeadroomEnabled ==
                 other.automaticHeadroomEnabled &&
             bandGainsDb == other.bandGainsDb &&
-            userPresets == other.userPresets
+            userPresets == other.userPresets &&
+            limiterEnabled == other.limiterEnabled &&
+            limiterCeilingDbfs.toBits() ==
+                other.limiterCeilingDbfs.toBits()
 
     override fun hashCode(): Int {
         var result = enabled.hashCode()
@@ -128,6 +157,8 @@ class EqualizerPreferencesState(
             automaticHeadroomEnabled.hashCode()
         result = 31 * result + bandGainsDb.hashCode()
         result = 31 * result + userPresets.hashCode()
+        result = 31 * result + limiterEnabled.hashCode()
+        result = 31 * result + limiterCeilingDbfs.hashCode()
         return result
     }
 
@@ -138,7 +169,9 @@ class EqualizerPreferencesState(
             "automaticHeadroomEnabled=" +
             "$automaticHeadroomEnabled, " +
             "bandGainsDb=$bandGainsDb, " +
-            "userPresets=$userPresets)"
+            "userPresets=$userPresets, " +
+            "limiterEnabled=$limiterEnabled, " +
+            "limiterCeilingDbfs=$limiterCeilingDbfs)"
 }
 
 class UserEqualizerPreset(

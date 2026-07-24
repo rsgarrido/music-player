@@ -97,4 +97,43 @@ class AudioProcessingPolicyTest {
 
         assertEquals(first, second)
     }
+
+    @Test
+    fun everyDspCombinationUsesDecodedPcmExactlyWhenRequired() {
+        AudioOffloadPreference.entries.forEach { preference ->
+            listOf(false, true).forEach { equalizer ->
+                listOf(false, true).forEach { limiter ->
+                    listOf(false, true).forEach { comparison ->
+                        val decision = AudioProcessingPolicy.evaluate(
+                            userOffloadPreference = preference,
+                            equalizerEffectivelyActive = equalizer,
+                            limiterEffectivelyActive = limiter,
+                            comparisonSessionActive = comparison
+                        )
+                        val requiresPcm =
+                            equalizer || limiter || comparison
+
+                        assertEquals(
+                            if (requiresPcm) {
+                                AudioProcessingPathRequirement
+                                    .DECODED_PCM_REQUIRED
+                            } else {
+                                AudioProcessingPathRequirement
+                                    .USER_OFFLOAD_PREFERENCE_ALLOWED
+                            },
+                            decision.pathRequirement
+                        )
+                        assertEquals(
+                            if (requiresPcm) {
+                                AudioOffloadPreference.DISABLED
+                            } else {
+                                preference
+                            },
+                            decision.effectiveOffloadPreference
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
