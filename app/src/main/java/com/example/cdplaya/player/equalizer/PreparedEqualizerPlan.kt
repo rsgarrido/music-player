@@ -11,7 +11,6 @@ internal enum class IgnoredEqualizerFilterReason {
     AT_OR_ABOVE_NYQUIST,
     INVALID_PARAMETERS
 }
-
 internal data class IgnoredEqualizerFilter(
     val sourceIndex: Int,
     val frequencyHz: Double,
@@ -101,4 +100,3 @@ internal class PreparedEqualizerProcessingPath(
         return engine?.capacitySnapshot()
     }
 }
-

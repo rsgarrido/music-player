@@ -6,7 +6,6 @@ internal enum class AudioProcessingPathRequirement {
     USER_OFFLOAD_PREFERENCE_ALLOWED,
     DECODED_PCM_REQUIRED
 }
-
 internal data class AudioProcessingPolicyDecision(
     val pathRequirement: AudioProcessingPathRequirement,
     val effectiveOffloadPreference: AudioOffloadPreference
@@ -32,4 +31,3 @@ internal object AudioProcessingPolicy {
         }
     }
 }
-

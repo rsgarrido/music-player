@@ -56,4 +56,3 @@ internal class EqualizerTransitionState(
         const val MAXIMUM_DURATION_MILLIS = 30
     }
 }
-

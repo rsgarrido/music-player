@@ -14,4 +14,3 @@ internal data class EqualizerProcessorFormat(
         }
     }
 }
-
