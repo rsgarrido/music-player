@@ -61,6 +61,77 @@ class EqualizerRuntimeBridgeTest {
     }
 
     @Test
+    fun activeRequestRequiresDecodedPcmBeforeItsPlanIsPrepared() {
+        val snapshot = EqualizerRuntimeBridge.requestConfiguration(
+            configuration = activeConfiguration(gainDb = 6.0),
+            automaticHeadroomEnabled = true
+        )
+        val state = EqualizerRuntimeBridge.state.value
+
+        assertTrue(state.requestedEnabled)
+        assertTrue(state.effectivelyActive)
+        assertFalse(state.bypassed)
+        assertTrue(state.requiresDecodedPcm)
+        assertEquals(snapshot.version, state.configurationVersion)
+        assertEquals(null, state.appliedPlanVersion)
+    }
+
+    @Test
+    fun enabledFlatRequestRemainsBypassedAndAllowsUserOffloadPolicy() {
+        EqualizerRuntimeBridge.requestConfiguration(
+            configuration = EqualizerConfiguration(
+                enabled = true,
+                preampDb = 0.0,
+                filters = emptyList()
+            ),
+            automaticHeadroomEnabled = true
+        )
+        val state = EqualizerRuntimeBridge.state.value
+
+        assertTrue(state.requestedEnabled)
+        assertFalse(state.effectivelyActive)
+        assertTrue(state.bypassed)
+        assertFalse(state.requiresDecodedPcm)
+    }
+
+    @Test
+    fun requestWithOnlyNyquistInvalidFilterAllowsOffloadAfterPreparation() {
+        val format = format(32_000)
+        EqualizerRuntimeBridge.publishProcessorFormat(format)
+        EqualizerRuntimeBridge.start(scope)
+        val snapshot = EqualizerRuntimeBridge.requestConfiguration(
+            configuration = EqualizerConfiguration(
+                enabled = true,
+                preampDb = 0.0,
+                filters = listOf(
+                    EqualizerFilterSpec.Peaking(
+                        frequencyHz = 16_000.0,
+                        gainDb = 6.0,
+                        q = 1.41
+                    )
+                )
+            ),
+            automaticHeadroomEnabled = true
+        )
+
+        waitUntil {
+            EqualizerRuntimeBridge
+                .latestCompatiblePath(format)
+                ?.plan
+                ?.sourceSnapshotVersion == snapshot.version &&
+                !EqualizerRuntimeBridge.state.value.requiresDecodedPcm
+        }
+        val state = EqualizerRuntimeBridge.state.value
+
+        assertTrue(state.requestedEnabled)
+        assertFalse(state.effectivelyActive)
+        assertTrue(state.bypassed)
+        assertFalse(state.requiresDecodedPcm)
+        assertEquals(0, state.validFilterCount)
+        assertEquals(1, state.ignoredFilterCount)
+    }
+
+    @Test
     fun latestCompatiblePlanWinsAcrossVersionAndFormatChanges() {
         val format48 = format(48_000)
         EqualizerRuntimeBridge.publishProcessorFormat(format48)
