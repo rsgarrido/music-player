@@ -4,34 +4,42 @@ package com.example.cdplaya.player.equalizer.dsp
  * Direct Form I cascade with independent history for every channel and section.
  *
  * Coefficients and the four state values x1, x2, y1, and y2 are stored in
- * primitive arrays. State index `channel * sectionCount + section` identifies
- * one channel/section pair.
+ * primitive arrays. State index `channel * sectionCapacity + section`
+ * identifies one channel/section pair.
  */
-internal class BiquadCascade(
-    coefficients: List<BiquadCoefficients>,
-    private val channelCount: Int
-) {
-    private val sectionCount = coefficients.size
-    private val b0 = DoubleArray(sectionCount)
-    private val b1 = DoubleArray(sectionCount)
-    private val b2 = DoubleArray(sectionCount)
-    private val a1 = DoubleArray(sectionCount)
-    private val a2 = DoubleArray(sectionCount)
-
+internal class BiquadCascade {
+    private val sectionCapacity: Int
+    private val channelCapacity: Int
+    private val sectionCount: Int
+    private val b0: DoubleArray
+    private val b1: DoubleArray
+    private val b2: DoubleArray
+    private val a1: DoubleArray
+    private val a2: DoubleArray
     private val x1: DoubleArray
     private val x2: DoubleArray
     private val y1: DoubleArray
     private val y2: DoubleArray
 
-    init {
+    constructor(
+        coefficients: List<BiquadCoefficients>,
+        channelCount: Int
+    ) {
         require(channelCount > 0) {
             "channelCount must be greater than 0"
         }
-        val stateValueCount = channelCount.toLong() * sectionCount
-        require(stateValueCount <= Int.MAX_VALUE) {
-            "channel and section count require too much filter state"
-        }
-
+        sectionCapacity = coefficients.size
+        channelCapacity = channelCount
+        sectionCount = coefficients.size
+        val stateSize = checkedStateSize(
+            sectionCapacity = sectionCapacity,
+            channelCapacity = channelCapacity
+        )
+        b0 = DoubleArray(sectionCapacity)
+        b1 = DoubleArray(sectionCapacity)
+        b2 = DoubleArray(sectionCapacity)
+        a1 = DoubleArray(sectionCapacity)
+        a2 = DoubleArray(sectionCapacity)
         coefficients.forEachIndexed { sectionIndex, coefficient ->
             b0[sectionIndex] = coefficient.b0
             b1[sectionIndex] = coefficient.b1
@@ -39,8 +47,42 @@ internal class BiquadCascade(
             a1[sectionIndex] = coefficient.a1
             a2[sectionIndex] = coefficient.a2
         }
+        x1 = DoubleArray(stateSize)
+        x2 = DoubleArray(stateSize)
+        y1 = DoubleArray(stateSize)
+        y2 = DoubleArray(stateSize)
+    }
 
-        val stateSize = stateValueCount.toInt()
+    constructor(
+        preparedCascade: PreparedEqualizerCascade,
+        minimumSectionCapacity: Int,
+        minimumChannelCapacity: Int
+    ) {
+        sectionCapacity = maxOf(
+            preparedCascade.sectionCount,
+            minimumSectionCapacity
+        )
+        channelCapacity = maxOf(
+            preparedCascade.channelCount,
+            minimumChannelCapacity
+        )
+        sectionCount = preparedCascade.sectionCount
+        val stateSize = checkedStateSize(
+            sectionCapacity = sectionCapacity,
+            channelCapacity = channelCapacity
+        )
+        b0 = DoubleArray(sectionCapacity)
+        b1 = DoubleArray(sectionCapacity)
+        b2 = DoubleArray(sectionCapacity)
+        a1 = DoubleArray(sectionCapacity)
+        a2 = DoubleArray(sectionCapacity)
+        repeat(sectionCount) { sectionIndex ->
+            b0[sectionIndex] = preparedCascade.coefficient(sectionIndex, 0)
+            b1[sectionIndex] = preparedCascade.coefficient(sectionIndex, 1)
+            b2[sectionIndex] = preparedCascade.coefficient(sectionIndex, 2)
+            a1[sectionIndex] = preparedCascade.coefficient(sectionIndex, 3)
+            a2[sectionIndex] = preparedCascade.coefficient(sectionIndex, 4)
+        }
         x1 = DoubleArray(stateSize)
         x2 = DoubleArray(stateSize)
         y1 = DoubleArray(stateSize)
@@ -53,7 +95,7 @@ internal class BiquadCascade(
     ): Double {
         var sectionInput = inputSample
         var sectionIndex = 0
-        var stateIndex = channelIndex * sectionCount
+        var stateIndex = channelIndex * sectionCapacity
 
         while (sectionIndex < sectionCount) {
             val sectionOutput =
@@ -81,5 +123,32 @@ internal class BiquadCascade(
         x2.fill(0.0)
         y1.fill(0.0)
         y2.fill(0.0)
+    }
+
+    fun capacitySnapshot(): EqualizerEngineCapacity {
+        return EqualizerEngineCapacity(
+            sectionCapacity = sectionCapacity,
+            channelCapacity = channelCapacity,
+            coefficientArrayIdentity = System.identityHashCode(b0),
+            stateArrayIdentity = System.identityHashCode(x1)
+        )
+    }
+
+    private fun checkedStateSize(
+        sectionCapacity: Int,
+        channelCapacity: Int
+    ): Int {
+        require(sectionCapacity >= 0) {
+            "sectionCapacity must be non-negative"
+        }
+        require(channelCapacity > 0) {
+            "channelCapacity must be greater than 0"
+        }
+        val stateValueCount =
+            sectionCapacity.toLong() * channelCapacity
+        require(stateValueCount <= Int.MAX_VALUE) {
+            "channel and section capacity require too much filter state"
+        }
+        return stateValueCount.toInt()
     }
 }
