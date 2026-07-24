@@ -213,6 +213,8 @@ private fun EqualizerPreferencesState
         automaticHeadroomEnabled =
             automaticHeadroomEnabled,
         bandGainsDb = bandGainsDb.toList(),
+        limiterEnabled = limiterEnabled,
+        limiterCeilingDbfs = limiterCeilingDbfs,
         userPresets = userPresets.map { preset ->
             BackupEqualizerPreset(
                 id = preset.id,
@@ -233,6 +235,8 @@ private fun BackupEqualizerPreferences
         automaticHeadroomEnabled =
             automaticHeadroomEnabled,
         bandGainsDb = bandGainsDb,
+        limiterEnabled = limiterEnabled,
+        limiterCeilingDbfs = limiterCeilingDbfs,
         userPresets = userPresets.map { preset ->
             UserEqualizerPreset(
                 id = preset.id,

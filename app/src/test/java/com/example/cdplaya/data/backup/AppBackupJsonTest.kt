@@ -1,6 +1,7 @@
 package com.example.cdplaya.data.backup
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import com.example.cdplaya.player.audio.AudioOffloadPreference
 import org.junit.Assert.fail
@@ -11,7 +12,7 @@ class AppBackupJsonTest {
     fun encodeBackup_includesCurrentSchemaVersion() {
         val encoded = AppBackupJson.encodeBackup(emptyBackup())
 
-        assertTrue(encoded.contains("\"schemaVersion\": 4"))
+        assertTrue(encoded.contains("\"schemaVersion\": 5"))
     }
 
     @Test
@@ -62,7 +63,7 @@ class AppBackupJsonTest {
     }
 
     @Test
-    fun decodeBackup_migratesV1PreferencesAndReferencesToV4() {
+    fun decodeBackup_migratesV1PreferencesAndReferencesToV5() {
         val decoded = AppBackupJson.decodeBackup(
             """
             {
@@ -77,7 +78,7 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(4, decoded.schemaVersion)
+        assertEquals(5, decoded.schemaVersion)
         assertEquals("slide", decoded.preferences.modernArtworkTransitionStyle)
         assertEquals("classic_bar", decoded.preferences.modernSeekbarStyle)
         assertEquals(emptyMap<String, BackupPlayerThemeTokenOverrides>(), decoded.preferences.playerThemeTokenOverrides)
@@ -91,7 +92,7 @@ class AppBackupJsonTest {
     }
 
     @Test
-    fun v4Backup_roundTripsAllDurablePreferenceAndReferenceFields() {
+    fun v5Backup_roundTripsAllDurablePreferenceAndReferenceFields() {
         val preferences = BackupPreferences(
             selectedLibraryFolders = listOf("Music"),
             selectedPlayerThemeId = "retro_rack",
@@ -156,7 +157,7 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(4, decoded.schemaVersion)
+        assertEquals(5, decoded.schemaVersion)
         assertEquals("old-key", decoded.favorites.single().reference?.legacyStableKey)
     }
 
@@ -164,11 +165,11 @@ class AppBackupJsonTest {
     fun decodeBackup_rejectsUnsupportedSchemaVersion() {
         val exception = expectIllegalArgumentException {
             AppBackupJson.decodeBackup(
-                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 5))
+                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 6))
             )
         }
 
-        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 5"))
+        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 6"))
     }
 
     @Test
@@ -179,7 +180,7 @@ class AppBackupJsonTest {
     }
 
     @Test
-    fun v4EqualizerAndUserPresetsRoundTripWithoutRuntimeState() {
+    fun v5EqualizerLimiterAndUserPresetsRoundTripWithoutRuntimeState() {
         val equalizer = BackupEqualizerPreferences(
             enabled = true,
             preampDb = -2.5,
@@ -188,6 +189,8 @@ class AppBackupJsonTest {
                 4.0, 3.5, 2.5, 1.0, 0.0,
                 -0.5, -1.0, -1.5, -2.0, -2.5
             ),
+            limiterEnabled = true,
+            limiterCeilingDbfs = -2.3,
             userPresets = listOf(
                 BackupEqualizerPreset(
                     id = "stable-id",
@@ -216,6 +219,56 @@ class AppBackupJsonTest {
         assertTrue(!encoded.contains("comparisonBypassed"))
         assertTrue(!encoded.contains("runtimeState"))
         assertTrue(!encoded.contains("Bass Lift"))
+        assertTrue(!encoded.contains("preLimiterPeakDbfs"))
+        assertTrue(!encoded.contains("limiterPrimed"))
+    }
+
+    @Test
+    fun v4BackupMigratesToDisabledDefaultLimiter() {
+        val decoded = AppBackupJson.decodeBackup(
+            """
+            {
+              "schemaVersion": 4,
+              "createdAt": 123,
+              "preferences": {
+                "equalizer": {
+                  "enabled": true,
+                  "preampDb": -2.0,
+                  "automaticHeadroomEnabled": false,
+                  "bandGainsDb": [0,0,0,0,0,0,0,0,0,0],
+                  "userPresets": []
+                }
+              }
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(5, decoded.schemaVersion)
+        assertFalse(decoded.preferences.equalizer.limiterEnabled)
+        assertEquals(
+            -1.0,
+            decoded.preferences.equalizer.limiterCeilingDbfs,
+            0.0
+        )
+        assertEquals(-2.0, decoded.preferences.equalizer.preampDb, 0.0)
+    }
+
+    @Test
+    fun invalidLimiterCeilingIsRejected() {
+        val malformed = emptyBackup().copy(
+            preferences = BackupPreferences(
+                equalizer = BackupEqualizerPreferences(
+                    limiterEnabled = true,
+                    limiterCeilingDbfs = -3.1
+                )
+            )
+        )
+
+        expectIllegalArgumentException {
+            AppBackupJson.decodeBackup(
+                AppBackupJson.encodeBackup(malformed)
+            )
+        }
     }
 
     @Test

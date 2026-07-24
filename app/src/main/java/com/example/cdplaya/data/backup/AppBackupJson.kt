@@ -6,7 +6,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 object AppBackupJson {
-    const val CURRENT_SCHEMA_VERSION = 4
+    const val CURRENT_SCHEMA_VERSION = 5
     private const val OLDEST_SUPPORTED_SCHEMA_VERSION = 1
 
     private val json = Json {
@@ -39,6 +39,9 @@ object AppBackupJson {
         }
         if (migrated.schemaVersion == 3) {
             migrated = migrateV3ToV4(migrated)
+        }
+        if (migrated.schemaVersion == 4) {
+            migrated = migrateV4ToV5(migrated)
         }
         validateEqualizerBackup(migrated.preferences.equalizer)
         return migrated
@@ -82,9 +85,21 @@ object AppBackupJson {
 
     private fun migrateV3ToV4(backup: AppBackup): AppBackup {
         return backup.copy(
-            schemaVersion = CURRENT_SCHEMA_VERSION,
+            schemaVersion = 4,
             preferences = backup.preferences.copy(
                 equalizer = BackupEqualizerPreferences()
+            )
+        )
+    }
+
+    private fun migrateV4ToV5(backup: AppBackup): AppBackup {
+        return backup.copy(
+            schemaVersion = 5,
+            preferences = backup.preferences.copy(
+                equalizer = backup.preferences.equalizer.copy(
+                    limiterEnabled = false,
+                    limiterCeilingDbfs = -1.0
+                )
             )
         )
     }
@@ -107,6 +122,12 @@ object AppBackupJson {
             }
         ) {
             "Backup equalizer band gain is invalid."
+        }
+        require(
+            equalizer.limiterCeilingDbfs.isFinite() &&
+                equalizer.limiterCeilingDbfs in -3.0..0.0
+        ) {
+            "Backup limiter ceiling is invalid."
         }
         equalizer.userPresets.forEach { preset ->
             require(preset.bandGainsDb.size == 10) {
