@@ -1,5 +1,6 @@
 package com.example.cdplaya.player.audio
 
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +23,9 @@ internal object AdvancedAudioRuntimeBridge {
                 offloadState = AudioOffloadRuntimeState.create(
                     requestedPreference = preference,
                     isOffloadedPlayback = current.offloadState.isOffloadedPlayback,
-                    isSleepingForOffload = current.offloadState.isSleepingForOffload
+                    isSleepingForOffload = current.offloadState.isSleepingForOffload,
+                    knownCompatibilityConstraints =
+                        current.offloadState.knownCompatibilityConstraints
                 )
             )
         }
@@ -34,7 +37,9 @@ internal object AdvancedAudioRuntimeBridge {
                 offloadState = AudioOffloadRuntimeState.create(
                     requestedPreference = preference,
                     isOffloadedPlayback = current.offloadState.isOffloadedPlayback,
-                    isSleepingForOffload = current.offloadState.isSleepingForOffload
+                    isSleepingForOffload = current.offloadState.isSleepingForOffload,
+                    knownCompatibilityConstraints =
+                        current.offloadState.knownCompatibilityConstraints
                 )
             )
         }
@@ -46,7 +51,9 @@ internal object AdvancedAudioRuntimeBridge {
                 offloadState = AudioOffloadRuntimeState.create(
                     requestedPreference = current.offloadState.requestedPreference,
                     isOffloadedPlayback = isOffloadedPlayback,
-                    isSleepingForOffload = current.offloadState.isSleepingForOffload
+                    isSleepingForOffload = current.offloadState.isSleepingForOffload,
+                    knownCompatibilityConstraints =
+                        current.offloadState.knownCompatibilityConstraints
                 )
             )
         }
@@ -58,7 +65,9 @@ internal object AdvancedAudioRuntimeBridge {
                 offloadState = AudioOffloadRuntimeState.create(
                     requestedPreference = current.offloadState.requestedPreference,
                     isOffloadedPlayback = current.offloadState.isOffloadedPlayback,
-                    isSleepingForOffload = isSleepingForOffload
+                    isSleepingForOffload = isSleepingForOffload,
+                    knownCompatibilityConstraints =
+                        current.offloadState.knownCompatibilityConstraints
                 )
             )
         }
@@ -74,6 +83,27 @@ internal object AdvancedAudioRuntimeBridge {
 
     fun updateAudioSessionId(audioSessionId: Int?) {
         _state.update { current -> current.copy(audioSessionId = audioSessionId) }
+    }
+
+    fun updateEqualizerRuntimeState(
+        equalizerRuntimeState: EqualizerRuntimeState
+    ) {
+        _state.update { current ->
+            val constraints = if (
+                equalizerRuntimeState.requiresDecodedPcm
+            ) {
+                AudioOffloadRuntimeState.DEFAULT_COMPATIBILITY_CONSTRAINTS +
+                    AudioCompatibilityConstraint.EQUALIZER_REQUIRES_DECODED_PCM
+            } else {
+                AudioOffloadRuntimeState.DEFAULT_COMPATIBILITY_CONSTRAINTS
+            }
+            current.copy(
+                equalizerRuntimeState = equalizerRuntimeState,
+                offloadState = current.offloadState.copy(
+                    knownCompatibilityConstraints = constraints
+                )
+            )
+        }
     }
 
     fun disconnect() {

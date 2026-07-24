@@ -1,6 +1,6 @@
 package com.example.cdplaya.player.equalizer
 
-internal data class EqualizerRuntimeState(
+data class EqualizerRuntimeState(
     val processorConfigured: Boolean = false,
     val requestedEnabled: Boolean = false,
     val effectivelyActive: Boolean = false,
@@ -16,4 +16,3 @@ internal data class EqualizerRuntimeState(
     val requiresDecodedPcm: Boolean = false,
     val scratchBufferGrowthCount: Int = 0
 )
-

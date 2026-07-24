@@ -1,6 +1,7 @@
 package com.example.cdplaya.player.audio
 
 import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 
 enum class AudioOffloadPreference(
     val displayName: String
@@ -31,7 +32,8 @@ enum class AudioOffloadStatus {
 enum class AudioCompatibilityConstraint {
     GAPLESS_SUPPORT_REQUIRED,
     PLAYBACK_SPEED_SUPPORT_NOT_REQUIRED,
-    REPLAY_GAIN_USES_PLAYER_VOLUME
+    REPLAY_GAIN_USES_PLAYER_VOLUME,
+    EQUALIZER_REQUIRES_DECODED_PCM
 }
 
 data class AudioOffloadRuntimeState(
@@ -61,7 +63,10 @@ data class AudioOffloadRuntimeState(
         fun create(
             requestedPreference: AudioOffloadPreference,
             isOffloadedPlayback: Boolean,
-            isSleepingForOffload: Boolean
+            isSleepingForOffload: Boolean,
+            knownCompatibilityConstraints:
+                Set<AudioCompatibilityConstraint> =
+                    DEFAULT_COMPATIBILITY_CONSTRAINTS
         ): AudioOffloadRuntimeState {
             val sleeping = isOffloadedPlayback && isSleepingForOffload
             return AudioOffloadRuntimeState(
@@ -72,7 +77,9 @@ data class AudioOffloadRuntimeState(
                     else -> AudioOffloadActualState.INACTIVE
                 },
                 isOffloadedPlayback = isOffloadedPlayback,
-                isSleepingForOffload = sleeping
+                isSleepingForOffload = sleeping,
+                knownCompatibilityConstraints =
+                    knownCompatibilityConstraints
             )
         }
     }
@@ -126,6 +133,8 @@ data class AudioOutputUiState(
     val replayGainMode: ReplayGainMode = ReplayGainMode.OFF,
     val replayGainDb: Float? = null,
     val appliedVolumeMultiplier: Float? = null,
+    val equalizerRuntimeState: EqualizerRuntimeState =
+        EqualizerRuntimeState(),
     val audioSessionId: Int? = null,
     val isPlayerConnected: Boolean = false,
     val isGaplessSupportRequired: Boolean = true
@@ -135,6 +144,8 @@ internal data class AudioOutputRuntimeSnapshot(
     val sourceFormat: AudioSourceFormat? = null,
     val routeInfo: AudioRouteInfo = AudioRouteInfo(),
     val offloadState: AudioOffloadRuntimeState = AudioOffloadRuntimeState(),
+    val equalizerRuntimeState: EqualizerRuntimeState =
+        EqualizerRuntimeState(),
     val audioSessionId: Int? = null,
     val isPlayerConnected: Boolean = false
 )

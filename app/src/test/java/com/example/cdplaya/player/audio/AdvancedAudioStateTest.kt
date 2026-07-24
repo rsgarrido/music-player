@@ -1,5 +1,6 @@
 package com.example.cdplaya.player.audio
 
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -85,6 +86,7 @@ class AdvancedAudioStateTest {
             AudioOffloadRuntimeState::class.java,
             AudioSourceFormat::class.java,
             AudioRouteInfo::class.java,
+            EqualizerRuntimeState::class.java,
             AudioOutputUiState::class.java
         )
 
@@ -94,5 +96,28 @@ class AdvancedAudioStateTest {
             assertFalse(field.type.name.startsWith("android."))
             assertFalse(field.type.name.startsWith("androidx.media3."))
         }
+    }
+
+    @Test
+    fun equalizerStateDoesNotChangeReplayGainFields() {
+        val before = AudioOutputUiState(
+            replayGainDb = -7.0f,
+            appliedVolumeMultiplier = 0.45f
+        )
+
+        val after = before.copy(
+            equalizerRuntimeState = EqualizerRuntimeState(
+                requestedEnabled = true,
+                effectivelyActive = true,
+                bypassed = false,
+                requiresDecodedPcm = true
+            )
+        )
+
+        assertEquals(before.replayGainDb, after.replayGainDb)
+        assertEquals(
+            before.appliedVolumeMultiplier,
+            after.appliedVolumeMultiplier
+        )
     }
 }
