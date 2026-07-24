@@ -13,6 +13,8 @@ data class EqualizerRuntimeState(
     val effectivelyActive: Boolean = false,
     val bypassed: Boolean = true,
     val transitionInProgress: Boolean = false,
+    val comparisonSessionActive: Boolean = false,
+    val comparisonBypassed: Boolean = false,
     val configurationVersion: Long = 0L,
     val preparedPlanVersion: Long? = null,
     val appliedPlanVersion: Long? = null,

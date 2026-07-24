@@ -11,6 +11,7 @@ import com.example.cdplaya.ui.playlist.rememberPlaylistExportActions
 import com.example.cdplaya.ui.playlist.rememberPlaylistImportActions
 import com.example.cdplaya.ui.settings.rememberBackupExportActions
 import com.example.cdplaya.ui.settings.rememberBackupRestoreActions
+import com.example.cdplaya.ui.equalizer.EqualizerUiActions
 
 @Composable
 fun MusicRoute(
@@ -30,6 +31,9 @@ fun MusicRoute(
         musicViewModel.audioOffloadPreference.collectAsStateWithLifecycle()
     val audioOutputUiState by
         musicViewModel.audioOutputUiState.collectAsStateWithLifecycle()
+    val equalizerScreenState by
+        musicViewModel.equalizerScreenState
+            .collectAsStateWithLifecycle()
     if (!playerAppearanceUiState.isLoaded || !libraryAppearanceUiState.isLoaded) return
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
@@ -232,6 +236,42 @@ fun MusicRoute(
         selectedAudioOffloadPreference = audioOffloadPreference,
         onAudioOffloadPreferenceSelected = musicViewModel::selectAudioOffloadPreference,
         audioOutputUiState = audioOutputUiState,
+        equalizerScreenState = equalizerScreenState,
+        equalizerActions = EqualizerUiActions(
+            onBack = musicViewModel::closeEqualizerScreen,
+            onEnabledChanged =
+                musicViewModel::setEqualizerEnabled,
+            onPreviewBandGain =
+                musicViewModel::previewEqualizerBandGain,
+            onCommitBandGain =
+                musicViewModel::commitEqualizerBandGain,
+            onCancelBandGainPreview =
+                musicViewModel::cancelEqualizerBandGainPreview,
+            onPreviewPreamp =
+                musicViewModel::previewEqualizerPreamp,
+            onCommitPreamp =
+                musicViewModel::commitEqualizerPreamp,
+            onCancelPreampPreview =
+                musicViewModel::cancelEqualizerPreampPreview,
+            onAutomaticHeadroomChanged =
+                musicViewModel::
+                    setEqualizerAutomaticHeadroomEnabled,
+            onApplyBuiltInPreset =
+                musicViewModel::applyBuiltInEqualizerPreset,
+            onApplyUserPreset =
+                musicViewModel::applyUserEqualizerPreset,
+            onSaveUserPreset =
+                musicViewModel::saveUserEqualizerPreset,
+            onRenameUserPreset =
+                musicViewModel::renameUserEqualizerPreset,
+            onDeleteUserPreset =
+                musicViewModel::deleteUserEqualizerPreset,
+            onResetToFlat =
+                musicViewModel::resetEqualizerToFlat,
+            onComparisonBypassedChanged =
+                musicViewModel::
+                    setEqualizerComparisonBypassed
+        ),
         onReadEditableSongTags = musicViewModel::readEditableSongTags,
         onGetUnsupportedTagEditingMessage = musicViewModel::getUnsupportedTagEditingMessage,
         onWriteTagsAndArtwork = musicViewModel::writeTagsAndArtwork,

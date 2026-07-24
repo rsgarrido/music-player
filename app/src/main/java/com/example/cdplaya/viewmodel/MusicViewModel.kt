@@ -28,7 +28,9 @@ import com.example.cdplaya.data.playlistfile.PlaylistImportResult
 import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.audio.AudioOffloadPreference
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.ui.equalizer.EqualizerUiController
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenOverrides
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -219,6 +221,19 @@ class MusicViewModel(
     val playbackProgressUiState = playbackController.progressState
     val audioOutputUiState = playbackController.audioOutputState
     val sleepTimerUiState = sleepTimerController.uiState
+    private val equalizerRuntimeState = audioOutputUiState
+        .map { state -> state.equalizerRuntimeState }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Eagerly,
+            EqualizerRuntimeState()
+        )
+    private val equalizerUiController = EqualizerUiController(
+        preferencesRepository = appPreferencesRepository,
+        runtimeState = equalizerRuntimeState,
+        scope = viewModelScope
+    )
+    internal val equalizerScreenState = equalizerUiController.state
 
     private val backupRepository = libraryController.createBackupRepository()
 
@@ -250,6 +265,88 @@ class MusicViewModel(
 
     fun cancelSleepTimer() {
         sleepTimerController.cancelTimer()
+    }
+
+    fun setEqualizerEnabled(enabled: Boolean) {
+        equalizerUiController.setEnabled(enabled)
+    }
+
+    fun previewEqualizerBandGain(
+        index: Int,
+        gainDb: Double
+    ) {
+        equalizerUiController.previewBandGain(index, gainDb)
+    }
+
+    fun commitEqualizerBandGain(
+        index: Int,
+        gainDb: Double
+    ) {
+        equalizerUiController.commitBandGain(index, gainDb)
+    }
+
+    fun cancelEqualizerBandGainPreview(
+        index: Int,
+        gainDb: Double
+    ) {
+        equalizerUiController.cancelBandGainPreview(
+            index,
+            gainDb
+        )
+    }
+
+    fun previewEqualizerPreamp(preampDb: Double) {
+        equalizerUiController.previewPreamp(preampDb)
+    }
+
+    fun commitEqualizerPreamp(preampDb: Double) {
+        equalizerUiController.commitPreamp(preampDb)
+    }
+
+    fun cancelEqualizerPreampPreview(preampDb: Double) {
+        equalizerUiController.cancelPreampPreview(preampDb)
+    }
+
+    fun setEqualizerAutomaticHeadroomEnabled(
+        enabled: Boolean
+    ) {
+        equalizerUiController
+            .setAutomaticHeadroomEnabled(enabled)
+    }
+
+    fun applyBuiltInEqualizerPreset(index: Int) {
+        equalizerUiController.applyBuiltInPreset(index)
+    }
+
+    fun applyUserEqualizerPreset(presetId: String) {
+        equalizerUiController.applyUserPreset(presetId)
+    }
+
+    fun saveUserEqualizerPreset(name: String) {
+        equalizerUiController.saveUserPreset(name)
+    }
+
+    fun renameUserEqualizerPreset(
+        presetId: String,
+        name: String
+    ) {
+        equalizerUiController.renameUserPreset(presetId, name)
+    }
+
+    fun deleteUserEqualizerPreset(presetId: String) {
+        equalizerUiController.deleteUserPreset(presetId)
+    }
+
+    fun resetEqualizerToFlat() {
+        equalizerUiController.resetToFlat()
+    }
+
+    fun setEqualizerComparisonBypassed(bypassed: Boolean) {
+        equalizerUiController.setComparisonBypassed(bypassed)
+    }
+
+    fun closeEqualizerScreen() {
+        equalizerUiController.closeScreen()
     }
 
     fun loadSongs() {
@@ -512,6 +609,7 @@ class MusicViewModel(
     }
 
     override fun onCleared() {
+        equalizerUiController.release()
         playbackController.release()
         sleepTimerController.release()
         super.onCleared()

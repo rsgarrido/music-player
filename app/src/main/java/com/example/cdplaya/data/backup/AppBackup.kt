@@ -27,7 +27,27 @@ data class BackupPreferences(
     val artistsViewMode: String = "list",
     val songsGridColumnCount: Int = 2,
     val albumsGridColumnCount: Int = 2,
-    val artistsGridColumnCount: Int = 2
+    val artistsGridColumnCount: Int = 2,
+    val equalizer: BackupEqualizerPreferences =
+        BackupEqualizerPreferences()
+)
+
+@Serializable
+data class BackupEqualizerPreferences(
+    val enabled: Boolean = false,
+    val preampDb: Double = 0.0,
+    val automaticHeadroomEnabled: Boolean = true,
+    val bandGainsDb: List<Double> = List(10) { 0.0 },
+    val userPresets: List<BackupEqualizerPreset> = emptyList()
+)
+
+@Serializable
+data class BackupEqualizerPreset(
+    val id: String,
+    val name: String,
+    val preampDb: Double,
+    val automaticHeadroomEnabled: Boolean,
+    val bandGainsDb: List<Double>
 )
 
 @Serializable

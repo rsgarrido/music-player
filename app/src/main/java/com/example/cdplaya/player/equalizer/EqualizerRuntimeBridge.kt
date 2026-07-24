@@ -39,6 +39,8 @@ internal object EqualizerRuntimeBridge {
     private val processorConfigured = AtomicBoolean(false)
     private val processorBypassed = AtomicBoolean(true)
     private val transitionInProgress = AtomicBoolean(false)
+    private val comparisonSessionActive = AtomicBoolean(false)
+    private val comparisonBypassed = AtomicBoolean(false)
     private val appliedPlan = AtomicReference<PreparedEqualizerPlan?>(null)
     private val latestAppliedVersion = AtomicLong(-1L)
     private val latestAppliedNanos = AtomicLong(0L)
@@ -73,6 +75,8 @@ internal object EqualizerRuntimeBridge {
         preparedPath.set(null)
         latestPreparedVersion.set(-1L)
         latestPreparedNanos.set(0L)
+        comparisonSessionActive.set(false)
+        comparisonBypassed.set(false)
         clearProcessorTelemetry()
         _state.value = EqualizerRuntimeState()
     }
@@ -92,6 +96,15 @@ internal object EqualizerRuntimeBridge {
         requestedSnapshot.set(snapshot)
         publishState()
         return snapshot
+    }
+
+    fun setComparisonState(
+        sessionActive: Boolean,
+        bypassed: Boolean
+    ) {
+        comparisonSessionActive.set(sessionActive)
+        comparisonBypassed.set(sessionActive && bypassed)
+        publishState()
     }
 
     fun requestedSnapshot(): EqualizerRuntimeSnapshot {
@@ -251,7 +264,8 @@ internal object EqualizerRuntimeBridge {
                 !snapshot.configuration.isEffectivelyFlat
         val requiresDecodedPcm =
             plannedActive || awaitingActivePlan ||
-                applied?.bypassed == false
+                applied?.bypassed == false ||
+                comparisonSessionActive.get()
         val diagnosticPlan = if (latestMatchesRequest) {
             latestPlan
         } else {
@@ -263,6 +277,9 @@ internal object EqualizerRuntimeBridge {
             effectivelyActive = requiresDecodedPcm,
             bypassed = processorBypassed.get() && !requiresDecodedPcm,
             transitionInProgress = transitionInProgress.get(),
+            comparisonSessionActive =
+                comparisonSessionActive.get(),
+            comparisonBypassed = comparisonBypassed.get(),
             configurationVersion = snapshot.version,
             preparedPlanVersion = latestPlan?.sourceSnapshotVersion,
             appliedPlanVersion = applied?.sourceSnapshotVersion,

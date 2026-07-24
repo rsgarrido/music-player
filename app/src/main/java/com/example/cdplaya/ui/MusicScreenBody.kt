@@ -35,6 +35,9 @@ import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.audio.AudioOutputUiState
 import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.ui.equalizer.EqualizerScreen
+import com.example.cdplaya.ui.equalizer.EqualizerScreenState
+import com.example.cdplaya.ui.equalizer.EqualizerUiActions
 import com.example.cdplaya.ui.home.HomeScreen
 import com.example.cdplaya.ui.library.FolderSelectionScreen
 import com.example.cdplaya.ui.library.LibraryBrowseSwitcher
@@ -64,7 +67,7 @@ import com.example.cdplaya.ui.library.LibraryViewOption
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
-fun MusicScreenBody(
+internal fun MusicScreenBody(
     songs: List<Song>,
     permissionGranted: Boolean,
     currentSong: Song?,
@@ -102,6 +105,7 @@ fun MusicScreenBody(
     isFolderScreenVisible: Boolean,
     isSettingsScreenVisible: Boolean,
     isDiagnosticsScreenVisible: Boolean,
+    isEqualizerScreenVisible: Boolean,
     queueSnackbarActions: QueueSnackbarActions,
     onSettingsClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
@@ -109,6 +113,8 @@ fun MusicScreenBody(
     onSettingsBackClick: () -> Unit,
     onDiagnosticsClick: () -> Unit,
     onDiagnosticsBackClick: () -> Unit,
+    onEqualizerClick: () -> Unit,
+    onEqualizerBackClick: () -> Unit,
     onLibraryFoldersClick: () -> Unit,
     onExportBackupClick: () -> Unit,
     onRestoreBackupClick: () -> Unit,
@@ -172,6 +178,8 @@ fun MusicScreenBody(
     selectedAudioOffloadPreference: AudioOffloadPreference,
     onAudioOffloadPreferenceSelected: (AudioOffloadPreference) -> Unit,
     audioOutputUiState: AudioOutputUiState,
+    equalizerScreenState: EqualizerScreenState,
+    equalizerActions: EqualizerUiActions,
     libraryAppearanceUiState: LibraryAppearanceUiState,
     onLibraryViewOptionSelected: (LibraryViewCategory, LibraryViewOption) -> Unit,
     bottomContentPadding: Dp = 24.dp,
@@ -226,6 +234,17 @@ fun MusicScreenBody(
             }
         }
 
+        isEqualizerScreenVisible -> {
+            EqualizerScreen(
+                state = equalizerScreenState,
+                actions = equalizerActions.copy(onBack = onEqualizerBackClick),
+                modifier = modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+            )
+        }
+
         isSettingsScreenVisible -> {
             SettingsScreen(
                 totalSongCount = songs.size,
@@ -236,6 +255,8 @@ fun MusicScreenBody(
                 onExportBackupClick = onExportBackupClick,
                 onRestoreBackupClick = onRestoreBackupClick,
                 onDiagnosticsClick = onDiagnosticsClick,
+                equalizerSummary = equalizerScreenState.settingsSummary,
+                onEqualizerClick = onEqualizerClick,
                 isSleepTimerActive = isSleepTimerActive,
                 sleepTimerDisplayText = sleepTimerDisplayText,
                 onSleepTimerClick = onSleepTimerClick,

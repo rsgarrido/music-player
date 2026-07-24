@@ -52,6 +52,8 @@ import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewOption
+import com.example.cdplaya.ui.equalizer.EqualizerScreenState
+import com.example.cdplaya.ui.equalizer.EqualizerUiActions
 import com.example.cdplaya.ui.queue.rememberQueueSnackbarActions
 import com.example.cdplaya.ui.tageditor.DiscardTagChangesDialog
 import com.example.cdplaya.ui.tageditor.TagEditorScreen
@@ -60,7 +62,7 @@ import kotlinx.coroutines.flow.StateFlow
 
 
 @Composable
-fun MusicScreen(
+internal fun MusicScreen(
     songs: List<Song>,
     permissionGranted: Boolean,
     currentSong: Song?,
@@ -147,6 +149,8 @@ fun MusicScreen(
     selectedAudioOffloadPreference: AudioOffloadPreference,
     onAudioOffloadPreferenceSelected: (AudioOffloadPreference) -> Unit,
     audioOutputUiState: AudioOutputUiState,
+    equalizerScreenState: EqualizerScreenState,
+    equalizerActions: EqualizerUiActions,
     libraryAppearanceUiState: LibraryAppearanceUiState,
     onLibraryViewOptionSelected: (LibraryViewCategory, LibraryViewOption) -> Unit,
     mostPlayedSongs: List<Song>
@@ -169,6 +173,7 @@ fun MusicScreen(
     var isFolderScreenVisible by overlayState.isFolderScreenVisible
     var isSettingsScreenVisible by overlayState.isSettingsScreenVisible
     var isDiagnosticsScreenVisible by overlayState.isDiagnosticsScreenVisible
+    var isEqualizerScreenVisible by overlayState.isEqualizerScreenVisible
     var isExpandedUpNextSheetVisible by overlayState.isExpandedUpNextSheetVisible
     var isCreatePlaylistDialogVisible by overlayState.isCreatePlaylistDialogVisible
     var isSleepTimerDialogVisible by overlayState.isSleepTimerDialogVisible
@@ -318,6 +323,7 @@ fun MusicScreen(
                 isPlayerExpanded ||
                 isFolderScreenVisible ||
                 isDiagnosticsScreenVisible ||
+                isEqualizerScreenVisible ||
                 isSettingsScreenVisible ||
                 selectedArtistName != null ||
                 selectedAlbumFolderPath != null ||
@@ -344,6 +350,12 @@ fun MusicScreen(
 
             isDiagnosticsScreenVisible -> {
                 isDiagnosticsScreenVisible = false
+                isSettingsScreenVisible = true
+            }
+
+            isEqualizerScreenVisible -> {
+                equalizerActions.onBack()
+                isEqualizerScreenVisible = false
                 isSettingsScreenVisible = true
             }
 
@@ -384,11 +396,13 @@ fun MusicScreen(
                 !isPlayerExpanded &&
                 !isFolderScreenVisible &&
                 !isDiagnosticsScreenVisible &&
+                !isEqualizerScreenVisible &&
                 !isSettingsScreenVisible &&
                 selectedSongForTagEdit == null
         val shouldShowBottomNavigation = !isPlayerExpanded &&
                 !isFolderScreenVisible &&
                 !isDiagnosticsScreenVisible &&
+                !isEqualizerScreenVisible &&
                 !isSettingsScreenVisible &&
                 selectedSongForTagEdit == null
         val navigationBarInset = WindowInsets.navigationBars
@@ -483,6 +497,8 @@ fun MusicScreen(
                 isFolderScreenVisible = isFolderScreenVisible,
                 isSettingsScreenVisible = isSettingsScreenVisible,
                 isDiagnosticsScreenVisible = isDiagnosticsScreenVisible,
+                isEqualizerScreenVisible =
+                    isEqualizerScreenVisible,
                 queueSnackbarActions = queueSnackbarActions,
                 onSettingsClick = {
                     isSettingsScreenVisible = true
@@ -508,6 +524,15 @@ fun MusicScreen(
                 },
                 onDiagnosticsBackClick = {
                     isDiagnosticsScreenVisible = false
+                    isSettingsScreenVisible = true
+                },
+                onEqualizerClick = {
+                    isSettingsScreenVisible = false
+                    isEqualizerScreenVisible = true
+                },
+                onEqualizerBackClick = {
+                    equalizerActions.onBack()
+                    isEqualizerScreenVisible = false
                     isSettingsScreenVisible = true
                 },
                 onLibraryFoldersClick = {
@@ -633,6 +658,15 @@ fun MusicScreen(
                 selectedAudioOffloadPreference = selectedAudioOffloadPreference,
                 onAudioOffloadPreferenceSelected = onAudioOffloadPreferenceSelected,
                 audioOutputUiState = audioOutputUiState,
+                equalizerScreenState =
+                    equalizerScreenState,
+                equalizerActions = equalizerActions.copy(
+                    onBack = {
+                        equalizerActions.onBack()
+                        isEqualizerScreenVisible = false
+                        isSettingsScreenVisible = true
+                    }
+                ),
                 libraryAppearanceUiState = libraryAppearanceUiState,
                 onLibraryViewOptionSelected = onLibraryViewOptionSelected,
                 bottomContentPadding = bottomContentPadding,

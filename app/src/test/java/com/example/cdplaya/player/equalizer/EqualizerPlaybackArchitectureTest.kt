@@ -2,10 +2,10 @@ package com.example.cdplaya.player.equalizer
 
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.cdplaya.player.PlaybackService
+import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EqualizerPlaybackArchitectureTest {
@@ -23,7 +23,25 @@ class EqualizerPlaybackArchitectureTest {
         assertEquals(
             1,
             instanceFields.count { field ->
+                field.type ==
+                    AppPreferencesRepository::class.java
+            }
+        )
+        assertEquals(
+            1,
+            instanceFields.count { field ->
                 field.type == ExoPlayer::class.java
+            }
+        )
+    }
+
+    @Test
+    fun playbackServiceDeclaresOnePersistedEqualizerCollector() {
+        assertEquals(
+            1,
+            PlaybackService::class.java.declaredMethods.count {
+                    method ->
+                method.name == "observeEqualizerPreferences"
             }
         )
     }
@@ -68,17 +86,4 @@ class EqualizerPlaybackArchitectureTest {
         }
     }
 
-    @Test
-    fun debugConfigurationsRemainTransientRuntimeRequests() {
-        val methods = DebugEqualizerConfigurations::class.java.declaredMethods
-            .map { method -> method.name }
-
-        assertTrue(methods.any { name -> name.contains("requestBassTest") })
-        assertTrue(methods.any { name -> name.contains("requestTrebleTest") })
-        assertFalse(
-            DebugEqualizerConfigurations::class.java.declaredFields.any {
-                field -> field.type.name.contains("Repository")
-            }
-        )
-    }
 }

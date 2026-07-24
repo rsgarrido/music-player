@@ -38,6 +38,7 @@ import com.example.cdplaya.player.equalizer.AudioProcessingPolicy
 import com.example.cdplaya.player.equalizer.EqualizerAudioProcessor
 import com.example.cdplaya.player.equalizer.EqualizerRenderersFactory
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeBridge
+import com.example.cdplaya.player.equalizer.toDspConfiguration
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -274,6 +275,7 @@ class PlaybackService : MediaLibraryService() {
         isRemotePlayback = player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE
         publishAudioRoute()
         observeAudioOffloadPreference()
+        observeEqualizerPreferences()
         observeEqualizerRuntimeState()
 
         val sessionActivity = PendingIntent.getActivity(
@@ -338,6 +340,27 @@ class PlaybackService : MediaLibraryService() {
                 .collectLatest(
                     AdvancedAudioRuntimeBridge::updateEqualizerRuntimeState
                 )
+        }
+    }
+
+    private fun observeEqualizerPreferences() {
+        serviceScope.launch {
+            appPreferencesRepository.state
+                .filter { preferences -> preferences.isLoaded }
+                .map { preferences ->
+                    preferences.equalizerPreferences
+                }
+                .distinctUntilChanged()
+                .collectLatest { equalizerPreferences ->
+                    EqualizerRuntimeBridge.requestConfiguration(
+                        configuration =
+                            equalizerPreferences
+                                .toDspConfiguration(),
+                        automaticHeadroomEnabled =
+                            equalizerPreferences
+                                .automaticHeadroomEnabled
+                    )
+                }
         }
     }
 

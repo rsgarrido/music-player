@@ -3,7 +3,6 @@ package com.example.cdplaya.ui.settings
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -51,7 +50,6 @@ import com.example.cdplaya.player.audio.formatEqualizerProcessorFormat
 import com.example.cdplaya.player.audio.formatEqualizerPlanApplication
 import com.example.cdplaya.player.audio.formatEqualizerPlanLatency
 import com.example.cdplaya.player.audio.formatEqualizerStatus
-import com.example.cdplaya.player.equalizer.DebugEqualizerConfigurations
 import com.example.cdplaya.player.waveform.WaveformCache
 import com.example.cdplaya.player.waveform.WaveformCacheStats
 import com.example.cdplaya.player.waveform.WaveformRepository
@@ -206,10 +204,6 @@ internal fun DiagnosticsScreen(
     var showClearConfirmation by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     val version = remember(context) { context.appVersion() }
-    val isDebugBuild = remember(context) {
-        context.applicationInfo.flags and
-            ApplicationInfo.FLAG_DEBUGGABLE != 0
-    }
     val copiedMessage = stringResource(R.string.diagnostics_copied)
     val cacheClearedMessage = stringResource(R.string.diagnostics_cache_cleared)
 
@@ -346,9 +340,6 @@ internal fun DiagnosticsScreen(
                 vertical = 8.dp
             )
         )
-        if (isDebugBuild) {
-            DebugEqualizerVerificationControls()
-        }
         audioOutputUiState.replayGainDb?.let { gain ->
             DiagnosticValue("ReplayGain value", String.format(Locale.ROOT, "%.2f dB", gain))
         }
@@ -461,65 +452,6 @@ internal fun DiagnosticsScreen(
                 }
             }
         )
-    }
-}
-
-@Composable
-private fun DebugEqualizerVerificationControls() {
-    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-    Text(
-        text = "Developer equalizer verification",
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-    )
-    Text(
-        text = "Transient debug controls. These values are not saved.",
-        style = MaterialTheme.typography.bodySmall,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-    )
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        OutlinedButton(
-            onClick = DebugEqualizerConfigurations::requestBypass,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text("Bypass")
-        }
-        OutlinedButton(
-            onClick = DebugEqualizerConfigurations::requestBassTest,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text("Bass test")
-        }
-        OutlinedButton(
-            onClick = DebugEqualizerConfigurations::requestTrebleTest,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text("Treble test")
-        }
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        OutlinedButton(
-            onClick = DebugEqualizerConfigurations::requestPreampTest,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text("Preamp test")
-        }
-        OutlinedButton(
-            onClick = DebugEqualizerConfigurations::reset,
-            modifier = Modifier.weight(1f)
-        ) {
-            Text("Reset")
-        }
     }
 }
 

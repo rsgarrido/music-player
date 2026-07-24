@@ -95,6 +95,62 @@ class EqualizerRuntimeBridgeTest {
     }
 
     @Test
+    fun comparisonBypassKeepsDecodedPcmRequiredUntilSessionEnds() {
+        val active = activeConfiguration(gainDb = 6.0)
+        EqualizerRuntimeBridge.requestConfiguration(
+            configuration = active,
+            automaticHeadroomEnabled = true
+        )
+        EqualizerRuntimeBridge.setComparisonState(
+            sessionActive = true,
+            bypassed = true
+        )
+        EqualizerRuntimeBridge.requestConfiguration(
+            configuration = EqualizerConfiguration(
+                enabled = false,
+                preampDb = active.preampDb,
+                filters = active.filters
+            ),
+            automaticHeadroomEnabled = true
+        )
+
+        val bypass = EqualizerRuntimeBridge.state.value
+        assertTrue(bypass.comparisonSessionActive)
+        assertTrue(bypass.comparisonBypassed)
+        assertTrue(bypass.requiresDecodedPcm)
+
+        EqualizerRuntimeBridge.setComparisonState(
+            sessionActive = true,
+            bypassed = false
+        )
+        EqualizerRuntimeBridge.requestConfiguration(
+            configuration = active,
+            automaticHeadroomEnabled = true
+        )
+        assertTrue(
+            EqualizerRuntimeBridge.state.value
+                .requiresDecodedPcm
+        )
+
+        EqualizerRuntimeBridge.setComparisonState(
+            sessionActive = false,
+            bypassed = false
+        )
+        EqualizerRuntimeBridge.requestConfiguration(
+            configuration = EqualizerConfiguration(
+                enabled = false,
+                preampDb = active.preampDb,
+                filters = active.filters
+            ),
+            automaticHeadroomEnabled = true
+        )
+        val ended = EqualizerRuntimeBridge.state.value
+        assertFalse(ended.comparisonSessionActive)
+        assertFalse(ended.comparisonBypassed)
+        assertFalse(ended.requiresDecodedPcm)
+    }
+
+    @Test
     fun requestWithOnlyNyquistInvalidFilterAllowsOffloadAfterPreparation() {
         val format = format(32_000)
         EqualizerRuntimeBridge.publishProcessorFormat(format)
