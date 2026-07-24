@@ -115,4 +115,3 @@ class EqualizerConfigurationTest {
         enabled = enabled
     )
 }
-

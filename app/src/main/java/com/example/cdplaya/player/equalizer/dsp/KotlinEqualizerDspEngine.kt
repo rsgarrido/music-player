@@ -29,10 +29,11 @@ internal class KotlinEqualizerDspEngine : EqualizerDspEngine {
             "automaticHeadroomDb must be finite and non-negative"
         }
 
-        this.channelCount = channelCount
-        bypass = configuration.isEffectivelyFlat
+        val nextBypass = configuration.isEffectivelyFlat
 
-        if (bypass) {
+        if (nextBypass) {
+            this.channelCount = channelCount
+            bypass = true
             preampMultiplier = 1.0
             cascade = null
             configured = true
@@ -44,8 +45,8 @@ internal class KotlinEqualizerDspEngine : EqualizerDspEngine {
         require(effectivePreampDb.isFinite()) {
             "effective preamp must be finite"
         }
-        preampMultiplier = decibelsToLinear(effectivePreampDb)
-        require(preampMultiplier.isFinite()) {
+        val nextPreampMultiplier = decibelsToLinear(effectivePreampDb)
+        require(nextPreampMultiplier.isFinite()) {
             "effective preamp produces a non-finite multiplier"
         }
 
@@ -61,10 +62,15 @@ internal class KotlinEqualizerDspEngine : EqualizerDspEngine {
                 )
             }
             .toList()
-        cascade = BiquadCascade(
+        val nextCascade = BiquadCascade(
             coefficients = coefficients,
             channelCount = channelCount
         )
+
+        this.channelCount = channelCount
+        bypass = false
+        preampMultiplier = nextPreampMultiplier
+        cascade = nextCascade
         configured = true
     }
 

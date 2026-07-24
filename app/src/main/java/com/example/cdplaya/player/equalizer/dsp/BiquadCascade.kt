@@ -83,4 +83,3 @@ internal class BiquadCascade(
         y2.fill(0.0)
     }
 }
-

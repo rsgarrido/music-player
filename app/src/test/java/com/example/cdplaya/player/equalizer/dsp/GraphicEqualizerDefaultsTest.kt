@@ -1,6 +1,7 @@
 package com.example.cdplaya.player.equalizer.dsp
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -44,6 +45,8 @@ class GraphicEqualizerDefaultsTest {
     fun sixteenKilohertzIsValidatedAgainstNyquistWithoutClamping() {
         val band = GraphicEqualizerDefaults.createFlatFilters().last()
 
+        assertTrue(isEqualizerFrequencySupported(16_000.0, 44_100))
+        assertFalse(isEqualizerFrequencySupported(16_000.0, 32_000))
         assertEquals(
             BiquadCoefficients.UNITY,
             BiquadDesigner.design(band, sampleRateHz = 44_100)

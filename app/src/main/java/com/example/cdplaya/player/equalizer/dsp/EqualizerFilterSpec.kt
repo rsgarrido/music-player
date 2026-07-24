@@ -32,4 +32,3 @@ internal sealed interface EqualizerFilterSpec {
         override val enabled: Boolean = true
     ) : EqualizerFilterSpec
 }
-

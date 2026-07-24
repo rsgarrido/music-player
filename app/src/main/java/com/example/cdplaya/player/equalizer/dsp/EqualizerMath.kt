@@ -13,3 +13,12 @@ internal fun decibelsToLinear(gainDb: Double): Double {
     return 10.0.pow(gainDb / 20.0)
 }
 
+internal fun isEqualizerFrequencySupported(
+    frequencyHz: Double,
+    sampleRateHz: Int
+): Boolean {
+    return sampleRateHz > 0 &&
+        frequencyHz.isFinite() &&
+        frequencyHz > 0.0 &&
+        frequencyHz < sampleRateHz / 2.0
+}

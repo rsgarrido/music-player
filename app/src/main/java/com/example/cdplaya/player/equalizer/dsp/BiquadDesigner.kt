@@ -178,14 +178,13 @@ internal object BiquadDesigner {
         require(sampleRateHz > 0) {
             "sampleRateHz must be greater than 0"
         }
-        require(frequencyHz.isFinite()) {
-            "frequencyHz must be finite"
-        }
-        require(frequencyHz > 0.0) {
-            "frequencyHz must be greater than 0"
-        }
-        require(frequencyHz < sampleRateHz / 2.0) {
-            "frequencyHz must be strictly below Nyquist"
+        require(
+            isEqualizerFrequencySupported(
+                frequencyHz = frequencyHz,
+                sampleRateHz = sampleRateHz
+            )
+        ) {
+            "frequencyHz must be finite, greater than 0, and below Nyquist"
         }
         require(gainDb.isFinite()) {
             "gainDb must be finite"

@@ -29,7 +29,6 @@ internal fun flatConfiguration(
         filters = emptyList()
     )
 }
-
 internal fun assertFloatArraysClose(
     expected: FloatArray,
     actual: FloatArray,
@@ -88,4 +87,3 @@ internal fun measuredMagnitudeDb(
     }
     return 20.0 * log10(sqrt(real * real + imaginary * imaginary))
 }
-

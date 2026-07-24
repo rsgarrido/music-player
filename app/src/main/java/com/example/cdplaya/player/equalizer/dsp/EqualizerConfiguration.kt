@@ -34,7 +34,7 @@ internal class EqualizerConfiguration(
         if (other !is EqualizerConfiguration) return false
 
         return enabled == other.enabled &&
-            preampDb == other.preampDb &&
+            preampDb.toBits() == other.preampDb.toBits() &&
             filters == other.filters
     }
 

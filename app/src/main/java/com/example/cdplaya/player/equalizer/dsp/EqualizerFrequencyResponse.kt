@@ -135,11 +135,7 @@ internal object EqualizerFrequencyResponse {
         require(sampleRateHz > 0) {
             "sampleRateHz must be greater than 0"
         }
-        require(
-            frequencyHz.isFinite() &&
-                frequencyHz > 0.0 &&
-                frequencyHz < sampleRateHz / 2.0
-        ) {
+        require(isEqualizerFrequencySupported(frequencyHz, sampleRateHz)) {
             "frequencyHz must be finite, greater than 0, and below Nyquist"
         }
     }

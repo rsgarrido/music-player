@@ -55,6 +55,19 @@ class BiquadDesignerTest {
     }
 
     @Test
+    fun coefficientRepresentationRejectsNonFiniteValues() {
+        assertThrows(IllegalArgumentException::class.java) {
+            BiquadCoefficients(
+                b0 = Double.NaN,
+                b1 = 0.0,
+                b2 = 0.0,
+                a1 = 0.0,
+                a2 = 0.0
+            )
+        }
+    }
+
+    @Test
     fun peakingCenterResponseMatchesRequestedGain() {
         listOf(-12.0, -6.0, 3.0, 9.0).forEach { gainDb ->
             val coefficients = BiquadDesigner.designPeaking(

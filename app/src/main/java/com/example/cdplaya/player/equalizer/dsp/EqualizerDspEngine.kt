@@ -21,4 +21,3 @@ internal interface EqualizerDspEngine {
 
     fun reset()
 }
-
