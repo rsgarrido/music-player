@@ -13,6 +13,34 @@ internal class KotlinEqualizerDspEngine : EqualizerDspEngine {
     private var preampMultiplier = 1.0
     private var cascade: BiquadCascade? = null
 
+    fun configure(
+        preparedCascade: PreparedEqualizerCascade,
+        minimumSectionCapacity: Int = 0,
+        minimumChannelCapacity: Int = 0
+    ) {
+        require(minimumSectionCapacity >= 0) {
+            "minimumSectionCapacity must be non-negative"
+        }
+        require(minimumChannelCapacity >= 0) {
+            "minimumChannelCapacity must be non-negative"
+        }
+
+        val nextCascade = BiquadCascade(
+            preparedCascade = preparedCascade,
+            minimumSectionCapacity = minimumSectionCapacity,
+            minimumChannelCapacity = minimumChannelCapacity
+        )
+        channelCount = preparedCascade.channelCount
+        bypass = false
+        preampMultiplier = preparedCascade.effectivePreampMultiplier
+        cascade = nextCascade
+        configured = true
+    }
+
+    fun capacitySnapshot(): EqualizerEngineCapacity? {
+        return cascade?.capacitySnapshot()
+    }
+
     override fun configure(
         configuration: EqualizerConfiguration,
         sampleRateHz: Int,
@@ -163,3 +191,10 @@ internal class KotlinEqualizerDspEngine : EqualizerDspEngine {
         }
     }
 }
+
+internal data class EqualizerEngineCapacity(
+    val sectionCapacity: Int,
+    val channelCapacity: Int,
+    val coefficientArrayIdentity: Int,
+    val stateArrayIdentity: Int
+)

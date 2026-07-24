@@ -1,5 +1,6 @@
 package com.example.cdplaya.player.audio
 
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -67,5 +68,39 @@ class AdvancedAudioRuntimeBridgeTest {
         assertNull(disconnected.sourceFormat)
         assertNull(disconnected.audioSessionId)
         assertEquals(AudioRouteCategory.UNKNOWN, disconnected.routeInfo.category)
+    }
+
+    @Test
+    fun equalizerConstraintAppearsOnlyWhenDecodedPcmIsRequired() {
+        AdvancedAudioRuntimeBridge.updateEqualizerRuntimeState(
+            EqualizerRuntimeState(
+                requestedEnabled = true,
+                effectivelyActive = true,
+                bypassed = false,
+                requiresDecodedPcm = true
+            )
+        )
+
+        assertTrue(
+            AudioCompatibilityConstraint.EQUALIZER_REQUIRES_DECODED_PCM in
+                AdvancedAudioRuntimeBridge
+                    .state
+                    .value
+                    .offloadState
+                    .knownCompatibilityConstraints
+        )
+
+        AdvancedAudioRuntimeBridge.updateEqualizerRuntimeState(
+            EqualizerRuntimeState()
+        )
+
+        assertFalse(
+            AudioCompatibilityConstraint.EQUALIZER_REQUIRES_DECODED_PCM in
+                AdvancedAudioRuntimeBridge
+                    .state
+                    .value
+                    .offloadState
+                    .knownCompatibilityConstraints
+        )
     }
 }

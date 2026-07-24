@@ -160,6 +160,8 @@ class PlaybackController(
                         sourceFormat = runtime.sourceFormat,
                         routeInfo = runtime.routeInfo,
                         offloadState = runtime.offloadState,
+                        equalizerRuntimeState =
+                            runtime.equalizerRuntimeState,
                         audioSessionId = runtime.audioSessionId,
                         isPlayerConnected = runtime.isPlayerConnected
                     )

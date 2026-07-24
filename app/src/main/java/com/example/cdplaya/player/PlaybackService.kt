@@ -34,6 +34,10 @@ import com.example.cdplaya.player.audio.AudioRouteCategory
 import com.example.cdplaya.player.audio.mapAudioRoute
 import com.example.cdplaya.player.audio.mapAudioSourceFormat
 import com.example.cdplaya.player.audio.withAudioOffloadPreference
+import com.example.cdplaya.player.equalizer.AudioProcessingPolicy
+import com.example.cdplaya.player.equalizer.EqualizerAudioProcessor
+import com.example.cdplaya.player.equalizer.EqualizerRenderersFactory
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeBridge
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -42,6 +46,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -51,6 +56,7 @@ import kotlinx.coroutines.launch
 class PlaybackService : MediaLibraryService() {
 
     private var mediaSession: MediaLibrarySession? = null
+    private val equalizerAudioProcessor = EqualizerAudioProcessor()
     private lateinit var player: ExoPlayer
     private lateinit var playerStateStorage: PlayerStateStorage
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -241,12 +247,17 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onCreate() {
         super.onCreate()
+        EqualizerRuntimeBridge.start(serviceScope)
         val audioAttributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .build()
 
-        player = ExoPlayer.Builder(this)
+        val renderersFactory = EqualizerRenderersFactory(
+            context = this,
+            equalizerAudioProcessor = equalizerAudioProcessor
+        )
+        player = ExoPlayer.Builder(this, renderersFactory)
             .setAudioAttributes(audioAttributes, true)
             .setHandleAudioBecomingNoisy(true)
             .build()
@@ -263,6 +274,7 @@ class PlaybackService : MediaLibraryService() {
         isRemotePlayback = player.deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE
         publishAudioRoute()
         observeAudioOffloadPreference()
+        observeEqualizerRuntimeState()
 
         val sessionActivity = PendingIntent.getActivity(
             this,
@@ -290,32 +302,73 @@ class PlaybackService : MediaLibraryService() {
         player.removeAnalyticsListener(advancedAudioAnalyticsListener)
         player.removeAudioOffloadListener(audioOffloadListener)
         audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
-        serviceScope.cancel()
         mediaSession?.release()
         mediaSession = null
         player.release()
+        EqualizerRuntimeBridge.release()
+        serviceScope.cancel()
         AdvancedAudioRuntimeBridge.disconnect()
         super.onDestroy()
     }
 
     private fun observeAudioOffloadPreference() {
         serviceScope.launch {
-            appPreferencesRepository.state
+            combine(
+                appPreferencesRepository.state
                 .filter { preferences -> preferences.isLoaded }
-                .map { preferences -> preferences.audioOffloadPreference }
+                .map { preferences -> preferences.audioOffloadPreference },
+                EqualizerRuntimeBridge.state
+                    .map { state -> state.requiresDecodedPcm }
+            ) { preference, requiresDecodedPcm ->
+                preference to requiresDecodedPcm
+            }
                 .distinctUntilChanged()
-                .collectLatest(::applyAudioOffloadPreference)
+                .collectLatest { (preference, requiresDecodedPcm) ->
+                    applyAudioProcessingPolicy(
+                        userPreference = preference,
+                        equalizerEffectivelyActive = requiresDecodedPcm
+                    )
+                }
         }
     }
 
-    private fun applyAudioOffloadPreference(preference: AudioOffloadPreference) {
+    private fun observeEqualizerRuntimeState() {
+        serviceScope.launch {
+            EqualizerRuntimeBridge.state
+                .collectLatest(
+                    AdvancedAudioRuntimeBridge::updateEqualizerRuntimeState
+                )
+        }
+    }
+
+    private fun applyAudioOffloadPreference(
+        preference: AudioOffloadPreference
+    ) {
+        applyAudioProcessingPolicy(
+            userPreference = preference,
+            equalizerEffectivelyActive = false
+        )
+    }
+
+    private fun applyAudioProcessingPolicy(
+        userPreference: AudioOffloadPreference,
+        equalizerEffectivelyActive: Boolean
+    ) {
         tracePerformance(PerformanceTraceNames.AUDIO_OFFLOAD_PREFERENCE_APPLIED) {
+            val decision = AudioProcessingPolicy.evaluate(
+                userOffloadPreference = userPreference,
+                equalizerEffectivelyActive = equalizerEffectivelyActive
+            )
             val updatedParameters = player.trackSelectionParameters
-                .withAudioOffloadPreference(preference)
+                .withAudioOffloadPreference(
+                    decision.effectiveOffloadPreference
+                )
             if (player.trackSelectionParameters != updatedParameters) {
                 player.trackSelectionParameters = updatedParameters
             }
-            AdvancedAudioRuntimeBridge.updateOffloadPreference(preference)
+            AdvancedAudioRuntimeBridge.updateOffloadPreference(
+                userPreference
+            )
         }
     }
 
