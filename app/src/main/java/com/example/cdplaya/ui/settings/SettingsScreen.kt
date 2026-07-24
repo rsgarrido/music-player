@@ -51,6 +51,8 @@ fun SettingsScreen(
     onExportBackupClick: () -> Unit,
     onRestoreBackupClick: () -> Unit,
     onDiagnosticsClick: () -> Unit,
+    equalizerSummary: String,
+    onEqualizerClick: () -> Unit,
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
     onSleepTimerClick: () -> Unit,
@@ -221,6 +223,22 @@ fun SettingsScreen(
         )
 
         SettingsSectionTitle(text = "Playback")
+
+        ListItem(
+            headlineContent = {
+                Text(text = "Equalizer")
+            },
+            supportingContent = {
+                Text(text = equalizerSummary)
+            },
+            trailingContent = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Open equalizer settings"
+                )
+            },
+            modifier = Modifier.clickable(onClick = onEqualizerClick)
+        )
 
         ListItem(
             headlineContent = {
