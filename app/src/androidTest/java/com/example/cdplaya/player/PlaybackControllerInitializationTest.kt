@@ -10,6 +10,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.cdplaya.player.audio.AdvancedAudioRuntimeBridge
 import com.example.cdplaya.player.audio.AudioOffloadPreference
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeBridge
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
+import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.viewmodel.MusicViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +36,7 @@ class PlaybackControllerInitializationTest {
     fun resetRuntimeBridge() {
         onMain {
             AdvancedAudioRuntimeBridge.disconnect()
+            EqualizerRuntimeBridge.release()
         }
     }
 
@@ -83,6 +87,36 @@ class PlaybackControllerInitializationTest {
             )
             assertTrue(
                 controller.privateJobField("advancedAudioRuntimeCollectionJob").isActive
+            )
+        }
+    }
+
+    @Test
+    fun equalizerRuntimeUpdatesPreserveReplayGainState() {
+        withImmediateController { controller ->
+            controller.setReplayGainMode(ReplayGainMode.TRACK)
+            AdvancedAudioRuntimeBridge.updateEqualizerRuntimeState(
+                EqualizerRuntimeState(
+                    processorConfigured = true,
+                    requestedEnabled = true,
+                    effectivelyActive = true,
+                    bypassed = false,
+                    configurationVersion = 4L,
+                    appliedPlanVersion = 4L,
+                    sampleRateHz = 48_000,
+                    channelCount = 2,
+                    requiresDecodedPcm = true
+                )
+            )
+
+            val state = controller.audioOutputState.value
+            assertEquals(
+                ReplayGainMode.TRACK,
+                state.replayGainMode
+            )
+            assertEquals(
+                4L,
+                state.equalizerRuntimeState.appliedPlanVersion
             )
         }
     }

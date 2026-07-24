@@ -38,5 +38,12 @@ internal class EqualizerRenderersFactory(
     internal fun processorInstanceForTest(): EqualizerAudioProcessor {
         return equalizerAudioProcessor
     }
-}
 
+    internal fun buildAudioSinkForTest(context: Context): AudioSink {
+        return buildAudioSink(
+            context = context,
+            enableFloatOutput = true,
+            enableAudioOutputPlaybackParams = false
+        )
+    }
+}
