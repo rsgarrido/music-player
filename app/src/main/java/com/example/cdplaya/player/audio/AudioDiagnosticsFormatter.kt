@@ -1,5 +1,6 @@
 package com.example.cdplaya.player.audio
 
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import java.util.Locale
 
 fun formatAudioSource(format: AudioSourceFormat?): String {
@@ -44,7 +45,35 @@ fun formatAudioCompatibility(state: AudioOutputUiState): String {
         if (state.isGaplessSupportRequired) add("Gapless support required")
         add("Playback-speed support not required")
         add("ReplayGain uses player volume")
+        if (
+            AudioCompatibilityConstraint.EQUALIZER_REQUIRES_DECODED_PCM in
+            state.offloadState.knownCompatibilityConstraints
+        ) {
+            add("Equalizer requires decoded PCM")
+        }
     }.joinToString(" · ")
+}
+
+fun formatEqualizerStatus(state: EqualizerRuntimeState): String {
+    return when {
+        !state.requestedEnabled -> "Bypassed"
+        state.transitionInProgress -> "Transitioning"
+        state.effectivelyActive -> "Active"
+        else -> "Bypassed"
+    }
+}
+
+fun formatEqualizerProcessorFormat(
+    state: EqualizerRuntimeState
+): String {
+    val sampleRateHz = state.sampleRateHz ?: return "Unconfigured"
+    val channelCount = state.channelCount ?: return "Unconfigured"
+    val channels = if (channelCount == 1) {
+        "1 channel"
+    } else {
+        "$channelCount channels"
+    }
+    return "PCM16, ${formatSampleRate(sampleRateHz)}, $channels"
 }
 
 private fun friendlyCodecName(mimeType: String, codecs: String?): String = when (mimeType) {

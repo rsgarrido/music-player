@@ -39,6 +39,11 @@ class DiagnosticsScreenTest {
         assertFalse(summary.contains("Artist"))
         assertTrue(summary.contains("Audio source: Unknown"))
         assertTrue(summary.contains("Offload preference: Disabled"))
+        assertTrue(summary.contains("Equalizer: Bypassed"))
+        assertTrue(summary.contains("Equalizer processor: Unconfigured"))
+        assertTrue(
+            summary.contains("User offload preference allowed")
+        )
         assertTrue(summary.contains("Source information describes"))
         assertTrue(summary.contains("Waveform cache: 5 files, 4096 bytes"))
         assertTrue(summary.contains("Unresolved favorites: 1"))
@@ -48,6 +53,8 @@ class DiagnosticsScreenTest {
         assertFalse(summary.contains("filePath"))
         assertFalse(summary.contains("bit-perfect", ignoreCase = true))
         assertFalse(summary.contains("hardware output", ignoreCase = true))
+        assertFalse(summary.contains("limiter", ignoreCase = true))
+        assertFalse(summary.contains("true-peak", ignoreCase = true))
         assertFalse(summary.contains("Bluetooth address", ignoreCase = true))
     }
 }

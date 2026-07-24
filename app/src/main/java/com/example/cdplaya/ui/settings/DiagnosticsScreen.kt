@@ -3,6 +3,7 @@ package com.example.cdplaya.ui.settings
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,9 @@ import com.example.cdplaya.player.audio.formatAudioCompatibility
 import com.example.cdplaya.player.audio.formatAudioOffloadStatus
 import com.example.cdplaya.player.audio.formatAudioRoute
 import com.example.cdplaya.player.audio.formatAudioSource
+import com.example.cdplaya.player.audio.formatEqualizerProcessorFormat
+import com.example.cdplaya.player.audio.formatEqualizerStatus
+import com.example.cdplaya.player.equalizer.DebugEqualizerConfigurations
 import com.example.cdplaya.player.waveform.WaveformCache
 import com.example.cdplaya.player.waveform.WaveformCacheStats
 import com.example.cdplaya.player.waveform.WaveformRepository
@@ -113,6 +117,36 @@ internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = b
         "Sleeping for offload: " +
             snapshot.audioOutputUiState.offloadState.isSleepingForOffload
     )
+    val equalizer = snapshot.audioOutputUiState.equalizerRuntimeState
+    appendLine("Equalizer: ${formatEqualizerStatus(equalizer)}")
+    appendLine(
+        "Equalizer processor: ${formatEqualizerProcessorFormat(equalizer)}"
+    )
+    appendLine(
+        "Equalizer requested/applied version: " +
+            "${equalizer.configurationVersion} / " +
+            (equalizer.appliedPlanVersion?.toString() ?: "None")
+    )
+    appendLine(
+        "Equalizer valid/ignored filters: " +
+            "${equalizer.validFilterCount} / ${equalizer.ignoredFilterCount}"
+    )
+    appendLine(
+        "Automatic headroom: " +
+            String.format(
+                Locale.ROOT,
+                "%.2f dB",
+                equalizer.automaticHeadroomDb
+            )
+    )
+    appendLine(
+        "Equalizer audio path: " +
+            if (equalizer.requiresDecodedPcm) {
+                "Decoded PCM required"
+            } else {
+                "User offload preference allowed"
+            }
+    )
     appendLine("Audio compatibility: ${formatAudioCompatibility(snapshot.audioOutputUiState)}")
     snapshot.audioOutputUiState.audioSessionId?.let { appendLine("Audio session: $it") }
     appendLine(
@@ -156,6 +190,10 @@ internal fun DiagnosticsScreen(
     var showClearConfirmation by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
     val version = remember(context) { context.appVersion() }
+    val isDebugBuild = remember(context) {
+        context.applicationInfo.flags and
+            ApplicationInfo.FLAG_DEBUGGABLE != 0
+    }
     val copiedMessage = stringResource(R.string.diagnostics_copied)
     val cacheClearedMessage = stringResource(R.string.diagnostics_cache_cleared)
 
@@ -236,6 +274,44 @@ internal fun DiagnosticsScreen(
             formatAudioOffloadStatus(audioOutputUiState.offloadState)
         )
         DiagnosticValue("Compatibility", formatAudioCompatibility(audioOutputUiState))
+        val equalizer = audioOutputUiState.equalizerRuntimeState
+        DiagnosticValue("Equalizer", formatEqualizerStatus(equalizer))
+        DiagnosticValue(
+            "Equalizer processor format",
+            formatEqualizerProcessorFormat(equalizer)
+        )
+        DiagnosticValue(
+            "Equalizer requested/applied version",
+            "${equalizer.configurationVersion} / " +
+                (equalizer.appliedPlanVersion?.toString() ?: "None")
+        )
+        DiagnosticValue(
+            "Equalizer valid/ignored filters",
+            "${equalizer.validFilterCount} / ${equalizer.ignoredFilterCount}"
+        )
+        DiagnosticValue(
+            "Automatic headroom",
+            String.format(
+                Locale.ROOT,
+                "%.2f dB",
+                equalizer.automaticHeadroomDb
+            )
+        )
+        DiagnosticValue(
+            "Audio path",
+            if (equalizer.requiresDecodedPcm) {
+                "Decoded PCM required by equalizer"
+            } else {
+                "User offload preference allowed"
+            }
+        )
+        DiagnosticValue(
+            "Equalizer scratch growth",
+            equalizer.scratchBufferGrowthCount.toString()
+        )
+        if (isDebugBuild) {
+            DebugEqualizerVerificationControls()
+        }
         audioOutputUiState.replayGainDb?.let { gain ->
             DiagnosticValue("ReplayGain value", String.format(Locale.ROOT, "%.2f dB", gain))
         }
@@ -348,6 +424,65 @@ internal fun DiagnosticsScreen(
                 }
             }
         )
+    }
+}
+
+@Composable
+private fun DebugEqualizerVerificationControls() {
+    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+    Text(
+        text = "Developer equalizer verification",
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    )
+    Text(
+        text = "Transient debug controls. These values are not saved.",
+        style = MaterialTheme.typography.bodySmall,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        OutlinedButton(
+            onClick = DebugEqualizerConfigurations::requestBypass,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("Bypass")
+        }
+        OutlinedButton(
+            onClick = DebugEqualizerConfigurations::requestBassTest,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("Bass test")
+        }
+        OutlinedButton(
+            onClick = DebugEqualizerConfigurations::requestTrebleTest,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("Treble test")
+        }
+    }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        OutlinedButton(
+            onClick = DebugEqualizerConfigurations::requestPreampTest,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("Preamp test")
+        }
+        OutlinedButton(
+            onClick = DebugEqualizerConfigurations::reset,
+            modifier = Modifier.weight(1f)
+        ) {
+            Text("Reset")
+        }
     }
 }
 
