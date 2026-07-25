@@ -38,6 +38,7 @@ import com.example.cdplaya.player.equalizer.AudioProcessingPolicy
 import com.example.cdplaya.player.equalizer.EqualizerAudioProcessor
 import com.example.cdplaya.player.equalizer.EqualizerRenderersFactory
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeBridge
+import com.example.cdplaya.player.equalizer.activeAutomaticHeadroomEnabled
 import com.example.cdplaya.player.equalizer.toDspConfiguration
 import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
 import com.google.common.collect.ImmutableList
@@ -375,7 +376,8 @@ class PlaybackService : MediaLibraryService() {
                                 .toDspConfiguration(),
                         automaticHeadroomEnabled =
                             equalizerPreferences
-                                .automaticHeadroomEnabled,
+                                .activeAutomaticHeadroomEnabled,
+                        mode = equalizerPreferences.mode,
                         limiterConfiguration =
                             LimiterConfiguration(
                                 enabled =

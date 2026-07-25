@@ -18,12 +18,18 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.audio.AudioOffloadPreference
+import com.example.cdplaya.player.equalizer.EqualizerMode
 import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
 import com.example.cdplaya.player.equalizer.GraphicEqualizerPresets
 import com.example.cdplaya.player.equalizer.UserEqualizerPreset
 import com.example.cdplaya.player.equalizer.normalizeBandGains
 import com.example.cdplaya.player.equalizer.normalizeEqualizerDb
 import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerPreset
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerPresets
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerState
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilterType
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibraryGridColumns
 import com.example.cdplaya.ui.library.LibraryViewCategory
@@ -103,6 +109,10 @@ class AppPreferencesRepository private constructor(
         it[Keys.equalizerEnabled] = enabled
     }
 
+    suspend fun setEqualizerMode(mode: EqualizerMode) = edit {
+        it[Keys.equalizerMode] = mode.name
+    }
+
     suspend fun setEqualizerPreampDb(preampDb: Double) = edit {
         val updated = decodeAppPreferences(it).equalizerPreferences
             .withPreampDb(preampDb)
@@ -161,7 +171,97 @@ class AppPreferencesRepository private constructor(
                 bandGainsDb =
                     equalizerPreferences.bandGainsDb.toList(),
                 userPresets =
-                    equalizerPreferences.userPresets.toList()
+                    equalizerPreferences.userPresets.toList(),
+                parametricState =
+                    equalizerPreferences.parametricState.copy(
+                        filters = equalizerPreferences
+                            .parametricState.filters.toList(),
+                        userPresets = equalizerPreferences
+                            .parametricState.userPresets.toList()
+                    )
+            )
+        )
+    }
+
+    suspend fun replaceParametricEqualizerState(
+        state: ParametricEqualizerState
+    ) = edit { preferences ->
+        val current = decodeAppPreferences(preferences)
+            .equalizerPreferences
+        preferences.writeEqualizerPreferences(
+            current.withParametricState(state)
+        )
+    }
+
+    suspend fun saveParametricEqualizerPreset(
+        name: String,
+        curve: ParametricEqualizerState? = null
+    ): ParametricEqualizerPreset {
+        lateinit var preset: ParametricEqualizerPreset
+        dataStore.edit { preferences ->
+            val current = decodeAppPreferences(preferences)
+                .equalizerPreferences
+            val durableParametric = current.parametricState
+            val source = curve?.copy(
+                userPresets = durableParametric.userPresets
+            ) ?: durableParametric
+            preset = ParametricEqualizerPresets.createUserPreset(
+                name = name,
+                state = source
+            )
+            preferences.writeEqualizerPreferences(
+                current.withParametricState(
+                    source.copy(
+                        userPresets =
+                            durableParametric.userPresets + preset
+                    )
+                )
+            )
+        }
+        return preset
+    }
+
+    suspend fun renameParametricEqualizerPreset(
+        presetId: String,
+        newName: String
+    ) = edit { preferences ->
+        val current = decodeAppPreferences(preferences)
+            .equalizerPreferences
+        val parametric = current.parametricState
+        val presets =
+            ParametricEqualizerPresets.renameUserPreset(
+                presetId = presetId,
+                newName = newName,
+                userPresets = parametric.userPresets
+            )
+        preferences.writeEqualizerPreferences(
+            current.withParametricState(
+                parametric.copy(userPresets = presets)
+            )
+        )
+    }
+
+    suspend fun deleteParametricEqualizerPreset(
+        presetId: String
+    ) = edit { preferences ->
+        val current = decodeAppPreferences(preferences)
+            .equalizerPreferences
+        val parametric = current.parametricState
+        require(
+            parametric.userPresets.any { preset ->
+                preset.id == presetId
+            }
+        ) {
+            "Unknown parametric preset ID: $presetId"
+        }
+        preferences.writeEqualizerPreferences(
+            current.withParametricState(
+                parametric.copy(
+                    userPresets =
+                        parametric.userPresets.filterNot { preset ->
+                            preset.id == presetId
+                        }
+                )
             )
         )
     }
@@ -407,6 +507,17 @@ private fun decodeEqualizerPreferences(
     val userPresets = preferences[Keys.equalizerUserPresets]
         ?.let(::decodeUserEqualizerPresets)
         .orEmpty()
+    val mode = preferences[Keys.equalizerMode]
+        ?.let { stored ->
+            runCatching {
+                EqualizerMode.valueOf(stored)
+            }.getOrNull()
+        }
+        ?: EqualizerMode.GRAPHIC
+    val parametricState =
+        preferences[Keys.parametricEqualizerState]
+            ?.let(::decodeParametricEqualizerState)
+            ?: ParametricEqualizerState()
     val limiterConfiguration = runCatching {
         LimiterConfiguration(
             enabled = preferences[Keys.limiterEnabled] ?: false,
@@ -426,6 +537,8 @@ private fun decodeEqualizerPreferences(
                 ?: default.automaticHeadroomEnabled,
         bandGainsDb = bandGainsDb,
         userPresets = userPresets,
+        mode = mode,
+        parametricState = parametricState,
         limiterEnabled = limiterConfiguration.enabled,
         limiterCeilingDbfs =
             limiterConfiguration.ceilingDbfs
@@ -477,7 +590,26 @@ private fun MutablePreferences.writeEqualizerPreferences(
     this[Keys.limiterEnabled] = state.limiterEnabled
     this[Keys.limiterCeilingDbfs] =
         state.limiterCeilingDbfs
+    this[Keys.equalizerMode] = state.mode.name
+    writeParametricEqualizerState(state.parametricState)
     writeUserEqualizerPresets(state.userPresets)
+}
+
+private fun decodeParametricEqualizerState(
+    encoded: String
+): ParametricEqualizerState {
+    return runCatching {
+        equalizerJson.decodeFromString<StoredParametricEqualizerState>(
+            encoded
+        ).toDomain()
+    }.getOrDefault(ParametricEqualizerState())
+}
+
+private fun MutablePreferences.writeParametricEqualizerState(
+    state: ParametricEqualizerState
+) {
+    this[Keys.parametricEqualizerState] =
+        equalizerJson.encodeToString(state.toStored())
 }
 
 private fun MutablePreferences.writeUserEqualizerPresets(
@@ -521,6 +653,161 @@ private data class StoredUserEqualizerPreset(
     val bandGainsDb: List<Double>
 )
 
+@Serializable
+private data class StoredParametricEqualizerState(
+    val preampDb: Double,
+    val automaticHeadroomEnabled: Boolean,
+    val filters: List<StoredParametricFilter>,
+    val userPresets: List<StoredParametricPreset>
+)
+
+@Serializable
+private data class StoredParametricPreset(
+    val id: String,
+    val name: String,
+    val preampDb: Double,
+    val automaticHeadroomEnabled: Boolean,
+    val filters: List<StoredParametricFilter>
+)
+
+@Serializable
+private data class StoredParametricFilter(
+    val type: String,
+    val id: String,
+    val enabled: Boolean,
+    val frequencyHz: Double,
+    val gainDb: Double? = null,
+    val q: Double? = null,
+    val slope: Double? = null
+)
+
+private fun ParametricEqualizerState.toStored() =
+    StoredParametricEqualizerState(
+        preampDb = preampDb,
+        automaticHeadroomEnabled = automaticHeadroomEnabled,
+        filters = filters.map(ParametricFilter::toStored),
+        userPresets = userPresets.map { preset ->
+            StoredParametricPreset(
+                id = preset.id,
+                name = preset.name,
+                preampDb = preset.preampDb,
+                automaticHeadroomEnabled =
+                    preset.automaticHeadroomEnabled,
+                filters = preset.filters.map(
+                    ParametricFilter::toStored
+                )
+            )
+        }
+    )
+
+private fun StoredParametricEqualizerState.toDomain() =
+    ParametricEqualizerState(
+        preampDb = preampDb,
+        automaticHeadroomEnabled = automaticHeadroomEnabled,
+        filters = filters.map(StoredParametricFilter::toDomain),
+        userPresets = userPresets.map { preset ->
+            ParametricEqualizerPreset(
+                id = preset.id,
+                name = preset.name,
+                preampDb = preset.preampDb,
+                automaticHeadroomEnabled =
+                    preset.automaticHeadroomEnabled,
+                filters = preset.filters.map(
+                    StoredParametricFilter::toDomain
+                )
+            )
+        }
+    )
+
+private fun ParametricFilter.toStored(): StoredParametricFilter =
+    when (this) {
+        is ParametricFilter.Peaking -> StoredParametricFilter(
+            type.name, id, enabled, frequencyHz,
+            gainDb = gainDb, q = q
+        )
+        is ParametricFilter.LowShelf -> StoredParametricFilter(
+            type.name, id, enabled, frequencyHz,
+            gainDb = gainDb, slope = slope
+        )
+        is ParametricFilter.HighShelf -> StoredParametricFilter(
+            type.name, id, enabled, frequencyHz,
+            gainDb = gainDb, slope = slope
+        )
+        is ParametricFilter.LowPass -> StoredParametricFilter(
+            type.name, id, enabled, frequencyHz, q = q
+        )
+        is ParametricFilter.HighPass -> StoredParametricFilter(
+            type.name, id, enabled, frequencyHz, q = q
+        )
+        is ParametricFilter.Notch -> StoredParametricFilter(
+            type.name, id, enabled, frequencyHz, q = q
+        )
+        is ParametricFilter.BandPass -> StoredParametricFilter(
+            type.name, id, enabled, frequencyHz, q = q
+        )
+    }
+
+private fun StoredParametricFilter.toDomain(): ParametricFilter {
+    val parsedType = ParametricFilterType.valueOf(type)
+    return when (parsedType) {
+        ParametricFilterType.PEAKING -> {
+            require(slope == null)
+            ParametricFilter.Peaking(
+                id, enabled, frequencyHz,
+                requireNotNull(gainDb), requireNotNull(q)
+            )
+        }
+        ParametricFilterType.LOW_SHELF -> {
+            require(q == null)
+            ParametricFilter.LowShelf(
+                id, enabled, frequencyHz,
+                requireNotNull(gainDb), requireNotNull(slope)
+            )
+        }
+        ParametricFilterType.HIGH_SHELF -> {
+            require(q == null)
+            ParametricFilter.HighShelf(
+                id, enabled, frequencyHz,
+                requireNotNull(gainDb), requireNotNull(slope)
+            )
+        }
+        ParametricFilterType.LOW_PASS -> {
+            require(gainDb == null && slope == null)
+            ParametricFilter.LowPass(
+                id, enabled, frequencyHz, requireNotNull(q)
+            )
+        }
+        ParametricFilterType.HIGH_PASS -> {
+            require(gainDb == null && slope == null)
+            ParametricFilter.HighPass(
+                id, enabled, frequencyHz, requireNotNull(q)
+            )
+        }
+        ParametricFilterType.NOTCH -> {
+            require(gainDb == null && slope == null)
+            ParametricFilter.Notch(
+                id, enabled, frequencyHz, requireNotNull(q)
+            )
+        }
+        ParametricFilterType.BAND_PASS -> {
+            require(gainDb == null && slope == null)
+            ParametricFilter.BandPass(
+                id, enabled, frequencyHz, requireNotNull(q)
+            )
+        }
+    }.let { filter ->
+        require(
+            when (filter) {
+                is ParametricFilter.Peaking -> slope == null
+                is ParametricFilter.LowShelf,
+                is ParametricFilter.HighShelf -> q == null
+                else -> gainDb == null && slope == null
+            }
+        )
+        filter
+    }
+}
+
 private val equalizerJson = Json {
     ignoreUnknownKeys = true
     encodeDefaults = true
@@ -534,6 +821,8 @@ private object Keys {
     val audioOffloadPreference = stringPreferencesKey("audio_offload_preference")
     val equalizerEnabled =
         booleanPreferencesKey("equalizer_enabled")
+    val equalizerMode =
+        stringPreferencesKey("equalizer_mode")
     val equalizerPreampDb =
         doublePreferencesKey("equalizer_preamp_db")
     val equalizerAutomaticHeadroom =
@@ -543,6 +832,8 @@ private object Keys {
     }
     val equalizerUserPresets =
         stringPreferencesKey("equalizer_user_presets_json")
+    val parametricEqualizerState =
+        stringPreferencesKey("equalizer_parametric_state_json")
     val limiterEnabled =
         booleanPreferencesKey("equalizer_limiter_enabled")
     val limiterCeilingDbfs =

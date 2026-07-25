@@ -408,6 +408,63 @@ class EqualizerAudioProcessorTest {
     }
 
     @Test
+    fun modeAndFilterPlanChangesKeepOnePrimedLimiterState() {
+        val processor = configuredLimiterProcessor(
+            channelCount = 1,
+            equalizerConfiguration = EqualizerConfiguration(
+                enabled = true,
+                preampDb = 0.0,
+                filters = listOf(
+                    EqualizerFilterSpec.Peaking(
+                        500.0, 3.0, 1.0
+                    )
+                )
+            )
+        )
+        processor.queueInput(shortBuffer(ShortArray(1_500) { 1_000 }))
+        processor.output
+        EqualizerRuntimeBridge.publishStateForTest()
+        val initial = EqualizerRuntimeBridge.state.value
+        assertTrue(initial.limiterPrimed)
+
+        val parametricSnapshot =
+            EqualizerRuntimeBridge.requestConfiguration(
+                configuration = EqualizerConfiguration(
+                    enabled = true,
+                    preampDb = 1.0,
+                    filters = listOf(
+                        EqualizerFilterSpec.LowPass(
+                            8_000.0, 8.0
+                        )
+                    )
+                ),
+                automaticHeadroomEnabled = false,
+                mode = EqualizerMode.PARAMETRIC,
+                limiterConfiguration = LimiterConfiguration(
+                    enabled = true
+                )
+            )
+        installRuntimeSnapshot(
+            parametricSnapshot,
+            channelCount = 1
+        )
+        processor.queueInput(shortBuffer(ShortArray(1_500) { 1_000 }))
+        processor.output
+        EqualizerRuntimeBridge.publishStateForTest()
+        val afterModeChange = EqualizerRuntimeBridge.state.value
+
+        assertEquals(
+            initial.limiterReprimeCount,
+            afterModeChange.limiterReprimeCount
+        )
+        assertTrue(afterModeChange.limiterPrimed)
+        assertEquals(
+            EqualizerMode.PARAMETRIC,
+            afterModeChange.activeMode
+        )
+    }
+
+    @Test
     fun disablingLimiterDrainsTailBeforeConsumingNewInput() {
         val processor = configuredLimiterProcessor(
             channelCount = 1

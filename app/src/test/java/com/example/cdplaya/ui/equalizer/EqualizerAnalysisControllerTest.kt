@@ -2,13 +2,79 @@ package com.example.cdplaya.ui.equalizer
 
 import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
 import com.example.cdplaya.player.equalizer.GraphicEqualizerPresets
+import com.example.cdplaya.player.equalizer.EqualizerMode
 import com.example.cdplaya.player.equalizer.applyPreset
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerState
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EqualizerAnalysisControllerTest {
+    @Test
+    fun staleCalculationCannotReplaceNewerPublishedResult() =
+        runBlocking {
+            val oldStarted = CountDownLatch(1)
+            val releaseOld = CountDownLatch(1)
+            val scope = CoroutineScope(
+                SupervisorJob() + Dispatchers.Default
+            )
+            val controller = EqualizerAnalysisController(
+                scope = scope,
+                calculate = { request ->
+                    if (request.currentSampleRateHz == 32_000) {
+                        oldStarted.countDown()
+                        releaseOld.await(3, TimeUnit.SECONDS)
+                    }
+                    EqualizerAnalysisResult(
+                        sampleRateHz =
+                            requireNotNull(request.currentSampleRateHz),
+                        usesFallbackSampleRate = false
+                    )
+                }
+            )
+            try {
+                controller.submit(
+                    EqualizerPreferencesState(),
+                    32_000
+                )
+                assertTrue(oldStarted.await(3, TimeUnit.SECONDS))
+                controller.submit(
+                    EqualizerPreferencesState(),
+                    96_000
+                )
+                repeat(100) {
+                    if (controller.state.value.sampleRateHz == 96_000) {
+                        return@repeat
+                    }
+                    delay(10)
+                }
+                assertEquals(
+                    96_000,
+                    controller.state.value.sampleRateHz
+                )
+                releaseOld.countDown()
+                delay(100)
+                assertEquals(
+                    96_000,
+                    controller.state.value.sampleRateHz
+                )
+            } finally {
+                releaseOld.countDown()
+                controller.release()
+                scope.cancel()
+            }
+        }
+
     @Test
     fun flatResponseUsesPhaseACalculationAndStaysAtZero() {
         val result = calculate(
@@ -105,6 +171,42 @@ class EqualizerAnalysisControllerTest {
             result.automaticHeadroom.effectivePreampDb,
             0.0
         )
+    }
+
+    @Test
+    fun parametricAnalysisUsesActualCascadeAndReportsIgnoredIndex() {
+        val filters = listOf(
+            ParametricFilter.Peaking(
+                "peak", true, 1_000.0, 6.0, 10.0
+            ),
+            ParametricFilter.LowPass(
+                "ignored", true, 18_000.0, 0.71
+            ),
+            ParametricFilter.HighShelf(
+                "shelf", true, 8_000.0, -3.0, 1.0
+            )
+        )
+        val state = EqualizerPreferencesState(
+            enabled = true,
+            mode = EqualizerMode.PARAMETRIC,
+            parametricState = ParametricEqualizerState(
+                preampDb = 1.0,
+                automaticHeadroomEnabled = true,
+                filters = filters
+            )
+        )
+
+        val lowRate = calculate(state, 32_000)
+        val highRate = calculate(state, 48_000)
+
+        assertEquals(setOf(1), lowRate.ignoredFilterIndices)
+        assertTrue(highRate.ignoredFilterIndices.isEmpty())
+        assertTrue(
+            lowRate.filterResponse.nearest(1_000.0).magnitudeDb >
+                lowRate.filterResponse.nearest(100.0).magnitudeDb
+        )
+        assertTrue(lowRate.automaticHeadroom.attenuationDb > 0.0)
+        assertEquals(filters, state.parametricState.filters)
     }
 
     private fun calculate(

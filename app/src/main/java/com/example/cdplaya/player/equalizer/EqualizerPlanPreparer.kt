@@ -8,7 +8,7 @@ import com.example.cdplaya.player.equalizer.dsp.EqualizerConfiguration
 import com.example.cdplaya.player.equalizer.dsp.EqualizerFilterSpec
 import com.example.cdplaya.player.equalizer.dsp.PreparedEqualizerCascade
 import com.example.cdplaya.player.equalizer.dsp.decibelsToLinear
-import com.example.cdplaya.player.equalizer.dsp.isEffectivelyZeroDb
+import com.example.cdplaya.player.equalizer.dsp.hasAudibleEffect
 import com.example.cdplaya.player.equalizer.dsp.isEqualizerFrequencySupported
 
 internal object EqualizerPlanPreparer {
@@ -22,7 +22,7 @@ internal object EqualizerPlanPreparer {
 
         if (snapshot.configuration.enabled) {
             snapshot.configuration.filters.forEachIndexed { index, filter ->
-                if (!filter.enabled || isEffectivelyZeroDb(filter.gainDb)) {
+                if (!filter.hasAudibleEffect) {
                     return@forEachIndexed
                 }
                 if (
@@ -94,6 +94,7 @@ internal object EqualizerPlanPreparer {
 
         return PreparedEqualizerPlan(
             sourceSnapshotVersion = snapshot.version,
+            sourceMode = snapshot.mode,
             processorFormat = processorFormat,
             cascade = PreparedEqualizerCascade(
                 sampleRateHz = processorFormat.sampleRateHz,
