@@ -5,10 +5,15 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
+import com.example.cdplaya.player.equalizer.EqualizerMode
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerState
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilterFactory
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -98,6 +103,93 @@ class EqualizerScreenTest {
     }
 
     @Test
+    fun parametricModeRendersAccessibleFiltersMarkersAndFocusedEditor() {
+        val peak = ParametricFilter.Peaking(
+            id = "peak",
+            enabled = true,
+            frequencyHz = 1_000.0,
+            gainDb = 4.0,
+            q = 1.25
+        )
+        composeRule.setContent {
+            MaterialTheme {
+                EqualizerScreen(
+                    state = EqualizerScreenState(
+                        editablePreferences =
+                            EqualizerPreferencesState(
+                                enabled = true,
+                                mode = EqualizerMode.PARAMETRIC,
+                                parametricState =
+                                    ParametricEqualizerState(
+                                        filters = listOf(peak)
+                                    )
+                            ),
+                        selectedParametricFilterId = peak.id,
+                        isLoaded = true
+                    ),
+                    actions = noOpActions()
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Add Filter").assertExists()
+        composeRule.onNode(
+            hasContentDescription(
+                "Filter 1, peaking, enabled",
+                substring = true
+            )
+        ).assertExists()
+        composeRule.onNode(
+            hasContentDescription(
+                "Filter marker 1",
+                substring = true
+            )
+        ).assertExists()
+        composeRule.onNode(
+            hasContentDescription("Edit filter 1")
+        ).performScrollTo().performClick()
+        composeRule.onNodeWithText("Frequency (Hz)")
+            .assertExists()
+        composeRule.onNodeWithText("Gain (dB)")
+            .assertExists()
+        composeRule.onNodeWithText("Q").assertExists()
+        composeRule.onNodeWithText("Shelf slope S")
+            .assertDoesNotExist()
+    }
+
+    @Test
+    fun maximumTenParametricFiltersDisablesAddAction() {
+        composeRule.setContent {
+            MaterialTheme {
+                EqualizerScreen(
+                    state = EqualizerScreenState(
+                        editablePreferences =
+                            EqualizerPreferencesState(
+                                mode = EqualizerMode.PARAMETRIC,
+                                parametricState =
+                                    ParametricEqualizerState(
+                                        filters = List(10) { index ->
+                                            ParametricFilterFactory.default(
+                                                id = "filter-$index"
+                                            )
+                                        }
+                                    )
+                            ),
+                        isLoaded = true
+                    ),
+                    actions = noOpActions()
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Add Filter")
+            .assertIsNotEnabled()
+        composeRule.onNodeWithText(
+            "Maximum of ten filters reached."
+        ).assertExists()
+    }
+
+    @Test
     fun enabledLimiterShowsMetersDisablesAbAndResetsCounters() {
         var resetRequested = false
         composeRule.setContent {
@@ -160,6 +252,7 @@ class EqualizerScreenTest {
     private fun noOpActions() = EqualizerUiActions(
         onBack = {},
         onEnabledChanged = {},
+        onModeChanged = {},
         onPreviewBandGain = { _, _ -> },
         onCommitBandGain = { _, _ -> },
         onCancelBandGainPreview = { _, _ -> },
@@ -177,6 +270,18 @@ class EqualizerScreenTest {
         onSaveUserPreset = {},
         onRenameUserPreset = { _, _ -> },
         onDeleteUserPreset = {},
+        onSelectParametricFilter = {},
+        onAddParametricFilter = {},
+        onPreviewParametricFilter = {},
+        onCommitParametricFilter = {},
+        onCancelParametricFilterPreview = {},
+        onMoveParametricFilter = { _, _ -> },
+        onDeleteParametricFilter = {},
+        onApplyParametricFlatPreset = {},
+        onApplyParametricUserPreset = {},
+        onSaveParametricUserPreset = {},
+        onRenameParametricUserPreset = { _, _ -> },
+        onDeleteParametricUserPreset = {},
         onResetToFlat = {},
         onComparisonBypassedChanged = {}
     )
