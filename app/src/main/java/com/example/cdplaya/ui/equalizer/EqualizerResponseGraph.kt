@@ -3,8 +3,10 @@ package com.example.cdplaya.ui.equalizer
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,8 +20,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -27,14 +31,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.example.cdplaya.player.equalizer.dsp.EqualizerResponsePoint
 import com.example.cdplaya.player.equalizer.parametric.MAX_PARAMETRIC_FREQUENCY_HZ
 import com.example.cdplaya.player.equalizer.parametric.MAX_PARAMETRIC_GAIN_DB
@@ -96,6 +104,9 @@ internal fun EqualizerResponseGraph(
     var graphHeightPx by remember { mutableIntStateOf(0) }
     val markerRadiusPx = with(LocalDensity.current) {
         14.dp.roundToPx()
+    }
+    val markerTouchTargetPx = with(LocalDensity.current) {
+        48.dp.roundToPx()
     }
 
     Column(modifier = modifier) {
@@ -174,111 +185,204 @@ internal fun EqualizerResponseGraph(
 
             if (graphWidthPx > 0 && graphHeightPx > 0) {
                 filters.forEachIndexed { index, filter ->
-                    val selected = filter.id == selectedFilterId
-                    val ignored = index in ignoredFilterIndices
-                    val markerFill = when {
-                        ignored -> ignoredMarkerColor
-                        !filter.enabled -> disabledMarkerColor
-                        else -> markerColor
-                    }
-                    val centerX = logarithmicX(
-                        filter.frequencyHz,
-                        MIN_PARAMETRIC_FREQUENCY_HZ,
-                        MAX_PARAMETRIC_FREQUENCY_HZ,
-                        graphWidthPx.toFloat()
-                    ).roundToInt()
-                    val centerY = yForDb(
-                        filter.gainDbOrNull ?: 0.0,
-                        graphRangeDb,
-                        graphHeightPx.toFloat()
-                    ).roundToInt()
-                    var dragFilter = filter
-                    Box(
-                        modifier = Modifier
-                            .offset {
-                                IntOffset(
-                                    x = centerX - markerRadiusPx,
-                                    y = centerY - markerRadiusPx
+                    key(filter.id) {
+                        val selected =
+                            filter.id == selectedFilterId
+                        val ignored =
+                            index in ignoredFilterIndices
+                        val markerFill = when {
+                            ignored -> ignoredMarkerColor
+                            !filter.enabled -> disabledMarkerColor
+                            else -> markerColor
+                        }
+                        val centerX = logarithmicX(
+                            filter.frequencyHz,
+                            MIN_PARAMETRIC_FREQUENCY_HZ,
+                            MAX_PARAMETRIC_FREQUENCY_HZ,
+                            graphWidthPx.toFloat()
+                        ).roundToInt()
+                        val centerY = yForDb(
+                            filter.gainDbOrNull ?: 0.0,
+                            graphRangeDb,
+                            graphHeightPx.toFloat()
+                        ).roundToInt()
+                        val targetLeft = (
+                            centerX - markerTouchTargetPx / 2
+                            ).coerceIn(
+                            0,
+                            graphWidthPx - markerTouchTargetPx
+                        )
+                        val targetTop = (
+                            centerY - markerTouchTargetPx / 2
+                            ).coerceIn(
+                            0,
+                            graphHeightPx - markerTouchTargetPx
+                        )
+                        val visibleLeft =
+                            centerX - targetLeft - markerRadiusPx
+                        val visibleTop =
+                            centerY - targetTop - markerRadiusPx
+                        val currentFilter by
+                            rememberUpdatedState(filter)
+                        val currentGraphRangeDb by
+                            rememberUpdatedState(graphRangeDb)
+                        Box(
+                            modifier = Modifier
+                                .offset {
+                                    IntOffset(
+                                        x = targetLeft,
+                                        y = targetTop
+                                    )
+                                }
+                                .size(48.dp)
+                                .zIndex(
+                                    if (selected) 1f else 0f
                                 )
-                            }
-                            .size(28.dp)
-                            .background(markerFill, CircleShape)
-                            .border(
-                                width = if (selected) 3.dp else 1.dp,
-                                color = if (selected) {
-                                    MaterialTheme.colorScheme.onSurface
-                                } else {
-                                    backgroundColor
-                                },
-                                shape = CircleShape
-                            )
-                            .semantics {
-                                this.selected = selected
-                                contentDescription =
-                                    "Filter marker ${index + 1}, " +
-                                        filterParameterSummary(filter) +
+                                .testTag(
+                                    parametricMarkerDragTargetTag(
+                                        filter.id
+                                    )
+                                )
+                                .semantics {
+                                    this.selected = selected
+                                    contentDescription =
+                                        "Filter marker " +
+                                        "${index + 1}, " +
+                                        filterParameterSummary(
+                                            filter
+                                        ) +
                                         when {
                                             ignored ->
                                                 ", unavailable for current source"
-                                            !filter.enabled -> ", bypassed"
+                                            !filter.enabled ->
+                                                ", bypassed"
                                             else -> ""
                                         }
-                            }
-                            .clickable {
-                                onSelectFilter(filter.id)
-                            }
-                            .pointerInput(
-                                filter,
-                                graphWidthPx,
-                                graphHeightPx
-                            ) {
-                                detectDragGestures(
-                                    onDragStart = {
-                                        dragFilter = filter
+                                    onClick(
+                                        label = "Select filter"
+                                    ) {
                                         onSelectFilter(filter.id)
-                                    },
-                                    onDragCancel = {
-                                        onCommitFilter(dragFilter)
-                                    },
-                                    onDragEnd = {
-                                        onCommitFilter(dragFilter)
+                                        true
                                     }
-                                ) { change, amount ->
-                                    change.consume()
-                                    val logRange = ln(
-                                        MAX_PARAMETRIC_FREQUENCY_HZ /
-                                            MIN_PARAMETRIC_FREQUENCY_HZ
-                                    )
-                                    val frequency = (
-                                        dragFilter.frequencyHz *
-                                            exp(
-                                                amount.x /
-                                                    graphWidthPx * logRange
-                                            )
-                                        ).coerceIn(
-                                        MIN_PARAMETRIC_FREQUENCY_HZ,
-                                        MAX_PARAMETRIC_FREQUENCY_HZ
-                                    )
-                                    var updated =
-                                        dragFilter.withFrequencyHz(frequency)
-                                    dragFilter.gainDbOrNull?.let { gain ->
-                                        val nextGain = (
-                                            gain -
-                                                amount.y /
-                                                graphHeightPx *
-                                                (graphRangeDb * 2.0)
-                                            ).coerceIn(
-                                            MIN_PARAMETRIC_GAIN_DB,
-                                            MAX_PARAMETRIC_GAIN_DB
-                                        )
-                                        updated =
-                                            updated.withGainDb(nextGain)
-                                    }
-                                    dragFilter = updated
-                                    onPreviewFilter(updated)
                                 }
-                            }
-                    )
+                                .pointerInput(
+                                    filter.id,
+                                    graphWidthPx,
+                                    graphHeightPx
+                                ) {
+                                    awaitEachGesture {
+                                        val down =
+                                            awaitFirstDown(
+                                                requireUnconsumed =
+                                                    false
+                                            )
+                                        onSelectFilter(filter.id)
+                                        var dragFilter =
+                                            currentFilter
+                                        val dragRangeDb =
+                                            currentGraphRangeDb
+                                        fun applyDrag(
+                                            amount: Offset
+                                        ) {
+                                            val logRange = ln(
+                                                MAX_PARAMETRIC_FREQUENCY_HZ /
+                                                    MIN_PARAMETRIC_FREQUENCY_HZ
+                                            )
+                                            val frequency = (
+                                                dragFilter.frequencyHz *
+                                                    exp(
+                                                        amount.x /
+                                                            graphWidthPx *
+                                                            logRange
+                                                    )
+                                                ).coerceIn(
+                                                MIN_PARAMETRIC_FREQUENCY_HZ,
+                                                MAX_PARAMETRIC_FREQUENCY_HZ
+                                            )
+                                            var updated =
+                                                dragFilter
+                                                    .withFrequencyHz(
+                                                        frequency
+                                                    )
+                                            dragFilter.gainDbOrNull
+                                                ?.let { gain ->
+                                                    val nextGain = (
+                                                        gain -
+                                                            amount.y /
+                                                            graphHeightPx *
+                                                            (
+                                                                dragRangeDb *
+                                                                    2.0
+                                                                )
+                                                        ).coerceIn(
+                                                        MIN_PARAMETRIC_GAIN_DB,
+                                                        MAX_PARAMETRIC_GAIN_DB
+                                                    )
+                                                    updated =
+                                                        updated.withGainDb(
+                                                            nextGain
+                                                        )
+                                                }
+                                            dragFilter = updated
+                                            onPreviewFilter(updated)
+                                        }
+                                        val captured =
+                                            awaitTouchSlopOrCancellation(
+                                                down.id
+                                            ) { change, overSlop ->
+                                                change.consume()
+                                                applyDrag(overSlop)
+                                            }
+                                        if (captured == null) {
+                                            return@awaitEachGesture
+                                        }
+                                        drag(captured.id) { change ->
+                                            val amount =
+                                                change.positionChange()
+                                            if (
+                                                amount != Offset.Zero
+                                            ) {
+                                                change.consume()
+                                                applyDrag(amount)
+                                            }
+                                        }
+                                        onCommitFilter(dragFilter)
+                                    }
+                                }
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .offset {
+                                        IntOffset(
+                                            x = visibleLeft,
+                                            y = visibleTop
+                                        )
+                                    }
+                                    .size(28.dp)
+                                    .background(
+                                        markerFill,
+                                        CircleShape
+                                    )
+                                    .border(
+                                        width =
+                                            if (selected) {
+                                                3.dp
+                                            } else {
+                                                1.dp
+                                            },
+                                        color =
+                                            if (selected) {
+                                                MaterialTheme
+                                                    .colorScheme
+                                                    .onSurface
+                                            } else {
+                                                backgroundColor
+                                            },
+                                        shape = CircleShape
+                                    )
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -358,3 +462,7 @@ private fun yForDb(
     return ((rangeDb - clamped) / (rangeDb * 2.0) * height)
         .toFloat()
 }
+
+internal fun parametricMarkerDragTargetTag(
+    filterId: String
+): String = "parametric-marker-drag-$filterId"
