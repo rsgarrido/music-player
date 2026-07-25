@@ -1,11 +1,14 @@
 package com.example.cdplaya.player.equalizer
 
 import com.example.cdplaya.player.equalizer.dsp.EqualizerConfiguration
+import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
 
 internal data class EqualizerRuntimeSnapshot(
     val version: Long,
     val configuration: EqualizerConfiguration,
-    val automaticHeadroomEnabled: Boolean
+    val automaticHeadroomEnabled: Boolean,
+    val limiterConfiguration: LimiterConfiguration =
+        LimiterConfiguration()
 ) {
     init {
         require(version >= 0L) {
@@ -21,7 +24,8 @@ internal data class EqualizerRuntimeSnapshot(
                 preampDb = 0.0,
                 filters = emptyList()
             ),
-            automaticHeadroomEnabled = false
+            automaticHeadroomEnabled = false,
+            limiterConfiguration = LimiterConfiguration()
         )
     }
 }

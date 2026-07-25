@@ -30,7 +30,8 @@ internal data class EqualizerScreenState(
             .sortedBy { preset -> preset.name.lowercase() }
 
     val comparisonAvailable: Boolean
-        get() = editablePreferences.enabled &&
+        get() = !editablePreferences.limiterEnabled &&
+            editablePreferences.enabled &&
             !editablePreferences
                 .toDspConfiguration(enabledOverride = true)
                 .isEffectivelyFlat
@@ -69,6 +70,11 @@ internal data class EqualizerUiActions(
     val onCommitPreamp: (Double) -> Unit,
     val onCancelPreampPreview: (Double) -> Unit,
     val onAutomaticHeadroomChanged: (Boolean) -> Unit,
+    val onLimiterEnabledChanged: (Boolean) -> Unit,
+    val onPreviewLimiterCeiling: (Double) -> Unit,
+    val onCommitLimiterCeiling: (Double) -> Unit,
+    val onCancelLimiterCeilingPreview: (Double) -> Unit,
+    val onResetLimiterMeters: () -> Unit,
     val onApplyBuiltInPreset: (Int) -> Unit,
     val onApplyUserPreset: (String) -> Unit,
     val onSaveUserPreset: (String) -> Unit,

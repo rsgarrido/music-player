@@ -63,7 +63,11 @@ class DiagnosticsScreenTest {
         assertFalse(summary.contains("filePath"))
         assertFalse(summary.contains("bit-perfect", ignoreCase = true))
         assertFalse(summary.contains("hardware output", ignoreCase = true))
-        assertFalse(summary.contains("limiter", ignoreCase = true))
+        assertTrue(
+            summary.contains(
+                "Limiter requested/active/primed: false / false / false"
+            )
+        )
         assertFalse(summary.contains("true-peak", ignoreCase = true))
         assertFalse(summary.contains("Bluetooth address", ignoreCase = true))
     }

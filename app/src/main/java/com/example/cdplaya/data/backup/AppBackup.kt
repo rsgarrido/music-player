@@ -38,6 +38,8 @@ data class BackupEqualizerPreferences(
     val preampDb: Double = 0.0,
     val automaticHeadroomEnabled: Boolean = true,
     val bandGainsDb: List<Double> = List(10) { 0.0 },
+    val limiterEnabled: Boolean = false,
+    val limiterCeilingDbfs: Double = -1.0,
     val userPresets: List<BackupEqualizerPreset> = emptyList()
 )
 

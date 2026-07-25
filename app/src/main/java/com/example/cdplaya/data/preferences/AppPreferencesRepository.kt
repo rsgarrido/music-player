@@ -23,6 +23,7 @@ import com.example.cdplaya.player.equalizer.GraphicEqualizerPresets
 import com.example.cdplaya.player.equalizer.UserEqualizerPreset
 import com.example.cdplaya.player.equalizer.normalizeBandGains
 import com.example.cdplaya.player.equalizer.normalizeEqualizerDb
+import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibraryGridColumns
 import com.example.cdplaya.ui.library.LibraryViewCategory
@@ -112,6 +113,18 @@ class AppPreferencesRepository private constructor(
         enabled: Boolean
     ) = edit {
         it[Keys.equalizerAutomaticHeadroom] = enabled
+    }
+
+    suspend fun setLimiterEnabled(enabled: Boolean) = edit {
+        it[Keys.limiterEnabled] = enabled
+    }
+
+    suspend fun setLimiterCeilingDbfs(ceilingDbfs: Double) = edit {
+        val updated = decodeAppPreferences(it)
+            .equalizerPreferences
+            .withLimiterCeilingDbfs(ceilingDbfs)
+        it[Keys.limiterCeilingDbfs] =
+            updated.limiterCeilingDbfs
     }
 
     suspend fun setEqualizerBandGainDb(
@@ -394,6 +407,16 @@ private fun decodeEqualizerPreferences(
     val userPresets = preferences[Keys.equalizerUserPresets]
         ?.let(::decodeUserEqualizerPresets)
         .orEmpty()
+    val limiterConfiguration = runCatching {
+        LimiterConfiguration(
+            enabled = preferences[Keys.limiterEnabled] ?: false,
+            ceilingDbfs =
+                preferences[Keys.limiterCeilingDbfs]
+                    ?: default.limiterCeilingDbfs
+        )
+    }.getOrElse {
+        LimiterConfiguration()
+    }
     return EqualizerPreferencesState(
         enabled = preferences[Keys.equalizerEnabled]
             ?: default.enabled,
@@ -402,7 +425,10 @@ private fun decodeEqualizerPreferences(
             preferences[Keys.equalizerAutomaticHeadroom]
                 ?: default.automaticHeadroomEnabled,
         bandGainsDb = bandGainsDb,
-        userPresets = userPresets
+        userPresets = userPresets,
+        limiterEnabled = limiterConfiguration.enabled,
+        limiterCeilingDbfs =
+            limiterConfiguration.ceilingDbfs
     )
 }
 
@@ -448,6 +474,9 @@ private fun MutablePreferences.writeEqualizerPreferences(
     Keys.equalizerBandGains.forEachIndexed { index, key ->
         this[key] = state.bandGainsDb[index]
     }
+    this[Keys.limiterEnabled] = state.limiterEnabled
+    this[Keys.limiterCeilingDbfs] =
+        state.limiterCeilingDbfs
     writeUserEqualizerPresets(state.userPresets)
 }
 
@@ -514,6 +543,10 @@ private object Keys {
     }
     val equalizerUserPresets =
         stringPreferencesKey("equalizer_user_presets_json")
+    val limiterEnabled =
+        booleanPreferencesKey("equalizer_limiter_enabled")
+    val limiterCeilingDbfs =
+        doublePreferencesKey("equalizer_limiter_ceiling_dbfs")
     val selectedLibraryFolders = stringSetPreferencesKey("selected_folders")
     val songsViewMode = stringPreferencesKey("songs_view_mode")
     val albumsViewMode = stringPreferencesKey("albums_view_mode")

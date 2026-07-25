@@ -14,9 +14,15 @@ internal data class AudioProcessingPolicyDecision(
 internal object AudioProcessingPolicy {
     fun evaluate(
         userOffloadPreference: AudioOffloadPreference,
-        equalizerEffectivelyActive: Boolean
+        equalizerEffectivelyActive: Boolean,
+        limiterEffectivelyActive: Boolean = false,
+        comparisonSessionActive: Boolean = false
     ): AudioProcessingPolicyDecision {
-        return if (equalizerEffectivelyActive) {
+        return if (
+            equalizerEffectivelyActive ||
+            limiterEffectivelyActive ||
+            comparisonSessionActive
+        ) {
             AudioProcessingPolicyDecision(
                 pathRequirement =
                     AudioProcessingPathRequirement.DECODED_PCM_REQUIRED,

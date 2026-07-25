@@ -157,6 +157,54 @@ internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = b
                 "User offload preference allowed"
             }
     )
+    appendLine(
+        "Limiter requested/active/primed: " +
+            "${equalizer.limiterRequestedEnabled} / " +
+            "${equalizer.limiterEffectivelyActive} / " +
+            equalizer.limiterPrimed
+    )
+    appendLine(
+        "Limiter ceiling/lookahead/release: " +
+            String.format(
+                Locale.ROOT,
+                "%.1f dBFS / %d frames (%.2f ms) / %.1f ms",
+                equalizer.limiterCeilingDbfs,
+                equalizer.limiterLookaheadFrames,
+                equalizer.limiterLookaheadMilliseconds,
+                equalizer.limiterReleaseMilliseconds
+            )
+    )
+    appendLine(
+        "Limiter pre/post peak: " +
+            String.format(
+                Locale.ROOT,
+                "%.1f / %.1f dBFS",
+                equalizer.preLimiterPeakDbfs,
+                equalizer.postLimiterPeakDbfs
+            )
+    )
+    appendLine(
+        "Limiter current/recent max gain reduction: " +
+            String.format(
+                Locale.ROOT,
+                "%.1f / %.1f dB",
+                equalizer.currentGainReductionDb,
+                equalizer.maximumRecentGainReductionDb
+            )
+    )
+    appendLine(
+        "Limiter over-range/saturated samples: " +
+            "${equalizer.overRangeSampleCount} / " +
+            equalizer.saturatedSampleCount
+    )
+    appendLine(
+        "Limiter active/reduced frames: " +
+            "${equalizer.limiterActiveFrameCount} / " +
+            equalizer.limiterReducedFrameCount
+    )
+    appendLine(
+        "Limiter reprimes: ${equalizer.limiterReprimeCount}"
+    )
     appendLine("Audio compatibility: ${formatAudioCompatibility(snapshot.audioOutputUiState)}")
     snapshot.audioOutputUiState.audioSessionId?.let { appendLine("Audio session: $it") }
     appendLine(
@@ -328,6 +376,62 @@ internal fun DiagnosticsScreen(
         DiagnosticValue(
             "Equalizer scratch growth",
             equalizer.scratchBufferGrowthCount.toString()
+        )
+        DiagnosticValue(
+            "Limiter requested / active / primed",
+            "${equalizer.limiterRequestedEnabled} / " +
+                "${equalizer.limiterEffectivelyActive} / " +
+                equalizer.limiterPrimed
+        )
+        DiagnosticValue(
+            "Limiter ceiling",
+            String.format(
+                Locale.ROOT,
+                "%.1f dBFS",
+                equalizer.limiterCeilingDbfs
+            )
+        )
+        DiagnosticValue(
+            "Limiter lookahead / release",
+            String.format(
+                Locale.ROOT,
+                "%d frames (%.2f ms) / %.1f ms",
+                equalizer.limiterLookaheadFrames,
+                equalizer.limiterLookaheadMilliseconds,
+                equalizer.limiterReleaseMilliseconds
+            )
+        )
+        DiagnosticValue(
+            "Limiter pre / post peak",
+            String.format(
+                Locale.ROOT,
+                "%.1f / %.1f dBFS",
+                equalizer.preLimiterPeakDbfs,
+                equalizer.postLimiterPeakDbfs
+            )
+        )
+        DiagnosticValue(
+            "Limiter current / recent max reduction",
+            String.format(
+                Locale.ROOT,
+                "%.1f / %.1f dB",
+                equalizer.currentGainReductionDb,
+                equalizer.maximumRecentGainReductionDb
+            )
+        )
+        DiagnosticValue(
+            "Limiter over-range / saturated samples",
+            "${equalizer.overRangeSampleCount} / " +
+                equalizer.saturatedSampleCount
+        )
+        DiagnosticValue(
+            "Limiter active / reduced frames",
+            "${equalizer.limiterActiveFrameCount} / " +
+                equalizer.limiterReducedFrameCount
+        )
+        DiagnosticValue(
+            "Limiter reprimes",
+            equalizer.limiterReprimeCount.toString()
         )
         Text(
             text = "DSP timing ends when the processor writes the transition. " +
