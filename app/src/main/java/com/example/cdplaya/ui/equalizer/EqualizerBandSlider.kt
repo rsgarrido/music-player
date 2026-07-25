@@ -1,7 +1,10 @@
 package com.example.cdplaya.ui.equalizer
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitVerticalTouchSlopOrCancellation
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,12 +22,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.player.equalizer.MAX_EQUALIZER_BAND_DB
 import com.example.cdplaya.player.equalizer.MIN_EQUALIZER_BAND_DB
@@ -96,40 +101,60 @@ internal fun EqualizerBandSlider(
         Canvas(
             modifier = Modifier
                 .padding(vertical = 8.dp)
-                .width(48.dp)
+                .width(64.dp)
                 .height(210.dp)
+                .testTag(
+                    equalizerBandDragTargetTag(frequencyHz)
+                )
                 .pointerInput(unavailable) {
                     if (unavailable) return@pointerInput
-                    detectVerticalDragGestures(
-                        onDragStart = {
-                            dragStartValue = currentGainDb
-                            pendingDragValue = currentGainDb
-                            accumulatedDragPixels = 0.0
-                        },
-                        onVerticalDrag = { change, amount ->
-                            change.consume()
-                            accumulatedDragPixels += amount
-                            val range =
-                                MAX_EQUALIZER_BAND_DB -
-                                    MIN_EQUALIZER_BAND_DB
-                            val requested = dragStartValue -
-                                accumulatedDragPixels /
-                                size.height * range
-                            pendingDragValue =
-                                snapBandGain(requested)
-                            onValueChange(pendingDragValue)
-                        },
-                        onDragEnd = {
-                            onValueChangeFinished(
-                                pendingDragValue
-                            )
-                        },
-                        onDragCancel = {
-                            onValueChangeFinished(
-                                pendingDragValue
-                            )
+                    awaitEachGesture {
+                        val down = awaitFirstDown(
+                            requireUnconsumed = false
+                        )
+                        val captured =
+                            awaitVerticalTouchSlopOrCancellation(
+                                down.id
+                            ) { change, overSlop ->
+                                change.consume()
+                                dragStartValue = currentGainDb
+                                pendingDragValue = currentGainDb
+                                accumulatedDragPixels =
+                                    overSlop.toDouble()
+                                val range =
+                                    MAX_EQUALIZER_BAND_DB -
+                                        MIN_EQUALIZER_BAND_DB
+                                val requested = dragStartValue -
+                                    accumulatedDragPixels /
+                                    size.height * range
+                                pendingDragValue =
+                                    snapBandGain(requested)
+                                onValueChange(pendingDragValue)
+                            }
+                        if (captured == null) {
+                            return@awaitEachGesture
                         }
-                    )
+                        drag(captured.id) { change ->
+                            val amount = change.positionChange()
+                            if (amount != Offset.Zero) {
+                                change.consume()
+                                accumulatedDragPixels +=
+                                    amount.y.toDouble()
+                                val range =
+                                    MAX_EQUALIZER_BAND_DB -
+                                        MIN_EQUALIZER_BAND_DB
+                                val requested = dragStartValue -
+                                    accumulatedDragPixels /
+                                    size.height * range
+                                pendingDragValue =
+                                    snapBandGain(requested)
+                                onValueChange(pendingDragValue)
+                            }
+                        }
+                        onValueChangeFinished(
+                            pendingDragValue
+                        )
+                    }
                 }
         ) {
             val centerX = size.width / 2f
@@ -209,3 +234,7 @@ internal fun snapBandGain(value: Double): Double {
         round(clamped * 2.0) / 2.0
     )
 }
+
+internal fun equalizerBandDragTargetTag(
+    frequencyHz: Double
+): String = "graphic-band-drag-${frequencyHz.toInt()}"

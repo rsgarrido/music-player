@@ -6,6 +6,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeBridge
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
+import com.example.cdplaya.player.equalizer.EqualizerMode
+import com.example.cdplaya.player.equalizer.dsp.EqualizerFilterSpec
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
+import com.example.cdplaya.player.equalizer.parametric.withGainDb
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +26,99 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class EqualizerUiControllerTest {
+    @Test
+    fun parametricPreviewCancelCommitAndModeSwitchConverge() =
+        runBlocking {
+            EqualizerRuntimeBridge.release()
+            val context =
+                ApplicationProvider.getApplicationContext<Context>()
+            val scope = CoroutineScope(
+                SupervisorJob() + Dispatchers.Unconfined
+            )
+            val repository = AppPreferencesRepository.create(
+                context = context,
+                scope = scope,
+                dataStoreFileName =
+                    "param_controller_${System.nanoTime()}.preferences_pb",
+                legacyStores = emptyList()
+            )
+            val controller = EqualizerUiController(
+                preferencesRepository = repository,
+                runtimeState =
+                    MutableStateFlow(EqualizerRuntimeState()),
+                scope = scope
+            )
+            try {
+                withTimeout(5_000) {
+                    controller.state.first { it.isLoaded }
+                }
+                controller.setMode(EqualizerMode.PARAMETRIC)
+                controller.addParametricFilter()
+                val original = controller.state.value
+                    .editablePreferences.parametricState.filters.single()
+                val boosted = original.withGainDb(4.0)
+
+                controller.previewParametricFilter(boosted)
+                assertEquals(
+                    4.0,
+                    (EqualizerRuntimeBridge.requestedSnapshot()
+                        .configuration.filters.single() as
+                        EqualizerFilterSpec.Peaking).gainDb,
+                    0.0
+                )
+                assertEquals(
+                    0.0,
+                    repository.state.value.equalizerPreferences
+                        .parametricState.filters.single()
+                        .let {
+                            (it as ParametricFilter.Peaking)
+                                .gainDb
+                        },
+                    0.0
+                )
+
+                controller.cancelParametricFilterPreview(original)
+                assertEquals(
+                    0.0,
+                    (EqualizerRuntimeBridge.requestedSnapshot()
+                        .configuration.filters.single() as
+                        EqualizerFilterSpec.Peaking).gainDb,
+                    0.0
+                )
+                controller.commitParametricFilter(boosted)
+                controller.setEnabled(true)
+                withTimeout(5_000) {
+                    repository.state.first { state ->
+                        state.equalizerPreferences.mode ==
+                            EqualizerMode.PARAMETRIC &&
+                            (
+                                state.equalizerPreferences.parametricState
+                                    .filters.single() as
+                                    ParametricFilter.Peaking
+                                ).gainDb == 4.0
+                    }
+                }
+                controller.setComparisonBypassed(true)
+                assertTrue(controller.state.value.comparisonBypassed)
+
+                controller.setMode(EqualizerMode.GRAPHIC)
+
+                assertFalse(controller.state.value.comparisonBypassed)
+                assertEquals(
+                    EqualizerMode.GRAPHIC,
+                    EqualizerRuntimeBridge.requestedSnapshot().mode
+                )
+                assertTrue(
+                    repository.state.value.equalizerPreferences
+                        .parametricState.filters.single() == boosted
+                )
+            } finally {
+                controller.release()
+                scope.cancel()
+                EqualizerRuntimeBridge.release()
+            }
+        }
+
     @Test
     fun previewIsTransientCommitPersistsAndComparisonReturnsToA() =
         runBlocking {
@@ -54,9 +151,10 @@ class EqualizerUiControllerTest {
                 controller.previewBandGain(0, 4.0)
                 assertEquals(
                     4.0,
-                    EqualizerRuntimeBridge
+                    (EqualizerRuntimeBridge
                         .requestedSnapshot()
-                        .configuration.filters[0].gainDb,
+                        .configuration.filters[0] as
+                        EqualizerFilterSpec.Peaking).gainDb,
                     0.0
                 )
                 assertEquals(

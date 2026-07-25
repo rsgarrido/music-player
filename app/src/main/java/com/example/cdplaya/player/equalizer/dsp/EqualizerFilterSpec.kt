@@ -8,27 +8,67 @@ package com.example.cdplaya.player.equalizer.dsp
  */
 internal sealed interface EqualizerFilterSpec {
     val frequencyHz: Double
-    val gainDb: Double
     val enabled: Boolean
 
     data class Peaking(
         override val frequencyHz: Double,
-        override val gainDb: Double,
+        val gainDb: Double,
         val q: Double,
         override val enabled: Boolean = true
     ) : EqualizerFilterSpec
 
     data class LowShelf(
         override val frequencyHz: Double,
-        override val gainDb: Double,
+        val gainDb: Double,
         val slope: Double = 1.0,
         override val enabled: Boolean = true
     ) : EqualizerFilterSpec
 
     data class HighShelf(
         override val frequencyHz: Double,
-        override val gainDb: Double,
+        val gainDb: Double,
         val slope: Double = 1.0,
         override val enabled: Boolean = true
     ) : EqualizerFilterSpec
+
+    data class LowPass(
+        override val frequencyHz: Double,
+        val q: Double,
+        override val enabled: Boolean = true
+    ) : EqualizerFilterSpec
+
+    data class HighPass(
+        override val frequencyHz: Double,
+        val q: Double,
+        override val enabled: Boolean = true
+    ) : EqualizerFilterSpec
+
+    data class Notch(
+        override val frequencyHz: Double,
+        val q: Double,
+        override val enabled: Boolean = true
+    ) : EqualizerFilterSpec
+
+    /**
+     * RBJ constant-0-dB-peak band-pass section.
+     */
+    data class BandPass(
+        override val frequencyHz: Double,
+        val q: Double,
+        override val enabled: Boolean = true
+    ) : EqualizerFilterSpec
 }
+
+internal val EqualizerFilterSpec.hasAudibleEffect: Boolean
+    get() = enabled && when (this) {
+        is EqualizerFilterSpec.Peaking ->
+            !isEffectivelyZeroDb(gainDb)
+        is EqualizerFilterSpec.LowShelf ->
+            !isEffectivelyZeroDb(gainDb)
+        is EqualizerFilterSpec.HighShelf ->
+            !isEffectivelyZeroDb(gainDb)
+        is EqualizerFilterSpec.LowPass,
+        is EqualizerFilterSpec.HighPass,
+        is EqualizerFilterSpec.Notch,
+        is EqualizerFilterSpec.BandPass -> true
+    }

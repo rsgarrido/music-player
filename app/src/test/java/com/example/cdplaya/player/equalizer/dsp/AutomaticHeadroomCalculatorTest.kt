@@ -95,6 +95,69 @@ class AutomaticHeadroomCalculatorTest {
     }
 
     @Test
+    fun highQPassResonancesAndPositivePreampAreNotMissed() {
+        listOf<EqualizerFilterSpec>(
+            EqualizerFilterSpec.LowPass(
+                frequencyHz = 7_913.7,
+                q = 20.0
+            ),
+            EqualizerFilterSpec.HighPass(
+                frequencyHz = 137.3,
+                q = 20.0
+            )
+        ).forEach { resonantFilter ->
+            val configuration = EqualizerConfiguration(
+                enabled = true,
+                preampDb = 2.0,
+                filters = listOf(resonantFilter)
+            )
+            val result = AutomaticHeadroomCalculator.calculate(
+                configuration,
+                sampleRateHz = 48_000
+            )
+            val exactCenter = EqualizerFrequencyResponse.calculate(
+                configuration = configuration,
+                sampleRateHz = 48_000,
+                frequenciesHz =
+                    doubleArrayOf(resonantFilter.frequencyHz)
+            ).single().magnitudeDb
+
+            assertTrue(exactCenter > 20.0)
+            assertTrue(
+                result.maximumPredictedDb >= exactCenter - 1e-9
+            )
+            assertTrue(
+                result.attenuationDb >=
+                    result.maximumPredictedDb +
+                    AutomaticHeadroomCalculator
+                        .DEFAULT_SAFETY_MARGIN_DB -
+                    1e-9
+            )
+        }
+    }
+
+    @Test
+    fun notchAndBandPassCascadeProducesFiniteConservativeResult() {
+        val configuration = EqualizerConfiguration(
+            enabled = true,
+            preampDb = 1.0,
+            filters = listOf(
+                EqualizerFilterSpec.Notch(2_000.0, 12.0),
+                EqualizerFilterSpec.BandPass(2_300.0, 8.0)
+            )
+        )
+
+        val result = AutomaticHeadroomCalculator.calculate(
+            configuration,
+            sampleRateHz = 96_000
+        )
+
+        assertTrue(result.maximumPredictedDb.isFinite())
+        assertTrue(result.attenuationDb.isFinite())
+        assertTrue(result.maximumPredictedDb <= 1.0 + 1e-6)
+    }
+
+    @Test
     fun negativeUserPreampCanEliminateRequiredAttenuation() {
         val configuration = EqualizerConfiguration(
             enabled = true,

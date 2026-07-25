@@ -13,7 +13,14 @@ import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.data.preferences.AppPreferencesState
 import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
+import com.example.cdplaya.player.equalizer.EqualizerMode
 import com.example.cdplaya.player.equalizer.UserEqualizerPreset
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerPreset
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerState
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
+import com.example.cdplaya.player.equalizer.parametric.gainDbOrNull
+import com.example.cdplaya.player.equalizer.parametric.qOrNull
+import com.example.cdplaya.player.equalizer.parametric.slopeOrNull
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewMode
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
@@ -224,7 +231,27 @@ private fun EqualizerPreferencesState
                     preset.automaticHeadroomEnabled,
                 bandGainsDb = preset.bandGainsDb.toList()
             )
-        }
+        },
+        mode = mode.name,
+        parametricPreampDb = parametricState.preampDb,
+        parametricAutomaticHeadroomEnabled =
+            parametricState.automaticHeadroomEnabled,
+        parametricFilters = parametricState.filters.map {
+            filter -> filter.toBackup()
+        },
+        parametricUserPresets =
+            parametricState.userPresets.map { preset ->
+                BackupParametricEqualizerPreset(
+                    id = preset.id,
+                    name = preset.name,
+                    preampDb = preset.preampDb,
+                    automaticHeadroomEnabled =
+                        preset.automaticHeadroomEnabled,
+                    filters = preset.filters.map { filter ->
+                        filter.toBackup()
+                    }
+                )
+            }
     )
 
 private fun BackupEqualizerPreferences
@@ -246,8 +273,39 @@ private fun BackupEqualizerPreferences
                     preset.automaticHeadroomEnabled,
                 bandGainsDb = preset.bandGainsDb
             )
-        }
+        },
+        mode = EqualizerMode.valueOf(mode),
+        parametricState = ParametricEqualizerState(
+            preampDb = parametricPreampDb,
+            automaticHeadroomEnabled =
+                parametricAutomaticHeadroomEnabled,
+            filters = parametricFilters.map { filter ->
+                filter.toDomain()
+            },
+            userPresets = parametricUserPresets.map { preset ->
+                ParametricEqualizerPreset(
+                    id = preset.id,
+                    name = preset.name,
+                    preampDb = preset.preampDb,
+                    automaticHeadroomEnabled =
+                        preset.automaticHeadroomEnabled,
+                    filters = preset.filters.map { filter ->
+                        filter.toDomain()
+                    }
+                )
+            }
+        )
     )
+
+private fun ParametricFilter.toBackup() = BackupParametricFilter(
+    id = id,
+    type = type.name,
+    enabled = enabled,
+    frequencyHz = frequencyHz,
+    gainDb = gainDbOrNull,
+    q = qOrNull,
+    slope = slopeOrNull
+)
 
 private fun Color?.toBackupArgbIfSupported(isSupported: Boolean): Long? {
     return if (isSupported && this != null) toArgb().toUInt().toLong() else null

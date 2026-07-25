@@ -40,7 +40,13 @@ data class BackupEqualizerPreferences(
     val bandGainsDb: List<Double> = List(10) { 0.0 },
     val limiterEnabled: Boolean = false,
     val limiterCeilingDbfs: Double = -1.0,
-    val userPresets: List<BackupEqualizerPreset> = emptyList()
+    val userPresets: List<BackupEqualizerPreset> = emptyList(),
+    val mode: String = "GRAPHIC",
+    val parametricPreampDb: Double = 0.0,
+    val parametricAutomaticHeadroomEnabled: Boolean = true,
+    val parametricFilters: List<BackupParametricFilter> = emptyList(),
+    val parametricUserPresets:
+        List<BackupParametricEqualizerPreset> = emptyList()
 )
 
 @Serializable
@@ -50,6 +56,26 @@ data class BackupEqualizerPreset(
     val preampDb: Double,
     val automaticHeadroomEnabled: Boolean,
     val bandGainsDb: List<Double>
+)
+
+@Serializable
+data class BackupParametricFilter(
+    val id: String,
+    val type: String,
+    val enabled: Boolean,
+    val frequencyHz: Double,
+    val gainDb: Double? = null,
+    val q: Double? = null,
+    val slope: Double? = null
+)
+
+@Serializable
+data class BackupParametricEqualizerPreset(
+    val id: String,
+    val name: String,
+    val preampDb: Double,
+    val automaticHeadroomEnabled: Boolean,
+    val filters: List<BackupParametricFilter>
 )
 
 @Serializable

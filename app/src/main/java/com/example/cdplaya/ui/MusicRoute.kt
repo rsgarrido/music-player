@@ -241,6 +241,8 @@ fun MusicRoute(
             onBack = musicViewModel::closeEqualizerScreen,
             onEnabledChanged =
                 musicViewModel::setEqualizerEnabled,
+            onModeChanged =
+                musicViewModel::setEqualizerMode,
             onPreviewBandGain =
                 musicViewModel::previewEqualizerBandGain,
             onCommitBandGain =
@@ -277,6 +279,30 @@ fun MusicRoute(
                 musicViewModel::renameUserEqualizerPreset,
             onDeleteUserPreset =
                 musicViewModel::deleteUserEqualizerPreset,
+            onSelectParametricFilter =
+                musicViewModel::selectParametricFilter,
+            onAddParametricFilter =
+                musicViewModel::addParametricFilter,
+            onPreviewParametricFilter =
+                musicViewModel::previewParametricFilter,
+            onCommitParametricFilter =
+                musicViewModel::commitParametricFilter,
+            onCancelParametricFilterPreview =
+                musicViewModel::cancelParametricFilterPreview,
+            onMoveParametricFilter =
+                musicViewModel::moveParametricFilter,
+            onDeleteParametricFilter =
+                musicViewModel::deleteParametricFilter,
+            onApplyParametricFlatPreset =
+                musicViewModel::applyParametricFlatPreset,
+            onApplyParametricUserPreset =
+                musicViewModel::applyParametricUserPreset,
+            onSaveParametricUserPreset =
+                musicViewModel::saveParametricUserPreset,
+            onRenameParametricUserPreset =
+                musicViewModel::renameParametricUserPreset,
+            onDeleteParametricUserPreset =
+                musicViewModel::deleteParametricUserPreset,
             onResetToFlat =
                 musicViewModel::resetEqualizerToFlat,
             onComparisonBypassedChanged =

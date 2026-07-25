@@ -17,6 +17,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +44,7 @@ import com.example.cdplaya.player.equalizer.MAX_EQUALIZER_BAND_DB
 import com.example.cdplaya.player.equalizer.MAX_EQUALIZER_PREAMP_DB
 import com.example.cdplaya.player.equalizer.MIN_EQUALIZER_BAND_DB
 import com.example.cdplaya.player.equalizer.MIN_EQUALIZER_PREAMP_DB
+import com.example.cdplaya.player.equalizer.EqualizerMode
 import com.example.cdplaya.player.equalizer.UserEqualizerPreset
 import com.example.cdplaya.player.equalizer.dsp.GraphicEqualizerDefaults
 import com.example.cdplaya.player.equalizer.normalizeEqualizerDb
@@ -82,10 +84,21 @@ internal fun EqualizerScreen(
         mutableDoubleStateOf(-1.0)
     }
     val preferences = state.editablePreferences
+    val activePreampDb = when (preferences.mode) {
+        EqualizerMode.GRAPHIC -> preferences.preampDb
+        EqualizerMode.PARAMETRIC ->
+            preferences.parametricState.preampDb
+    }
+    val activeAutomaticHeadroom = when (preferences.mode) {
+        EqualizerMode.GRAPHIC ->
+            preferences.automaticHeadroomEnabled
+        EqualizerMode.PARAMETRIC ->
+            preferences.parametricState.automaticHeadroomEnabled
+    }
     var latestPreampDragValue by remember(
-        preferences.preampDb
+        activePreampDb
     ) {
-        mutableDoubleStateOf(preferences.preampDb)
+        mutableDoubleStateOf(activePreampDb)
     }
 
     Column(
@@ -128,32 +141,80 @@ internal fun EqualizerScreen(
             }
         )
 
-        ListItem(
-            headlineContent = { Text("Preset") },
-            supportingContent = { Text(state.presetLabel) },
-            trailingContent = {
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Choose equalizer preset"
-                )
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .semantics {
-                    contentDescription =
-                        "Equalizer preset, ${state.presetLabel}"
-                }
-                .padding(horizontal = 4.dp)
+        Text(
+            text = "Equalizer mode",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(
+                start = 16.dp,
+                top = 12.dp
+            )
         )
-        TextButton(
-            onClick = { presetSelectorVisible = true },
-            modifier = Modifier.padding(horizontal = 12.dp)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .semantics {
+                    contentDescription = "Equalizer mode selector"
+                }
         ) {
-            Text("Choose or manage presets")
+            EqualizerMode.entries.forEach { mode ->
+                FilterChip(
+                    selected = preferences.mode == mode,
+                    onClick = { actions.onModeChanged(mode) },
+                    label = { Text(mode.displayName) },
+                    modifier = Modifier.semantics {
+                        contentDescription =
+                            "${mode.displayName} equalizer mode"
+                    }
+                )
+            }
+        }
+
+        if (preferences.mode == EqualizerMode.GRAPHIC) {
+            ListItem(
+                headlineContent = { Text("Preset") },
+                supportingContent = { Text(state.presetLabel) },
+                trailingContent = {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = "Choose equalizer preset"
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics {
+                        contentDescription =
+                            "Equalizer preset, ${state.presetLabel}"
+                    }
+                    .padding(horizontal = 4.dp)
+            )
+            TextButton(
+                onClick = { presetSelectorVisible = true },
+                modifier = Modifier.padding(horizontal = 12.dp)
+            ) {
+                Text("Choose or manage presets")
+            }
+        } else {
+            ParametricEqualizerEditor(
+                state = state,
+                actions = actions
+            )
         }
 
         EqualizerResponseGraph(
             analysis = state.analysis,
+            filters = if (
+                preferences.mode == EqualizerMode.PARAMETRIC
+            ) {
+                preferences.parametricState.filters
+            } else {
+                emptyList()
+            },
+            selectedFilterId = state.selectedParametricFilterId,
+            ignoredFilterIndices = state.analysis.ignoredFilterIndices,
+            onSelectFilter = actions.onSelectParametricFilter,
+            onPreviewFilter = actions.onPreviewParametricFilter,
+            onCommitFilter = actions.onCommitParametricFilter,
             modifier = Modifier.padding(16.dp)
         )
 
@@ -174,7 +235,7 @@ internal fun EqualizerScreen(
                 .padding(horizontal = 16.dp)
         ) {
             Slider(
-                value = preferences.preampDb.toFloat(),
+                value = activePreampDb.toFloat(),
                 onValueChange = { value ->
                     latestPreampDragValue =
                         snapPreamp(value.toDouble())
@@ -197,7 +258,7 @@ internal fun EqualizerScreen(
                         contentDescription =
                             "Equalizer preamp, " +
                                 formatEqualizerDb(
-                                    preferences.preampDb
+                                    activePreampDb
                                 )
                     }
             )
@@ -206,7 +267,7 @@ internal fun EqualizerScreen(
                     fineEditTarget = FineEditTarget(
                         title = "Preamp",
                         initialValueDb =
-                            preferences.preampDb,
+                            activePreampDb,
                         minimumDb =
                             MIN_EQUALIZER_PREAMP_DB,
                         maximumDb =
@@ -215,56 +276,58 @@ internal fun EqualizerScreen(
                     )
                 }
             ) {
-                Text(formatEqualizerDb(preferences.preampDb))
+                Text(formatEqualizerDb(activePreampDb))
             }
         }
 
-        Text(
-            text = "Graphic bands",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(
-                start = 16.dp,
-                top = 16.dp
+        if (preferences.mode == EqualizerMode.GRAPHIC) {
+            Text(
+                text = "Graphic bands",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(
+                    start = 16.dp,
+                    top = 16.dp
+                )
             )
-        )
-        Row(
-            horizontalArrangement =
-                Arrangement.spacedBy(4.dp),
-            modifier = Modifier
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 12.dp, vertical = 8.dp)
-        ) {
-            GraphicEqualizerDefaults.frequenciesHz
-                .forEachIndexed { index, frequencyHz ->
-                    EqualizerBandSlider(
-                        frequencyHz = frequencyHz,
-                        gainDb =
-                            preferences.bandGainsDb[index],
-                        unavailable =
-                            index in state.analysis
-                                .ignoredBandIndices,
-                        onValueChange = { gain ->
-                            actions.onPreviewBandGain(index, gain)
-                        },
-                        onValueChangeFinished = { gain ->
-                            actions.onCommitBandGain(index, gain)
-                        },
-                        onFineEditClick = {
-                            fineEditTarget = FineEditTarget(
-                                title = formatEqualizerFrequency(
-                                    frequencyHz
-                                ),
-                                initialValueDb =
-                                    preferences.bandGainsDb[index],
-                                minimumDb =
-                                    MIN_EQUALIZER_BAND_DB,
-                                maximumDb =
-                                    MAX_EQUALIZER_BAND_DB,
-                                bandIndex = index
-                            )
-                        }
-                    )
-                }
+            Row(
+                horizontalArrangement =
+                    Arrangement.spacedBy(4.dp),
+                modifier = Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+            ) {
+                GraphicEqualizerDefaults.frequenciesHz
+                    .forEachIndexed { index, frequencyHz ->
+                        EqualizerBandSlider(
+                            frequencyHz = frequencyHz,
+                            gainDb =
+                                preferences.bandGainsDb[index],
+                            unavailable =
+                                index in state.analysis
+                                    .ignoredBandIndices,
+                            onValueChange = { gain ->
+                                actions.onPreviewBandGain(index, gain)
+                            },
+                            onValueChangeFinished = { gain ->
+                                actions.onCommitBandGain(index, gain)
+                            },
+                            onFineEditClick = {
+                                fineEditTarget = FineEditTarget(
+                                    title = formatEqualizerFrequency(
+                                        frequencyHz
+                                    ),
+                                    initialValueDb =
+                                        preferences.bandGainsDb[index],
+                                    minimumDb =
+                                        MIN_EQUALIZER_BAND_DB,
+                                    maximumDb =
+                                        MAX_EQUALIZER_BAND_DB,
+                                    bandIndex = index
+                                )
+                            }
+                        )
+                    }
+            }
         }
 
         ListItem(
@@ -282,7 +345,7 @@ internal fun EqualizerScreen(
             trailingContent = {
                 Switch(
                     checked =
-                        preferences.automaticHeadroomEnabled,
+                        activeAutomaticHeadroom,
                     onCheckedChange =
                         actions.onAutomaticHeadroomChanged,
                     modifier = Modifier.semantics {
@@ -293,7 +356,7 @@ internal fun EqualizerScreen(
             }
         )
         if (
-            !preferences.automaticHeadroomEnabled &&
+            !activeAutomaticHeadroom &&
             state.analysis.predictedMaximumDb > 0.0
         ) {
             Text(
@@ -588,8 +651,15 @@ internal fun EqualizerScreen(
     if (resetConfirmationVisible) {
         ConfirmEqualizerActionDialog(
             title = "Reset to Flat?",
-            message = "Preamp and all band gains will reset. " +
-                "Your saved presets will remain.",
+            message = if (
+                preferences.mode == EqualizerMode.GRAPHIC
+            ) {
+                "Preamp and all band gains will reset. " +
+                    "Your saved presets will remain."
+            } else {
+                "Parametric preamp and filters will reset. " +
+                    "Your saved presets will remain."
+            },
             confirmText = "Reset",
             onDismiss = {
                 resetConfirmationVisible = false
@@ -781,7 +851,15 @@ private fun EqualizerAnalysisStatus(
             Text(
                 "User preamp: " +
                     formatEqualizerDb(
-                        state.editablePreferences.preampDb
+                        when (
+                            state.editablePreferences.mode
+                        ) {
+                            EqualizerMode.GRAPHIC ->
+                                state.editablePreferences.preampDb
+                            EqualizerMode.PARAMETRIC ->
+                                state.editablePreferences
+                                    .parametricState.preampDb
+                        }
                     )
             )
             Text(
@@ -820,10 +898,22 @@ private fun EqualizerAnalysisStatus(
                 val labels = state.analysis.ignoredBandIndices
                     .sorted()
                     .joinToString { index ->
-                        formatEqualizerFrequency(
-                            GraphicEqualizerDefaults
-                                .frequenciesHz[index]
-                        )
+                        when (state.editablePreferences.mode) {
+                            EqualizerMode.GRAPHIC ->
+                                formatEqualizerFrequency(
+                                    GraphicEqualizerDefaults
+                                        .frequenciesHz[index]
+                                )
+                            EqualizerMode.PARAMETRIC -> {
+                                val filter =
+                                    state.editablePreferences
+                                        .parametricState.filters[index]
+                                "${index + 1} " +
+                                    formatEqualizerFrequency(
+                                        filter.frequencyHz
+                                    )
+                            }
+                        }
                     }
                 Text(
                     text = "Unavailable for current source: $labels",

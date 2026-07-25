@@ -22,14 +22,14 @@ class EqualizerScreenStateTest {
 
         assertEquals("Off", off.settingsSummary)
         assertEquals(
-            "Bass Lift",
+            "Graphic \u00b7 Bass Lift",
             EqualizerScreenState(
                 editablePreferences = bass,
                 presetMatch = presetMatchFor(bass)
             ).settingsSummary
         )
         assertEquals(
-            "Custom",
+            "Graphic \u00b7 Custom",
             EqualizerScreenState(
                 editablePreferences = custom,
                 presetMatch = presetMatchFor(custom)

@@ -24,9 +24,7 @@ internal class EqualizerConfiguration(
             if (!enabled) return true
             if (!isEffectivelyZeroDb(preampDb)) return false
 
-            return filters.none { filter ->
-                filter.enabled && !isEffectivelyZeroDb(filter.gainDb)
-            }
+            return filters.none { filter -> filter.hasAudibleEffect }
         }
 
     override fun equals(other: Any?): Boolean {

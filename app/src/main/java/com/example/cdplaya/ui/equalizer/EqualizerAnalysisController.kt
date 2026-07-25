@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui.equalizer
 
 import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
+import com.example.cdplaya.player.equalizer.activeAutomaticHeadroomEnabled
 import com.example.cdplaya.player.equalizer.toDspConfiguration
 import com.example.cdplaya.player.equalizer.dsp.AutomaticHeadroomCalculator
 import com.example.cdplaya.player.equalizer.dsp.AutomaticHeadroomResult
@@ -35,6 +36,9 @@ internal data class EqualizerAnalysisResult(
         ),
     val ignoredBandIndices: Set<Int> = emptySet()
 ) {
+    val ignoredFilterIndices: Set<Int>
+        get() = ignoredBandIndices
+
     val predictedMaximumDb: Double
         get() = automaticHeadroom.maximumPredictedDb
 
@@ -45,11 +49,15 @@ internal data class EqualizerAnalysisResult(
 
 internal data class EqualizerAnalysisRequest(
     val preferences: EqualizerPreferencesState,
-    val currentSampleRateHz: Int?
+    val currentSampleRateHz: Int?,
+    val requestVersion: Long = 0L
 )
 
 internal class EqualizerAnalysisController(
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val calculate:
+        (EqualizerAnalysisRequest) -> EqualizerAnalysisResult =
+        EqualizerAnalysisCalculator::calculate
 ) {
     private val _state =
         MutableStateFlow(EqualizerAnalysisResult())
@@ -57,21 +65,26 @@ internal class EqualizerAnalysisController(
         _state.asStateFlow()
 
     private var analysisJob: Job? = null
+    private var latestRequestVersion = 0L
 
     fun submit(
         preferences: EqualizerPreferencesState,
         currentSampleRateHz: Int?
     ) {
+        val requestVersion = ++latestRequestVersion
         val request = EqualizerAnalysisRequest(
             preferences = preferences,
-            currentSampleRateHz = currentSampleRateHz
+            currentSampleRateHz = currentSampleRateHz,
+            requestVersion = requestVersion
         )
         analysisJob?.cancel()
         analysisJob = scope.launch {
             val result = withContext(Dispatchers.Default) {
-                EqualizerAnalysisCalculator.calculate(request)
+                calculate(request)
             }
-            _state.value = result
+            if (requestVersion == latestRequestVersion) {
+                _state.value = result
+            }
         }
     }
 
@@ -97,11 +110,11 @@ internal object EqualizerAnalysisCalculator {
         val fullConfiguration =
             request.preferences.toDspConfiguration()
         val ignoredBandIndices =
-            GraphicEqualizerDefaults.frequenciesHz
-                .mapIndexedNotNull { index, frequencyHz ->
+            fullConfiguration.filters
+                .mapIndexedNotNull { index, filter ->
                     index.takeUnless {
                         isEqualizerFrequencySupported(
-                            frequencyHz,
+                            filter.frequencyHz,
                             sampleRateHz
                         )
                     }
@@ -131,7 +144,7 @@ internal object EqualizerAnalysisCalculator {
             sampleRateHz = sampleRateHz
         )
         val automaticHeadroom = if (
-            request.preferences.automaticHeadroomEnabled
+            request.preferences.activeAutomaticHeadroomEnabled
         ) {
             rawHeadroom
         } else {

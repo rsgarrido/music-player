@@ -20,7 +20,6 @@ internal object BiquadDesigner {
     ): BiquadCoefficients {
         validateCommonParameters(
             frequencyHz = filter.frequencyHz,
-            gainDb = filter.gainDb,
             sampleRateHz = sampleRateHz
         )
 
@@ -45,6 +44,30 @@ internal object BiquadDesigner {
                 slope = filter.slope,
                 sampleRateHz = sampleRateHz
             )
+
+            is EqualizerFilterSpec.LowPass -> designLowPass(
+                frequencyHz = filter.frequencyHz,
+                q = filter.q,
+                sampleRateHz = sampleRateHz
+            )
+
+            is EqualizerFilterSpec.HighPass -> designHighPass(
+                frequencyHz = filter.frequencyHz,
+                q = filter.q,
+                sampleRateHz = sampleRateHz
+            )
+
+            is EqualizerFilterSpec.Notch -> designNotch(
+                frequencyHz = filter.frequencyHz,
+                q = filter.q,
+                sampleRateHz = sampleRateHz
+            )
+
+            is EqualizerFilterSpec.BandPass -> designBandPass(
+                frequencyHz = filter.frequencyHz,
+                q = filter.q,
+                sampleRateHz = sampleRateHz
+            )
         }
     }
 
@@ -54,7 +77,7 @@ internal object BiquadDesigner {
         q: Double,
         sampleRateHz: Int
     ): BiquadCoefficients {
-        validateCommonParameters(frequencyHz, gainDb, sampleRateHz)
+        validateGainParameters(frequencyHz, gainDb, sampleRateHz)
         require(q.isFinite() && q > 0.0) {
             "q must be finite and greater than 0"
         }
@@ -78,7 +101,7 @@ internal object BiquadDesigner {
         slope: Double,
         sampleRateHz: Int
     ): BiquadCoefficients {
-        validateCommonParameters(frequencyHz, gainDb, sampleRateHz)
+        validateGainParameters(frequencyHz, gainDb, sampleRateHz)
         validateShelfSlope(slope)
         if (isEffectivelyZeroDb(gainDb)) return BiquadCoefficients.UNITY
 
@@ -127,7 +150,7 @@ internal object BiquadDesigner {
         slope: Double,
         sampleRateHz: Int
     ): BiquadCoefficients {
-        validateCommonParameters(frequencyHz, gainDb, sampleRateHz)
+        validateGainParameters(frequencyHz, gainDb, sampleRateHz)
         validateShelfSlope(slope)
         if (isEffectivelyZeroDb(gainDb)) return BiquadCoefficients.UNITY
 
@@ -170,9 +193,79 @@ internal object BiquadDesigner {
         )
     }
 
+    fun designLowPass(
+        frequencyHz: Double,
+        q: Double,
+        sampleRateHz: Int
+    ): BiquadCoefficients {
+        val terms = qTerms(frequencyHz, q, sampleRateHz)
+        val oneMinusCos = 1.0 - terms.cosOmega
+        return normalize(
+            b0 = oneMinusCos / 2.0,
+            b1 = oneMinusCos,
+            b2 = oneMinusCos / 2.0,
+            a0 = 1.0 + terms.alpha,
+            a1 = -2.0 * terms.cosOmega,
+            a2 = 1.0 - terms.alpha
+        )
+    }
+
+    fun designHighPass(
+        frequencyHz: Double,
+        q: Double,
+        sampleRateHz: Int
+    ): BiquadCoefficients {
+        val terms = qTerms(frequencyHz, q, sampleRateHz)
+        val onePlusCos = 1.0 + terms.cosOmega
+        return normalize(
+            b0 = onePlusCos / 2.0,
+            b1 = -onePlusCos,
+            b2 = onePlusCos / 2.0,
+            a0 = 1.0 + terms.alpha,
+            a1 = -2.0 * terms.cosOmega,
+            a2 = 1.0 - terms.alpha
+        )
+    }
+
+    fun designNotch(
+        frequencyHz: Double,
+        q: Double,
+        sampleRateHz: Int
+    ): BiquadCoefficients {
+        val terms = qTerms(frequencyHz, q, sampleRateHz)
+        return normalize(
+            b0 = 1.0,
+            b1 = -2.0 * terms.cosOmega,
+            b2 = 1.0,
+            a0 = 1.0 + terms.alpha,
+            a1 = -2.0 * terms.cosOmega,
+            a2 = 1.0 - terms.alpha
+        )
+    }
+
+    /**
+     * RBJ constant-0-dB-peak band-pass design. The numerator uses
+     * `b0 = alpha` and `b2 = -alpha`, so the center-frequency gain is unity
+     * for every supported Q and no makeup gain is introduced.
+     */
+    fun designBandPass(
+        frequencyHz: Double,
+        q: Double,
+        sampleRateHz: Int
+    ): BiquadCoefficients {
+        val terms = qTerms(frequencyHz, q, sampleRateHz)
+        return normalize(
+            b0 = terms.alpha,
+            b1 = 0.0,
+            b2 = -terms.alpha,
+            a0 = 1.0 + terms.alpha,
+            a1 = -2.0 * terms.cosOmega,
+            a2 = 1.0 - terms.alpha
+        )
+    }
+
     private fun validateCommonParameters(
         frequencyHz: Double,
-        gainDb: Double,
         sampleRateHz: Int
     ) {
         require(sampleRateHz > 0) {
@@ -186,9 +279,15 @@ internal object BiquadDesigner {
         ) {
             "frequencyHz must be finite, greater than 0, and below Nyquist"
         }
-        require(gainDb.isFinite()) {
-            "gainDb must be finite"
-        }
+    }
+
+    private fun validateGainParameters(
+        frequencyHz: Double,
+        gainDb: Double,
+        sampleRateHz: Int
+    ) {
+        validateCommonParameters(frequencyHz, sampleRateHz)
+        require(gainDb.isFinite()) { "gainDb must be finite" }
     }
 
     private fun validateShelfSlope(slope: Double) {
@@ -211,6 +310,23 @@ internal object BiquadDesigner {
             amplitude = amplitude,
             sinOmega = sin(omega),
             cosOmega = cos(omega)
+        )
+    }
+
+    private fun qTerms(
+        frequencyHz: Double,
+        q: Double,
+        sampleRateHz: Int
+    ): QTerms {
+        validateCommonParameters(frequencyHz, sampleRateHz)
+        require(q.isFinite() && q > 0.0) {
+            "q must be finite and greater than 0"
+        }
+        val omega = 2.0 * PI * frequencyHz / sampleRateHz
+        val sinOmega = sin(omega)
+        return QTerms(
+            cosOmega = cos(omega),
+            alpha = sinOmega / (2.0 * q)
         )
     }
 
@@ -248,5 +364,10 @@ internal object BiquadDesigner {
         val amplitude: Double,
         val sinOmega: Double,
         val cosOmega: Double
+    )
+
+    private data class QTerms(
+        val cosOmega: Double,
+        val alpha: Double
     )
 }

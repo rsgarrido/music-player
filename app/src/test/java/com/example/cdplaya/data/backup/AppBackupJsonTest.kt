@@ -12,7 +12,7 @@ class AppBackupJsonTest {
     fun encodeBackup_includesCurrentSchemaVersion() {
         val encoded = AppBackupJson.encodeBackup(emptyBackup())
 
-        assertTrue(encoded.contains("\"schemaVersion\": 5"))
+        assertTrue(encoded.contains("\"schemaVersion\": 6"))
     }
 
     @Test
@@ -63,7 +63,7 @@ class AppBackupJsonTest {
     }
 
     @Test
-    fun decodeBackup_migratesV1PreferencesAndReferencesToV5() {
+    fun decodeBackup_migratesV1PreferencesAndReferencesToV6() {
         val decoded = AppBackupJson.decodeBackup(
             """
             {
@@ -78,7 +78,7 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(5, decoded.schemaVersion)
+        assertEquals(6, decoded.schemaVersion)
         assertEquals("slide", decoded.preferences.modernArtworkTransitionStyle)
         assertEquals("classic_bar", decoded.preferences.modernSeekbarStyle)
         assertEquals(emptyMap<String, BackupPlayerThemeTokenOverrides>(), decoded.preferences.playerThemeTokenOverrides)
@@ -157,7 +157,7 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(5, decoded.schemaVersion)
+        assertEquals(6, decoded.schemaVersion)
         assertEquals("old-key", decoded.favorites.single().reference?.legacyStableKey)
     }
 
@@ -165,11 +165,11 @@ class AppBackupJsonTest {
     fun decodeBackup_rejectsUnsupportedSchemaVersion() {
         val exception = expectIllegalArgumentException {
             AppBackupJson.decodeBackup(
-                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 6))
+                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 7))
             )
         }
 
-        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 6"))
+        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 7"))
     }
 
     @Test
@@ -243,7 +243,7 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(5, decoded.schemaVersion)
+        assertEquals(6, decoded.schemaVersion)
         assertFalse(decoded.preferences.equalizer.limiterEnabled)
         assertEquals(
             -1.0,
@@ -251,6 +251,103 @@ class AppBackupJsonTest {
             0.0
         )
         assertEquals(-2.0, decoded.preferences.equalizer.preampDb, 0.0)
+        assertEquals("GRAPHIC", decoded.preferences.equalizer.mode)
+        assertTrue(decoded.preferences.equalizer.parametricFilters.isEmpty())
+    }
+
+    @Test
+    fun v6ParametricEqualizerRoundTripsEveryFilterTypeAndOrder() {
+        val filters = listOf(
+            BackupParametricFilter(
+                "peak", "PEAKING", true, 1_000.0,
+                gainDb = 3.5, q = 1.25
+            ),
+            BackupParametricFilter(
+                "low-shelf", "LOW_SHELF", true, 100.0,
+                gainDb = 4.0, slope = 0.8
+            ),
+            BackupParametricFilter(
+                "high-shelf", "HIGH_SHELF", false, 8_000.0,
+                gainDb = -2.0, slope = 1.0
+            ),
+            BackupParametricFilter(
+                "low-pass", "LOW_PASS", true, 16_000.0, q = 0.71
+            ),
+            BackupParametricFilter(
+                "high-pass", "HIGH_PASS", true, 40.0, q = 0.8
+            ),
+            BackupParametricFilter(
+                "notch", "NOTCH", true, 2_000.0, q = 8.0
+            ),
+            BackupParametricFilter(
+                "band-pass", "BAND_PASS", true, 500.0, q = 2.0
+            )
+        )
+        val equalizer = BackupEqualizerPreferences(
+            enabled = true,
+            mode = "PARAMETRIC",
+            parametricPreampDb = -2.5,
+            parametricAutomaticHeadroomEnabled = false,
+            parametricFilters = filters,
+            parametricUserPresets = listOf(
+                BackupParametricEqualizerPreset(
+                    id = "preset-id",
+                    name = "Headphones",
+                    preampDb = -1.0,
+                    automaticHeadroomEnabled = true,
+                    filters = filters.reversed()
+                )
+            )
+        )
+
+        val decoded = AppBackupJson.decodeBackup(
+            AppBackupJson.encodeBackup(
+                emptyBackup().copy(
+                    preferences = BackupPreferences(
+                        equalizer = equalizer
+                    )
+                )
+            )
+        )
+
+        assertEquals(equalizer, decoded.preferences.equalizer)
+        assertEquals(
+            filters.map { it.id },
+            decoded.preferences.equalizer.parametricFilters
+                .map { it.id }
+        )
+    }
+
+    @Test
+    fun v6RejectsDuplicateOverLimitAndMalformedParametricFilters() {
+        val filter = BackupParametricFilter(
+            "same", "PEAKING", true, 1_000.0,
+            gainDb = 3.0, q = 1.0
+        )
+        listOf(
+            listOf(filter, filter),
+            List(11) { index -> filter.copy(id = "$index") },
+            listOf(
+                filter.copy(
+                    id = "bad",
+                    type = "LOW_PASS",
+                    gainDb = 3.0
+                )
+            )
+        ).forEach { filters ->
+            val malformed = emptyBackup().copy(
+                preferences = BackupPreferences(
+                    equalizer = BackupEqualizerPreferences(
+                        parametricFilters = filters
+                    )
+                )
+            )
+            expectIllegalArgumentException {
+                AppBackupJson.decodeBackup(
+                    AppBackupJson.encodeBackup(malformed)
+                )
+            }
+        }
     }
 
     @Test

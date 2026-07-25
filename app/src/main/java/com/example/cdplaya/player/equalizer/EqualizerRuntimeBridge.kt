@@ -105,6 +105,7 @@ internal object EqualizerRuntimeBridge {
     fun requestConfiguration(
         configuration: EqualizerConfiguration,
         automaticHeadroomEnabled: Boolean,
+        mode: EqualizerMode = EqualizerMode.GRAPHIC,
         limiterConfiguration: LimiterConfiguration =
             LimiterConfiguration()
     ): EqualizerRuntimeSnapshot {
@@ -115,6 +116,7 @@ internal object EqualizerRuntimeBridge {
             version = version,
             configuration = configuration,
             automaticHeadroomEnabled = automaticHeadroomEnabled,
+            mode = mode,
             limiterConfiguration = limiterConfiguration
         )
         requestedSnapshot.set(snapshot)
@@ -438,6 +440,23 @@ internal object EqualizerRuntimeBridge {
             comparisonSessionActive =
                 comparisonSessionActive.get(),
             comparisonBypassed = comparisonBypassed.get(),
+            requestedMode = snapshot.mode,
+            activeMode =
+                diagnosticPlan?.sourceMode ?: snapshot.mode,
+            parametricFilterCount =
+                if (snapshot.mode == EqualizerMode.PARAMETRIC) {
+                    snapshot.configuration.filters.size
+                } else {
+                    0
+                },
+            parametricEnabledFilterCount =
+                if (snapshot.mode == EqualizerMode.PARAMETRIC) {
+                    snapshot.configuration.filters.count { filter ->
+                        filter.enabled
+                    }
+                } else {
+                    0
+                },
             configurationVersion = snapshot.version,
             preparedPlanVersion = latestPlan?.sourceSnapshotVersion,
             appliedPlanVersion = applied?.sourceSnapshotVersion,

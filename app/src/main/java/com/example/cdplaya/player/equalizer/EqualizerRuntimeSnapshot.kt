@@ -7,6 +7,7 @@ internal data class EqualizerRuntimeSnapshot(
     val version: Long,
     val configuration: EqualizerConfiguration,
     val automaticHeadroomEnabled: Boolean,
+    val mode: EqualizerMode = EqualizerMode.GRAPHIC,
     val limiterConfiguration: LimiterConfiguration =
         LimiterConfiguration()
 ) {
@@ -25,6 +26,7 @@ internal data class EqualizerRuntimeSnapshot(
                 filters = emptyList()
             ),
             automaticHeadroomEnabled = false,
+            mode = EqualizerMode.GRAPHIC,
             limiterConfiguration = LimiterConfiguration()
         )
     }

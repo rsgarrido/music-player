@@ -1,11 +1,15 @@
 package com.example.cdplaya.ui.equalizer
 
+import com.example.cdplaya.player.equalizer.EqualizerMode
 import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
 import com.example.cdplaya.player.equalizer.EqualizerPresetMatch
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import com.example.cdplaya.player.equalizer.GraphicEqualizerPresets
 import com.example.cdplaya.player.equalizer.UserEqualizerPreset
 import com.example.cdplaya.player.equalizer.toDspConfiguration
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerPreset
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerPresetMatcher
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
 
 internal data class EqualizerScreenState(
     val durablePreferences: EqualizerPreferencesState =
@@ -18,6 +22,7 @@ internal data class EqualizerScreenState(
         EqualizerAnalysisResult(),
     val runtimeState: EqualizerRuntimeState =
         EqualizerRuntimeState(),
+    val selectedParametricFilterId: String? = null,
     val comparisonBypassed: Boolean = false,
     val hasUncommittedPreview: Boolean = false,
     val isLoaded: Boolean = false
@@ -29,6 +34,16 @@ internal data class EqualizerScreenState(
         get() = editablePreferences.userPresets
             .sortedBy { preset -> preset.name.lowercase() }
 
+    val parametricUserPresets: List<ParametricEqualizerPreset>
+        get() = editablePreferences.parametricState.userPresets
+            .sortedBy { preset -> preset.name.lowercase() }
+
+    val selectedParametricFilter: ParametricFilter?
+        get() = editablePreferences.parametricState.filters
+            .firstOrNull { filter ->
+                filter.id == selectedParametricFilterId
+            }
+
     val comparisonAvailable: Boolean
         get() = !editablePreferences.limiterEnabled &&
             editablePreferences.enabled &&
@@ -38,7 +53,9 @@ internal data class EqualizerScreenState(
 
     val statusText: String
         get() = when {
-            !editablePreferences.enabled -> "Off · $presetLabel"
+            !editablePreferences.enabled ->
+                "Off · ${editablePreferences.mode.displayName} " +
+                    "· $presetLabel"
             editablePreferences
                 .toDspConfiguration(enabledOverride = true)
                 .isEffectivelyFlat -> "On · Flat"
@@ -49,20 +66,27 @@ internal data class EqualizerScreenState(
     val settingsSummary: String
         get() = when {
             !editablePreferences.enabled -> "Off"
-            presetLabel != "Custom" -> presetLabel
-            analysis.automaticHeadroom.attenuationDb > 0.0 ->
-                "Custom · Auto headroom " +
-                    formatEqualizerDb(
-                        analysis.automaticHeadroom.attenuationDb,
-                        includePlus = false
-                    )
-            else -> "Custom"
+            else -> buildString {
+                append(editablePreferences.mode.displayName)
+                append(" · ")
+                append(presetLabel)
+                if (editablePreferences.limiterEnabled) {
+                    append(" · Limiter")
+                }
+            }
         }
 }
+
+internal val EqualizerMode.displayName: String
+    get() = when (this) {
+        EqualizerMode.GRAPHIC -> "Graphic"
+        EqualizerMode.PARAMETRIC -> "Parametric"
+    }
 
 internal data class EqualizerUiActions(
     val onBack: () -> Unit,
     val onEnabledChanged: (Boolean) -> Unit,
+    val onModeChanged: (EqualizerMode) -> Unit,
     val onPreviewBandGain: (Int, Double) -> Unit,
     val onCommitBandGain: (Int, Double) -> Unit,
     val onCancelBandGainPreview: (Int, Double) -> Unit,
@@ -80,6 +104,18 @@ internal data class EqualizerUiActions(
     val onSaveUserPreset: (String) -> Unit,
     val onRenameUserPreset: (String, String) -> Unit,
     val onDeleteUserPreset: (String) -> Unit,
+    val onSelectParametricFilter: (String?) -> Unit,
+    val onAddParametricFilter: () -> Unit,
+    val onPreviewParametricFilter: (ParametricFilter) -> Unit,
+    val onCommitParametricFilter: (ParametricFilter) -> Unit,
+    val onCancelParametricFilterPreview: (ParametricFilter) -> Unit,
+    val onMoveParametricFilter: (String, Int) -> Unit,
+    val onDeleteParametricFilter: (String) -> Unit,
+    val onApplyParametricFlatPreset: () -> Unit,
+    val onApplyParametricUserPreset: (String) -> Unit,
+    val onSaveParametricUserPreset: (String) -> Unit,
+    val onRenameParametricUserPreset: (String, String) -> Unit,
+    val onDeleteParametricUserPreset: (String) -> Unit,
     val onResetToFlat: () -> Unit,
     val onComparisonBypassedChanged: (Boolean) -> Unit
 )
@@ -87,9 +123,16 @@ internal data class EqualizerUiActions(
 internal fun presetMatchFor(
     state: EqualizerPreferencesState
 ): EqualizerPresetMatch {
-    return com.example.cdplaya.player.equalizer
-        .EqualizerPresetMatcher
-        .match(state)
+    return when (state.mode) {
+        EqualizerMode.GRAPHIC ->
+            com.example.cdplaya.player.equalizer
+                .EqualizerPresetMatcher
+                .match(state)
+        EqualizerMode.PARAMETRIC ->
+            ParametricEqualizerPresetMatcher.match(
+                state.parametricState
+            )
+    }
         ?: EqualizerPresetMatch("Custom")
 }
 

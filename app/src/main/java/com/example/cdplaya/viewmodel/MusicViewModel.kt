@@ -28,7 +28,9 @@ import com.example.cdplaya.data.playlistfile.PlaylistImportResult
 import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
 import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.audio.AudioOffloadPreference
+import com.example.cdplaya.player.equalizer.EqualizerMode
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.equalizer.EqualizerUiController
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
@@ -271,6 +273,10 @@ class MusicViewModel(
         equalizerUiController.setEnabled(enabled)
     }
 
+    fun setEqualizerMode(mode: EqualizerMode) {
+        equalizerUiController.setMode(mode)
+    }
+
     fun previewEqualizerBandGain(
         index: Int,
         gainDb: Double
@@ -356,6 +362,69 @@ class MusicViewModel(
 
     fun deleteUserEqualizerPreset(presetId: String) {
         equalizerUiController.deleteUserPreset(presetId)
+    }
+
+    fun selectParametricFilter(filterId: String?) {
+        equalizerUiController.selectParametricFilter(filterId)
+    }
+
+    fun addParametricFilter() {
+        equalizerUiController.addParametricFilter()
+    }
+
+    fun previewParametricFilter(filter: ParametricFilter) {
+        equalizerUiController.previewParametricFilter(filter)
+    }
+
+    fun commitParametricFilter(filter: ParametricFilter) {
+        equalizerUiController.commitParametricFilter(filter)
+    }
+
+    fun cancelParametricFilterPreview(
+        filter: ParametricFilter
+    ) {
+        equalizerUiController
+            .cancelParametricFilterPreview(filter)
+    }
+
+    fun moveParametricFilter(
+        filterId: String,
+        destinationIndex: Int
+    ) {
+        equalizerUiController.moveParametricFilter(
+            filterId,
+            destinationIndex
+        )
+    }
+
+    fun deleteParametricFilter(filterId: String) {
+        equalizerUiController.deleteParametricFilter(filterId)
+    }
+
+    fun applyParametricFlatPreset() {
+        equalizerUiController.applyParametricFlatPreset()
+    }
+
+    fun applyParametricUserPreset(presetId: String) {
+        equalizerUiController.applyParametricUserPreset(presetId)
+    }
+
+    fun saveParametricUserPreset(name: String) {
+        equalizerUiController.saveParametricUserPreset(name)
+    }
+
+    fun renameParametricUserPreset(
+        presetId: String,
+        name: String
+    ) {
+        equalizerUiController.renameParametricUserPreset(
+            presetId,
+            name
+        )
+    }
+
+    fun deleteParametricUserPreset(presetId: String) {
+        equalizerUiController.deleteParametricUserPreset(presetId)
     }
 
     fun resetEqualizerToFlat() {

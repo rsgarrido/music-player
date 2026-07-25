@@ -54,9 +54,7 @@ internal object EqualizerFrequencyResponse {
         }
         val coefficients = configuration.filters
             .asSequence()
-            .filter { filter ->
-                filter.enabled && !isEffectivelyZeroDb(filter.gainDb)
-            }
+            .filter { filter -> filter.hasAudibleEffect }
             .map { filter ->
                 BiquadDesigner.design(
                     filter = filter,

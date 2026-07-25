@@ -19,6 +19,7 @@ internal data class IgnoredEqualizerFilter(
 
 internal class PreparedEqualizerPlan(
     val sourceSnapshotVersion: Long,
+    val sourceMode: EqualizerMode,
     val processorFormat: EqualizerProcessorFormat,
     val cascade: PreparedEqualizerCascade,
     val automaticHeadroomResult: AutomaticHeadroomResult,
