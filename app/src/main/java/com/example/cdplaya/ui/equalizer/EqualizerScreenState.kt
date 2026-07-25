@@ -22,6 +22,11 @@ internal data class EqualizerScreenState(
         EqualizerAnalysisResult(),
     val runtimeState: EqualizerRuntimeState =
         EqualizerRuntimeState(),
+    val importPreview: EqualizerImportPreviewState? = null,
+    val importAnalysis: EqualizerAnalysisResult =
+        EqualizerAnalysisResult(),
+    val importInProgress: Boolean = false,
+    val importMessage: String? = null,
     val selectedParametricFilterId: String? = null,
     val comparisonBypassed: Boolean = false,
     val hasUncommittedPreview: Boolean = false,
@@ -116,6 +121,21 @@ internal data class EqualizerUiActions(
     val onSaveParametricUserPreset: (String) -> Unit,
     val onRenameParametricUserPreset: (String, String) -> Unit,
     val onDeleteParametricUserPreset: (String) -> Unit,
+    val onImportFromFile: () -> Unit,
+    val onPasteEqText: () -> Unit,
+    val onExportCurrentEqText: () -> Unit,
+    val onCopyCurrentEqText: () -> Unit,
+    val onExportCurrentNative: () -> Unit,
+    val onExportParametricPresetText:
+        (ParametricEqualizerPreset) -> Unit,
+    val onExportParametricPresetNative:
+        (ParametricEqualizerPreset) -> Unit,
+    val onDismissImportPreview: () -> Unit,
+    val onUpdateImportPreview:
+        ((EqualizerImportPreviewState) ->
+            EqualizerImportPreviewState) -> Unit,
+    val onReplaceWithImportedProfile: () -> Unit,
+    val onSaveImportedProfile: (Boolean) -> Unit,
     val onResetToFlat: () -> Unit,
     val onComparisonBypassedChanged: (Boolean) -> Unit
 )

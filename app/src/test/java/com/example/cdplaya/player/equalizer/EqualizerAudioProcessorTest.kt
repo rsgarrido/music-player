@@ -139,10 +139,7 @@ class EqualizerAudioProcessorTest {
         )
         val processor = configuredProcessor(
             channelCount = 1,
-            initialPlan = plan(
-                version = 1L,
-                configuration = configuration
-            )
+            initialConfiguration = configuration
         )
         val input = shortBuffer(shortArrayOf(8_192, 20_000, -20_000))
 
@@ -177,7 +174,8 @@ class EqualizerAudioProcessorTest {
         )
         val processor = configuredProcessor(
             channelCount = 1,
-            initialPlan = preparedPlan
+            initialConfiguration = configuration,
+            automaticHeadroomEnabled = true
         )
         val inputSample = 10_000.toShort()
 
@@ -196,7 +194,7 @@ class EqualizerAudioProcessorTest {
 
     @Test
     fun bassAndTreblePlansChangeSignalsNearTheirCenters() {
-        listOf(125.0, 8_000.0).forEachIndexed { index, frequencyHz ->
+        listOf(125.0, 8_000.0).forEach { frequencyHz ->
             val inputSamples = sinePcm(
                 frequencyHz = frequencyHz,
                 sampleRateHz = 48_000,
@@ -215,11 +213,8 @@ class EqualizerAudioProcessorTest {
             )
             val processor = configuredProcessor(
                 channelCount = 1,
-                initialPlan = plan(
-                    version = index + 1L,
-                    configuration = configuration,
-                    automaticHeadroomEnabled = true
-                )
+                initialConfiguration = configuration,
+                automaticHeadroomEnabled = true
             )
 
             processor.queueInput(shortBuffer(inputSamples))
@@ -241,11 +236,7 @@ class EqualizerAudioProcessorTest {
         )
         val processor = configuredProcessor(
             channelCount = 2,
-            initialPlan = plan(
-                version = 1L,
-                configuration = configuration,
-                channelCount = 2
-            )
+            initialConfiguration = configuration
         )
         val samples = ShortArray(512)
         samples[0] = 12_000
@@ -275,11 +266,7 @@ class EqualizerAudioProcessorTest {
         )
         val processor = configuredProcessor(
             channelCount = 2,
-            initialPlan = plan(
-                version = 1L,
-                configuration = configuration,
-                channelCount = 2
-            )
+            initialConfiguration = configuration
         )
         val samples = ShortArray(512) { index -> (index * 17).toShort() }
         processor.queueInput(shortBuffer(samples))
@@ -612,11 +599,375 @@ class EqualizerAudioProcessorTest {
         )
     }
 
+    @Test
+    fun firstBufferAfterFormatChangesUsesNewRateEqWithoutBypass() {
+        val requested = EqualizerRuntimeBridge.requestConfiguration(
+            configuration = EqualizerConfiguration(
+                enabled = true,
+                preampDb = 6.020_599_913_279_624,
+                filters = emptyList()
+            ),
+            automaticHeadroomEnabled = false,
+            mode = EqualizerMode.PARAMETRIC
+        )
+        val processor = EqualizerAudioProcessor()
+
+        listOf(44_100, 96_000, 44_100).forEachIndexed {
+                index,
+                sampleRateHz ->
+            val format = AudioFormat(
+                sampleRateHz,
+                1,
+                C.ENCODING_PCM_16BIT
+            )
+            processor.configure(format)
+            processor.flush(StreamMetadata.DEFAULT)
+
+            processor.queueInput(
+                shortBuffer(shortArrayOf(8_192))
+            )
+            val firstOutput = processor.output.toShortArray()
+
+            assertArrayEquals(
+                "first output at $sampleRateHz Hz was not equalized",
+                shortArrayOf(16_384),
+                firstOutput
+            )
+            EqualizerRuntimeBridge.publishStateForTest()
+            val runtime = EqualizerRuntimeBridge.state.value
+            assertEquals(
+                requested.version,
+                runtime.preparedPlanVersion
+            )
+            assertEquals(
+                requested.version,
+                runtime.appliedPlanVersion
+            )
+            assertEquals(sampleRateHz, runtime.sampleRateHz)
+            assertEquals(EqualizerMode.PARAMETRIC, runtime.activeMode)
+            assertEquals(
+                EqualizerPlanApplicationMode.DIRECT_AFTER_FLUSH,
+                runtime.lastPlanApplicationMode
+            )
+            val diagnostics =
+                processor.transitionDiagnosticsSnapshot()
+            assertEquals(
+                EqualizerFirstInputProcessingMode.EQUALIZED,
+                diagnostics.firstInputProcessingMode
+            )
+            assertEquals(
+                requested.version,
+                diagnostics.firstInputRequestedVersion
+            )
+            assertEquals(
+                requested.version,
+                diagnostics.firstInputPreparedVersion
+            )
+            assertEquals(
+                requested.version,
+                diagnostics.firstInputAppliedVersion
+            )
+            assertEquals(
+                sampleRateHz,
+                diagnostics.firstInputPlanFormat?.sampleRateHz
+            )
+            assertEquals(
+                sampleRateHz,
+                diagnostics.currentFormat?.sampleRateHz
+            )
+            if (index > 0) {
+                assertEquals(
+                    listOf(44_100, 96_000, 44_100)[index - 1],
+                    diagnostics.previousFormat?.sampleRateHz
+                )
+            }
+            assertEquals(
+                0L,
+                diagnostics.unexpectedExactBypassBufferCount
+            )
+            assertEquals(
+                0L,
+                diagnostics.framesUntilCompatiblePlanActive
+            )
+            assertTrue(
+                diagnostics
+                    .millisecondsUntilCompatiblePlanActive >= 0.0
+            )
+            assertTrue(
+                diagnostics.configureEventSequence <
+                    diagnostics.flushEventSequence
+            )
+            assertTrue(
+                diagnostics.flushEventSequence <
+                    diagnostics.firstInputEventSequence
+            )
+            if (index < 2) {
+                processor.queueEndOfStream()
+                processor.output
+                assertTrue(processor.isEnded)
+            }
+        }
+    }
+
+    @Test
+    fun repeatedFormatsModesHeadroomAndLimiterProcessFirstFrame() {
+        listOf(
+            EqualizerMode.GRAPHIC,
+            EqualizerMode.PARAMETRIC
+        ).forEach { mode ->
+            listOf(false, true).forEach { automaticHeadroom ->
+                listOf(false, true).forEach { limiterEnabled ->
+                    EqualizerRuntimeBridge.release()
+                    val requested =
+                        EqualizerRuntimeBridge.requestConfiguration(
+                            configuration = EqualizerConfiguration(
+                                enabled = true,
+                                preampDb = -6.0,
+                                filters = emptyList()
+                            ),
+                            automaticHeadroomEnabled =
+                                automaticHeadroom,
+                            mode = mode,
+                            limiterConfiguration =
+                                LimiterConfiguration(
+                                    enabled = limiterEnabled
+                                )
+                        )
+                    val processor = EqualizerAudioProcessor()
+                    listOf(44_100, 44_100, 48_000, 44_100)
+                        .forEach { sampleRateHz ->
+                            processor.configure(
+                                AudioFormat(
+                                    sampleRateHz,
+                                    1,
+                                    C.ENCODING_PCM_16BIT
+                                )
+                            )
+                            processor.flush(StreamMetadata.DEFAULT)
+                            val lookaheadFrames = if (
+                                limiterEnabled
+                            ) {
+                                com.example.cdplaya.player.equalizer
+                                    .limiter.LimiterMath
+                                    .lookaheadFrames(sampleRateHz)
+                            } else {
+                                0
+                            }
+                            processor.queueInput(
+                                shortBuffer(
+                                    ShortArray(
+                                        lookaheadFrames + 1
+                                    ) {
+                                        10_000
+                                    }
+                                )
+                            )
+                            val output =
+                                processor.output.toShortArray()
+
+                            assertEquals(1, output.size)
+                            assertTrue(output.single() != 10_000.toShort())
+                            val diagnostics =
+                                processor
+                                    .transitionDiagnosticsSnapshot()
+                            assertEquals(
+                                if (limiterEnabled) {
+                                    EqualizerFirstInputProcessingMode
+                                        .EQUALIZED_WITH_LIMITER
+                                } else {
+                                    EqualizerFirstInputProcessingMode
+                                        .EQUALIZED
+                                },
+                                diagnostics.firstInputProcessingMode
+                            )
+                            assertEquals(
+                                requested.version,
+                                diagnostics.firstInputAppliedVersion
+                            )
+                            assertEquals(
+                                0L,
+                                diagnostics
+                                    .unexpectedExactBypassBufferCount
+                            )
+                        }
+                }
+            }
+        }
+    }
+
+    @Test
+    fun channelChangesNeverReuseAnOldFormatPlan() {
+        val requested = EqualizerRuntimeBridge.requestConfiguration(
+            configuration = EqualizerConfiguration(
+                enabled = true,
+                preampDb = -6.0,
+                filters = emptyList()
+            ),
+            automaticHeadroomEnabled = false
+        )
+        val processor = EqualizerAudioProcessor()
+
+        listOf(1, 2, 1).forEach { channelCount ->
+            val format = AudioFormat(
+                48_000,
+                channelCount,
+                C.ENCODING_PCM_16BIT
+            )
+            processor.configure(format)
+            processor.flush(StreamMetadata.DEFAULT)
+            processor.queueInput(
+                shortBuffer(
+                    ShortArray(channelCount) { 10_000 }
+                )
+            )
+            val output = processor.output.toShortArray()
+            assertEquals(channelCount, output.size)
+            assertTrue(output.all { it != 10_000.toShort() })
+
+            val diagnostics =
+                processor.transitionDiagnosticsSnapshot()
+            assertEquals(
+                format.channelCount,
+                diagnostics.firstInputPlanFormat?.channelCount
+            )
+            assertEquals(
+                requested.version,
+                diagnostics.firstInputAppliedVersion
+            )
+        }
+    }
+
+    @Test
+    fun disabledEqRemainsByteExactAcrossRateChanges() {
+        EqualizerRuntimeBridge.requestConfiguration(
+            configuration = EqualizerConfiguration(
+                enabled = false,
+                preampDb = 6.0,
+                filters = listOf(
+                    EqualizerFilterSpec.Peaking(
+                        1_000.0,
+                        6.0,
+                        1.0
+                    )
+                )
+            ),
+            automaticHeadroomEnabled = true
+        )
+        val processor = EqualizerAudioProcessor()
+        val bytes = byteArrayOf(
+            0x00,
+            0x20,
+            0xFF.toByte(),
+            0x7F
+        )
+
+        listOf(44_100, 96_000, 44_100).forEach { sampleRateHz ->
+            processor.configure(
+                AudioFormat(
+                    sampleRateHz,
+                    1,
+                    C.ENCODING_PCM_16BIT
+                )
+            )
+            processor.flush(StreamMetadata.DEFAULT)
+            processor.queueInput(directBuffer(bytes.copyOf()))
+
+            assertArrayEquals(bytes, processor.output.toByteArray())
+            val diagnostics =
+                processor.transitionDiagnosticsSnapshot()
+            assertEquals(
+                EqualizerFirstInputProcessingMode.EXACT_BYPASS,
+                diagnostics.firstInputProcessingMode
+            )
+            assertEquals(
+                0L,
+                diagnostics.unexpectedExactBypassBufferCount
+            )
+        }
+    }
+
+    @Test
+    fun firstAcceptedBufferWaitsForAndDirectlyAdoptsLatestVersion() {
+        EqualizerRuntimeBridge.requestConfiguration(
+            configuration = EqualizerConfiguration(
+                enabled = true,
+                preampDb = -6.0,
+                filters = emptyList()
+            ),
+            automaticHeadroomEnabled = false
+        )
+        val processor = EqualizerAudioProcessor()
+        val format = AudioFormat(
+            44_100,
+            1,
+            C.ENCODING_PCM_16BIT
+        )
+        processor.configure(format)
+        processor.flush(StreamMetadata.DEFAULT)
+        val second = EqualizerRuntimeBridge.requestConfiguration(
+            configuration = EqualizerConfiguration(
+                enabled = true,
+                preampDb = 6.020_599_913_279_624,
+                filters = emptyList()
+            ),
+            automaticHeadroomEnabled = false
+        )
+        val input = shortBuffer(shortArrayOf(8_192))
+
+        processor.queueInput(input)
+
+        assertEquals(0, input.position())
+        assertFalse(processor.output.hasRemaining())
+        assertEquals(
+            null,
+            processor.transitionDiagnosticsSnapshot()
+                .firstInputAppliedVersion
+        )
+
+        EqualizerRuntimeBridge.prepareForProcessorFormat(
+            EqualizerProcessorFormat(
+                44_100,
+                1,
+                C.ENCODING_PCM_16BIT
+            )
+        )
+        processor.queueInput(input)
+        val output = processor.output.toShortArray()
+
+        assertArrayEquals(shortArrayOf(16_384), output)
+        val diagnostics =
+            processor.transitionDiagnosticsSnapshot()
+        assertEquals(
+            second.version,
+            diagnostics.firstInputRequestedVersion
+        )
+        assertEquals(
+            second.version,
+            diagnostics.firstInputPreparedVersion
+        )
+        assertEquals(
+            second.version,
+            diagnostics.firstInputAppliedVersion
+        )
+        assertEquals(
+            EqualizerFirstInputProcessingMode.EQUALIZED,
+            diagnostics.firstInputProcessingMode
+        )
+    }
+
     private fun configuredProcessor(
         channelCount: Int,
         sampleRateHz: Int = 48_000,
-        initialPlan: PreparedEqualizerPlan? = null
+        initialConfiguration: EqualizerConfiguration? = null,
+        automaticHeadroomEnabled: Boolean = false
     ): EqualizerAudioProcessor {
+        initialConfiguration?.let { configuration ->
+            EqualizerRuntimeBridge.requestConfiguration(
+                configuration = configuration,
+                automaticHeadroomEnabled =
+                    automaticHeadroomEnabled
+            )
+        }
         val processor = EqualizerAudioProcessor()
         val format = AudioFormat(
             sampleRateHz,
@@ -624,11 +975,6 @@ class EqualizerAudioProcessorTest {
             C.ENCODING_PCM_16BIT
         )
         processor.configure(format)
-        initialPlan?.let { preparedPlan ->
-            EqualizerRuntimeBridge.installPreparedPathForTest(
-                preparedPlan.createProcessingPath()
-            )
-        }
         processor.flush(StreamMetadata.DEFAULT)
         return processor
     }

@@ -48,8 +48,9 @@ class EqualizerTransitionTest {
     @Test
     fun bypassToEqTransitionIsFrameSynchronousAndCompletesOnce() {
         val processor = bypassProcessor(channelCount = 2)
+        establishCurrentStream(processor, channelCount = 2)
         EqualizerRuntimeBridge.installPreparedPathForTest(
-            activePlan(
+            requestedActivePlan(
                 version = 1L,
                 channelCount = 2,
                 preampDb = -6.020_599_913_279_624
@@ -97,8 +98,9 @@ class EqualizerTransitionTest {
     @Test
     fun largeBufferCrossfadeEndsAfter20msRatherThanSpanningTheBuffer() {
         val processor = bypassProcessor(channelCount = 1)
+        establishCurrentStream(processor, channelCount = 1)
         EqualizerRuntimeBridge.installPreparedPathForTest(
-            activePlan(
+            requestedActivePlan(
                 version = 1L,
                 preampDb = -6.020_599_913_279_624
             ).createProcessingPath()
@@ -120,9 +122,10 @@ class EqualizerTransitionTest {
     @Test
     fun eqToBypassTransitionCompletesWithExactSubsequentBypass() {
         val processor = processorWithInitialPlan(
-            activePlan(version = 1L, preampDb = -6.0)
+            requestedActivePlan(version = 1L, preampDb = -6.0)
         )
-        val bypassPlan = plan(
+        establishCurrentStream(processor, channelCount = 1)
+        val bypassPlan = requestedPlan(
             version = 2L,
             configuration = EqualizerConfiguration(
                 enabled = false,
@@ -157,10 +160,11 @@ class EqualizerTransitionTest {
     @Test
     fun eqAToEqBTransitionUsesLatestPreparedPath() {
         val processor = processorWithInitialPlan(
-            activePlan(version = 1L, preampDb = -3.0)
+            requestedActivePlan(version = 1L, preampDb = -3.0)
         )
+        establishCurrentStream(processor, channelCount = 1)
         EqualizerRuntimeBridge.installPreparedPathForTest(
-            activePlan(version = 2L, preampDb = -9.0)
+            requestedActivePlan(version = 2L, preampDb = -9.0)
                 .createProcessingPath()
         )
 
@@ -188,18 +192,18 @@ class EqualizerTransitionTest {
     fun rapidUpdatesCoalesceToNewestVersion() {
         val processor = bypassProcessor(channelCount = 1)
         EqualizerRuntimeBridge.installPreparedPathForTest(
-            activePlan(version = 1L, preampDb = -2.0)
+            requestedActivePlan(version = 1L, preampDb = -2.0)
                 .createProcessingPath()
         )
 
         processor.queueInput(shortBuffer(ShortArray(480) { 10_000 }))
         processor.output
         EqualizerRuntimeBridge.installPreparedPathForTest(
-            activePlan(version = 2L, preampDb = -4.0)
+            requestedActivePlan(version = 2L, preampDb = -4.0)
                 .createProcessingPath()
         )
         EqualizerRuntimeBridge.installPreparedPathForTest(
-            activePlan(version = 3L, preampDb = -8.0)
+            requestedActivePlan(version = 3L, preampDb = -8.0)
                 .createProcessingPath()
         )
         processor.queueInput(shortBuffer(ShortArray(480) { 10_000 }))
@@ -226,7 +230,7 @@ class EqualizerTransitionTest {
     @Test
     fun stalePlanVersionIsIgnoredAfterNewerPlanApplied() {
         val processor = processorWithInitialPlan(
-            activePlan(version = 3L, preampDb = -6.0)
+            requestedActivePlan(version = 3L, preampDb = -6.0)
         )
         EqualizerRuntimeBridge.installPreparedPathForTest(
             activePlan(version = 2L, preampDb = 6.0)
@@ -252,7 +256,10 @@ class EqualizerTransitionTest {
             )
         )
         val processor = processorWithInitialPlan(
-            plan(version = 1L, configuration = filterConfiguration)
+            requestedPlan(
+                version = 1L,
+                configuration = filterConfiguration
+            )
         )
         processor.queueInput(
             shortBuffer(
@@ -261,7 +268,7 @@ class EqualizerTransitionTest {
         )
         processor.output
         EqualizerRuntimeBridge.installPreparedPathForTest(
-            activePlan(version = 2L, preampDb = -3.0)
+            requestedActivePlan(version = 2L, preampDb = -3.0)
                 .createProcessingPath()
         )
         processor.queueInput(shortBuffer(ShortArray(100) { 5_000 }))
@@ -296,7 +303,7 @@ class EqualizerTransitionTest {
                 EqualizerFilterSpec.LowShelf(200.0, 6.0, 0.8)
             )
         )
-        val preparedPlan = plan(1L, configuration)
+        val preparedPlan = requestedPlan(1L, configuration)
         val processor = processorWithInitialPlan(preparedPlan)
         val impulse = ShortArray(512).also { samples ->
             samples[0] = 10_000
@@ -308,7 +315,9 @@ class EqualizerTransitionTest {
         val afterFlush = processor.output.toShortArray()
 
         EqualizerRuntimeBridge.release()
-        val fresh = processorWithInitialPlan(plan(1L, configuration))
+        val fresh = processorWithInitialPlan(
+            requestedPlan(1L, configuration)
+        )
         fresh.queueInput(shortBuffer(impulse))
         val freshOutput = fresh.output.toShortArray()
 
@@ -347,6 +356,16 @@ class EqualizerTransitionTest {
         return processor
     }
 
+    private fun establishCurrentStream(
+        processor: EqualizerAudioProcessor,
+        channelCount: Int
+    ) {
+        processor.queueInput(
+            shortBuffer(ShortArray(channelCount))
+        )
+        processor.output
+    }
+
     private fun processorWithInitialPlan(
         preparedPlan: PreparedEqualizerPlan
     ): EqualizerAudioProcessor {
@@ -378,6 +397,43 @@ class EqualizerTransitionTest {
                 preampDb = preampDb,
                 filters = emptyList()
             )
+        )
+    }
+
+    private fun requestedActivePlan(
+        version: Long,
+        channelCount: Int = 1,
+        preampDb: Double
+    ): PreparedEqualizerPlan {
+        val configuration = EqualizerConfiguration(
+            enabled = true,
+            preampDb = preampDb,
+            filters = emptyList()
+        )
+        return requestedPlan(
+            version = version,
+            configuration = configuration,
+            channelCount = channelCount
+        )
+    }
+
+    private fun requestedPlan(
+        version: Long,
+        configuration: EqualizerConfiguration,
+        channelCount: Int = 1
+    ): PreparedEqualizerPlan {
+        var snapshot = EqualizerRuntimeBridge.requestedSnapshot()
+        while (snapshot.version < version) {
+            snapshot = EqualizerRuntimeBridge.requestConfiguration(
+                configuration = configuration,
+                automaticHeadroomEnabled = false
+            )
+        }
+        assertEquals(version, snapshot.version)
+        return plan(
+            version = version,
+            configuration = configuration,
+            channelCount = channelCount
         )
     }
 

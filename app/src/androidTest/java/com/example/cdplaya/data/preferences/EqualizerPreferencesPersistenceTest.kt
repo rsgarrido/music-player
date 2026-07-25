@@ -278,4 +278,107 @@ class EqualizerPreferencesPersistenceTest {
                 scope.cancel()
             }
         }
+
+    @Test
+    fun importedParametricProfileSavesAndAppliesAtomically() =
+        runBlocking {
+            val context = ApplicationProvider
+                .getApplicationContext<Context>()
+            val scope = CoroutineScope(
+                SupervisorJob() + Dispatchers.IO
+            )
+            try {
+                val repository =
+                    AppPreferencesRepository.create(
+                        context = context,
+                        scope = scope,
+                        dataStoreFileName =
+                            "import_${System.nanoTime()}.preferences_pb",
+                        legacyStores = emptyList()
+                    )
+                withTimeout(5_000) {
+                    repository.awaitLoadedState()
+                }
+                val original = EqualizerPreferencesState(
+                    enabled = true,
+                    preampDb = -2.0,
+                    automaticHeadroomEnabled = false,
+                    bandGainsDb = List(10) { index ->
+                        index - 4.0
+                    },
+                    mode = EqualizerMode.GRAPHIC,
+                    limiterEnabled = true,
+                    limiterCeilingDbfs = -2.0
+                )
+                repository.replaceEqualizerPreferences(original)
+                withTimeout(5_000) {
+                    repository.state.first {
+                        it.equalizerPreferences == original
+                    }
+                }
+                val imported = ParametricEqualizerState(
+                    preampDb = -6.0,
+                    automaticHeadroomEnabled = true,
+                    filters = listOf(
+                        ParametricFilter.Peaking(
+                            "imported",
+                            true,
+                            1_000.0,
+                            3.0,
+                            1.0
+                        )
+                    )
+                )
+
+                repository.importParametricEqualizerProfile(
+                    curve = imported,
+                    presetName = "Saved Only",
+                    apply = false
+                )
+                val savedOnly = withTimeout(5_000) {
+                    repository.state.first {
+                        it.equalizerPreferences.parametricState
+                            .userPresets.size == 1
+                    }
+                }.equalizerPreferences
+                assertEquals(EqualizerMode.GRAPHIC, savedOnly.mode)
+                assertTrue(savedOnly.parametricState.filters.isEmpty())
+                assertEquals(
+                    "Saved Only",
+                    savedOnly.parametricState.userPresets.single().name
+                )
+
+                repository.importParametricEqualizerProfile(
+                    curve = imported,
+                    presetName = "Saved And Applied",
+                    apply = true
+                )
+                val applied = withTimeout(5_000) {
+                    repository.state.first {
+                        it.equalizerPreferences.mode ==
+                            EqualizerMode.PARAMETRIC &&
+                            it.equalizerPreferences.parametricState
+                                .filters.size == 1 &&
+                            it.equalizerPreferences.parametricState
+                                .userPresets.size == 2
+                    }
+                }.equalizerPreferences
+
+                assertTrue(applied.enabled)
+                assertTrue(applied.limiterEnabled)
+                assertEquals(-2.0, applied.limiterCeilingDbfs, 0.0)
+                assertEquals(original.bandGainsDb, applied.bandGainsDb)
+                assertEquals(-6.0, applied.parametricState.preampDb, 0.0)
+                assertEquals(
+                    "imported",
+                    applied.parametricState.filters.single().id
+                )
+                assertEquals(
+                    listOf("Saved Only", "Saved And Applied"),
+                    applied.parametricState.userPresets.map { it.name }
+                )
+            } finally {
+                scope.cancel()
+            }
+        }
 }

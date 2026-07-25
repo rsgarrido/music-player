@@ -33,6 +33,7 @@ import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.equalizer.EqualizerUiController
+import com.example.cdplaya.ui.equalizer.EqualizerImportPreviewState
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenOverrides
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -437,6 +438,32 @@ class MusicViewModel(
 
     fun closeEqualizerScreen() {
         equalizerUiController.closeScreen()
+    }
+
+    internal fun openEqualizerImportPreview(
+        text: String,
+        sourceName: String?
+    ) {
+        equalizerUiController.openImportPreview(text, sourceName)
+    }
+
+    internal fun dismissEqualizerImportPreview() {
+        equalizerUiController.dismissImportPreview()
+    }
+
+    internal fun updateEqualizerImportPreview(
+        transform: (EqualizerImportPreviewState) ->
+            EqualizerImportPreviewState
+    ) {
+        equalizerUiController.updateImportPreview(transform)
+    }
+
+    internal fun replaceWithImportedEqualizerProfile() {
+        equalizerUiController.replaceWithImportedProfile()
+    }
+
+    internal fun saveImportedEqualizerProfile(apply: Boolean) {
+        equalizerUiController.saveImportedProfile(apply)
     }
 
     fun loadSongs() {

@@ -12,6 +12,7 @@ import com.example.cdplaya.ui.playlist.rememberPlaylistImportActions
 import com.example.cdplaya.ui.settings.rememberBackupExportActions
 import com.example.cdplaya.ui.settings.rememberBackupRestoreActions
 import com.example.cdplaya.ui.equalizer.EqualizerUiActions
+import com.example.cdplaya.ui.equalizer.rememberEqualizerProfilePlatformActions
 
 @Composable
 fun MusicRoute(
@@ -54,6 +55,15 @@ fun MusicRoute(
         onSummarize = musicViewModel::summarizeBackupRestore,
         onRestore = musicViewModel::restoreBackup
     )
+    val equalizerProfileActions =
+        rememberEqualizerProfilePlatformActions(
+            snackbarHostState = snackbarHostState,
+            currentState = equalizerScreenState
+                .durablePreferences.parametricState,
+            currentName = equalizerScreenState.presetLabel,
+            onImportText =
+                musicViewModel::openEqualizerImportPreview
+        )
 
     MusicScreen(
         songs = libraryUiState.songs,
@@ -303,6 +313,29 @@ fun MusicRoute(
                 musicViewModel::renameParametricUserPreset,
             onDeleteParametricUserPreset =
                 musicViewModel::deleteParametricUserPreset,
+            onImportFromFile =
+                equalizerProfileActions.importFromFile,
+            onPasteEqText =
+                equalizerProfileActions.pasteEqText,
+            onExportCurrentEqText =
+                equalizerProfileActions.exportCurrentText,
+            onCopyCurrentEqText =
+                equalizerProfileActions.copyCurrentText,
+            onExportCurrentNative =
+                equalizerProfileActions.exportCurrentNative,
+            onExportParametricPresetText =
+                equalizerProfileActions.exportPresetText,
+            onExportParametricPresetNative =
+                equalizerProfileActions.exportPresetNative,
+            onDismissImportPreview =
+                musicViewModel::dismissEqualizerImportPreview,
+            onUpdateImportPreview =
+                musicViewModel::updateEqualizerImportPreview,
+            onReplaceWithImportedProfile =
+                musicViewModel::
+                    replaceWithImportedEqualizerProfile,
+            onSaveImportedProfile =
+                musicViewModel::saveImportedEqualizerProfile,
             onResetToFlat =
                 musicViewModel::resetEqualizerToFlat,
             onComparisonBypassedChanged =

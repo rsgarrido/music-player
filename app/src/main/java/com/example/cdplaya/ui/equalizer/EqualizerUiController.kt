@@ -10,9 +10,13 @@ import com.example.cdplaya.player.equalizer.applyPreset
 import com.example.cdplaya.player.equalizer.activeAutomaticHeadroomEnabled
 import com.example.cdplaya.player.equalizer.toDspConfiguration
 import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
+import com.example.cdplaya.player.equalizer.interchange.CdplayaPresetFileJson
+import com.example.cdplaya.player.equalizer.interchange.EqualizerProfileParser
 import com.example.cdplaya.player.equalizer.parametric.MAX_PARAMETRIC_FILTER_COUNT
 import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
 import com.example.cdplaya.player.equalizer.parametric.ParametricFilterFactory
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerPresets
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +26,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 internal class EqualizerUiController(
     private val preferencesRepository:
@@ -464,6 +469,209 @@ internal class EqualizerUiController(
             preferencesRepository.deleteParametricEqualizerPreset(
                 presetId
             )
+        }
+    }
+
+    fun openImportPreview(
+        text: String,
+        sourceName: String?
+    ) {
+        _state.value = _state.value.copy(
+            importInProgress = true,
+            importMessage = null
+        )
+        scope.launch {
+            runCatching {
+                withContext(Dispatchers.Default) {
+                    if (
+                        sourceName?.endsWith(
+                            ".cdpeq",
+                            ignoreCase = true
+                        ) == true ||
+                        sourceName?.endsWith(
+                            ".json",
+                            ignoreCase = true
+                        ) == true ||
+                        text.trimStart().startsWith("{")
+                    ) {
+                        EqualizerImportPreviewState.fromNative(
+                            file = CdplayaPresetFileJson.decode(text),
+                            sourceName = sourceName
+                        )
+                    } else {
+                        EqualizerImportPreviewState.fromText(
+                            EqualizerProfileParser.parse(
+                                input = text,
+                                sourceName = sourceName
+                            )
+                        )
+                    }
+                }
+            }.fold(
+                onSuccess = { preview ->
+                    _state.value = _state.value.copy(
+                        importPreview = preview,
+                        importInProgress = false
+                    )
+                    refreshImportAnalysis(preview)
+                },
+                onFailure = { error ->
+                    _state.value = _state.value.copy(
+                        importInProgress = false,
+                        importMessage =
+                            error.message
+                                ?: "Couldn't parse EQ profile."
+                    )
+                }
+            )
+        }
+    }
+
+    fun dismissImportPreview() {
+        _state.value = _state.value.copy(
+            importPreview = null,
+            importMessage = null
+        )
+    }
+
+    fun updateImportPreview(
+        transform: (EqualizerImportPreviewState) ->
+            EqualizerImportPreviewState
+    ) {
+        val current = _state.value.importPreview ?: return
+        val updated = transform(current)
+        _state.value = _state.value.copy(importPreview = updated)
+        refreshImportAnalysis(updated)
+    }
+
+    fun replaceWithImportedProfile() {
+        persistImportedProfile(
+            presetName = null,
+            apply = true
+        )
+    }
+
+    fun saveImportedProfile(
+        apply: Boolean
+    ) {
+        val preview = _state.value.importPreview ?: return
+        persistImportedProfile(
+            presetName = preview.proposedName,
+            apply = apply
+        )
+    }
+
+    private fun persistImportedProfile(
+        presetName: String?,
+        apply: Boolean
+    ) {
+        val preview = _state.value.importPreview ?: return
+        require(preview.canApply) {
+            "Import preview still has unresolved safety requirements."
+        }
+        val current = _state.value.editablePreferences
+        val curve = preview.proposedParametricState(
+            current.parametricState
+        )
+        val updated = if (apply) {
+            current.copy(
+                mode = EqualizerMode.PARAMETRIC,
+                parametricState = curve
+            )
+        } else {
+            current
+        }
+        _state.value = _state.value.copy(
+            importInProgress = true,
+            importMessage = null
+        )
+        scope.launch {
+            runCatching {
+                presetName?.let { name ->
+                    ParametricEqualizerPresets.requireNameAvailable(
+                        name = name,
+                        userPresets = current.parametricState
+                            .userPresets
+                    )
+                }
+                preferencesRepository.importParametricEqualizerProfile(
+                    curve = curve,
+                    presetName = presetName,
+                    apply = apply
+                )
+            }.fold(
+                onSuccess = { createdPreset ->
+                    val settled = if (
+                        apply && createdPreset != null
+                    ) {
+                        updated.copy(
+                            parametricState =
+                                updated.parametricState.copy(
+                                    userPresets =
+                                        updated.parametricState
+                                            .userPresets +
+                                            createdPreset
+                                )
+                        )
+                    } else {
+                        updated
+                    }
+                    if (apply) beginPendingCommit(settled)
+                    _state.value = _state.value.copy(
+                        importPreview = null,
+                        importInProgress = false,
+                        importMessage = when {
+                            presetName != null && apply ->
+                                "Preset saved and applied."
+                            presetName != null -> "Preset saved."
+                            else -> "Imported profile applied."
+                        },
+                        selectedParametricFilterId =
+                            if (apply) {
+                                curve.filters.firstOrNull()?.id
+                            } else {
+                                _state.value
+                                    .selectedParametricFilterId
+                            }
+                    )
+                },
+                onFailure = { error ->
+                    _state.value = _state.value.copy(
+                        importInProgress = false,
+                        importMessage =
+                            error.message
+                                ?: "Couldn't save imported profile."
+                    )
+                }
+            )
+        }
+    }
+
+    private fun refreshImportAnalysis(
+        preview: EqualizerImportPreviewState
+    ) {
+        val durable = _state.value.editablePreferences
+        scope.launch {
+            val analysis = withContext(Dispatchers.Default) {
+                EqualizerAnalysisCalculator.calculate(
+                    EqualizerAnalysisRequest(
+                        preferences =
+                            preview.proposedPreferences(durable),
+                        currentSampleRateHz = if (
+                            preview.previewAtCurrentTrackRate
+                        ) {
+                            runtimeState.value.sampleRateHz
+                        } else {
+                            null
+                        }
+                    )
+                )
+            }
+            if (_state.value.importPreview == preview) {
+                _state.value = _state.value.copy(
+                    importAnalysis = analysis
+                )
+            }
         }
     }
 

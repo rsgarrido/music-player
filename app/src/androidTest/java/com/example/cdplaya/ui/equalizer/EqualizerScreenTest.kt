@@ -20,6 +20,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
@@ -27,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
 import com.example.cdplaya.player.equalizer.EqualizerMode
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
+import com.example.cdplaya.player.equalizer.interchange.EqualizerProfileParser
 import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerState
 import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
 import com.example.cdplaya.player.equalizer.parametric.ParametricFilterFactory
@@ -40,6 +42,100 @@ class EqualizerScreenTest {
     @get:Rule
     val composeRule =
         createAndroidComposeRule<ComponentActivity>()
+
+    @Test
+    fun importExportActionsAreScopedTruthfullyByMode() {
+        var imported = false
+        var pasted = false
+        composeRule.setContent {
+            MaterialTheme {
+                EqualizerScreen(
+                    state = EqualizerScreenState(isLoaded = true),
+                    actions = noOpActions().copy(
+                        onImportFromFile = { imported = true },
+                        onPasteEqText = { pasted = true }
+                    )
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("Import from file")
+            .performClick()
+        composeRule.onNodeWithText("Paste EQ text")
+            .performClick()
+        composeRule.onNodeWithText("Export current EQ")
+            .assertIsNotEnabled()
+        composeRule.onNodeWithText(
+            "Current export is unavailable in Graphic mode.",
+            substring = true
+        ).assertExists()
+        composeRule.runOnIdle {
+            assertTrue(imported)
+            assertTrue(pasted)
+        }
+    }
+
+    @Test
+    fun importPreviewShowsAllFiltersAndRequiresExplicitTenSelection() {
+        val parsed = EqualizerProfileParser.parse(
+            (1..12).joinToString("\n") { index ->
+                "Filter $index: ON PK Fc ${100 + index} Hz " +
+                    "Gain 1 dB Q 1"
+            },
+            sourceName = "Twelve Filters.txt"
+        )
+        val screenState = mutableStateOf(
+            EqualizerScreenState(
+                importPreview =
+                    EqualizerImportPreviewState.fromText(parsed),
+                isLoaded = true
+            )
+        )
+        composeRule.setContent {
+            MaterialTheme {
+                EqualizerScreen(
+                    state = screenState.value,
+                    actions = noOpActions().copy(
+                        onUpdateImportPreview = { transform ->
+                            screenState.value =
+                                screenState.value.copy(
+                                    importPreview = transform(
+                                        requireNotNull(
+                                            screenState.value.importPreview
+                                        )
+                                    )
+                                )
+                        }
+                    )
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("equalizer_import_preview")
+            .assertExists()
+        composeRule.onNodeWithText(
+            "Twelve Filters.txt",
+            substring = true
+        )
+            .assertExists()
+        composeRule.onNodeWithText(
+            "Selected: 0",
+            substring = true
+        )
+            .assertExists()
+        composeRule.onNodeWithText("Replace current Parametric EQ")
+            .assertIsNotEnabled()
+        composeRule.onNodeWithText("Select first 10")
+            .performScrollTo()
+            .performClick()
+        composeRule.onNodeWithText(
+            "Selected: 10",
+            substring = true
+        )
+            .assertExists()
+        composeRule.onNodeWithText("Replace current Parametric EQ")
+            .assertIsEnabled()
+    }
 
     @Test
     fun screenRendersAllBandsAndProductionSemantics() {
@@ -480,6 +576,17 @@ class EqualizerScreenTest {
         onSaveParametricUserPreset = {},
         onRenameParametricUserPreset = { _, _ -> },
         onDeleteParametricUserPreset = {},
+        onImportFromFile = {},
+        onPasteEqText = {},
+        onExportCurrentEqText = {},
+        onCopyCurrentEqText = {},
+        onExportCurrentNative = {},
+        onExportParametricPresetText = {},
+        onExportParametricPresetNative = {},
+        onDismissImportPreview = {},
+        onUpdateImportPreview = {},
+        onReplaceWithImportedProfile = {},
+        onSaveImportedProfile = {},
         onResetToFlat = {},
         onComparisonBypassedChanged = {}
     )
