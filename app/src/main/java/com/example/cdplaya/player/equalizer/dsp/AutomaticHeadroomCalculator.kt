@@ -2,6 +2,7 @@ package com.example.cdplaya.player.equalizer.dsp
 
 import kotlin.math.exp
 import kotlin.math.ln
+import kotlin.math.max
 import kotlin.math.min
 
 internal data class AutomaticHeadroomResult(
@@ -12,7 +13,9 @@ internal data class AutomaticHeadroomResult(
 
 /**
  * Non-real-time full-cascade headroom analysis over a logarithmic frequency
- * grid and every valid active filter center.
+ * grid, every valid active filter center, and supplemental logarithmic samples
+ * around Q-bearing centers. The supplemental samples keep narrow resonant
+ * maxima from falling between ordinary grid points.
  */
 internal object AutomaticHeadroomCalculator {
     const val DEFAULT_SAFETY_MARGIN_DB = 0.5
@@ -92,7 +95,7 @@ internal object AutomaticHeadroomCalculator {
         highestFrequencyHz: Double
     ): DoubleArray {
         val frequencies = ArrayList<Double>(
-            GRID_POINT_COUNT + configuration.filters.size
+            GRID_POINT_COUNT + configuration.filters.size * 18
         )
         val logarithmicRange =
             ln(highestFrequencyHz / LOWEST_FREQUENCY_HZ)
@@ -105,13 +108,20 @@ internal object AutomaticHeadroomCalculator {
         val nyquistHz = sampleRateHz / 2.0
         configuration.filters.forEach { filter ->
             if (
-                filter.enabled &&
-                !isEffectivelyZeroDb(filter.gainDb) &&
+                filter.hasAudibleEffect &&
                 filter.frequencyHz.isFinite() &&
                 filter.frequencyHz > 0.0 &&
                 filter.frequencyHz < nyquistHz
             ) {
                 frequencies += filter.frequencyHz
+                qFor(filter)?.let { q ->
+                    addSupplementalQSamples(
+                        frequencies = frequencies,
+                        centerFrequencyHz = filter.frequencyHz,
+                        q = q,
+                        highestFrequencyHz = highestFrequencyHz
+                    )
+                }
             }
         }
 
@@ -120,4 +130,39 @@ internal object AutomaticHeadroomCalculator {
             .sorted()
             .toDoubleArray()
     }
+
+    private fun addSupplementalQSamples(
+        frequencies: MutableList<Double>,
+        centerFrequencyHz: Double,
+        q: Double,
+        highestFrequencyHz: Double
+    ) {
+        // Span roughly two Q bandwidths on either side of the center with
+        // finer sampling near the exact cutoff/center.
+        val safeQ = max(q, 0.1)
+        for (step in -8..8) {
+            if (step == 0) continue
+            val logarithmicOffset =
+                step.toDouble() / 8.0 / safeQ
+            val frequency =
+                centerFrequencyHz * exp(logarithmicOffset)
+            if (
+                frequency >= LOWEST_FREQUENCY_HZ &&
+                frequency <= highestFrequencyHz
+            ) {
+                frequencies += frequency
+            }
+        }
+    }
+
+    private fun qFor(filter: EqualizerFilterSpec): Double? =
+        when (filter) {
+            is EqualizerFilterSpec.Peaking -> filter.q
+            is EqualizerFilterSpec.LowPass -> filter.q
+            is EqualizerFilterSpec.HighPass -> filter.q
+            is EqualizerFilterSpec.Notch -> filter.q
+            is EqualizerFilterSpec.BandPass -> filter.q
+            is EqualizerFilterSpec.LowShelf,
+            is EqualizerFilterSpec.HighShelf -> null
+        }
 }
