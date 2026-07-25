@@ -1,12 +1,18 @@
 package com.example.cdplaya.data.backup
 
 import com.example.cdplaya.player.equalizer.GraphicEqualizerPresets
+import com.example.cdplaya.player.equalizer.EqualizerMode
+import com.example.cdplaya.player.equalizer.parametric.MAX_PARAMETRIC_FILTER_COUNT
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerPreset
+import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerState
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
+import com.example.cdplaya.player.equalizer.parametric.ParametricFilterType
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 object AppBackupJson {
-    const val CURRENT_SCHEMA_VERSION = 5
+    const val CURRENT_SCHEMA_VERSION = 6
     private const val OLDEST_SUPPORTED_SCHEMA_VERSION = 1
 
     private val json = Json {
@@ -42,6 +48,9 @@ object AppBackupJson {
         }
         if (migrated.schemaVersion == 4) {
             migrated = migrateV4ToV5(migrated)
+        }
+        if (migrated.schemaVersion == 5) {
+            migrated = migrateV5ToV6(migrated)
         }
         validateEqualizerBackup(migrated.preferences.equalizer)
         return migrated
@@ -103,6 +112,20 @@ object AppBackupJson {
             )
         )
     }
+
+    private fun migrateV5ToV6(backup: AppBackup): AppBackup =
+        backup.copy(
+            schemaVersion = 6,
+            preferences = backup.preferences.copy(
+                equalizer = backup.preferences.equalizer.copy(
+                    mode = EqualizerMode.GRAPHIC.name,
+                    parametricPreampDb = 0.0,
+                    parametricAutomaticHeadroomEnabled = true,
+                    parametricFilters = emptyList(),
+                    parametricUserPresets = emptyList()
+                )
+            )
+        )
 
     private fun validateEqualizerBackup(
         equalizer: BackupEqualizerPreferences
@@ -168,6 +191,38 @@ object AppBackupJson {
         ) {
             "Backup equalizer preset name conflicts with a built-in."
         }
+        val mode = runCatching {
+            EqualizerMode.valueOf(equalizer.mode)
+        }.getOrNull()
+        require(mode != null) {
+            "Backup equalizer mode is invalid."
+        }
+        val activeFilters = equalizer.parametricFilters
+            .map { filter -> filter.toDomain() }
+        val userPresets = equalizer.parametricUserPresets.map { preset ->
+            ParametricEqualizerPreset(
+                id = preset.id,
+                name = preset.name,
+                preampDb = preset.preampDb,
+                automaticHeadroomEnabled =
+                    preset.automaticHeadroomEnabled,
+                filters = preset.filters.map { filter ->
+                    filter.toDomain()
+                }
+            )
+        }
+        require(
+            activeFilters.size <= MAX_PARAMETRIC_FILTER_COUNT
+        ) {
+            "Backup parametric equalizer has too many filters."
+        }
+        ParametricEqualizerState(
+            preampDb = equalizer.parametricPreampDb,
+            automaticHeadroomEnabled =
+                equalizer.parametricAutomaticHeadroomEnabled,
+            filters = activeFilters,
+            userPresets = userPresets
+        )
     }
 }
 
@@ -219,3 +274,60 @@ private fun BackupListeningHistoryEntry.legacyReference() = BackupSongReference(
     album = album,
     legacyStableKey = songKey
 )
+
+internal fun BackupParametricFilter.toDomain(): ParametricFilter {
+    val filterType = runCatching {
+        ParametricFilterType.valueOf(type)
+    }.getOrElse {
+        throw IllegalArgumentException(
+            "Unknown backup parametric filter type: $type"
+        )
+    }
+    return when (filterType) {
+        ParametricFilterType.PEAKING -> {
+            require(slope == null)
+            ParametricFilter.Peaking(
+                id, enabled, frequencyHz,
+                requireNotNull(gainDb), requireNotNull(q)
+            )
+        }
+        ParametricFilterType.LOW_SHELF -> {
+            require(q == null)
+            ParametricFilter.LowShelf(
+                id, enabled, frequencyHz,
+                requireNotNull(gainDb), requireNotNull(slope)
+            )
+        }
+        ParametricFilterType.HIGH_SHELF -> {
+            require(q == null)
+            ParametricFilter.HighShelf(
+                id, enabled, frequencyHz,
+                requireNotNull(gainDb), requireNotNull(slope)
+            )
+        }
+        ParametricFilterType.LOW_PASS -> {
+            require(gainDb == null && slope == null)
+            ParametricFilter.LowPass(
+                id, enabled, frequencyHz, requireNotNull(q)
+            )
+        }
+        ParametricFilterType.HIGH_PASS -> {
+            require(gainDb == null && slope == null)
+            ParametricFilter.HighPass(
+                id, enabled, frequencyHz, requireNotNull(q)
+            )
+        }
+        ParametricFilterType.NOTCH -> {
+            require(gainDb == null && slope == null)
+            ParametricFilter.Notch(
+                id, enabled, frequencyHz, requireNotNull(q)
+            )
+        }
+        ParametricFilterType.BAND_PASS -> {
+            require(gainDb == null && slope == null)
+            ParametricFilter.BandPass(
+                id, enabled, frequencyHz, requireNotNull(q)
+            )
+        }
+    }
+}
