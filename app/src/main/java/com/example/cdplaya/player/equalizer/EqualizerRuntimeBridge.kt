@@ -145,6 +145,61 @@ internal object EqualizerRuntimeBridge {
         }
     }
 
+    /**
+     * Prepares the latest requested EQ and limiter state for a newly
+     * configured sink format before Media3 can submit its first PCM buffer.
+     *
+     * Ordinary curve changes remain background-prepared by the coordinator.
+     * A format boundary is different: copying audio while coefficients for
+     * the new rate are pending would expose an audible exact-bypass segment.
+     */
+    fun prepareForProcessorFormat(
+        format: EqualizerProcessorFormat
+    ): PreparedEqualizerProcessingPath {
+        processorFormat.set(format)
+        while (true) {
+            val snapshot = requestedSnapshot.get()
+            val existingPath = preparedPath.get()
+            val existingLimiter =
+                preparedLimiterConfiguration.get()
+            if (
+                existingPath?.plan?.sourceSnapshotVersion ==
+                snapshot.version &&
+                existingPath.plan.processorFormat == format &&
+                existingLimiter?.configurationVersion ==
+                snapshot.version &&
+                existingLimiter.sampleRateHz ==
+                format.sampleRateHz &&
+                existingLimiter.channelCount ==
+                format.channelCount
+            ) {
+                return existingPath
+            }
+
+            val path = EqualizerPlanPreparer.prepare(
+                snapshot = snapshot,
+                processorFormat = format
+            ).createProcessingPath()
+            val limiter = LimiterPreparedConfiguration.prepare(
+                configuration = snapshot.limiterConfiguration,
+                sampleRateHz = format.sampleRateHz,
+                channelCount = format.channelCount,
+                configurationVersion = snapshot.version
+            )
+            if (
+                requestedSnapshot.get() === snapshot &&
+                processorFormat.get() == format
+            ) {
+                preparedPath.set(path)
+                preparedLimiterConfiguration.set(limiter)
+                latestPreparedVersion.set(snapshot.version)
+                latestPreparedNanos.set(System.nanoTime())
+                publishState()
+                return path
+            }
+        }
+    }
+
     fun latestCompatiblePath(
         format: EqualizerProcessorFormat
     ): PreparedEqualizerProcessingPath? {
@@ -175,6 +230,16 @@ internal object EqualizerRuntimeBridge {
             prepared.configurationVersion != snapshot.version ||
             prepared.sampleRateHz != format.sampleRateHz ||
             prepared.channelCount != format.channelCount
+    }
+
+    fun isEqualizerPreparationPending(
+        format: EqualizerProcessorFormat
+    ): Boolean {
+        val snapshot = requestedSnapshot.get()
+        val prepared = preparedPath.get()
+        return prepared == null ||
+            prepared.plan.sourceSnapshotVersion != snapshot.version ||
+            prepared.plan.processorFormat != format
     }
 
     fun publishProcessorConfigured(
@@ -347,6 +412,24 @@ internal object EqualizerRuntimeBridge {
         while (currentCoroutineContext().isActive) {
             val snapshot = requestedSnapshot.get()
             val format = processorFormat.get()
+            val publishedPath = preparedPath.get()
+            val publishedLimiter =
+                preparedLimiterConfiguration.get()
+            if (
+                format != null &&
+                publishedPath?.plan?.sourceSnapshotVersion ==
+                snapshot.version &&
+                publishedPath.plan.processorFormat == format &&
+                publishedLimiter?.configurationVersion ==
+                snapshot.version &&
+                publishedLimiter.sampleRateHz ==
+                format.sampleRateHz &&
+                publishedLimiter.channelCount ==
+                format.channelCount
+            ) {
+                preparedSnapshotVersion = snapshot.version
+                preparedFormat = format
+            }
             if (
                 format != null &&
                 (

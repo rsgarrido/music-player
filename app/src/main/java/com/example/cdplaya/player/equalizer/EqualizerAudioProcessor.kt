@@ -48,6 +48,31 @@ internal class EqualizerAudioProcessor(
     private var endOfStreamDraining = false
     private var limiterReprimeCount = 0
     private var observedMeterResetVersion = 0L
+    private var transitionEventSequence = 0L
+    private var configureEventSequence = 0L
+    private var flushEventSequence = 0L
+    private var endOfStreamEventSequence = 0L
+    private var firstInputEventSequence = 0L
+    private var configureCount = 0
+    private var flushCount = 0
+    private var endOfStreamCount = 0
+    private var nonEmptyInputBufferCount = 0L
+    private var previousConfiguredFormat:
+        EqualizerProcessorFormat? = null
+    private var latestConfiguredFormat:
+        EqualizerProcessorFormat? = null
+    private var firstInputPending = false
+    private var firstInputProcessingMode =
+        EqualizerFirstInputProcessingMode.NONE
+    private var firstInputRequestedVersion: Long? = null
+    private var firstInputPreparedVersion: Long? = null
+    private var firstInputAppliedVersion: Long? = null
+    private var firstInputPlanFormat:
+        EqualizerProcessorFormat? = null
+    private var unexpectedExactBypassBufferCount = 0L
+    private var framesUntilCompatiblePlanActive = 0L
+    private var configurePreparationNanos = 0L
+    private var flushPreparationNanos = 0L
 
     override fun onConfigure(
         inputAudioFormat: AudioFormat
@@ -68,7 +93,14 @@ internal class EqualizerAudioProcessor(
             channelCount = inputAudioFormat.channelCount,
             pcmEncoding = inputAudioFormat.encoding
         )
-        runtimeBridge.publishProcessorFormat(format)
+        previousConfiguredFormat = latestConfiguredFormat
+        latestConfiguredFormat = format
+        configureCount++
+        configureEventSequence = nextTransitionEventSequence()
+        val preparationStartedNanos = System.nanoTime()
+        runtimeBridge.prepareForProcessorFormat(format)
+        configurePreparationNanos =
+            System.nanoTime() - preparationStartedNanos
         runtimeBridge.publishProcessorConfigured(
             configured = true,
             bypassed = true
@@ -96,6 +128,12 @@ internal class EqualizerAudioProcessor(
         val sampleCount = frameCount * format.channelCount
         applyPendingMeterReset()
         considerLatestPreparedConfiguration(format)
+        if (
+            firstInputPending &&
+            runtimeBridge.isEqualizerPreparationPending(format)
+        ) {
+            return
+        }
         if (runtimeBridge.isLimiterPreparationPending(format)) {
             return
         }
@@ -114,6 +152,7 @@ internal class EqualizerAudioProcessor(
         }
 
         if (inputByteCount == 0) return
+        recordFirstAcceptedInput(format, frameCount)
         val outputBuffer = outputBuffer(inputByteCount)
         if (isExactBypass()) {
             outputBuffer.put(inputBuffer)
@@ -191,6 +230,8 @@ internal class EqualizerAudioProcessor(
     }
 
     override fun onQueueEndOfStream() {
+        endOfStreamCount++
+        endOfStreamEventSequence = nextTransitionEventSequence()
         // Media3 1.9.1 drains an AudioProcessor after queueEndOfStream()
         // before the next stream is flushed through this processor. At this
         // extension point there are therefore no next-stream samples available
@@ -426,7 +467,22 @@ internal class EqualizerAudioProcessor(
         transitionState.cancel()
         pendingPath = null
 
-        currentPath = runtimeBridge.latestCompatiblePath(format)
+        flushCount++
+        flushEventSequence = nextTransitionEventSequence()
+        firstInputPending = true
+        firstInputEventSequence = 0L
+        firstInputProcessingMode =
+            EqualizerFirstInputProcessingMode.NONE
+        firstInputRequestedVersion = null
+        firstInputPreparedVersion = null
+        firstInputAppliedVersion = null
+        firstInputPlanFormat = null
+        framesUntilCompatiblePlanActive = 0L
+        val preparationStartedNanos = System.nanoTime()
+        currentPath =
+            runtimeBridge.prepareForProcessorFormat(format)
+        flushPreparationNanos =
+            System.nanoTime() - preparationStartedNanos
         currentPath?.reset()
         runtimeBridge.publishAppliedPlan(
             plan = currentPath?.plan,
@@ -474,6 +530,43 @@ internal class EqualizerAudioProcessor(
         runtimeBridge.clearProcessorTelemetry()
     }
 
+    internal fun transitionDiagnosticsSnapshot():
+        EqualizerProcessorTransitionDiagnostics {
+        return EqualizerProcessorTransitionDiagnostics(
+            configureCount = configureCount,
+            flushCount = flushCount,
+            endOfStreamCount = endOfStreamCount,
+            nonEmptyInputBufferCount =
+                nonEmptyInputBufferCount,
+            previousFormat = previousConfiguredFormat,
+            currentFormat = latestConfiguredFormat,
+            configureEventSequence = configureEventSequence,
+            flushEventSequence = flushEventSequence,
+            endOfStreamEventSequence =
+                endOfStreamEventSequence,
+            firstInputEventSequence =
+                firstInputEventSequence,
+            firstInputProcessingMode =
+                firstInputProcessingMode,
+            firstInputRequestedVersion =
+                firstInputRequestedVersion,
+            firstInputPreparedVersion =
+                firstInputPreparedVersion,
+            firstInputAppliedVersion =
+                firstInputAppliedVersion,
+            firstInputPlanFormat = firstInputPlanFormat,
+            unexpectedExactBypassBufferCount =
+                unexpectedExactBypassBufferCount,
+            framesUntilCompatiblePlanActive =
+                framesUntilCompatiblePlanActive,
+            millisecondsUntilCompatiblePlanActive =
+                (
+                    configurePreparationNanos +
+                        flushPreparationNanos
+                    ) / NANOS_PER_MILLISECOND
+        )
+    }
+
     internal fun bufferReuseSnapshot(): EqualizerBufferReuseSnapshot {
         return EqualizerBufferReuseSnapshot(
             scratchCapacity = scratchCapacity,
@@ -506,6 +599,25 @@ internal class EqualizerAudioProcessor(
         val currentVersion =
             currentPath?.plan?.sourceSnapshotVersion ?: -1L
         if (latest.plan.sourceSnapshotVersion <= currentVersion) return
+
+        if (firstInputPending) {
+            currentPath?.reset()
+            latest.reset()
+            currentPath = latest
+            pendingPath = null
+            transitionState.cancel()
+            runtimeBridge.publishAppliedPlan(
+                plan = latest.plan,
+                applicationMode =
+                    EqualizerPlanApplicationMode.DIRECT_AFTER_FLUSH
+            )
+            runtimeBridge.publishTransitionInProgress(false)
+            runtimeBridge.publishProcessorConfigured(
+                configured = true,
+                bypassed = latest.bypassed
+            )
+            return
+        }
 
         if (
             currentPath?.bypassed != false &&
@@ -540,6 +652,61 @@ internal class EqualizerAudioProcessor(
             currentPath?.bypassed != false &&
             limiterEngine == null &&
             !pendingLimiterDisable
+    }
+
+    private fun recordFirstAcceptedInput(
+        format: EqualizerProcessorFormat,
+        frameCount: Int
+    ) {
+        nonEmptyInputBufferCount++
+        if (!firstInputPending) return
+        firstInputPending = false
+        firstInputEventSequence = nextTransitionEventSequence()
+        val requested = runtimeBridge.requestedSnapshot()
+        val path = currentPath
+        firstInputRequestedVersion = requested.version
+        firstInputPreparedVersion =
+            runtimeBridge.latestCompatiblePath(format)
+                ?.plan?.sourceSnapshotVersion
+        firstInputAppliedVersion =
+            path?.plan?.sourceSnapshotVersion
+        firstInputPlanFormat = path?.plan?.processorFormat
+        firstInputProcessingMode = when {
+            transitionState.isActive ->
+                EqualizerFirstInputProcessingMode
+                    .EQUALIZER_TRANSITION
+            path?.bypassed == false &&
+                limiterEngine != null ->
+                EqualizerFirstInputProcessingMode
+                    .EQUALIZED_WITH_LIMITER
+            path?.bypassed == false ->
+                EqualizerFirstInputProcessingMode.EQUALIZED
+            limiterEngine != null ->
+                EqualizerFirstInputProcessingMode.LIMITER_ONLY
+            else ->
+                EqualizerFirstInputProcessingMode.EXACT_BYPASS
+        }
+        val requestedAudible =
+            requested.configuration.enabled &&
+                !requested.configuration.isEffectivelyFlat
+        val compatibleAudiblePath =
+            path?.plan?.processorFormat == format &&
+                path.plan.sourceSnapshotVersion ==
+                requested.version &&
+                !path.bypassed
+        if (
+            firstInputProcessingMode ==
+            EqualizerFirstInputProcessingMode.EXACT_BYPASS &&
+            (requestedAudible || compatibleAudiblePath)
+        ) {
+            unexpectedExactBypassBufferCount++
+            framesUntilCompatiblePlanActive += frameCount
+        }
+    }
+
+    private fun nextTransitionEventSequence(): Long {
+        transitionEventSequence++
+        return transitionEventSequence
     }
 
     private fun ensureScratchCapacity(requiredSampleCount: Int) {
@@ -629,8 +796,40 @@ internal class EqualizerAudioProcessor(
     companion object {
         private val EMPTY_FLOAT_ARRAY = FloatArray(0)
         private const val DRAIN_CHUNK_FRAME_COUNT = 1_024
+        private const val NANOS_PER_MILLISECOND = 1_000_000.0
     }
 }
+
+internal enum class EqualizerFirstInputProcessingMode {
+    NONE,
+    EXACT_BYPASS,
+    EQUALIZED,
+    EQUALIZER_TRANSITION,
+    LIMITER_ONLY,
+    EQUALIZED_WITH_LIMITER
+}
+
+internal data class EqualizerProcessorTransitionDiagnostics(
+    val configureCount: Int,
+    val flushCount: Int,
+    val endOfStreamCount: Int,
+    val nonEmptyInputBufferCount: Long,
+    val previousFormat: EqualizerProcessorFormat?,
+    val currentFormat: EqualizerProcessorFormat?,
+    val configureEventSequence: Long,
+    val flushEventSequence: Long,
+    val endOfStreamEventSequence: Long,
+    val firstInputEventSequence: Long,
+    val firstInputProcessingMode:
+        EqualizerFirstInputProcessingMode,
+    val firstInputRequestedVersion: Long?,
+    val firstInputPreparedVersion: Long?,
+    val firstInputAppliedVersion: Long?,
+    val firstInputPlanFormat: EqualizerProcessorFormat?,
+    val unexpectedExactBypassBufferCount: Long,
+    val framesUntilCompatiblePlanActive: Long,
+    val millisecondsUntilCompatiblePlanActive: Double
+)
 
 internal data class EqualizerBufferReuseSnapshot(
     val scratchCapacity: Int,
