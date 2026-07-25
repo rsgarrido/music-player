@@ -348,7 +348,7 @@ private fun ParametricFilterCard(
 }
 
 @Composable
-private fun ParametricFilterEditorDialog(
+internal fun ParametricFilterEditorDialog(
     original: ParametricFilter,
     unavailable: Boolean,
     onPreview: (ParametricFilter) -> Unit,

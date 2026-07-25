@@ -221,6 +221,50 @@ class AppPreferencesRepository private constructor(
         return preset
     }
 
+    /**
+     * Applies and/or saves an imported profile in one DataStore transaction.
+     * Existing Graphic, limiter, global-enable, and offload state is retained.
+     */
+    suspend fun importParametricEqualizerProfile(
+        curve: ParametricEqualizerState,
+        presetName: String? = null,
+        apply: Boolean
+    ): ParametricEqualizerPreset? {
+        var createdPreset: ParametricEqualizerPreset? = null
+        dataStore.edit { preferences ->
+            val current = decodeAppPreferences(preferences)
+                .equalizerPreferences
+            val currentParametric = current.parametricState
+            val source = curve.copy(
+                userPresets = currentParametric.userPresets
+            )
+            createdPreset = presetName?.let { name ->
+                ParametricEqualizerPresets.createUserPreset(
+                    name = name,
+                    state = source
+                )
+            }
+            val presets = currentParametric.userPresets +
+                listOfNotNull(createdPreset)
+            val parametric = if (apply) {
+                source.copy(userPresets = presets)
+            } else {
+                currentParametric.copy(userPresets = presets)
+            }
+            preferences.writeEqualizerPreferences(
+                current.copy(
+                    mode = if (apply) {
+                        EqualizerMode.PARAMETRIC
+                    } else {
+                        current.mode
+                    },
+                    parametricState = parametric
+                )
+            )
+        }
+        return createdPreset
+    }
+
     suspend fun renameParametricEqualizerPreset(
         presetId: String,
         newName: String

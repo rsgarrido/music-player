@@ -59,7 +59,18 @@ internal fun EqualizerScreen(
     actions: EqualizerUiActions,
     modifier: Modifier = Modifier
 ) {
+    if (state.importPreview != null) {
+        EqualizerImportPreviewScreen(
+            state = state,
+            actions = actions,
+            modifier = modifier
+        )
+        return
+    }
     var presetSelectorVisible by remember {
+        mutableStateOf(false)
+    }
+    var exportPresetSelectorVisible by remember {
         mutableStateOf(false)
     }
     var saveDialogVisible by remember {
@@ -168,6 +179,138 @@ internal fun EqualizerScreen(
                     }
                 )
             }
+        }
+
+        Text(
+            text = "Import and export",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(
+                start = 16.dp,
+                top = 12.dp
+            )
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(
+                horizontal = 16.dp,
+                vertical = 8.dp
+            )
+        ) {
+            OutlinedButton(
+                onClick = actions.onImportFromFile,
+                modifier = Modifier.semantics {
+                    contentDescription = "Import EQ from file"
+                }
+            ) {
+                Text("Import from file")
+            }
+            OutlinedButton(
+                onClick = actions.onPasteEqText,
+                modifier = Modifier.semantics {
+                    contentDescription = "Paste EQ text"
+                }
+            ) {
+                Text("Paste EQ text")
+            }
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            OutlinedButton(
+                onClick = actions.onExportCurrentEqText,
+                enabled = preferences.mode ==
+                    EqualizerMode.PARAMETRIC,
+                modifier = Modifier.semantics {
+                    contentDescription =
+                        "Export current Parametric EQ text"
+                }
+            ) {
+                Text("Export current EQ")
+            }
+            OutlinedButton(
+                onClick = actions.onCopyCurrentEqText,
+                enabled = preferences.mode ==
+                    EqualizerMode.PARAMETRIC,
+                modifier = Modifier.semantics {
+                    contentDescription =
+                        "Copy Parametric EQ text"
+                }
+            ) {
+                Text("Copy EQ text")
+            }
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(
+                horizontal = 16.dp,
+                vertical = 8.dp
+            )
+        ) {
+            OutlinedButton(
+                onClick = actions.onExportCurrentNative,
+                enabled = preferences.mode ==
+                    EqualizerMode.PARAMETRIC,
+                modifier = Modifier.semantics {
+                    contentDescription =
+                        "Export current native CDPlaya preset"
+                }
+            ) {
+                Text("Export native")
+            }
+            OutlinedButton(
+                onClick = {
+                    exportPresetSelectorVisible = true
+                },
+                enabled =
+                    state.parametricUserPresets.isNotEmpty(),
+                modifier = Modifier.semantics {
+                    contentDescription =
+                        "Export saved Parametric preset"
+                }
+            ) {
+                Text("Export preset")
+            }
+        }
+        Text(
+            text = if (preferences.mode == EqualizerMode.GRAPHIC) {
+                "Current export is unavailable in Graphic mode. " +
+                    "CDPlaya does not convert Graphic bands into " +
+                    "Parametric filters."
+            } else {
+                "Text export is Equalizer APO-compatible. Native " +
+                    ".cdpeq preserves automatic headroom, IDs, and " +
+                    "all stored parameters losslessly."
+            },
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        if (state.importInProgress) {
+            LinearProgressIndicator(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .semantics {
+                        contentDescription =
+                            "Reading EQ import"
+                    }
+            )
+        }
+        state.importMessage?.let { message ->
+            Text(
+                message,
+                color = if (
+                    message.startsWith("Couldn't")
+                ) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                modifier = Modifier.padding(
+                    horizontal = 16.dp,
+                    vertical = 4.dp
+                )
+            )
         }
 
         if (preferences.mode == EqualizerMode.GRAPHIC) {
@@ -606,6 +749,67 @@ internal fun EqualizerScreen(
             onDelete = { preset ->
                 presetSelectorVisible = false
                 deletePreset = preset
+            }
+        )
+    }
+    if (exportPresetSelectorVisible) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = {
+                exportPresetSelectorVisible = false
+            },
+            title = { Text("Export Parametric preset") },
+            text = {
+                Column(
+                    modifier = Modifier.verticalScroll(
+                        rememberScrollState()
+                    )
+                ) {
+                    state.parametricUserPresets.forEach { preset ->
+                        Row(
+                            verticalAlignment =
+                                Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                preset.name,
+                                modifier = Modifier.weight(1f)
+                            )
+                            TextButton(
+                                onClick = {
+                                    exportPresetSelectorVisible =
+                                        false
+                                    actions
+                                        .onExportParametricPresetText(
+                                            preset
+                                        )
+                                }
+                            ) {
+                                Text("Text")
+                            }
+                            TextButton(
+                                onClick = {
+                                    exportPresetSelectorVisible =
+                                        false
+                                    actions
+                                        .onExportParametricPresetNative(
+                                            preset
+                                        )
+                                }
+                            ) {
+                                Text("Native")
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        exportPresetSelectorVisible = false
+                    }
+                ) {
+                    Text("Cancel")
+                }
             }
         )
     }

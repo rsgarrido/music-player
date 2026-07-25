@@ -7,6 +7,7 @@ import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeBridge
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import com.example.cdplaya.player.equalizer.EqualizerMode
+import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
 import com.example.cdplaya.player.equalizer.dsp.EqualizerFilterSpec
 import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
 import com.example.cdplaya.player.equalizer.parametric.withGainDb
@@ -26,6 +27,130 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class EqualizerUiControllerTest {
+    @Test
+    fun importPreviewIsSilentAndReplacePublishesOneFinalConfiguration() =
+        runBlocking {
+            EqualizerRuntimeBridge.release()
+            val context =
+                ApplicationProvider.getApplicationContext<Context>()
+            val scope = CoroutineScope(
+                SupervisorJob() + Dispatchers.Unconfined
+            )
+            val repository = AppPreferencesRepository.create(
+                context = context,
+                scope = scope,
+                dataStoreFileName =
+                    "import_controller_${System.nanoTime()}.preferences_pb",
+                legacyStores = emptyList()
+            )
+            val controller = EqualizerUiController(
+                preferencesRepository = repository,
+                runtimeState =
+                    MutableStateFlow(EqualizerRuntimeState()),
+                scope = scope
+            )
+            try {
+                withTimeout(5_000) {
+                    controller.state.first { it.isLoaded }
+                }
+                repository.replaceEqualizerPreferences(
+                    EqualizerPreferencesState(
+                        enabled = true,
+                        mode = EqualizerMode.GRAPHIC,
+                        limiterEnabled = true,
+                        limiterCeilingDbfs = -2.0,
+                        bandGainsDb = List(10) { index ->
+                            index - 4.0
+                        }
+                    )
+                )
+                withTimeout(5_000) {
+                    controller.state.first {
+                        it.durablePreferences.enabled &&
+                            it.durablePreferences.limiterEnabled
+                    }
+                }
+                val versionBefore =
+                    EqualizerRuntimeBridge.requestedSnapshot().version
+                val durableBefore =
+                    repository.state.value.equalizerPreferences
+
+                controller.openImportPreview(
+                    "Preamp: -6 dB\n" +
+                        "Filter 1: ON PK Fc 1000 Hz " +
+                        "Gain 3 dB Q 1",
+                    "Headphones ParametricEQ.txt"
+                )
+                withTimeout(5_000) {
+                    controller.state.first {
+                        it.importPreview != null
+                    }
+                }
+
+                assertEquals(
+                    versionBefore,
+                    EqualizerRuntimeBridge
+                        .requestedSnapshot().version
+                )
+                assertEquals(
+                    durableBefore,
+                    repository.state.value.equalizerPreferences
+                )
+                controller.dismissImportPreview()
+                assertEquals(
+                    durableBefore,
+                    repository.state.value.equalizerPreferences
+                )
+
+                controller.openImportPreview(
+                    "Preamp: -6 dB\n" +
+                        "Filter 1: ON PK Fc 1000 Hz " +
+                        "Gain 3 dB Q 1",
+                    "Headphones.txt"
+                )
+                withTimeout(5_000) {
+                    controller.state.first {
+                        it.importPreview != null
+                    }
+                }
+                val beforeApply =
+                    EqualizerRuntimeBridge.requestedSnapshot().version
+                controller.replaceWithImportedProfile()
+                withTimeout(5_000) {
+                    controller.state.first {
+                        it.importPreview == null &&
+                            !it.importInProgress
+                    }
+                }
+                val requested =
+                    EqualizerRuntimeBridge.requestedSnapshot()
+
+                assertEquals(beforeApply + 1, requested.version)
+                assertEquals(EqualizerMode.PARAMETRIC, requested.mode)
+                assertEquals(1, requested.configuration.filters.size)
+                assertEquals(-6.0, requested.configuration.preampDb, 0.0)
+                assertTrue(requested.configuration.enabled)
+                assertTrue(requested.limiterConfiguration.enabled)
+
+                val durable = withTimeout(5_000) {
+                    repository.state.first {
+                        it.equalizerPreferences.mode ==
+                            EqualizerMode.PARAMETRIC
+                    }
+                }.equalizerPreferences
+                assertEquals(1, durable.parametricState.filters.size)
+                assertEquals(-6.0, durable.parametricState.preampDb, 0.0)
+                assertEquals(
+                    durableBefore.bandGainsDb,
+                    durable.bandGainsDb
+                )
+            } finally {
+                controller.release()
+                scope.cancel()
+                EqualizerRuntimeBridge.release()
+            }
+        }
+
     @Test
     fun parametricPreviewCancelCommitAndModeSwitchConverge() =
         runBlocking {
