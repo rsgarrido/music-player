@@ -15,6 +15,7 @@ data class AppBackup(
 
 @Serializable
 data class BackupPreferences(
+    val folderSelectionMode: String = "",
     val selectedLibraryFolders: List<String> = emptyList(),
     val selectedPlayerThemeId: String = "",
     val replayGainMode: String = "",

@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import android.net.Uri
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.LibraryFolder
+import com.example.cdplaya.data.FolderSelectionMode
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
@@ -106,6 +107,7 @@ internal fun MusicScreen(
     onUndoPlayNextSongsClick: (List<Song>) -> Unit,
     onUndoAddSongsToQueueClick: (List<Song>) -> Unit,
     libraryFolders: List<LibraryFolder>,
+    folderSelectionMode: FolderSelectionMode,
     selectedLibraryFolders: Set<String>,
     onLibraryFolderToggle: (String) -> Unit,
     onSelectAllLibraryFolders: () -> Unit,
@@ -485,6 +487,7 @@ internal fun MusicScreen(
                 queuedSongs = queuedSongs,
                 upcomingSongs = upcomingSongs,
                 libraryFolders = libraryFolders,
+                folderSelectionMode = folderSelectionMode,
                 selectedLibraryFolders = selectedLibraryFolders,
                 favoriteMembershipKeys = favoriteMembershipKeys,
                 unresolvedFavoriteCount = unresolvedFavoriteCount,

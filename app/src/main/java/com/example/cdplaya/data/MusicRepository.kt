@@ -2,9 +2,12 @@ package com.example.cdplaya.data
 
 import android.content.ContentUris
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import android.provider.MediaStore
+import android.util.Log
 import java.io.File
 import com.example.cdplaya.performance.PerformanceTraceNames
 import com.example.cdplaya.performance.tracePerformance
@@ -39,7 +42,11 @@ class MusicRepository(private val context: Context) {
                 .forEach(embeddedArtworkResolver::invalidate)
         }
         var albumArtByFolder: Map<String, Uri>? = null
+        var standaloneArtworkLookupMs = 0L
+        var embeddedArtworkExtractionMs = 0L
+        var embeddedArtworkExtractionCount = 0
         val artworkRepairKeys = mutableSetOf<String>()
+        val classificationStartedAt = SystemClock.elapsedRealtime()
         val result = tracePerformance(PerformanceTraceNames.LIBRARY_CLASSIFICATION) {
             LibraryRefreshEngine.refresh(
             cachedSongs = cachedSongs,
@@ -52,17 +59,39 @@ class MusicRepository(private val context: Context) {
                 requiresRepair
             },
             enrich = { indexSong ->
-                val folderArtwork = albumArtByFolder ?: getAlbumArtByFolderOrEmpty()
-                    .also { albumArtByFolder = it }
+                val folderArtwork = albumArtByFolder ?: run {
+                    val startedAt = SystemClock.elapsedRealtime()
+                    getAlbumArtByFolderOrEmpty().also {
+                        standaloneArtworkLookupMs += SystemClock.elapsedRealtime() - startedAt
+                        albumArtByFolder = it
+                    }
+                }
+                val embeddedStartedAt = SystemClock.elapsedRealtime()
+                val embeddedArtwork = embeddedArtworkResolver.resolve(indexSong)
+                embeddedArtworkExtractionMs +=
+                    SystemClock.elapsedRealtime() - embeddedStartedAt
+                embeddedArtworkExtractionCount += 1
                 indexSong.copy(
                     albumArtUri = selectArtwork(
-                        embedded = embeddedArtworkResolver.resolve(indexSong),
+                        embedded = embeddedArtwork,
                         folder = folderArtwork[indexSong.folderPath]
                     ),
                     artworkEnrichmentVersion = CURRENT_ARTWORK_ENRICHMENT_VERSION
                 )
             })
         }
+        debugTiming(
+            "classification elapsedMs=${SystemClock.elapsedRealtime() - classificationStartedAt} " +
+                "songs=${indexSongs.size}"
+        )
+        debugTiming(
+            "standalone-artwork elapsedMs=$standaloneArtworkLookupMs " +
+                "folders=${albumArtByFolder?.size ?: 0}"
+        )
+        debugTiming(
+            "embedded-metadata elapsedMs=$embeddedArtworkExtractionMs " +
+                "files=$embeddedArtworkExtractionCount"
+        )
         return result.copy(artworkRepairCount = artworkRepairKeys.size)
     }
 
@@ -83,6 +112,7 @@ class MusicRepository(private val context: Context) {
 
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
 
+        val queryStartedAt = SystemClock.elapsedRealtime()
         val query = context.contentResolver.query(
             collection,
             projection,
@@ -90,7 +120,11 @@ class MusicRepository(private val context: Context) {
             null,
             sortOrder
         )
+        debugTiming(
+            "audio-mediastore-query elapsedMs=${SystemClock.elapsedRealtime() - queryStartedAt}"
+        )
 
+        val mappingStartedAt = SystemClock.elapsedRealtime()
         query?.use { cursor ->
             val idColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.ID)
             val titleColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.TITLE)
@@ -172,6 +206,10 @@ class MusicRepository(private val context: Context) {
                 songs.add(song)
             }
         }
+        debugTiming(
+            "cursor-mapping elapsedMs=${SystemClock.elapsedRealtime() - mappingStartedAt} " +
+                "songs=${songs.size}"
+        )
         return if (query == null) null else songs
     }
 
@@ -264,6 +302,12 @@ class MusicRepository(private val context: Context) {
                 normalizedName == "front.png" ||
                 normalizedName == "album.jpg" ||
                 normalizedName == "album.png"
+    }
+
+    private fun debugTiming(message: String) {
+        if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            Log.d("LibraryTiming", message)
+        }
     }
 
 }

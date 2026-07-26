@@ -95,6 +95,7 @@ internal fun MusicRoute(
         snackbarHostState = snackbarHostState,
         modifier = modifier,
         libraryFolders = libraryUiState.folders,
+        folderSelectionMode = libraryUiState.folderSelectionMode,
         selectedLibraryFolders = libraryUiState.selectedFolders,
         favoriteMembershipKeys = libraryUiState.favoriteMembershipKeys,
         unresolvedFavoriteCount = libraryUiState.unresolvedFavoriteCount,

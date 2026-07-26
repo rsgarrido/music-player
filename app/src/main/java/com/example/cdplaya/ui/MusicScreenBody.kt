@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.LibraryFolder
+import com.example.cdplaya.data.FolderSelectionMode
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
@@ -87,6 +88,7 @@ internal fun MusicScreenBody(
     queuedSongs: List<Song>,
     upcomingSongs: List<Song>,
     libraryFolders: List<LibraryFolder>,
+    folderSelectionMode: FolderSelectionMode,
     selectedLibraryFolders: Set<String>,
     favoriteMembershipKeys: Set<String>,
     unresolvedFavoriteCount: Int,
@@ -199,6 +201,7 @@ internal fun MusicScreenBody(
         isFolderScreenVisible -> {
             FolderSelectionScreen(
                 libraryFolders = libraryFolders,
+                folderSelectionMode = folderSelectionMode,
                 selectedLibraryFolders = selectedLibraryFolders,
                 onBackClick = onFolderBackClick,
                 onFolderToggle = onLibraryFolderToggle,

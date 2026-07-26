@@ -17,6 +17,8 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.example.cdplaya.data.PlayerTheme
+import com.example.cdplaya.data.FolderSelection
+import com.example.cdplaya.data.FolderSelectionMode
 import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.equalizer.EqualizerMode
 import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
@@ -62,6 +64,7 @@ data class AppPreferencesState(
     val audioOffloadPreference: AudioOffloadPreference = AudioOffloadPreference.DISABLED,
     val equalizerPreferences: EqualizerPreferencesState =
         EqualizerPreferencesState(),
+    val folderSelectionMode: FolderSelectionMode = FolderSelectionMode.ALL,
     val selectedLibraryFolders: Set<String> = emptySet(),
     val songsViewMode: LibraryViewMode = LibraryViewMode.LIST,
     val albumsViewMode: LibraryViewMode = LibraryViewMode.LIST,
@@ -372,9 +375,14 @@ class AppPreferencesRepository private constructor(
         preferences.writeUserEqualizerPresets(userPresets)
     }
 
-    suspend fun setSelectedLibraryFolders(folders: Set<String>) = edit {
-        it[Keys.selectedLibraryFolders] = folders.toSet()
+    suspend fun setLibraryFolderSelection(selection: FolderSelection) = edit {
+        it[Keys.folderSelectionMode] = selection.mode.name
+        it[Keys.selectedLibraryFolders] = selection.customFolders.toSet()
     }
+
+    @Deprecated("Use setLibraryFolderSelection so an empty custom selection is unambiguous.")
+    suspend fun setSelectedLibraryFolders(folders: Set<String>) =
+        setLibraryFolderSelection(FolderSelection.fromStored(null, folders))
 
     suspend fun setLibraryView(
         category: LibraryViewCategory,
@@ -412,6 +420,7 @@ class AppPreferencesRepository private constructor(
         preferences.writeEqualizerPreferences(
             restored.equalizerPreferences
         )
+        preferences[Keys.folderSelectionMode] = restored.folderSelectionMode.name
         preferences[Keys.selectedLibraryFolders] = restored.selectedLibraryFolders.toSet()
         LibraryViewCategory.entries.forEach { category ->
             val (mode, columns) = restored.libraryView(category)
@@ -468,7 +477,13 @@ class AppPreferencesRepository private constructor(
     }
 }
 
-internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState = AppPreferencesState(
+internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState {
+    val storedFolders = preferences[Keys.selectedLibraryFolders]?.toSet().orEmpty()
+    val folderSelection = FolderSelection.fromStored(
+        storedMode = preferences[Keys.folderSelectionMode],
+        storedFolders = storedFolders
+    )
+    return AppPreferencesState(
     selectedPlayerTheme = PlayerTheme.fromId(preferences[Keys.selectedPlayerTheme]),
     playerThemeTokenOverrides = PlayerTheme.entries.associateWith { emptyOverrides() }
         .mapValues { (theme, _) ->
@@ -492,7 +507,8 @@ internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState
         preferences[Keys.audioOffloadPreference]
     ),
     equalizerPreferences = decodeEqualizerPreferences(preferences),
-    selectedLibraryFolders = preferences[Keys.selectedLibraryFolders]?.toSet().orEmpty(),
+    folderSelectionMode = folderSelection.mode,
+    selectedLibraryFolders = folderSelection.customFolders,
     songsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.songsViewMode]),
     albumsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.albumsViewMode]),
     artistsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.artistsViewMode]),
@@ -506,7 +522,8 @@ internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState
         preferences[Keys.artistsGridColumns] ?: LibraryGridColumns.DEFAULT
     ),
     isLoaded = true
-)
+    )
+}
 
 private fun emptyOverrides() = PlayerThemeTokenOverrides()
 
@@ -883,6 +900,7 @@ private object Keys {
     val limiterCeilingDbfs =
         doublePreferencesKey("equalizer_limiter_ceiling_dbfs")
     val selectedLibraryFolders = stringSetPreferencesKey("selected_folders")
+    val folderSelectionMode = stringPreferencesKey("folder_selection_mode")
     val songsViewMode = stringPreferencesKey("songs_view_mode")
     val albumsViewMode = stringPreferencesKey("albums_view_mode")
     val artistsViewMode = stringPreferencesKey("artists_view_mode")
