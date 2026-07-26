@@ -1,5 +1,10 @@
 package com.example.cdplaya.ui.settings
 
+import com.example.cdplaya.player.audio.AudioOutputUiState
+import com.example.cdplaya.player.equalizer.EqualizerMode
+import com.example.cdplaya.player.equalizer.EqualizerProcessorMeasuredConfiguration
+import com.example.cdplaya.player.equalizer.EqualizerProcessorPerformanceSnapshot
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeState
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -70,5 +75,102 @@ class DiagnosticsScreenTest {
         )
         assertFalse(summary.contains("true-peak", ignoreCase = true))
         assertFalse(summary.contains("Bluetooth address", ignoreCase = true))
+    }
+
+    @Test
+    fun copiedSummaryRetainsAStoppedProcessorTimingWindow() {
+        val summary = formatDiagnosticsSummary(
+            DiagnosticsSnapshot(
+                appVersionName = "1.0",
+                appVersionCode = 1,
+                librarySongCount = 0,
+                selectedFolderCount = 0,
+                playerTheme = "System",
+                replayGainMode = "Off",
+                isPlaybackConnected = true,
+                currentSongTitle = null,
+                currentSongArtist = null,
+                isPlaying = false,
+                currentPositionMs = 0,
+                durationMs = 0,
+                queueCount = 0,
+                upcomingCount = 0,
+                previousCount = 0,
+                forwardCount = 0,
+                waveformFileCount = 0,
+                waveformTotalBytes = 0L,
+                audioOutputUiState = AudioOutputUiState(
+                    equalizerRuntimeState =
+                        EqualizerRuntimeState(
+                            processorPerformanceTelemetryEnabled =
+                                false,
+                            processorPerformance =
+                                EqualizerProcessorPerformanceSnapshot(
+                                    windowSampleCount = 12,
+                                    totalCallCount = 12L,
+                                    totalFrameCount = 3_456L,
+                                    deadlineMissCount = 2L,
+                                    medianProcessingMillis = 0.125,
+                                    p90ProcessingMillis = 0.2,
+                                    p95ProcessingMillis = 0.25,
+                                    p99ProcessingMillis = 0.5,
+                                    maximumProcessingMillis = 1.0,
+                                    medianRealTimeFactor = 0.01,
+                                    p95RealTimeFactor = 0.02,
+                                    p99RealTimeFactor = 0.03,
+                                    maximumRealTimeFactor = 0.04,
+                                    firstMeasuredConfiguration =
+                                        EqualizerProcessorMeasuredConfiguration(
+                                            version = 22L,
+                                            mode = EqualizerMode.PARAMETRIC,
+                                            validFilterCount = 10,
+                                            sampleRateHz = 44_100,
+                                            channelCount = 2,
+                                            limiterActive = false
+                                        ),
+                                    lastMeasuredConfiguration =
+                                        EqualizerProcessorMeasuredConfiguration(
+                                            version = 23L,
+                                            mode = EqualizerMode.PARAMETRIC,
+                                            validFilterCount = 10,
+                                            sampleRateHz = 44_100,
+                                            channelCount = 2,
+                                            limiterActive = true
+                                        ),
+                                    measuredConfigurationChangeCount = 1L
+                                )
+                        )
+                )
+            )
+        )
+
+        assertTrue(
+            summary.contains(
+                "Equalizer processor timing enabled: false"
+            )
+        )
+        assertTrue(
+            summary.contains(
+                "Stopped (completed window retained)"
+            )
+        )
+        assertTrue(
+            summary.contains(
+                "calls/frames/deadline misses: 12 / 3456 / 2"
+            )
+        )
+        assertTrue(
+            summary.contains(
+                "0.125 / 0.200 / 0.250 / 0.500 / 1.000 ms"
+            )
+        )
+        assertTrue(summary.contains("0.0100 / 0.0200 / 0.0300 / 0.0400"))
+        assertTrue(
+            summary.contains(
+                "frozen timing configuration first/last/changes: " +
+                    "v22 Parametric, 10 valid filters, 44.1 kHz stereo, " +
+                    "limiter inactive / v23 Parametric"
+            )
+        )
     }
 }

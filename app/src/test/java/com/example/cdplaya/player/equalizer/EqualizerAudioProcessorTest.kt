@@ -612,7 +612,19 @@ class EqualizerAudioProcessorTest {
         )
         val processor = EqualizerAudioProcessor()
 
-        listOf(44_100, 96_000, 44_100).forEachIndexed {
+        val formatSequence = listOf(
+            44_100,
+            96_000,
+            44_100,
+            48_000,
+            96_000,
+            44_100,
+            96_000,
+            192_000,
+            48_000,
+            48_000
+        )
+        formatSequence.forEachIndexed {
                 index,
                 sampleRateHz ->
             val format = AudioFormat(
@@ -677,7 +689,7 @@ class EqualizerAudioProcessorTest {
             )
             if (index > 0) {
                 assertEquals(
-                    listOf(44_100, 96_000, 44_100)[index - 1],
+                    formatSequence[index - 1],
                     diagnostics.previousFormat?.sampleRateHz
                 )
             }
@@ -701,7 +713,7 @@ class EqualizerAudioProcessorTest {
                 diagnostics.flushEventSequence <
                     diagnostics.firstInputEventSequence
             )
-            if (index < 2) {
+            if (index < formatSequence.lastIndex) {
                 processor.queueEndOfStream()
                 processor.output
                 assertTrue(processor.isEnded)

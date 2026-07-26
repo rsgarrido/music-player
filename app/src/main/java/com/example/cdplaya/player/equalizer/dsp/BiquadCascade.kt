@@ -1,6 +1,13 @@
 package com.example.cdplaya.player.equalizer.dsp
 
 /**
+ * Double state below -480 dBFS is inaudible and far below Float PCM output
+ * precision. Flushing only filter history at this threshold prevents
+ * pathological subnormal arithmetic after long high-Q decays.
+ */
+internal const val BIQUAD_STATE_FLUSH_THRESHOLD = 1.0e-24
+
+/**
  * Direct Form I cascade with independent history for every channel and section.
  *
  * Coefficients and the four state values x1, x2, y1, and y2 are stored in
@@ -98,24 +105,37 @@ internal class BiquadCascade {
         var stateIndex = channelIndex * sectionCapacity
 
         while (sectionIndex < sectionCount) {
+            val stableInput = flushNearZero(sectionInput)
             val sectionOutput =
-                b0[sectionIndex] * sectionInput +
+                b0[sectionIndex] * stableInput +
                     b1[sectionIndex] * x1[stateIndex] +
                     b2[sectionIndex] * x2[stateIndex] -
                     a1[sectionIndex] * y1[stateIndex] -
                     a2[sectionIndex] * y2[stateIndex]
+            val stableOutput = flushNearZero(sectionOutput)
 
-            x2[stateIndex] = x1[stateIndex]
-            x1[stateIndex] = sectionInput
-            y2[stateIndex] = y1[stateIndex]
-            y1[stateIndex] = sectionOutput
+            x2[stateIndex] = flushNearZero(x1[stateIndex])
+            x1[stateIndex] = stableInput
+            y2[stateIndex] = flushNearZero(y1[stateIndex])
+            y1[stateIndex] = stableOutput
 
-            sectionInput = sectionOutput
+            sectionInput = stableOutput
             sectionIndex++
             stateIndex++
         }
 
         return sectionInput
+    }
+
+    private fun flushNearZero(value: Double): Double {
+        return if (
+            value > -BIQUAD_STATE_FLUSH_THRESHOLD &&
+            value < BIQUAD_STATE_FLUSH_THRESHOLD
+        ) {
+            0.0
+        } else {
+            value
+        }
     }
 
     fun reset() {

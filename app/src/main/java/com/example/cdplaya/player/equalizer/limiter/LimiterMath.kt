@@ -29,6 +29,7 @@ internal object LimiterMath {
         require(linearGain.isFinite() && linearGain >= 0.0) {
             "Limiter gain must be finite and non-negative"
         }
+        if (linearGain >= 1.0) return 0.0
         return (-linearToDbfs(linearGain.coerceAtMost(1.0)))
             .coerceAtLeast(0.0)
     }

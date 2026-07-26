@@ -16,7 +16,7 @@ import kotlin.math.min
  */
 internal class LookaheadLimiterEngine(
     preparedConfiguration: LimiterPreparedConfiguration,
-    private val telemetry: LimiterTelemetryAccumulator =
+    private val telemetry: LimiterTelemetryAccumulator? =
         LimiterTelemetryAccumulator()
 ) {
     private var prepared = requireEnabled(preparedConfiguration)
@@ -36,6 +36,11 @@ internal class LookaheadLimiterEngine(
     private var outputFrameCount = 0L
     private var currentGain = 1.0
     private var attackStep = 0.0
+    private var telemetryPostPeak = 0.0
+    private var telemetryMinimumGain = 1.0
+    private var telemetryFinalGain = 1.0
+    private var telemetryActiveFrames = 0L
+    private var telemetryReducedFrames = 0L
 
     val pendingFrameCount: Int
         get() = (receivedFrameCount - outputFrameCount)
@@ -50,6 +55,19 @@ internal class LookaheadLimiterEngine(
 
     val currentLinearGain: Double
         get() = currentGain
+
+    fun capacitySnapshot(): LookaheadLimiterCapacity {
+        return LookaheadLimiterCapacity(
+            ringFrameCapacity = ringFrameCapacity,
+            channelCount = channelCount,
+            audioDelayIdentity =
+                System.identityHashCode(audioDelay),
+            detectorIndicesIdentity =
+                System.identityHashCode(detectorIndices),
+            detectorPeaksIdentity =
+                System.identityHashCode(detectorPeaks)
+        )
+    }
 
     fun updateCeiling(configuration: LimiterPreparedConfiguration) {
         require(configuration.enabled) {
@@ -88,6 +106,9 @@ internal class LookaheadLimiterEngine(
             "Output range is invalid"
         }
 
+        beginOutputTelemetryBlock()
+        var preLimiterPeak = 0.0
+        var overRangeSampleCount = 0L
         var producedFrames = 0
         var frameIndex = 0
         while (frameIndex < frameCount) {
@@ -102,8 +123,12 @@ internal class LookaheadLimiterEngine(
             while (channelIndex < channelCount) {
                 val sample = input[sourceSampleOffset + channelIndex]
                 audioDelay[delaySampleOffset + channelIndex] = sample
-                telemetry.observePreLimiterSample(sample)
-                linkedPeak = max(linkedPeak, abs(sample.toDouble()))
+                val magnitude = abs(sample.toDouble())
+                linkedPeak = max(linkedPeak, magnitude)
+                preLimiterPeak = max(preLimiterPeak, magnitude)
+                if (magnitude > 1.0) {
+                    overRangeSampleCount++
+                }
                 channelIndex++
             }
             addDetectorPeak(sourceFrameIndex, linkedPeak)
@@ -120,6 +145,11 @@ internal class LookaheadLimiterEngine(
             }
             frameIndex++
         }
+        telemetry?.observePreLimiterBlock(
+            peakMagnitude = preLimiterPeak,
+            overRangeSamples = overRangeSampleCount
+        )
+        completeOutputTelemetryBlock()
         return producedFrames
     }
 
@@ -137,6 +167,7 @@ internal class LookaheadLimiterEngine(
         ) {
             "Drain output range is invalid"
         }
+        beginOutputTelemetryBlock()
         var producedFrames = 0
         while (
             producedFrames < maximumFrameCount &&
@@ -149,6 +180,7 @@ internal class LookaheadLimiterEngine(
             )
             producedFrames++
         }
+        completeOutputTelemetryBlock()
         return producedFrames
     }
 
@@ -234,11 +266,42 @@ internal class LookaheadLimiterEngine(
                 audioDelay[delaySampleOffset + channelIndex] *
                     currentGain.toFloat()
             output[outputSampleOffset + channelIndex] = limited
-            telemetry.observePostLimiterSample(limited)
+            telemetryPostPeak = max(
+                telemetryPostPeak,
+                abs(limited.toDouble())
+            )
             channelIndex++
         }
-        telemetry.observeLimiterFrame(currentGain)
+        telemetryMinimumGain =
+            min(telemetryMinimumGain, currentGain)
+        telemetryFinalGain = currentGain
+        telemetryActiveFrames++
+        if (
+            LimiterTelemetryAccumulator.isMeaningfullyReduced(
+                currentGain
+            )
+        ) {
+            telemetryReducedFrames++
+        }
         outputFrameCount++
+    }
+
+    private fun beginOutputTelemetryBlock() {
+        telemetryPostPeak = 0.0
+        telemetryMinimumGain = 1.0
+        telemetryFinalGain = currentGain
+        telemetryActiveFrames = 0L
+        telemetryReducedFrames = 0L
+    }
+
+    private fun completeOutputTelemetryBlock() {
+        telemetry?.observePostLimiterBlock(telemetryPostPeak)
+        telemetry?.observeLimiterBlock(
+            finalLinearGain = telemetryFinalGain,
+            minimumLinearGain = telemetryMinimumGain,
+            activeFrames = telemetryActiveFrames,
+            reducedFrames = telemetryReducedFrames
+        )
     }
 
     private fun addDetectorPeak(frameIndex: Long, peak: Double) {
@@ -287,3 +350,11 @@ internal class LookaheadLimiterEngine(
         return configuration
     }
 }
+
+internal data class LookaheadLimiterCapacity(
+    val ringFrameCapacity: Int,
+    val channelCount: Int,
+    val audioDelayIdentity: Int,
+    val detectorIndicesIdentity: Int,
+    val detectorPeaksIdentity: Int
+)

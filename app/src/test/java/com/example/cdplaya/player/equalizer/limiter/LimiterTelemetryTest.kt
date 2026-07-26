@@ -6,6 +6,57 @@ import org.junit.Test
 
 class LimiterTelemetryTest {
     @Test
+    fun boundedPublicationRetainsPeakAcrossMultipleProcessorCalls() {
+        val telemetry = LimiterTelemetryAccumulator()
+        val exchange = LimiterTelemetryExchange()
+        telemetry.beginProcessingCall()
+        telemetry.observePreLimiterSample(1.25f)
+        telemetry.observePostLimiterSample(0.9f)
+        telemetry.beginProcessingCall()
+        telemetry.observePreLimiterSample(0.2f)
+        telemetry.observePostLimiterSample(0.1f)
+
+        telemetry.publishTo(exchange)
+
+        val meter = exchange.snapshot().meter
+        assertEquals(
+            LimiterMath.linearToDbfs(1.25),
+            meter.preLimiterPeakDbfs,
+            1e-9
+        )
+        assertEquals(
+            LimiterMath.linearToDbfs(0.9),
+            meter.postLimiterPeakDbfs,
+            1e-6
+        )
+    }
+
+    @Test
+    fun exchangeRetainsMaximumWhenCoordinatorMissesAPublication() {
+        val exchange = LimiterTelemetryExchange()
+        exchange.publish(
+            LimiterMeterSnapshot(
+                preLimiterPeakDbfs = -1.0,
+                postLimiterPeakDbfs = -2.0,
+                maximumGainReductionDb = 5.0
+            )
+        )
+        exchange.publish(
+            LimiterMeterSnapshot(
+                preLimiterPeakDbfs = -12.0,
+                postLimiterPeakDbfs = -14.0,
+                maximumGainReductionDb = 1.0
+            )
+        )
+
+        val meter = exchange.snapshot().meter
+
+        assertEquals(-1.0, meter.preLimiterPeakDbfs, 0.0)
+        assertEquals(-2.0, meter.postLimiterPeakDbfs, 0.0)
+        assertEquals(5.0, meter.maximumGainReductionDb, 0.0)
+    }
+
+    @Test
     fun peaksCountsAndGainReductionAreMeasuredPrecisely() {
         val telemetry = LimiterTelemetryAccumulator()
         telemetry.beginProcessingCall()

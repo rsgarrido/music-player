@@ -28,6 +28,7 @@ data class EqualizerRuntimeState(
         EqualizerPlanApplicationMode.NONE,
     val lastTransitionFrameCount: Int = 0,
     val lastTransitionDurationMillis: Double = 0.0,
+    val lastTransitionSampleRateHz: Int? = null,
     val sampleRateHz: Int? = null,
     val channelCount: Int? = null,
     val validFilterCount: Int = 0,
@@ -35,6 +36,11 @@ data class EqualizerRuntimeState(
     val automaticHeadroomDb: Double = 0.0,
     val requiresDecodedPcm: Boolean = false,
     val scratchBufferGrowthCount: Int = 0,
+    val stalePreparedPlanDiscardCount: Long = 0L,
+    val processorPerformanceTelemetryEnabled: Boolean = false,
+    val processorPerformance:
+        EqualizerProcessorPerformanceSnapshot =
+        EqualizerProcessorPerformanceSnapshot(),
     val limiterRequestedEnabled: Boolean = false,
     val limiterEffectivelyActive: Boolean = false,
     val limiterCeilingDbfs: Double = -1.0,

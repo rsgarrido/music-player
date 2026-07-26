@@ -85,9 +85,12 @@ fun formatEqualizerPlanApplication(
         EqualizerPlanApplicationMode.CROSSFADE -> {
             String.format(
                 Locale.ROOT,
-                "%.2f ms crossfade (%d frames)",
+                "%.2f ms crossfade (%d frames at %s; last completed adoption)",
                 state.lastTransitionDurationMillis,
-                state.lastTransitionFrameCount
+                state.lastTransitionFrameCount,
+                state.lastTransitionSampleRateHz
+                    ?.let(::formatSampleRate)
+                    ?: "unknown rate"
             )
         }
         EqualizerPlanApplicationMode.DIRECT_AFTER_FLUSH ->

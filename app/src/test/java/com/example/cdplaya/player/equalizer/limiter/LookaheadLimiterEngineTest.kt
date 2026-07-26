@@ -167,4 +167,61 @@ class LookaheadLimiterEngineTest {
         }
         assertTrue(largestGainStep < 0.02)
     }
+
+    @Test
+    fun boundedTelemetryDoesNotChangeLimiterOutputOrDrainLength() {
+        val input = FloatArray(6_001 * 2) { index ->
+            when {
+                index % 97 == 0 -> 1.6f
+                index % 31 == 0 -> -1.2f
+                else -> 0.35f
+            }
+        }
+
+        val withTelemetry = render(input, LimiterTelemetryAccumulator())
+        val withoutTelemetry = render(input, null)
+
+        assertArrayEquals(withoutTelemetry, withTelemetry, 0.0f)
+    }
+
+    private fun render(
+        input: FloatArray,
+        telemetry: LimiterTelemetryAccumulator?
+    ): FloatArray {
+        val channelCount = 2
+        val prepared = LimiterPreparedConfiguration.prepare(
+            configuration = LimiterConfiguration(enabled = true),
+            sampleRateHz = 44_100,
+            channelCount = channelCount,
+            configurationVersion = 1L
+        )
+        val engine = LookaheadLimiterEngine(prepared, telemetry)
+        val output = FloatArray(input.size)
+        var inputFrame = 0
+        var outputFrame = 0
+        while (inputFrame < input.size / channelCount) {
+            val frameCount =
+                minOf(333, input.size / channelCount - inputFrame)
+            telemetry?.beginProcessingCall()
+            outputFrame += engine.process(
+                input = input,
+                inputOffset = inputFrame * channelCount,
+                frameCount = frameCount,
+                output = output,
+                outputOffset = outputFrame * channelCount
+            )
+            inputFrame += frameCount
+        }
+        while (!engine.isDrained) {
+            telemetry?.beginProcessingCall()
+            outputFrame += engine.drain(
+                output = output,
+                outputOffset = outputFrame * channelCount,
+                maximumFrameCount =
+                    input.size / channelCount - outputFrame
+            )
+        }
+        assertEquals(input.size / channelCount, outputFrame)
+        return output
+    }
 }

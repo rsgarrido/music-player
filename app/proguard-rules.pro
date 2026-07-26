@@ -19,3 +19,10 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# jaudiotagger includes optional Java SE artwork decoding methods. CDPlaya
+# reads embedded artwork bytes through Android APIs and never calls these
+# desktop-only paths.
+-dontwarn java.awt.image.BufferedImage
+-dontwarn javax.imageio.ImageIO
+-dontwarn javax.imageio.stream.ImageInputStream

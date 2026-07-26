@@ -46,6 +46,49 @@ class EqualizerTransitionTest {
     }
 
     @Test
+    fun sameVersionFormatFlushReplacesStaleCrossfadeTelemetry() {
+        val configuration = EqualizerConfiguration(
+            enabled = true,
+            preampDb = -3.0,
+            filters = emptyList()
+        )
+        val snapshot = EqualizerRuntimeBridge.requestConfiguration(
+            configuration = configuration,
+            automaticHeadroomEnabled = false
+        )
+        val at48Khz = plan(
+            version = snapshot.version,
+            configuration = configuration,
+            sampleRateHz = 48_000
+        )
+        val at44Khz = plan(
+            version = snapshot.version,
+            configuration = configuration,
+            sampleRateHz = 44_100
+        )
+
+        EqualizerRuntimeBridge.publishAppliedPlan(
+            at48Khz,
+            EqualizerPlanApplicationMode.CROSSFADE
+        )
+        EqualizerRuntimeBridge.publishTransitionStarted(960, 48_000)
+        EqualizerRuntimeBridge.publishTransitionInProgress(false)
+        EqualizerRuntimeBridge.publishAppliedPlan(
+            at44Khz,
+            EqualizerPlanApplicationMode.DIRECT_AFTER_FLUSH
+        )
+        EqualizerRuntimeBridge.publishStateForTest()
+
+        val state = EqualizerRuntimeBridge.state.value
+        assertEquals(
+            EqualizerPlanApplicationMode.DIRECT_AFTER_FLUSH,
+            state.lastPlanApplicationMode
+        )
+        assertEquals(0, state.lastTransitionFrameCount)
+        assertEquals(null, state.lastTransitionSampleRateHz)
+    }
+
+    @Test
     fun bypassToEqTransitionIsFrameSynchronousAndCompletesOnce() {
         val processor = bypassProcessor(channelCount = 2)
         establishCurrentStream(processor, channelCount = 2)
@@ -440,7 +483,8 @@ class EqualizerTransitionTest {
     private fun plan(
         version: Long,
         configuration: EqualizerConfiguration,
-        channelCount: Int = 1
+        channelCount: Int = 1,
+        sampleRateHz: Int = 48_000
     ): PreparedEqualizerPlan {
         return EqualizerPlanPreparer.prepare(
             EqualizerRuntimeSnapshot(
@@ -449,7 +493,7 @@ class EqualizerTransitionTest {
                 automaticHeadroomEnabled = false
             ),
             EqualizerProcessorFormat(
-                sampleRateHz = 48_000,
+                sampleRateHz = sampleRateHz,
                 channelCount = channelCount,
                 pcmEncoding = C.ENCODING_PCM_16BIT
             )
