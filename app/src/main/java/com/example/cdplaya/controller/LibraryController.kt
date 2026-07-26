@@ -778,7 +778,12 @@ class LibraryController(
             libraryScanCount += 1
             val scanNumber = libraryScanCount
             val repository = MusicRepository(applicationContext)
+            val cacheReadStartedAt = SystemClock.elapsedRealtime()
             val cachedSongs = libraryCacheRepository.getAllCachedSongs()
+            debugLibraryTiming(
+                "cache-read elapsedMs=${SystemClock.elapsedRealtime() - cacheReadStartedAt} " +
+                    "songs=${cachedSongs.size} scan=$scanNumber"
+            )
             val startedAt = SystemClock.elapsedRealtime()
             val refreshResult = tracePerformance(PerformanceTraceNames.LIBRARY_ENRICHMENT) {
                 repository.refreshLibrary(
@@ -802,7 +807,14 @@ class LibraryController(
             }
 
             if (refreshResult.successfulCompleteScan && refreshResult.requiresCacheWrite) {
+                val cacheWriteStartedAt = SystemClock.elapsedRealtime()
                 libraryCacheRepository.replaceCachedSongs(refreshResult.songs)
+                debugLibraryTiming(
+                    "cache-write elapsedMs=${SystemClock.elapsedRealtime() - cacheWriteStartedAt} " +
+                        "songs=${refreshResult.songs.size} scan=$scanNumber"
+                )
+            } else {
+                debugLibraryTiming("cache-write elapsedMs=0 songs=0 scan=$scanNumber skipped=true")
             }
             val folderDiscoveryStartedAt = SystemClock.elapsedRealtime()
             val libraryData = com.example.cdplaya.data.buildMusicLibraryData(
@@ -825,9 +837,20 @@ class LibraryController(
     private suspend fun loadCachedLibraryDataForPublication(
         folderSelection: FolderSelection
     ): MusicLibraryData = runLibraryScanOffMain {
+        val cacheReadStartedAt = SystemClock.elapsedRealtime()
         val cachedSongs = libraryCacheRepository.getAllCachedSongs()
+        debugLibraryTiming(
+            "cache-publication-read elapsedMs=" +
+                "${SystemClock.elapsedRealtime() - cacheReadStartedAt} songs=${cachedSongs.size}"
+        )
+        val cachePreparationStartedAt = SystemClock.elapsedRealtime()
         val publicationSongs = MusicRepository(applicationContext)
             .prepareCachedSongsForPublication(cachedSongs)
+        debugLibraryTiming(
+            "cache-publication-prepare elapsedMs=" +
+                "${SystemClock.elapsedRealtime() - cachePreparationStartedAt} " +
+                "songs=${publicationSongs.size}"
+        )
         com.example.cdplaya.data.buildMusicLibraryData(
             allSongs = publicationSongs,
             folderSelection = folderSelection

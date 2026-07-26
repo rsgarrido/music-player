@@ -89,7 +89,7 @@ class MusicRepository(private val context: Context) {
                 "folders=${albumArtByFolder?.size ?: 0}"
         )
         debugTiming(
-            "embedded-metadata elapsedMs=$embeddedArtworkExtractionMs " +
+            "embedded-artwork-extraction elapsedMs=$embeddedArtworkExtractionMs " +
                 "files=$embeddedArtworkExtractionCount"
         )
         return result.copy(artworkRepairCount = artworkRepairKeys.size)
