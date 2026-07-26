@@ -8,6 +8,7 @@ import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerState
 import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,6 +21,73 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class EqualizerAnalysisControllerTest {
+    @Test
+    fun identicalRuntimeUpdatesDoNotRestartAnalysis() =
+        runBlocking {
+            val calculationCount = AtomicInteger()
+            val calculationStarted = CountDownLatch(1)
+            val releaseCalculation = CountDownLatch(1)
+            val scope = CoroutineScope(
+                SupervisorJob() + Dispatchers.Default
+            )
+            val controller = EqualizerAnalysisController(
+                scope = scope,
+                calculate = { request ->
+                    calculationCount.incrementAndGet()
+                    calculationStarted.countDown()
+                    releaseCalculation.await(3, TimeUnit.SECONDS)
+                    EqualizerAnalysisResult(
+                        sampleRateHz =
+                            requireNotNull(
+                                request.currentSampleRateHz
+                            ),
+                        usesFallbackSampleRate = false
+                    )
+                }
+            )
+            val preferences = EqualizerPreferencesState()
+            try {
+                controller.submit(preferences, 44_100)
+                assertTrue(
+                    calculationStarted.await(
+                        3,
+                        TimeUnit.SECONDS
+                    )
+                )
+                repeat(100) {
+                    controller.submit(preferences, 44_100)
+                }
+                assertEquals(1, calculationCount.get())
+
+                releaseCalculation.countDown()
+                repeat(100) {
+                    if (
+                        controller.state.value.sampleRateHz ==
+                        44_100
+                    ) {
+                        return@repeat
+                    }
+                    delay(10)
+                }
+                controller.submit(preferences, 44_100)
+                delay(50)
+                assertEquals(1, calculationCount.get())
+
+                controller.submit(preferences, 96_000)
+                repeat(100) {
+                    if (calculationCount.get() == 2) {
+                        return@repeat
+                    }
+                    delay(10)
+                }
+                assertEquals(2, calculationCount.get())
+            } finally {
+                releaseCalculation.countDown()
+                controller.release()
+                scope.cancel()
+            }
+        }
+
     @Test
     fun staleCalculationCannotReplaceNewerPublishedResult() =
         runBlocking {
