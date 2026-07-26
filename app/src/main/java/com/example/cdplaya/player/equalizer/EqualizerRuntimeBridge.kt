@@ -1,11 +1,14 @@
 package com.example.cdplaya.player.equalizer
 
+import com.example.cdplaya.BuildConfig
 import com.example.cdplaya.player.equalizer.dsp.EqualizerConfiguration
 import com.example.cdplaya.player.equalizer.limiter.LIMITER_RELEASE_MILLISECONDS
 import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
 import com.example.cdplaya.player.equalizer.limiter.LimiterMath
 import com.example.cdplaya.player.equalizer.limiter.LimiterMeterSnapshot
 import com.example.cdplaya.player.equalizer.limiter.LimiterPreparedConfiguration
+import com.example.cdplaya.player.equalizer.limiter.LimiterTelemetryAccumulator
+import com.example.cdplaya.player.equalizer.limiter.LimiterTelemetryExchange
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
@@ -42,6 +45,8 @@ internal object EqualizerRuntimeBridge {
     private val latestRequestNanos = AtomicLong(0L)
     private val latestPreparedVersion = AtomicLong(-1L)
     private val latestPreparedNanos = AtomicLong(0L)
+    private val stalePreparedPlanDiscardCount =
+        AtomicLong(0L)
 
     private val processorConfigured = AtomicBoolean(false)
     private val processorBypassed = AtomicBoolean(true)
@@ -60,14 +65,25 @@ internal object EqualizerRuntimeBridge {
     private val limiterPrimed = AtomicBoolean(false)
     private val limiterReprimeCount = AtomicInteger(0)
     private val limiterMeterResetVersion = AtomicLong(0L)
-    private val limiterMeter =
-        AtomicReference(LimiterMeterSnapshot())
-    private val preLimiterPeakHold =
-        AtomicReference(LimiterPeakHold())
-    private val postLimiterPeakHold =
-        AtomicReference(LimiterPeakHold())
-    private val limiterMaximumHold =
-        AtomicReference(LimiterMaximumHold())
+    private val limiterTelemetryExchange =
+        LimiterTelemetryExchange()
+    @Volatile
+    private var observedLimiterTelemetrySequence = 0L
+    @Volatile
+    private var preLimiterPeakHold = LimiterPeakHold()
+    @Volatile
+    private var postLimiterPeakHold = LimiterPeakHold()
+    @Volatile
+    private var limiterMaximumHold = LimiterMaximumHold()
+    @Volatile
+    private var processorPerformanceTelemetry:
+        EqualizerProcessorPerformanceTelemetry? = null
+    private val processorPerformanceEnabled =
+        AtomicBoolean(false)
+    private val processorPerformanceResetVersion =
+        AtomicLong(0L)
+    private val retainedProcessorPerformanceSnapshot =
+        AtomicReference(EqualizerProcessorPerformanceSnapshot())
 
     private val _state = MutableStateFlow(EqualizerRuntimeState())
     val state: StateFlow<EqualizerRuntimeState> = _state.asStateFlow()
@@ -95,9 +111,16 @@ internal object EqualizerRuntimeBridge {
         preparedLimiterConfiguration.set(null)
         latestPreparedVersion.set(-1L)
         latestPreparedNanos.set(0L)
+        stalePreparedPlanDiscardCount.set(0L)
         comparisonSessionActive.set(false)
         comparisonBypassed.set(false)
         limiterMeterResetVersion.set(0L)
+        processorPerformanceEnabled.set(false)
+        processorPerformanceResetVersion.set(0L)
+        processorPerformanceTelemetry = null
+        retainedProcessorPerformanceSnapshot.set(
+            EqualizerProcessorPerformanceSnapshot()
+        )
         clearProcessorTelemetry()
         _state.value = EqualizerRuntimeState()
     }
@@ -157,7 +180,9 @@ internal object EqualizerRuntimeBridge {
         format: EqualizerProcessorFormat
     ): PreparedEqualizerProcessingPath {
         processorFormat.set(format)
-        while (true) {
+        var lastPreparedPath:
+            PreparedEqualizerProcessingPath? = null
+        repeat(MAXIMUM_SYNCHRONOUS_PREPARATION_ATTEMPTS) {
             val snapshot = requestedSnapshot.get()
             val existingPath = preparedPath.get()
             val existingLimiter =
@@ -186,6 +211,7 @@ internal object EqualizerRuntimeBridge {
                 channelCount = format.channelCount,
                 configurationVersion = snapshot.version
             )
+            lastPreparedPath = path
             if (
                 requestedSnapshot.get() === snapshot &&
                 processorFormat.get() == format
@@ -197,7 +223,12 @@ internal object EqualizerRuntimeBridge {
                 publishState()
                 return path
             }
+            stalePreparedPlanDiscardCount.incrementAndGet()
         }
+        // A continuously changing editor must not make Media3 configuration
+        // spin forever. The first-input gate will hold PCM until the existing
+        // coordinator publishes the newest matching plan.
+        return checkNotNull(lastPreparedPath)
     }
 
     fun latestCompatiblePath(
@@ -254,12 +285,17 @@ internal object EqualizerRuntimeBridge {
         plan: PreparedEqualizerPlan?,
         applicationMode: EqualizerPlanApplicationMode
     ) {
-        val previousVersion = appliedPlan.get()?.sourceSnapshotVersion
+        val previousPlan = appliedPlan.get()
+        val previousVersion = previousPlan?.sourceSnapshotVersion
         appliedPlan.set(plan)
         processorBypassed.set(plan?.bypassed ?: true)
         if (
             plan != null &&
-            plan.sourceSnapshotVersion != previousVersion
+            (
+                plan.sourceSnapshotVersion != previousVersion ||
+                    plan.processorFormat !=
+                    previousPlan?.processorFormat
+                )
         ) {
             latestAppliedVersion.set(plan.sourceSnapshotVersion)
             latestAppliedNanos.set(System.nanoTime())
@@ -302,58 +338,89 @@ internal object EqualizerRuntimeBridge {
     }
 
     fun publishLimiterMeterSnapshot(snapshot: LimiterMeterSnapshot) {
-        limiterMeter.set(snapshot)
-        val now = System.nanoTime()
-        updatePeakHold(
-            holder = preLimiterPeakHold,
-            newPeakDbfs = snapshot.preLimiterPeakDbfs,
-            nowNanos = now
-        )
-        updatePeakHold(
-            holder = postLimiterPeakHold,
-            newPeakDbfs = snapshot.postLimiterPeakDbfs,
-            nowNanos = now
-        )
-        if (snapshot.maximumGainReductionDb > 0.0) {
-            while (true) {
-                val previous = limiterMaximumHold.get()
-                val replacement = if (
-                    now - previous.timestampNanos >
-                    MAXIMUM_HOLD_NANOS ||
-                    snapshot.maximumGainReductionDb >= previous.reductionDb
-                ) {
-                    LimiterMaximumHold(
-                        reductionDb =
-                            snapshot.maximumGainReductionDb,
-                        timestampNanos = now
-                    )
-                } else {
-                    previous
-                }
-                if (
-                    replacement === previous ||
-                    limiterMaximumHold.compareAndSet(
-                        previous,
-                        replacement
-                    )
-                ) {
-                    break
-                }
-            }
-        }
+        limiterTelemetryExchange.publish(snapshot)
+    }
+
+    fun publishLimiterTelemetry(
+        accumulator: LimiterTelemetryAccumulator
+    ) {
+        accumulator.publishTo(limiterTelemetryExchange)
     }
 
     fun requestLimiterMeterReset() {
         limiterMeterResetVersion.incrementAndGet()
-        limiterMeter.set(LimiterMeterSnapshot())
-        preLimiterPeakHold.set(LimiterPeakHold())
-        postLimiterPeakHold.set(LimiterPeakHold())
-        limiterMaximumHold.set(LimiterMaximumHold())
+        limiterTelemetryExchange.reset()
+        observedLimiterTelemetrySequence = 0L
+        preLimiterPeakHold = LimiterPeakHold()
+        postLimiterPeakHold = LimiterPeakHold()
+        limiterMaximumHold = LimiterMaximumHold()
         publishState()
     }
 
     fun limiterMeterResetVersion(): Long =
         limiterMeterResetVersion.get()
+
+    fun setProcessorPerformanceTelemetryEnabled(enabled: Boolean) {
+        if (!BuildConfig.DEBUG) return
+        if (enabled) {
+            processorPerformanceEnabled.set(false)
+            resetProcessorPerformanceTelemetry()
+            processorPerformanceEnabled.set(true)
+        } else if (processorPerformanceEnabled.getAndSet(false)) {
+            val captured =
+                processorPerformanceTelemetry?.snapshot()
+            if (
+                captured != null &&
+                (
+                    captured.totalCallCount > 0L ||
+                        retainedProcessorPerformanceSnapshot.get()
+                            .totalCallCount == 0L
+                    )
+            ) {
+                retainedProcessorPerformanceSnapshot.set(captured)
+            }
+        }
+        publishState()
+    }
+
+    fun processorPerformanceTelemetryEnabled(): Boolean =
+        BuildConfig.DEBUG &&
+            processorPerformanceEnabled.get()
+
+    fun requestProcessorPerformanceTelemetryReset() {
+        if (!BuildConfig.DEBUG) return
+        resetProcessorPerformanceTelemetry()
+        publishState()
+    }
+
+    fun processorPerformanceTelemetryResetVersion(): Long =
+        processorPerformanceResetVersion.get()
+
+    internal fun performanceTelemetry():
+        EqualizerProcessorPerformanceTelemetry =
+        checkNotNull(processorPerformanceTelemetry) {
+            "Processor performance telemetry is not enabled"
+        }
+
+    internal fun performanceTelemetryIfEnabled():
+        EqualizerProcessorPerformanceTelemetry? {
+        if (
+            !BuildConfig.DEBUG ||
+            !processorPerformanceEnabled.get()
+        ) {
+            return null
+        }
+        return processorPerformanceTelemetry
+    }
+
+    private fun resetProcessorPerformanceTelemetry() {
+        processorPerformanceTelemetry =
+            EqualizerProcessorPerformanceTelemetry()
+        retainedProcessorPerformanceSnapshot.set(
+            EqualizerProcessorPerformanceSnapshot()
+        )
+        processorPerformanceResetVersion.incrementAndGet()
+    }
 
     fun clearProcessorTelemetry() {
         processorConfigured.set(false)
@@ -366,13 +433,16 @@ internal object EqualizerRuntimeBridge {
         lastTransitionFrameCount.set(0)
         lastTransitionSampleRateHz.set(0)
         scratchBufferGrowthCount.set(0)
+        stalePreparedPlanDiscardCount.set(0L)
         limiterEffectivelyActive.set(false)
         limiterPrimed.set(false)
         limiterReprimeCount.set(0)
-        limiterMeter.set(LimiterMeterSnapshot())
-        preLimiterPeakHold.set(LimiterPeakHold())
-        postLimiterPeakHold.set(LimiterPeakHold())
-        limiterMaximumHold.set(LimiterMaximumHold())
+        limiterTelemetryExchange.reset()
+        observedLimiterTelemetrySequence = 0L
+        preLimiterPeakHold = LimiterPeakHold()
+        postLimiterPeakHold = LimiterPeakHold()
+        limiterMaximumHold = LimiterMaximumHold()
+        processorPerformanceTelemetry?.reset()
     }
 
     internal fun coordinatorStartCount(): Int = coordinatorStartCount
@@ -463,6 +533,8 @@ internal object EqualizerRuntimeBridge {
                     preparedLimiterConfiguration.set(path.second)
                     preparedSnapshotVersion = snapshot.version
                     preparedFormat = format
+                } else {
+                    stalePreparedPlanDiscardCount.incrementAndGet()
                 }
             }
             publishState()
@@ -502,17 +574,39 @@ internal object EqualizerRuntimeBridge {
         } else {
             applied
         }
+        val limiterExchangeSnapshot =
+            limiterTelemetryExchange.snapshot()
+        val limiterMeter = limiterExchangeSnapshot.meter
+        updateLimiterHolds(
+            exchangeSequence = limiterExchangeSnapshot.sequence,
+            snapshot = limiterMeter
+        )
         val limiterIsActive = limiterEffectivelyActive.get()
         val displayedPreLimiterPeakDbfs = decayedPeakDbfs(
-            preLimiterPeakHold.get()
+            preLimiterPeakHold
         )
         val displayedPostLimiterPeakDbfs = if (limiterIsActive) {
-            decayedPeakDbfs(postLimiterPeakHold.get())
+            decayedPeakDbfs(postLimiterPeakHold)
         } else {
             // In bypass both labels describe the same signal point. Reusing one
             // visual hold prevents independent decay histories from implying
             // gain or attenuation that the processor did not apply.
             displayedPreLimiterPeakDbfs
+        }
+        val performanceEnabled =
+            processorPerformanceEnabled.get()
+        val performanceSnapshot = if (BuildConfig.DEBUG) {
+            if (performanceEnabled) {
+                checkNotNull(processorPerformanceTelemetry)
+                    .snapshot()
+                    .also(
+                        retainedProcessorPerformanceSnapshot::set
+                    )
+            } else {
+                retainedProcessorPerformanceSnapshot.get()
+            }
+        } else {
+            EqualizerProcessorPerformanceSnapshot()
         }
         val nextState = EqualizerRuntimeState(
             processorConfigured = processorConfigured.get(),
@@ -566,6 +660,8 @@ internal object EqualizerRuntimeBridge {
                     frameCount = transitionFrameCount,
                     sampleRateHz = transitionSampleRateHz
                 ),
+            lastTransitionSampleRateHz =
+                transitionSampleRateHz.takeIf { it > 0 },
             sampleRateHz = format?.sampleRateHz,
             channelCount = format?.channelCount,
             validFilterCount = diagnosticPlan?.validFilterCount ?: 0,
@@ -578,6 +674,12 @@ internal object EqualizerRuntimeBridge {
                     ?: 0.0,
             requiresDecodedPcm = requiresDecodedPcm,
             scratchBufferGrowthCount = scratchBufferGrowthCount.get(),
+            stalePreparedPlanDiscardCount =
+                stalePreparedPlanDiscardCount.get(),
+            processorPerformanceTelemetryEnabled =
+                performanceEnabled,
+            processorPerformance =
+                performanceSnapshot,
             limiterRequestedEnabled =
                 snapshot.limiterConfiguration.enabled,
             limiterEffectivelyActive = limiterIsActive,
@@ -596,17 +698,17 @@ internal object EqualizerRuntimeBridge {
             preLimiterPeakDbfs = displayedPreLimiterPeakDbfs,
             postLimiterPeakDbfs = displayedPostLimiterPeakDbfs,
             currentGainReductionDb =
-                limiterMeter.get().currentGainReductionDb,
+                limiterMeter.currentGainReductionDb,
             maximumRecentGainReductionDb =
                 recentMaximumGainReductionDb(),
             overRangeSampleCount =
-                limiterMeter.get().overRangeSampleCount,
+                limiterMeter.overRangeSampleCount,
             saturatedSampleCount =
-                limiterMeter.get().saturatedSampleCount,
+                limiterMeter.saturatedSampleCount,
             limiterActiveFrameCount =
-                limiterMeter.get().limiterActiveFrameCount,
+                limiterMeter.limiterActiveFrameCount,
             limiterReducedFrameCount =
-                limiterMeter.get().limiterReducedFrameCount,
+                limiterMeter.limiterReducedFrameCount,
             limiterReprimeCount = limiterReprimeCount.get()
         )
         if (_state.value != nextState) {
@@ -641,6 +743,8 @@ internal object EqualizerRuntimeBridge {
     }
 
     private const val NANOS_PER_MILLISECOND = 1_000_000L
+    private const val MAXIMUM_SYNCHRONOUS_PREPARATION_ATTEMPTS =
+        3
     private const val MAXIMUM_HOLD_NANOS =
         1_500L * NANOS_PER_MILLISECOND
     private const val METER_DECAY_DB_PER_SECOND = 18.0
@@ -658,54 +762,88 @@ internal object EqualizerRuntimeBridge {
             ).coerceAtLeast(LimiterMath.SILENCE_FLOOR_DBFS)
     }
 
-    private fun updatePeakHold(
-        holder: AtomicReference<LimiterPeakHold>,
-        newPeakDbfs: Double,
-        nowNanos: Long
+    private fun updateLimiterHolds(
+        exchangeSequence: Long,
+        snapshot: LimiterMeterSnapshot
     ) {
-        while (true) {
-            val previous = holder.get()
-            val decayedPrevious = if (
-                previous.timestampNanos <= 0L
-            ) {
-                LimiterMath.SILENCE_FLOOR_DBFS
-            } else {
-                (
-                    previous.peakDbfs -
-                        (
-                            nowNanos - previous.timestampNanos
-                            ).coerceAtLeast(0L) /
-                        1_000_000_000.0 *
-                        METER_DECAY_DB_PER_SECOND
-                    ).coerceAtLeast(
-                    LimiterMath.SILENCE_FLOOR_DBFS
+        if (
+            exchangeSequence == observedLimiterTelemetrySequence
+        ) {
+            return
+        }
+        observedLimiterTelemetrySequence = exchangeSequence
+        val now = System.nanoTime()
+        preLimiterPeakHold = updatedPeakHold(
+            previous = preLimiterPeakHold,
+            newPeakDbfs = snapshot.preLimiterPeakDbfs,
+            nowNanos = now
+        )
+        postLimiterPeakHold = updatedPeakHold(
+            previous = postLimiterPeakHold,
+            newPeakDbfs = snapshot.postLimiterPeakDbfs,
+            nowNanos = now
+        )
+        if (
+            snapshot.maximumGainReductionDb > 0.0 &&
+            (
+                now - limiterMaximumHold.timestampNanos >
+                    MAXIMUM_HOLD_NANOS ||
+                    snapshot.maximumGainReductionDb >=
+                    limiterMaximumHold.reductionDb
                 )
-            }
-            val replacement = LimiterPeakHold(
-                peakDbfs = maxOf(
-                    newPeakDbfs,
-                    decayedPrevious
-                ),
-                timestampNanos = nowNanos
+        ) {
+            limiterMaximumHold = LimiterMaximumHold(
+                reductionDb = snapshot.maximumGainReductionDb,
+                timestampNanos = now
             )
-            if (holder.compareAndSet(previous, replacement)) {
-                return
-            }
         }
     }
 
+    private fun updatedPeakHold(
+        previous: LimiterPeakHold,
+        newPeakDbfs: Double,
+        nowNanos: Long
+    ): LimiterPeakHold {
+        val decayedPrevious = if (
+            previous.timestampNanos <= 0L
+        ) {
+            LimiterMath.SILENCE_FLOOR_DBFS
+        } else {
+            (
+                previous.peakDbfs -
+                    (
+                        nowNanos - previous.timestampNanos
+                        ).coerceAtLeast(0L) /
+                    1_000_000_000.0 *
+                    METER_DECAY_DB_PER_SECOND
+                ).coerceAtLeast(
+                LimiterMath.SILENCE_FLOOR_DBFS
+            )
+        }
+        return LimiterPeakHold(
+            peakDbfs = maxOf(newPeakDbfs, decayedPrevious),
+            timestampNanos = nowNanos
+        )
+    }
+
     private fun recentMaximumGainReductionDb(): Double {
-        val hold = limiterMaximumHold.get()
+        val hold = limiterMaximumHold
         if (
             hold.timestampNanos <= 0L ||
             System.nanoTime() - hold.timestampNanos >
             MAXIMUM_HOLD_NANOS
         ) {
-            return limiterMeter.get().currentGainReductionDb
+            return limiterTelemetryExchange
+                .snapshot()
+                .meter
+                .currentGainReductionDb
         }
         return maxOf(
             hold.reductionDb,
-            limiterMeter.get().currentGainReductionDb
+            limiterTelemetryExchange
+                .snapshot()
+                .meter
+                .currentGainReductionDb
         )
     }
 

@@ -48,6 +48,9 @@ internal class EqualizerAudioProcessor(
     private var endOfStreamDraining = false
     private var limiterReprimeCount = 0
     private var observedMeterResetVersion = 0L
+    private var lastLimiterTelemetryPublishNanos = 0L
+    private var limiterTelemetryPublicationCount = 0L
+    private var observedPerformanceResetVersion = 0L
     private var transitionEventSequence = 0L
     private var configureEventSequence = 0L
     private var flushEventSequence = 0L
@@ -101,6 +104,10 @@ internal class EqualizerAudioProcessor(
         runtimeBridge.prepareForProcessorFormat(format)
         configurePreparationNanos =
             System.nanoTime() - preparationStartedNanos
+        runtimeBridge.performanceTelemetryIfEnabled()
+            ?.recordConfigurePreparation(
+                configurePreparationNanos
+            )
         runtimeBridge.publishProcessorConfigured(
             configured = true,
             bypassed = true
@@ -127,6 +134,7 @@ internal class EqualizerAudioProcessor(
         val frameCount = inputByteCount / frameSizeBytes
         val sampleCount = frameCount * format.channelCount
         applyPendingMeterReset()
+        applyPendingPerformanceReset()
         considerLatestPreparedConfiguration(format)
         if (
             firstInputPending &&
@@ -152,11 +160,30 @@ internal class EqualizerAudioProcessor(
         }
 
         if (inputByteCount == 0) return
+        val performanceTelemetry =
+            runtimeBridge.performanceTelemetryIfEnabled()
+        val processingStartedNanos = if (
+            performanceTelemetry != null
+        ) {
+            System.nanoTime()
+        } else {
+            0L
+        }
         recordFirstAcceptedInput(format, frameCount)
         val outputBuffer = outputBuffer(inputByteCount)
         if (isExactBypass()) {
             outputBuffer.put(inputBuffer)
             outputBuffer.flip()
+            recordPerformanceCall(
+                telemetry = performanceTelemetry,
+                startedNanos = processingStartedNanos,
+                frameCount = frameCount,
+                format = format,
+                exactBypass = true,
+                equalized = false,
+                transitioning = false,
+                limiterActive = false
+            )
             return
         }
 
@@ -227,6 +254,18 @@ internal class EqualizerAudioProcessor(
         )
         outputBuffer.flip()
         publishLimiterTelemetry()
+        recordPerformanceCall(
+            telemetry = performanceTelemetry,
+            startedNanos = processingStartedNanos,
+            frameCount = frameCount,
+            format = format,
+            exactBypass = false,
+            equalized = activeCurrentPath?.bypassed == false ||
+                activePendingPath?.bypassed == false,
+            transitioning = transitionState.isActive ||
+                activePendingPath != null,
+            limiterActive = activeLimiter != null
+        )
     }
 
     override fun onQueueEndOfStream() {
@@ -274,13 +313,24 @@ internal class EqualizerAudioProcessor(
         samples: FloatArray,
         sampleCount: Int
     ) {
+        var peakMagnitude = 0.0
+        var overRangeSampleCount = 0L
         var sampleIndex = 0
         while (sampleIndex < sampleCount) {
             val sample = samples[sampleIndex]
-            limiterTelemetry.observePreLimiterSample(sample)
-            limiterTelemetry.observePostLimiterSample(sample)
+            val magnitude = abs(sample.toDouble())
+            peakMagnitude =
+                kotlin.math.max(peakMagnitude, magnitude)
+            if (magnitude > 1.0) {
+                overRangeSampleCount++
+            }
             sampleIndex++
         }
+        limiterTelemetry.observePreLimiterBlock(
+            peakMagnitude = peakMagnitude,
+            overRangeSamples = overRangeSampleCount
+        )
+        limiterTelemetry.observePostLimiterBlock(peakMagnitude)
         limiterTelemetry.observeLimiterInactive()
     }
 
@@ -289,17 +339,21 @@ internal class EqualizerAudioProcessor(
         output: ByteBuffer,
         sampleCount: Int
     ) {
+        var saturatedSampleCount = 0L
         var sampleIndex = 0
         while (sampleIndex < sampleCount) {
             val sample = input[sampleIndex]
             if (abs(sample) > 1.0f) {
-                limiterTelemetry.observeSaturatedSample()
+                saturatedSampleCount++
             }
             output.putShort(
                 Pcm16SampleConversion.fromNormalizedFloat(sample)
             )
             sampleIndex++
         }
+        limiterTelemetry.observeSaturatedSamples(
+            saturatedSampleCount
+        )
     }
 
     private fun outputBuffer(requiredBytes: Int): ByteBuffer {
@@ -376,10 +430,19 @@ internal class EqualizerAudioProcessor(
         }
     }
 
-    private fun publishLimiterTelemetry() {
-        runtimeBridge.publishLimiterMeterSnapshot(
-            limiterTelemetry.snapshot()
-        )
+    private fun publishLimiterTelemetry(force: Boolean = false) {
+        val nowNanos = System.nanoTime()
+        if (
+            !force &&
+            lastLimiterTelemetryPublishNanos != 0L &&
+            nowNanos - lastLimiterTelemetryPublishNanos <
+            LIMITER_TELEMETRY_INTERVAL_NANOS
+        ) {
+            return
+        }
+        lastLimiterTelemetryPublishNanos = nowNanos
+        limiterTelemetryPublicationCount++
+        runtimeBridge.publishLimiterTelemetry(limiterTelemetry)
         publishLimiterProcessorState()
     }
 
@@ -397,9 +460,16 @@ internal class EqualizerAudioProcessor(
         if (resetVersion == observedMeterResetVersion) return
         observedMeterResetVersion = resetVersion
         limiterTelemetry.reset()
-        runtimeBridge.publishLimiterMeterSnapshot(
-            limiterTelemetry.snapshot()
-        )
+        publishLimiterTelemetry(force = true)
+    }
+
+    private fun applyPendingPerformanceReset() {
+        val resetVersion =
+            runtimeBridge
+                .processorPerformanceTelemetryResetVersion()
+        if (resetVersion == observedPerformanceResetVersion) return
+        observedPerformanceResetVersion = resetVersion
+        runtimeBridge.performanceTelemetry().reset()
     }
 
     private fun considerLatestPreparedConfiguration(
@@ -483,6 +553,8 @@ internal class EqualizerAudioProcessor(
             runtimeBridge.prepareForProcessorFormat(format)
         flushPreparationNanos =
             System.nanoTime() - preparationStartedNanos
+        runtimeBridge.performanceTelemetryIfEnabled()
+            ?.recordFlushPreparation(flushPreparationNanos)
         currentPath?.reset()
         runtimeBridge.publishAppliedPlan(
             plan = currentPath?.plan,
@@ -526,6 +598,9 @@ internal class EqualizerAudioProcessor(
         limiterReprimeCount = 0
         limiterTelemetry.reset()
         observedMeterResetVersion = 0L
+        lastLimiterTelemetryPublishNanos = 0L
+        limiterTelemetryPublicationCount = 0L
+        observedPerformanceResetVersion = 0L
         runtimeBridge.publishProcessorFormat(null)
         runtimeBridge.clearProcessorTelemetry()
     }
@@ -582,8 +657,11 @@ internal class EqualizerAudioProcessor(
             scratchBufferGrowthCount = scratchBufferGrowthCount,
             outputCapacity = outputCapacity,
             outputBufferGrowthCount = outputBufferGrowthCount,
+            limiterTelemetryPublicationCount =
+                limiterTelemetryPublicationCount,
             currentEngineCapacity = currentPath?.capacitySnapshot(),
-            pendingEngineCapacity = pendingPath?.capacitySnapshot()
+            pendingEngineCapacity = pendingPath?.capacitySnapshot(),
+            limiterCapacity = limiterEngine?.capacitySnapshot()
         )
     }
 
@@ -723,6 +801,36 @@ internal class EqualizerAudioProcessor(
         )
     }
 
+    private fun recordPerformanceCall(
+        telemetry: EqualizerProcessorPerformanceTelemetry?,
+        startedNanos: Long,
+        frameCount: Int,
+        format: EqualizerProcessorFormat,
+        exactBypass: Boolean,
+        equalized: Boolean,
+        transitioning: Boolean,
+        limiterActive: Boolean
+    ) {
+        if (telemetry == null) return
+        val measuredPlan =
+            pendingPath?.plan ?: currentPath?.plan
+        telemetry.recordProcessingCall(
+            durationNanos = System.nanoTime() - startedNanos,
+            frameCount = frameCount,
+            sampleRateHz = format.sampleRateHz,
+            exactBypass = exactBypass,
+            equalized = equalized,
+            transitioning = transitioning,
+            limiterActive = limiterActive,
+            configurationVersion =
+                measuredPlan?.sourceSnapshotVersion ?: -1L,
+            configurationMode = measuredPlan?.sourceMode,
+            validFilterCount =
+                measuredPlan?.validFilterCount ?: -1,
+            channelCount = format.channelCount
+        )
+    }
+
     private fun mixTransition(
         frameCount: Int,
         channelCount: Int
@@ -797,6 +905,8 @@ internal class EqualizerAudioProcessor(
         private val EMPTY_FLOAT_ARRAY = FloatArray(0)
         private const val DRAIN_CHUNK_FRAME_COUNT = 1_024
         private const val NANOS_PER_MILLISECOND = 1_000_000.0
+        private const val LIMITER_TELEMETRY_INTERVAL_NANOS =
+            20_000_000L
     }
 }
 
@@ -841,8 +951,11 @@ internal data class EqualizerBufferReuseSnapshot(
     val scratchBufferGrowthCount: Int,
     val outputCapacity: Int,
     val outputBufferGrowthCount: Int,
+    val limiterTelemetryPublicationCount: Long,
     val currentEngineCapacity:
         com.example.cdplaya.player.equalizer.dsp.EqualizerEngineCapacity?,
     val pendingEngineCapacity:
-        com.example.cdplaya.player.equalizer.dsp.EqualizerEngineCapacity?
+        com.example.cdplaya.player.equalizer.dsp.EqualizerEngineCapacity?,
+    val limiterCapacity:
+        com.example.cdplaya.player.equalizer.limiter.LookaheadLimiterCapacity?
 )

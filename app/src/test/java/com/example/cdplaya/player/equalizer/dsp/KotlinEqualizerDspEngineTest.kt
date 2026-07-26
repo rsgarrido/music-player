@@ -135,6 +135,46 @@ class KotlinEqualizerDspEngineTest {
     }
 
     @Test
+    fun highQDecayFlushesOnlyAfterReachingInaudibleState() {
+        val frameCount = 200_000
+        val input = FloatArray(frameCount)
+        input[0] = 1.0f
+        val output = FloatArray(frameCount)
+        val configuration = EqualizerConfiguration(
+            enabled = true,
+            preampDb = 0.0,
+            filters = listOf(
+                EqualizerFilterSpec.Peaking(
+                    frequencyHz = 1_000.0,
+                    gainDb = 12.0,
+                    q = 20.0
+                )
+            )
+        )
+
+        configuredEngine(configuration, 1)
+            .processInterleaved(
+                input,
+                0,
+                output,
+                0,
+                frameCount
+            )
+
+        val lastNonZeroIndex =
+            output.indexOfLast { sample -> sample != 0.0f }
+        assertTrue(lastNonZeroIndex > 0)
+        assertTrue(lastNonZeroIndex < frameCount - 1_000)
+        assertTrue(
+            kotlin.math.abs(output[lastNonZeroIndex]) <=
+                BIQUAD_STATE_FLUSH_THRESHOLD.toFloat() * 8.0f
+        )
+        output.takeLast(1_000).forEach { sample ->
+            assertEquals(0.0f, sample, 0.0f)
+        }
+    }
+
+    @Test
     fun oneShotAndSegmentedProcessingMatch() {
         val channelCount = 2
         val input = sineWave(

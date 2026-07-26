@@ -115,6 +115,7 @@ class AudioDiagnosticsFormatterTest {
                 EqualizerPlanApplicationMode.CROSSFADE,
             lastTransitionFrameCount = 882,
             lastTransitionDurationMillis = 20.0,
+            lastTransitionSampleRateHz = 44_100,
             planPreparationLatencyMillis = 7L,
             planApplicationLatencyMillis = 18L
         )
@@ -126,7 +127,8 @@ class AudioDiagnosticsFormatterTest {
         )
 
         assertEquals(
-            "20.00 ms crossfade (882 frames)",
+            "20.00 ms crossfade " +
+                "(882 frames at 44.1 kHz; last completed adoption)",
             formatEqualizerPlanApplication(crossfade)
         )
         assertEquals(

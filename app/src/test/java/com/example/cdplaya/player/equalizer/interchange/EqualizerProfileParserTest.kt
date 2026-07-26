@@ -1,6 +1,8 @@
 package com.example.cdplaya.player.equalizer.interchange
 
 import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
+import com.example.cdplaya.player.equalizer.parametric.gainDbOrNull
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -277,6 +279,38 @@ class EqualizerProfileParserTest {
         )
         assertTrue(invalid.hasBlockingDiagnostics)
         assertNotNull(invalid.declarations.single().diagnostics.single())
+    }
+
+    @Test
+    fun phaseFRealisticFixtureMapsToTenAudibleFilters() {
+        val fixture = listOf(
+            File("docs/performance/phase-f-realistic-profile.txt"),
+            File("../docs/performance/phase-f-realistic-profile.txt")
+        ).firstOrNull(File::isFile)
+        requireNotNull(fixture) {
+            "Phase F realistic profile fixture is missing."
+        }
+
+        val result = EqualizerProfileParser.parse(
+            fixture.readText(),
+            idFactory = sequenceIds()
+        )
+        val mapped = result.declarations.mapNotNull {
+            it.mappedFilter
+        }
+
+        assertFalse(result.hasBlockingDiagnostics)
+        assertEquals(10, result.declarations.size)
+        assertTrue(result.declarations.all {
+            it.status == ImportedFilterStatus.VALID
+        })
+        assertEquals(10, mapped.size)
+        assertTrue(mapped.all { it.enabled })
+        assertTrue(mapped.all {
+            it.gainDbOrNull?.let { gain -> gain != 0.0 } == true
+        })
+        assertTrue(mapped[0] is ParametricFilter.LowShelf)
+        assertTrue(mapped[4] is ParametricFilter.HighShelf)
     }
 
     private fun sequenceIds(): () -> String {

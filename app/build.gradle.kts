@@ -29,7 +29,7 @@ android {
             isDebuggable = false
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -41,6 +41,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 }
@@ -86,4 +87,28 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
     baselineProfile(project(":benchmark"))
+}
+
+tasks.withType<org.gradle.api.tasks.testing.Test>().configureEach {
+    val performanceEnabled = providers
+        .systemProperty("equalizer.performance")
+        .orElse("false")
+        .get()
+    val longRunEnabled = providers
+        .systemProperty("equalizer.longRun")
+        .orElse("false")
+        .get()
+    systemProperty(
+        "equalizer.performance",
+        performanceEnabled
+    )
+    systemProperty(
+        "equalizer.longRun",
+        longRunEnabled
+    )
+    testLogging {
+        showStandardStreams =
+            performanceEnabled.toBoolean() ||
+                longRunEnabled.toBoolean()
+    }
 }

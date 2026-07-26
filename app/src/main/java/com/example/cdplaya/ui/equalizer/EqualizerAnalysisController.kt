@@ -66,11 +66,25 @@ internal class EqualizerAnalysisController(
 
     private var analysisJob: Job? = null
     private var latestRequestVersion = 0L
+    private var hasSubmittedRequest = false
+    private var lastSubmittedPreferences:
+        EqualizerPreferencesState? = null
+    private var lastSubmittedSampleRateHz: Int? = null
 
     fun submit(
         preferences: EqualizerPreferencesState,
         currentSampleRateHz: Int?
     ) {
+        if (
+            hasSubmittedRequest &&
+            lastSubmittedPreferences == preferences &&
+            lastSubmittedSampleRateHz == currentSampleRateHz
+        ) {
+            return
+        }
+        hasSubmittedRequest = true
+        lastSubmittedPreferences = preferences
+        lastSubmittedSampleRateHz = currentSampleRateHz
         val requestVersion = ++latestRequestVersion
         val request = EqualizerAnalysisRequest(
             preferences = preferences,
@@ -91,6 +105,9 @@ internal class EqualizerAnalysisController(
     fun release() {
         analysisJob?.cancel()
         analysisJob = null
+        hasSubmittedRequest = false
+        lastSubmittedPreferences = null
+        lastSubmittedSampleRateHz = null
     }
 }
 

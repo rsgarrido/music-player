@@ -38,6 +38,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.R
+import com.example.cdplaya.BuildConfig
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.replaygain.ReplayGainMode
@@ -50,6 +51,8 @@ import com.example.cdplaya.player.audio.formatEqualizerProcessorFormat
 import com.example.cdplaya.player.audio.formatEqualizerPlanApplication
 import com.example.cdplaya.player.audio.formatEqualizerPlanLatency
 import com.example.cdplaya.player.audio.formatEqualizerStatus
+import com.example.cdplaya.player.equalizer.EqualizerRuntimeBridge
+import com.example.cdplaya.player.equalizer.EqualizerProcessorMeasuredConfiguration
 import com.example.cdplaya.player.waveform.WaveformCache
 import com.example.cdplaya.player.waveform.WaveformCacheStats
 import com.example.cdplaya.player.waveform.WaveformRepository
@@ -157,6 +160,66 @@ internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = b
                 "User offload preference allowed"
             }
     )
+    val performance = equalizer.processorPerformance
+    appendLine(
+        "Equalizer processor timing enabled: " +
+            equalizer.processorPerformanceTelemetryEnabled
+    )
+    appendLine(
+        "Equalizer processor timing state: " +
+            when {
+                equalizer.processorPerformanceTelemetryEnabled ->
+                    "Running"
+                performance.totalCallCount > 0L ->
+                    "Stopped (completed window retained)"
+                else -> "Stopped (no retained window)"
+            }
+    )
+    appendLine(
+        "Equalizer processor calls/frames/deadline misses: " +
+            "${performance.totalCallCount} / " +
+            "${performance.totalFrameCount} / " +
+            performance.deadlineMissCount
+    )
+    appendLine(
+        "Equalizer frozen timing configuration first/last/changes: " +
+            formatMeasuredConfiguration(
+                performance.firstMeasuredConfiguration
+            ) +
+            " / " +
+            formatMeasuredConfiguration(
+                performance.lastMeasuredConfiguration
+            ) +
+            " / " +
+            performance.measuredConfigurationChangeCount
+    )
+    appendLine(
+        "Equalizer stale prepared plans discarded: " +
+            equalizer.stalePreparedPlanDiscardCount
+    )
+    appendLine(
+        "Equalizer processor median/p90/p95/p99/max: " +
+            String.format(
+                Locale.ROOT,
+                "%.3f / %.3f / %.3f / %.3f / %.3f ms",
+                performance.medianProcessingMillis,
+                performance.p90ProcessingMillis,
+                performance.p95ProcessingMillis,
+                performance.p99ProcessingMillis,
+                performance.maximumProcessingMillis
+            )
+    )
+    appendLine(
+        "Equalizer processor median/p95/p99/max real-time factor: " +
+            String.format(
+                Locale.ROOT,
+                "%.4f / %.4f / %.4f / %.4f",
+                performance.medianRealTimeFactor,
+                performance.p95RealTimeFactor,
+                performance.p99RealTimeFactor,
+                performance.maximumRealTimeFactor
+            )
+    )
     appendLine(
         "Limiter requested/active/primed: " +
             "${equalizer.limiterRequestedEnabled} / " +
@@ -218,6 +281,33 @@ internal fun formatDiagnosticsSummary(snapshot: DiagnosticsSnapshot): String = b
     appendLine("Waveform cache: ${snapshot.waveformFileCount} files, ${snapshot.waveformTotalBytes} bytes")
     appendLine("Waveform format: ${WaveformCache.CACHE_FORMAT_VERSION}")
     append("Waveform buckets: ${WaveformRepository.DEFAULT_ANALYZED_BAR_COUNT}")
+}
+
+private fun formatMeasuredConfiguration(
+    configuration: EqualizerProcessorMeasuredConfiguration?
+): String {
+    configuration ?: return "None"
+    val mode = configuration.mode.name
+        .lowercase()
+        .replaceFirstChar(Char::uppercase)
+    val sampleRate = String.format(
+        Locale.ROOT,
+        "%.1f kHz",
+        configuration.sampleRateHz / 1_000.0
+    )
+    val channels = when (configuration.channelCount) {
+        1 -> "mono"
+        2 -> "stereo"
+        else -> "${configuration.channelCount} channels"
+    }
+    val limiter = if (configuration.limiterActive) {
+        "limiter active"
+    } else {
+        "limiter inactive"
+    }
+    return "v${configuration.version} $mode, " +
+        "${configuration.validFilterCount} valid filters, " +
+        "$sampleRate $channels, $limiter"
 }
 
 @Composable
@@ -377,6 +467,136 @@ internal fun DiagnosticsScreen(
             "Equalizer scratch growth",
             equalizer.scratchBufferGrowthCount.toString()
         )
+        DiagnosticValue(
+            "Stale prepared plans discarded",
+            equalizer.stalePreparedPlanDiscardCount.toString()
+        )
+        if (BuildConfig.DEBUG) {
+            val processorPerformance =
+                equalizer.processorPerformance
+            val hasProcessorPerformance =
+                equalizer
+                    .processorPerformanceTelemetryEnabled ||
+                    processorPerformance.totalCallCount > 0L
+            DiagnosticValue(
+                "Processor timing",
+                when {
+                    equalizer
+                        .processorPerformanceTelemetryEnabled ->
+                        "Running (explicit diagnostics opt-in)"
+                    processorPerformance.totalCallCount > 0L ->
+                        "Stopped (completed window retained)"
+                    else -> "Stopped (no retained window)"
+                }
+            )
+            if (hasProcessorPerformance) {
+                DiagnosticValue(
+                    "Processor window / calls / frames",
+                    "${processorPerformance.windowSampleCount} / " +
+                        "${processorPerformance.totalCallCount} / " +
+                        processorPerformance.totalFrameCount
+                )
+                DiagnosticValue(
+                    "Processor median / p90 / p95 / p99 / max",
+                    String.format(
+                        Locale.ROOT,
+                        "%.3f / %.3f / %.3f / %.3f / %.3f ms",
+                        processorPerformance.medianProcessingMillis,
+                        processorPerformance.p90ProcessingMillis,
+                        processorPerformance.p95ProcessingMillis,
+                        processorPerformance.p99ProcessingMillis,
+                        processorPerformance.maximumProcessingMillis
+                    )
+                )
+                DiagnosticValue(
+                    "Processor median / p95 / p99 / max RTF",
+                    String.format(
+                        Locale.ROOT,
+                        "%.4f / %.4f / %.4f / %.4f",
+                        processorPerformance.medianRealTimeFactor,
+                        processorPerformance.p95RealTimeFactor,
+                        processorPerformance.p99RealTimeFactor,
+                        processorPerformance.maximumRealTimeFactor
+                    )
+                )
+                DiagnosticValue(
+                    "Processor deadline misses",
+                    processorPerformance.deadlineMissCount.toString()
+                )
+                DiagnosticValue(
+                    "Processor bypass / EQ / transition / limiter calls",
+                    "${processorPerformance.exactBypassCallCount} / " +
+                        "${processorPerformance.equalizedCallCount} / " +
+                        "${processorPerformance.transitionCallCount} / " +
+                        processorPerformance.limiterCallCount
+                )
+                DiagnosticValue(
+                    "Processor configure / flush preparation",
+                    String.format(
+                        Locale.ROOT,
+                        "%.3f / %.3f ms",
+                        processorPerformance.configurePreparationMillis,
+                        processorPerformance.flushPreparationMillis
+                    )
+                )
+                DiagnosticValue(
+                    "Processor configure / synchronous format preparations",
+                    "${processorPerformance.configurePreparationCount} / " +
+                        processorPerformance
+                            .synchronousFormatPreparationCount
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = 16.dp,
+                        vertical = 4.dp
+                    ),
+                horizontalArrangement =
+                    Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = {
+                        EqualizerRuntimeBridge
+                            .setProcessorPerformanceTelemetryEnabled(
+                                !equalizer
+                                    .processorPerformanceTelemetryEnabled
+                            )
+                    },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        if (
+                            equalizer
+                                .processorPerformanceTelemetryEnabled
+                        ) {
+                            "Stop timing"
+                        } else {
+                            "Start timing"
+                        }
+                    )
+                }
+                OutlinedButton(
+                    onClick = {
+                        EqualizerRuntimeBridge
+                            .requestProcessorPerformanceTelemetryReset()
+                    },
+                    enabled =
+                        equalizer
+                            .processorPerformanceTelemetryEnabled ||
+                            processorPerformance.totalCallCount > 0L,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Reset timing")
+                }
+            }
+        } else {
+            DiagnosticValue(
+                "Processor timing",
+                "Unavailable in release builds"
+            )
+        }
         DiagnosticValue(
             "Limiter requested / active / primed",
             "${equalizer.limiterRequestedEnabled} / " +
