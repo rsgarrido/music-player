@@ -13,6 +13,7 @@ import com.example.cdplaya.data.ListeningHistoryEntry
 import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.LibraryCacheRepository
 import com.example.cdplaya.data.MusicLibraryData
+import com.example.cdplaya.data.MediaLibraryAccessException
 import com.example.cdplaya.data.stableKey
 import com.example.cdplaya.data.MusicRepository
 import com.example.cdplaya.data.Playlist
@@ -38,9 +39,11 @@ import com.example.cdplaya.player.PlaybackController
 import com.example.cdplaya.player.PlaybackLibraryBridge
 import com.example.cdplaya.performance.PerformanceTraceNames
 import com.example.cdplaya.performance.tracePerformance
+import com.example.cdplaya.mediaaccess.LibraryPermissionGate
 import com.example.cdplaya.ui.state.LibraryUiState
 import com.example.cdplaya.ui.state.libraryUiState
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -64,13 +67,18 @@ internal class LibraryPublicationTracker {
         lastSnapshot = snapshot
         return true
     }
+
+    fun reset() {
+        lastSnapshot = null
+    }
 }
 
 class LibraryController(
     context: Context,
     private val appDatabase: AppDatabase,
     private val playbackController: PlaybackController,
-    private val coroutineScope: CoroutineScope
+    private val coroutineScope: CoroutineScope,
+    private val onMediaAccessFailure: () -> Unit = {}
 ) {
     private val applicationContext = context.applicationContext
 
@@ -90,6 +98,7 @@ class LibraryController(
     private var libraryPublishCount = 0L
     private val publicationTracker = LibraryPublicationTracker()
     private val libraryScanMutex = Mutex()
+    private val permissionGate = LibraryPermissionGate()
 
     internal fun createBackupRepository(): BackupRepository = BackupRepository(
         context = applicationContext,
@@ -140,9 +149,30 @@ class LibraryController(
         loadPlaylists()
     }
 
+    fun setMediaAccessGranted(granted: Boolean): Boolean {
+        val changed = permissionGate.updateAccess(granted)
+        if (!changed) return false
+        if (!granted) {
+            refreshJob?.cancel()
+            reconciliationJob?.cancel()
+            publicationTracker.reset()
+            updateState {
+                copy(
+                    songs = emptyList(),
+                    folders = emptyList(),
+                    recentlyAddedSongs = emptyList(),
+                    isLoading = false,
+                    isRefreshing = false,
+                    errorMessage = null
+                )
+            }
+            PlaybackLibraryBridge.updateSongs(emptyList())
+        }
+        return true
+    }
+
     fun loadSongs() {
-        refreshJob?.cancel()
-        refreshJob = coroutineScope.launch {
+        launchProtectedRefresh { scanToken ->
             val savedSelectedFolders = appPreferencesRepository.awaitLoadedState().selectedLibraryFolders
             tracePerformance(PerformanceTraceNames.PREFERENCES_READY) { Unit }
             selectedLibraryFolders = savedSelectedFolders
@@ -154,21 +184,42 @@ class LibraryController(
             if (hasCachedSongs) {
                 val cachedLibraryData = loadCachedLibraryDataForPublication(savedSelectedFolders)
 
-                publishLibraryData(
-                    libraryData = cachedLibraryData,
-                    reconcilePlayback = false,
-                    traceName = PerformanceTraceNames.CACHE_FIRST_PUBLICATION
-                )
+                if (permissionGate.isCurrent(scanToken)) {
+                    publishLibraryData(
+                        libraryData = cachedLibraryData,
+                        reconcilePlayback = false,
+                        traceName = PerformanceTraceNames.CACHE_FIRST_PUBLICATION
+                    )
+                }
             }
 
             val freshLibraryData = withContext(Dispatchers.IO) {
-                scanFreshLibraryAndUpdateCache(savedSelectedFolders)
+                scanFreshLibraryAndUpdateCache(savedSelectedFolders, scanToken = scanToken)
             }
 
-            publishLibraryData(
-                libraryData = freshLibraryData,
-                reconcilePlayback = hasCachedSongs
-            )
+            if (permissionGate.isCurrent(scanToken)) {
+                publishLibraryData(
+                    libraryData = freshLibraryData,
+                    reconcilePlayback = hasCachedSongs
+                )
+            }
+        }
+    }
+
+    fun refreshArtwork() {
+        val idsToRefresh = songs.mapTo(mutableSetOf(), Song::id)
+        if (idsToRefresh.isEmpty()) return
+        launchProtectedRefresh { scanToken ->
+            val libraryData = withContext(Dispatchers.IO) {
+                scanFreshLibraryAndUpdateCache(
+                    selectedFolders = selectedLibraryFolders,
+                    forceArtworkRefreshIds = idsToRefresh,
+                    scanToken = scanToken
+                )
+            }
+            if (permissionGate.isCurrent(scanToken)) {
+                publishLibraryData(libraryData, reconcilePlayback = true)
+            }
         }
     }
 
@@ -209,8 +260,7 @@ class LibraryController(
         originalSong: Song,
         editedTags: EditableSongTags
     ) {
-        refreshJob?.cancel()
-        refreshJob = coroutineScope.launch {
+        launchProtectedRefresh { scanToken ->
             val updatedUserData = withContext(Dispatchers.IO) {
                 favoritesRepository.updateSongReferenceAfterTagEdit(
                     originalSong = originalSong,
@@ -239,10 +289,12 @@ class LibraryController(
             val libraryData = withContext(Dispatchers.IO) {
                 scanFreshLibraryAndUpdateCache(
                     selectedFolders = selectedLibraryFolders,
-                    forceArtworkRefreshIds = setOf(originalSong.id)
+                    forceArtworkRefreshIds = setOf(originalSong.id),
+                    scanToken = scanToken
                 )
             }
 
+            if (!permissionGate.isCurrent(scanToken)) return@launchProtectedRefresh
             favoriteMembershipKeys = updatedFavoriteMembershipKeys
             playlists = updatedPlaylists
 
@@ -544,8 +596,7 @@ class LibraryController(
     }
 
     private fun reloadSongsAfterFolderChange() {
-        refreshJob?.cancel()
-        refreshJob = coroutineScope.launch {
+        launchProtectedRefresh { scanToken ->
             val hasCachedSongs = withContext(Dispatchers.IO) {
                 libraryCacheRepository.hasCachedSongs()
             }
@@ -554,20 +605,69 @@ class LibraryController(
                 val cachedLibraryData =
                     loadCachedLibraryDataForPublication(selectedLibraryFolders)
 
-                publishLibraryData(
-                    libraryData = cachedLibraryData,
-                    reconcilePlayback = true
-                )
+                if (permissionGate.isCurrent(scanToken)) {
+                    publishLibraryData(
+                        libraryData = cachedLibraryData,
+                        reconcilePlayback = true
+                    )
+                }
             }
 
             val freshLibraryData = withContext(Dispatchers.IO) {
-                scanFreshLibraryAndUpdateCache(selectedLibraryFolders)
+                scanFreshLibraryAndUpdateCache(
+                    selectedFolders = selectedLibraryFolders,
+                    scanToken = scanToken
+                )
             }
 
-            publishLibraryData(
-                libraryData = freshLibraryData,
-                reconcilePlayback = true
+            if (permissionGate.isCurrent(scanToken)) {
+                publishLibraryData(
+                    libraryData = freshLibraryData,
+                    reconcilePlayback = true
+                )
+            }
+        }
+    }
+
+    private fun launchProtectedRefresh(block: suspend (scanToken: Long) -> Unit) {
+        val scanToken = permissionGate.tokenOrNull() ?: return
+        refreshJob?.cancel()
+        updateState {
+            copy(
+                isLoading = songs.isEmpty(),
+                isRefreshing = songs.isNotEmpty(),
+                errorMessage = null
             )
+        }
+        refreshJob = coroutineScope.launch {
+            try {
+                block(scanToken)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: MediaLibraryAccessException) {
+                if (permissionGate.isCurrent(scanToken)) {
+                    updateState {
+                        copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            errorMessage = "Audio access is no longer available."
+                        )
+                    }
+                    onMediaAccessFailure()
+                }
+            } catch (exception: Exception) {
+                if (permissionGate.isCurrent(scanToken)) {
+                    updateState {
+                        copy(
+                            isLoading = false,
+                            isRefreshing = false,
+                            errorMessage = exception.message
+                                ?.let { "Library query failed: $it" }
+                                ?: "Library query failed."
+                        )
+                    }
+                }
+            }
         }
     }
 
@@ -633,9 +733,11 @@ class LibraryController(
 
     private suspend fun scanFreshLibraryAndUpdateCache(
         selectedFolders: Set<String>,
-        forceArtworkRefreshIds: Set<Long> = emptySet()
+        forceArtworkRefreshIds: Set<Long> = emptySet(),
+        scanToken: Long
     ): MusicLibraryData = runLibraryScanOffMain {
         libraryScanMutex.withLock {
+            if (!permissionGate.isCurrent(scanToken)) throw CancellationException()
             val repository = MusicRepository(applicationContext)
             val cachedSongs = libraryCacheRepository.getAllCachedSongs()
             val startedAt = SystemClock.elapsedRealtime()
@@ -645,6 +747,7 @@ class LibraryController(
                     forceArtworkRefreshIds = forceArtworkRefreshIds
                 )
             }
+            if (!permissionGate.isCurrent(scanToken)) throw CancellationException()
             lastLibraryRefreshResult = refreshResult
 
             if (applicationContext.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {

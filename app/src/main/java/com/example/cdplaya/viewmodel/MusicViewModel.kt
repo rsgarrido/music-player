@@ -42,6 +42,8 @@ import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
@@ -212,11 +214,17 @@ class MusicViewModel(
         }
     )
 
+    private val _mediaAccessFailures = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val mediaAccessFailures = _mediaAccessFailures.asSharedFlow()
+
     private val libraryController = LibraryController(
         context = appContext,
         appDatabase = appDatabase,
         playbackController = playbackController,
-        coroutineScope = viewModelScope
+        coroutineScope = viewModelScope,
+        onMediaAccessFailure = {
+            _mediaAccessFailures.tryEmit(Unit)
+        }
     )
 
     val libraryUiState = libraryController.uiState
@@ -468,6 +476,20 @@ class MusicViewModel(
 
     fun loadSongs() {
         libraryController.loadSongs()
+    }
+
+    fun onMediaAccessGranted() {
+        if (libraryController.setMediaAccessGranted(true)) {
+            libraryController.loadSongs()
+        }
+    }
+
+    fun onMediaAccessRevoked() {
+        libraryController.setMediaAccessGranted(false)
+    }
+
+    fun refreshArtwork() {
+        libraryController.refreshArtwork()
     }
 
     fun savePlayerState() {

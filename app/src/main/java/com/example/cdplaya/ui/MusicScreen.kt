@@ -59,12 +59,18 @@ import com.example.cdplaya.ui.tageditor.DiscardTagChangesDialog
 import com.example.cdplaya.ui.tageditor.TagEditorScreen
 import com.example.cdplaya.ui.tageditor.rememberTagEditorActions
 import kotlinx.coroutines.flow.StateFlow
+import com.example.cdplaya.mediaaccess.MediaAccessState
 
 
 @Composable
 internal fun MusicScreen(
     songs: List<Song>,
-    permissionGranted: Boolean,
+    mediaAccessState: MediaAccessState,
+    isLibraryLoading: Boolean,
+    libraryErrorMessage: String?,
+    onRequestAudioAccess: () -> Unit,
+    onRequestArtworkAccess: () -> Unit,
+    onOpenAppSettings: () -> Unit,
     currentSong: Song?,
     isPlayerConnected: Boolean,
     previousHistoryCount: Int,
@@ -462,7 +468,12 @@ internal fun MusicScreen(
         } else {
             MusicScreenBody(
                 songs = songs,
-                permissionGranted = permissionGranted,
+                mediaAccessState = mediaAccessState,
+                isLibraryLoading = isLibraryLoading,
+                libraryErrorMessage = libraryErrorMessage,
+                onRequestAudioAccess = onRequestAudioAccess,
+                onRequestArtworkAccess = onRequestArtworkAccess,
+                onOpenAppSettings = onOpenAppSettings,
                 currentSong = currentSong,
                 isPlayerConnected = isPlayerConnected,
                 previousHistoryCount = previousHistoryCount,

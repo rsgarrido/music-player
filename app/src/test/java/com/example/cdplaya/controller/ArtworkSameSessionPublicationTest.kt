@@ -20,6 +20,19 @@ import org.mockito.Mockito.mock
 
 class ArtworkSameSessionPublicationTest {
     @Test
+    fun permissionRevocationAllowsTheSameLibraryToPublishAfterRestore() {
+        val tracker = LibraryPublicationTracker()
+        val snapshot = library(listOf(song(albumArtUri = null)))
+
+        assertTrue(tracker.shouldPublish(snapshot))
+        assertFalse(tracker.shouldPublish(snapshot))
+
+        tracker.reset()
+
+        assertTrue(tracker.shouldPublish(snapshot))
+    }
+
+    @Test
     fun repairedArtworkIsPublishedDuringSameSession() {
         val uri = embeddedArtworkUri()
         val cached = song(albumArtUri = uri)

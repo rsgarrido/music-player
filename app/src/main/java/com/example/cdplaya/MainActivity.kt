@@ -1,15 +1,17 @@
 package com.example.cdplaya
 
-import android.Manifest
+import android.content.Intent
 import android.graphics.Color as AndroidColor
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,27 +27,56 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import android.content.pm.PackageManager
+import com.example.cdplaya.mediaaccess.MediaAccessEffect
+import com.example.cdplaya.mediaaccess.MediaAccessPolicy
+import com.example.cdplaya.mediaaccess.MediaAccessState
+import com.example.cdplaya.mediaaccess.MediaPermissionCoordinator
+import com.example.cdplaya.mediaaccess.MediaPermissionRequest
+import com.example.cdplaya.mediaaccess.MediaPermissions
+import com.example.cdplaya.mediaaccess.PermissionAccess
 import com.example.cdplaya.ui.MusicRoute
 import com.example.cdplaya.ui.theme.CdplayaTheme
 import com.example.cdplaya.viewmodel.MusicViewModel
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private var permissionGranted by mutableStateOf(false)
+    private var mediaAccessState by mutableStateOf(
+        MediaAccessPolicy.evaluate(
+            sdkInt = Build.VERSION.SDK_INT,
+            grantedPermissions = emptySet(),
+            requestedPermissions = emptySet(),
+            permissionsWithRationale = emptySet()
+        )
+    )
 
     private val musicViewModel: MusicViewModel by viewModels()
+    private val permissionCoordinator = MediaPermissionCoordinator()
+    private var returningFromAppSettings = false
 
-    private val mediaPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val audioGranted = permissions[Manifest.permission.READ_MEDIA_AUDIO] == true
-        val imagesGranted = permissions[Manifest.permission.READ_MEDIA_IMAGES] == true
+    private val audioPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        updatePermanentDenial(
+            permission = mediaAccessState.requirements.requiredAudioPermissions.singleOrNull(),
+            granted = granted
+        )
+        permissionCoordinator.finishRequest(MediaPermissionRequest.AUDIO)
+        evaluateMediaAccess()
+    }
 
-        permissionGranted = audioGranted && imagesGranted
-
-        if (permissionGranted) {
-            musicViewModel.loadSongs()
-        }
+    private val artworkPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        updatePermanentDenial(
+            permission = mediaAccessState.requirements.optionalArtworkPermissions.singleOrNull(),
+            granted = granted
+        )
+        permissionCoordinator.finishRequest(MediaPermissionRequest.ARTWORK)
+        evaluateMediaAccess()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,7 +90,12 @@ class MainActivity : ComponentActivity() {
             window.isNavigationBarContrastEnforced = false
         }
 
-        requestAudioPermission()
+        evaluateMediaAccess()
+        lifecycleScope.launch {
+            musicViewModel.mediaAccessFailures.collect {
+                evaluateMediaAccess()
+            }
+        }
 
         setContent {
             CdplayaTheme {
@@ -75,7 +111,10 @@ class MainActivity : ComponentActivity() {
                     ) {
                         MusicRoute(
                             musicViewModel = musicViewModel,
-                            permissionGranted = permissionGranted,
+                            mediaAccessState = mediaAccessState,
+                            onRequestAudioAccess = ::requestAudioAccess,
+                            onRequestArtworkAccess = ::requestArtworkAccess,
+                            onOpenAppSettings = ::openAppSettings,
                             snackbarHostState = snackbarHostState,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -92,18 +131,128 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestAudioPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            mediaPermissionLauncher.launch(
-                arrayOf(
-                    Manifest.permission.READ_MEDIA_AUDIO,
-                    Manifest.permission.READ_MEDIA_IMAGES
-                )
-            )
-        } else {
-            permissionGranted = true
-            musicViewModel.loadSongs()
+    override fun onResume() {
+        super.onResume()
+        if (returningFromAppSettings) {
+            returningFromAppSettings = false
+            clearPermanentDenials()
         }
+        evaluateMediaAccess()
+    }
+
+    private fun requestAudioAccess() {
+        evaluateMediaAccess()
+        if (mediaAccessState.hasAudioAccess) return
+        if (
+            mediaAccessState.audioAccess != PermissionAccess.REQUESTABLE &&
+            mediaAccessState.audioAccess != PermissionAccess.DENIED
+        ) {
+            return
+        }
+        val permission = mediaAccessState.requirements.requiredAudioPermissions.singleOrNull()
+            ?: return
+        if (!permissionCoordinator.beginRequest(MediaPermissionRequest.AUDIO)) return
+        markPermissionRequested(permission)
+        audioPermissionLauncher.launch(permission)
+    }
+
+    private fun requestArtworkAccess() {
+        evaluateMediaAccess()
+        if (!mediaAccessState.hasAudioAccess || mediaAccessState.hasArtworkAccess) return
+        if (
+            mediaAccessState.artworkAccess != PermissionAccess.REQUESTABLE &&
+            mediaAccessState.artworkAccess != PermissionAccess.DENIED
+        ) {
+            return
+        }
+        val permission = mediaAccessState.requirements.optionalArtworkPermissions.singleOrNull()
+            ?: return
+        if (permission in mediaAccessState.requirements.requiredAudioPermissions) return
+        if (!permissionCoordinator.beginRequest(MediaPermissionRequest.ARTWORK)) return
+        markPermissionRequested(permission)
+        artworkPermissionLauncher.launch(permission)
+    }
+
+    private fun evaluateMediaAccess() {
+        val knownPermissions = setOf(
+            MediaPermissions.READ_EXTERNAL_STORAGE,
+            MediaPermissions.READ_MEDIA_AUDIO,
+            MediaPermissions.READ_MEDIA_IMAGES
+        )
+        val granted = knownPermissions.filterTo(mutableSetOf()) { permission ->
+            ContextCompat.checkSelfPermission(this, permission) ==
+                PackageManager.PERMISSION_GRANTED
+        }
+        val requested = knownPermissions.filterTo(mutableSetOf(), ::wasPermissionRequested)
+        val withRationale = knownPermissions.filterTo(mutableSetOf()) { permission ->
+            shouldShowRequestPermissionRationale(permission)
+        }
+        val permanentlyDenied =
+            knownPermissions.filterTo(mutableSetOf(), ::wasPermanentlyDenied)
+        val evaluated = MediaAccessPolicy.evaluate(
+            sdkInt = Build.VERSION.SDK_INT,
+            grantedPermissions = granted,
+            requestedPermissions = requested,
+            permissionsWithRationale = withRationale,
+            permanentlyDeniedPermissions = permanentlyDenied
+        )
+        mediaAccessState = evaluated
+        permissionCoordinator.onStateEvaluated(evaluated).forEach { effect ->
+            when (effect) {
+                MediaAccessEffect.LOAD_LIBRARY -> musicViewModel.onMediaAccessGranted()
+                MediaAccessEffect.REVOKE_LIBRARY_ACCESS ->
+                    musicViewModel.onMediaAccessRevoked()
+                MediaAccessEffect.REFRESH_ARTWORK -> musicViewModel.refreshArtwork()
+            }
+        }
+    }
+
+    private fun markPermissionRequested(permission: String) {
+        permissionPreferences.edit().putBoolean(permission, true).apply()
+    }
+
+    private fun wasPermissionRequested(permission: String): Boolean {
+        return permissionPreferences.getBoolean(permission, false)
+    }
+
+    private fun updatePermanentDenial(permission: String?, granted: Boolean) {
+        if (permission == null) return
+        val permanentlyDenied = !granted && !shouldShowRequestPermissionRationale(permission)
+        permissionPreferences.edit()
+            .putBoolean(permanentDenialKey(permission), permanentlyDenied)
+            .apply()
+    }
+
+    private fun wasPermanentlyDenied(permission: String): Boolean {
+        return permissionPreferences.getBoolean(permanentDenialKey(permission), false)
+    }
+
+    private fun clearPermanentDenials() {
+        val editor = permissionPreferences.edit()
+        setOf(
+            MediaPermissions.READ_EXTERNAL_STORAGE,
+            MediaPermissions.READ_MEDIA_AUDIO,
+            MediaPermissions.READ_MEDIA_IMAGES
+        ).forEach { permission ->
+            editor.putBoolean(permanentDenialKey(permission), false)
+        }
+        editor.apply()
+    }
+
+    private fun permanentDenialKey(permission: String) = "permanently_denied:$permission"
+
+    private val permissionPreferences by lazy {
+        getSharedPreferences("media_access_permissions", MODE_PRIVATE)
+    }
+
+    private fun openAppSettings() {
+        returningFromAppSettings = true
+        startActivity(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", packageName, null)
+            )
+        )
     }
 
     override fun onPause() {
