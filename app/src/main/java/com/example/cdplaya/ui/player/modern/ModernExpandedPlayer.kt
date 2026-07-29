@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -68,7 +69,8 @@ fun ModernExpandedPlayer(
         return
     }
 
-    val audioQualityRepository = remember { AudioQualityRepository() }
+    val context = LocalContext.current
+    val audioQualityRepository = remember(context) { AudioQualityRepository(context) }
     val carouselState = rememberModernArtworkCarouselState(
         onPrevious = onPreviousClick,
         onNext = onNextClick

@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.example.cdplaya.data.PlayerTheme
+import com.example.cdplaya.data.FolderSelectionMode
 import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.library.LibraryViewMode
@@ -56,8 +57,34 @@ class AppPreferencesStateTest {
             state.playerThemeTokenOverrides[PlayerTheme.RETRO_RACK]?.accentColor
         )
         assertEquals(setOf("Music", "Card/Music"), state.selectedLibraryFolders)
+        assertEquals(FolderSelectionMode.CUSTOM, state.folderSelectionMode)
         assertEquals(LibraryViewMode.GRID, state.songsViewMode)
         assertEquals(3, state.songsGridColumnCount)
+    }
+
+    @Test
+    fun absentModeMigratesEmptyLegacySelectionToAll() {
+        val state = decodeAppPreferences(
+            mutablePreferencesOf(
+                stringSetPreferencesKey("selected_folders") to emptySet()
+            )
+        )
+
+        assertEquals(FolderSelectionMode.ALL, state.folderSelectionMode)
+        assertTrue(state.selectedLibraryFolders.isEmpty())
+    }
+
+    @Test
+    fun explicitCustomModePreservesIntentionalEmptySelection() {
+        val state = decodeAppPreferences(
+            mutablePreferencesOf(
+                stringPreferencesKey("folder_selection_mode") to "CUSTOM",
+                stringSetPreferencesKey("selected_folders") to emptySet()
+            )
+        )
+
+        assertEquals(FolderSelectionMode.CUSTOM, state.folderSelectionMode)
+        assertTrue(state.selectedLibraryFolders.isEmpty())
     }
 
     @Test

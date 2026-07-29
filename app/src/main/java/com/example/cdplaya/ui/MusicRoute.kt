@@ -13,11 +13,15 @@ import com.example.cdplaya.ui.settings.rememberBackupExportActions
 import com.example.cdplaya.ui.settings.rememberBackupRestoreActions
 import com.example.cdplaya.ui.equalizer.EqualizerUiActions
 import com.example.cdplaya.ui.equalizer.rememberEqualizerProfilePlatformActions
+import com.example.cdplaya.mediaaccess.MediaAccessState
 
 @Composable
-fun MusicRoute(
+internal fun MusicRoute(
     musicViewModel: MusicViewModel,
-    permissionGranted: Boolean,
+    mediaAccessState: MediaAccessState,
+    onRequestAudioAccess: () -> Unit,
+    onRequestArtworkAccess: () -> Unit,
+    onOpenAppSettings: () -> Unit,
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
@@ -70,7 +74,12 @@ fun MusicRoute(
         recentlyPlayedSongs = libraryUiState.recentlyPlayedSongs,
         recentlyAddedLibrarySongs = libraryUiState.recentlyAddedSongs,
         mostPlayedSongs = libraryUiState.mostPlayedSongs,
-        permissionGranted = permissionGranted,
+        mediaAccessState = mediaAccessState,
+        isLibraryLoading = libraryUiState.isLoading,
+        libraryErrorMessage = libraryUiState.errorMessage,
+        onRequestAudioAccess = onRequestAudioAccess,
+        onRequestArtworkAccess = onRequestArtworkAccess,
+        onOpenAppSettings = onOpenAppSettings,
         currentSong = playbackUiState.currentSong,
         isPlayerConnected = playbackUiState.isConnected,
         previousHistoryCount = playbackUiState.previousHistoryCount,
@@ -86,6 +95,7 @@ fun MusicRoute(
         snackbarHostState = snackbarHostState,
         modifier = modifier,
         libraryFolders = libraryUiState.folders,
+        folderSelectionMode = libraryUiState.folderSelectionMode,
         selectedLibraryFolders = libraryUiState.selectedFolders,
         favoriteMembershipKeys = libraryUiState.favoriteMembershipKeys,
         unresolvedFavoriteCount = libraryUiState.unresolvedFavoriteCount,

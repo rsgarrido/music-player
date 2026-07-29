@@ -2,9 +2,12 @@ package com.example.cdplaya.data
 
 import android.content.ContentUris
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.net.Uri
 import android.os.Build
+import android.os.SystemClock
 import android.provider.MediaStore
+import android.util.Log
 import java.io.File
 import com.example.cdplaya.performance.PerformanceTraceNames
 import com.example.cdplaya.performance.tracePerformance
@@ -26,9 +29,11 @@ class MusicRepository(private val context: Context) {
         cachedSongs: List<Song>,
         forceArtworkRefreshIds: Set<Long> = emptySet()
     ): LibraryRefreshResult {
-        val indexSongs = runCatching {
+        val indexSongs = try {
             tracePerformance(PerformanceTraceNames.MEDIASTORE_INDEX_QUERY) { querySongIndex() }
-        }.getOrNull()
+        } catch (exception: SecurityException) {
+            throw MediaLibraryAccessException(exception)
+        }
         LibraryRefreshEngine.fallbackForIncompleteScan(cachedSongs, indexSongs)?.let { return it }
         checkNotNull(indexSongs)
         val embeddedArtworkResolver = EmbeddedArtworkResolver(context)
@@ -37,7 +42,11 @@ class MusicRepository(private val context: Context) {
                 .forEach(embeddedArtworkResolver::invalidate)
         }
         var albumArtByFolder: Map<String, Uri>? = null
+        var standaloneArtworkLookupMs = 0L
+        var embeddedArtworkExtractionMs = 0L
+        var embeddedArtworkExtractionCount = 0
         val artworkRepairKeys = mutableSetOf<String>()
+        val classificationStartedAt = SystemClock.elapsedRealtime()
         val result = tracePerformance(PerformanceTraceNames.LIBRARY_CLASSIFICATION) {
             LibraryRefreshEngine.refresh(
             cachedSongs = cachedSongs,
@@ -50,18 +59,39 @@ class MusicRepository(private val context: Context) {
                 requiresRepair
             },
             enrich = { indexSong ->
-                val folderArtwork = albumArtByFolder ?: runCatching { getAlbumArtByFolder() }
-                    .getOrDefault(emptyMap())
-                    .also { albumArtByFolder = it }
+                val folderArtwork = albumArtByFolder ?: run {
+                    val startedAt = SystemClock.elapsedRealtime()
+                    getAlbumArtByFolderOrEmpty().also {
+                        standaloneArtworkLookupMs += SystemClock.elapsedRealtime() - startedAt
+                        albumArtByFolder = it
+                    }
+                }
+                val embeddedStartedAt = SystemClock.elapsedRealtime()
+                val embeddedArtwork = embeddedArtworkResolver.resolve(indexSong)
+                embeddedArtworkExtractionMs +=
+                    SystemClock.elapsedRealtime() - embeddedStartedAt
+                embeddedArtworkExtractionCount += 1
                 indexSong.copy(
                     albumArtUri = selectArtwork(
-                        embedded = embeddedArtworkResolver.resolve(indexSong),
+                        embedded = embeddedArtwork,
                         folder = folderArtwork[indexSong.folderPath]
                     ),
                     artworkEnrichmentVersion = CURRENT_ARTWORK_ENRICHMENT_VERSION
                 )
             })
         }
+        debugTiming(
+            "classification elapsedMs=${SystemClock.elapsedRealtime() - classificationStartedAt} " +
+                "songs=${indexSongs.size}"
+        )
+        debugTiming(
+            "standalone-artwork elapsedMs=$standaloneArtworkLookupMs " +
+                "folders=${albumArtByFolder?.size ?: 0}"
+        )
+        debugTiming(
+            "embedded-artwork-extraction elapsedMs=$embeddedArtworkExtractionMs " +
+                "files=$embeddedArtworkExtractionCount"
+        )
         return result.copy(artworkRepairCount = artworkRepairKeys.size)
     }
 
@@ -75,31 +105,14 @@ class MusicRepository(private val context: Context) {
 
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
 
-        val projection = arrayOf(
-            MediaStore.Audio.Media._ID,
-            MediaStore.Audio.Media.TITLE,
-            MediaStore.Audio.Media.ARTIST,
-            MediaStore.Audio.Media.ALBUM,
-            MediaStore.Audio.Media.TRACK,
-            MediaStore.Audio.Media.DURATION,
-            MediaStore.Audio.Media.DATA,
-            MediaStore.Audio.Media.DISPLAY_NAME,
-            MediaStore.Audio.Media.SIZE,
-            MediaStore.Audio.Media.DATE_ADDED,
-            MediaStore.Audio.Media.DATE_MODIFIED
-        ) + if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            arrayOf(
-                MediaStore.Audio.Media.VOLUME_NAME,
-                MediaStore.Audio.Media.RELATIVE_PATH
-            )
-        } else {
-            emptyArray()
-        }
+        val projection = MediaStoreProjectionPolicy.audioProjection(Build.VERSION.SDK_INT)
+            .toTypedArray()
 
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
 
         val sortOrder = "${MediaStore.Audio.Media.TITLE} ASC"
 
+        val queryStartedAt = SystemClock.elapsedRealtime()
         val query = context.contentResolver.query(
             collection,
             projection,
@@ -107,26 +120,30 @@ class MusicRepository(private val context: Context) {
             null,
             sortOrder
         )
+        debugTiming(
+            "audio-mediastore-query elapsedMs=${SystemClock.elapsedRealtime() - queryStartedAt}"
+        )
 
+        val mappingStartedAt = SystemClock.elapsedRealtime()
         query?.use { cursor ->
-            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
-            val titleColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
-            val artistColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
-            val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
-            val trackColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
-            val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
-            val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
-            val displayNameColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
-            val fileSizeColumn = cursor.getColumnIndex(MediaStore.Audio.Media.SIZE)
-            val dateAddedColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATE_ADDED)
-            val dateModifiedColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DATE_MODIFIED)
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.ID)
+            val titleColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.TITLE)
+            val artistColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.ARTIST)
+            val albumColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.ALBUM)
+            val trackColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.TRACK)
+            val durationColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.DURATION)
+            val dataColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.DATA)
+            val displayNameColumn = cursor.getColumnIndex(MediaStoreProjectionPolicy.DISPLAY_NAME)
+            val fileSizeColumn = cursor.getColumnIndex(MediaStoreProjectionPolicy.SIZE)
+            val dateAddedColumn = cursor.getColumnIndex(MediaStoreProjectionPolicy.DATE_ADDED)
+            val dateModifiedColumn = cursor.getColumnIndex(MediaStoreProjectionPolicy.DATE_MODIFIED)
             val volumeNameColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                cursor.getColumnIndex(MediaStore.Audio.Media.VOLUME_NAME)
+                cursor.getColumnIndex(MediaStoreProjectionPolicy.VOLUME_NAME)
             } else {
                 -1
             }
             val relativePathColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                cursor.getColumnIndex(MediaStore.Audio.Media.RELATIVE_PATH)
+                cursor.getColumnIndex(MediaStoreProjectionPolicy.RELATIVE_PATH)
             } else {
                 -1
             }
@@ -146,8 +163,7 @@ class MusicRepository(private val context: Context) {
                 val volumeName = cursor.stringOrEmpty(volumeNameColumn)
                 val relativePath = cursor.stringOrEmpty(relativePathColumn)
 
-                val folderPath = (File(filePath).parent ?: "")
-                    .ifBlank { relativePath.trimEnd('/', '\\') }
+                val folderPath = mediaFolderPath(filePath, relativePath)
 
                 if (folderPath.isBlank()) {
                     continue
@@ -190,7 +206,17 @@ class MusicRepository(private val context: Context) {
                 songs.add(song)
             }
         }
+        debugTiming(
+            "cursor-mapping elapsedMs=${SystemClock.elapsedRealtime() - mappingStartedAt} " +
+                "songs=${songs.size}"
+        )
         return if (query == null) null else songs
+    }
+
+    private fun getAlbumArtByFolderOrEmpty(): Map<String, Uri> = try {
+        getAlbumArtByFolder()
+    } catch (_: SecurityException) {
+        emptyMap()
     }
 
     private fun getAlbumArtByFolder(): Map<String, Uri> {
@@ -198,11 +224,8 @@ class MusicRepository(private val context: Context) {
 
         val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
 
-        val projection = arrayOf(
-            MediaStore.Images.Media._ID,
-            MediaStore.Images.Media.DATA,
-            MediaStore.Images.Media.DISPLAY_NAME
-        )
+        val projection = MediaStoreProjectionPolicy.imageProjection(Build.VERSION.SDK_INT)
+            .toTypedArray()
 
         val sortOrder = "${MediaStore.Images.Media.DISPLAY_NAME} ASC"
 
@@ -215,21 +238,33 @@ class MusicRepository(private val context: Context) {
         )
 
         query?.use { cursor ->
-            val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
-            val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+            val idColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.ID)
+            val dataColumn = cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.DATA)
             val displayNameColumn =
-                cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
+                cursor.getColumnIndexOrThrow(MediaStoreProjectionPolicy.DISPLAY_NAME)
+            val volumeNameColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                cursor.getColumnIndex(MediaStoreProjectionPolicy.VOLUME_NAME)
+            } else {
+                -1
+            }
+            val relativePathColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                cursor.getColumnIndex(MediaStoreProjectionPolicy.RELATIVE_PATH)
+            } else {
+                -1
+            }
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
                 val imagePath = cursor.getString(dataColumn) ?: ""
                 val displayName = cursor.getString(displayNameColumn) ?: ""
+                val volumeName = cursor.stringOrEmpty(volumeNameColumn)
+                val relativePath = cursor.stringOrEmpty(relativePathColumn)
 
                 if (!isLikelyAlbumCover(displayName)) {
                     continue
                 }
 
-                val folderPath = File(imagePath).parent ?: ""
+                val folderPath = mediaFolderPath(imagePath, relativePath)
 
                 if (folderPath.isBlank()) {
                     continue
@@ -239,10 +274,15 @@ class MusicRepository(private val context: Context) {
                     continue
                 }
 
-                val imageUri = ContentUris.withAppendedId(
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                    id
-                )
+                val imageCollection = if (
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+                    volumeName.isNotBlank()
+                ) {
+                    MediaStore.Images.Media.getContentUri(volumeName)
+                } else {
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                }
+                val imageUri = ContentUris.withAppendedId(imageCollection, id)
 
                 albumArtByFolder[folderPath] = imageUri
             }
@@ -264,7 +304,16 @@ class MusicRepository(private val context: Context) {
                 normalizedName == "album.png"
     }
 
+    private fun debugTiming(message: String) {
+        if (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            Log.d("LibraryTiming", message)
+        }
+    }
+
 }
+
+internal class MediaLibraryAccessException(cause: SecurityException) :
+    RuntimeException("Media library permission is unavailable.", cause)
 
 internal fun selectArtwork(embedded: Uri?, folder: Uri?): Uri? = embedded ?: folder
 
@@ -293,4 +342,9 @@ private fun android.database.Cursor.stringOrEmpty(columnIndex: Int): String {
 
 private fun android.database.Cursor.longOrZero(columnIndex: Int): Long {
     return if (columnIndex >= 0 && !isNull(columnIndex)) getLong(columnIndex) else 0L
+}
+
+internal fun mediaFolderPath(dataPath: String, relativePath: String): String {
+    return (File(dataPath).parent ?: "")
+        .ifBlank { relativePath.trimEnd('/', '\\') }
 }

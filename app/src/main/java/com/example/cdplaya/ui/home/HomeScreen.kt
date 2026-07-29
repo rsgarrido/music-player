@@ -26,10 +26,20 @@ import com.example.cdplaya.data.recentlyAddedShelfSongs
 import com.example.cdplaya.ui.AppShellTypography
 import com.example.cdplaya.ui.MusicScreenHeader
 import com.example.cdplaya.ui.library.LibraryTab
+import com.example.cdplaya.mediaaccess.MediaAccessState
+import com.example.cdplaya.ui.EmptyLibraryNotice
+import com.example.cdplaya.ui.LibraryErrorNotice
+import com.example.cdplaya.ui.LibraryLoadingNotice
+import com.example.cdplaya.ui.MediaAccessNotice
 
 @Composable
-fun HomeScreen(
-    permissionGranted: Boolean,
+internal fun HomeScreen(
+    mediaAccessState: MediaAccessState,
+    isLibraryLoading: Boolean,
+    libraryErrorMessage: String?,
+    onRequestAudioAccess: () -> Unit,
+    onRequestArtworkAccess: () -> Unit,
+    onOpenAppSettings: () -> Unit,
     recentlyPlayedSongs: List<Song>,
     recentlyAddedSongs: List<Song>,
     favoriteSongs: List<Song>,
@@ -94,12 +104,39 @@ fun HomeScreen(
             }
         }
 
-        if (!permissionGranted) {
+        if (!mediaAccessState.hasAudioAccess) {
             item {
-                Text(
-                    text = "Audio and image permissions are needed to show your music.",
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                MediaAccessNotice(
+                    state = mediaAccessState,
+                    onRequestAudioAccess = onRequestAudioAccess,
+                    onRequestArtworkAccess = onRequestArtworkAccess,
+                    onOpenAppSettings = onOpenAppSettings,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
+        } else if (isLibraryLoading) {
+            item {
+                LibraryLoadingNotice(modifier = Modifier.padding(horizontal = 16.dp))
+            }
+        } else if (libraryErrorMessage != null) {
+            item {
+                LibraryErrorNotice(
+                    message = libraryErrorMessage,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
+        } else if (songCount == 0) {
+            item {
+                EmptyLibraryNotice(modifier = Modifier.padding(horizontal = 16.dp))
+            }
+        } else if (!mediaAccessState.hasArtworkAccess) {
+            item {
+                MediaAccessNotice(
+                    state = mediaAccessState,
+                    onRequestAudioAccess = onRequestAudioAccess,
+                    onRequestArtworkAccess = onRequestArtworkAccess,
+                    onOpenAppSettings = onOpenAppSettings,
+                    modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
         }
@@ -139,7 +176,7 @@ fun HomeScreen(
             }
         }
 
-        if (permissionGranted && recentlyPlayedSongs.isEmpty() &&
+        if (mediaAccessState.hasAudioAccess && songCount > 0 && recentlyPlayedSongs.isEmpty() &&
             visibleRecentlyAddedSongs.isEmpty() && favoriteSongs.isEmpty()
         ) {
             item {

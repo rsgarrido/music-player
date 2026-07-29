@@ -1,6 +1,7 @@
 package com.example.cdplaya.data
 
 import android.content.Context
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import org.jaudiotagger.audio.AudioFileIO
 import java.io.File
@@ -216,6 +217,11 @@ internal class EmbeddedArtworkResolver(private val context: Context) {
         val extension = source.displayName.substringAfterLast('.', missingDelimiterValue = "")
             .lowercase()
 
+        when (val frameworkResult = readThroughFrameworkMetadata(source)) {
+            is FrameworkArtworkResult.Read -> return frameworkResult.artwork
+            FrameworkArtworkResult.Failed -> Unit
+        }
+
         runCatching {
             context.contentResolver.openFileDescriptor(source.uri, "r")?.use { descriptor ->
                 readArtwork(
@@ -243,6 +249,26 @@ internal class EmbeddedArtworkResolver(private val context: Context) {
             temporaryFile.delete()
         }
     }
+
+    private fun readThroughFrameworkMetadata(
+        source: EmbeddedArtworkSource
+    ): FrameworkArtworkResult = runCatching {
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(context, source.uri)
+            val artwork = retriever.embeddedPicture
+                ?.takeIf { bytes -> bytes.isNotEmpty() }
+                ?.let { bytes ->
+                    ExtractedArtwork(
+                        bytes = bytes,
+                        extension = embeddedArtworkExtension(bytes)
+                    )
+                }
+            FrameworkArtworkResult.Read(artwork)
+        } finally {
+            retriever.release()
+        }
+    }.getOrElse { FrameworkArtworkResult.Failed }
 
     private fun readArtwork(file: File, extension: String): ExtractedArtwork? {
         return try {
@@ -287,6 +313,11 @@ internal class EmbeddedArtworkResolver(private val context: Context) {
 
     private data class ExtractedArtwork(val bytes: ByteArray, val extension: String)
 
+    private sealed interface FrameworkArtworkResult {
+        data class Read(val artwork: ExtractedArtwork?) : FrameworkArtworkResult
+        data object Failed : FrameworkArtworkResult
+    }
+
     private companion object {
         const val CACHE_DIRECTORY = "embedded_album_art"
         val SAFE_EXTENSION = Regex("[a-z0-9]{1,8}")
@@ -299,6 +330,18 @@ private val ARTWORK_EXTENSIONS = setOf("jpg", "png", "webp")
 private fun artworkExtension(mimeType: String?): String = when (mimeType?.lowercase()) {
     "image/png" -> "png"
     "image/webp" -> "webp"
+    else -> "jpg"
+}
+
+internal fun embeddedArtworkExtension(bytes: ByteArray): String = when {
+    bytes.size >= 8 &&
+        bytes[0].toInt() and 0xff == 0x89 &&
+        bytes[1] == 0x50.toByte() &&
+        bytes[2] == 0x4e.toByte() &&
+        bytes[3] == 0x47.toByte() -> "png"
+    bytes.size >= 12 &&
+        bytes.copyOfRange(0, 4).contentEquals("RIFF".toByteArray()) &&
+        bytes.copyOfRange(8, 12).contentEquals("WEBP".toByteArray()) -> "webp"
     else -> "jpg"
 }
 

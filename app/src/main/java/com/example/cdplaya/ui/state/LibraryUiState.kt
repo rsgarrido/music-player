@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui.state
 
 import com.example.cdplaya.data.LibraryFolder
+import com.example.cdplaya.data.FolderSelectionMode
 import com.example.cdplaya.data.LibraryRefreshResult
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
@@ -9,6 +10,7 @@ import com.example.cdplaya.data.Song
 data class LibraryUiState(
     val songs: List<Song> = emptyList(),
     val folders: List<LibraryFolder> = emptyList(),
+    val folderSelectionMode: FolderSelectionMode = FolderSelectionMode.ALL,
     val selectedFolders: Set<String> = emptySet(),
     val favoriteMembershipKeys: Set<String> = emptySet(),
     val playlists: List<Playlist> = emptyList(),
@@ -54,6 +56,7 @@ fun LibraryRefreshResult.toUiSummary(): LibraryRefreshSummary = LibraryRefreshSu
 fun libraryUiState(
     songs: Collection<Song> = emptyList(),
     folders: Collection<LibraryFolder> = emptyList(),
+    folderSelectionMode: FolderSelectionMode = FolderSelectionMode.ALL,
     selectedFolders: Collection<String> = emptySet(),
     favoriteMembershipKeys: Collection<String> = emptySet(),
     playlists: Collection<Playlist> = emptyList(),
@@ -72,6 +75,7 @@ fun libraryUiState(
 ): LibraryUiState = LibraryUiState(
     songs = songs.toList(),
     folders = folders.toList(),
+    folderSelectionMode = folderSelectionMode,
     selectedFolders = selectedFolders.toSet(),
     favoriteMembershipKeys = favoriteMembershipKeys.toSet(),
     playlists = playlists.toList(),

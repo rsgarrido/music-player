@@ -11,15 +11,9 @@ data class MusicLibraryData(
 
 fun buildMusicLibraryData(
     allSongs: List<Song>,
-    selectedFolders: Set<String> = emptySet()
+    folderSelection: FolderSelection = FolderSelection.All
 ): MusicLibraryData {
-    val filteredSongs = if (selectedFolders.isEmpty()) {
-        allSongs
-    } else {
-        allSongs.filter { song ->
-            selectedFolders.contains(song.folderPath)
-        }
-    }
+    val filteredSongs = allSongs.filter { song -> folderSelection.includes(song.folderPath) }
 
     return MusicLibraryData(
         songs = filteredSongs,
@@ -27,6 +21,14 @@ fun buildMusicLibraryData(
         referenceSongs = allSongs
     )
 }
+
+fun buildMusicLibraryData(
+    allSongs: List<Song>,
+    selectedFolders: Set<String>
+): MusicLibraryData = buildMusicLibraryData(
+    allSongs = allSongs,
+    folderSelection = FolderSelection.fromStored(null, selectedFolders)
+)
 
 fun buildLibraryFolders(songs: List<Song>): List<LibraryFolder> {
     return songs

@@ -261,6 +261,13 @@ internal class CdPlayaBenchmarkActions(
                 TARGET_PACKAGE,
                 Manifest.permission.READ_MEDIA_IMAGES
             )
+        } else {
+            InstrumentationRegistry.getInstrumentation()
+                .uiAutomation
+                .grantRuntimePermission(
+                    TARGET_PACKAGE,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                )
         }
     }
 

@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.example.cdplaya.data.FavoritesRepository
+import com.example.cdplaya.data.FolderSelection
 import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.PlaylistsRepository
@@ -54,6 +55,7 @@ class BackupRepository(
             playlists = playlistsRepository.getPlaylistsForBackup(),
             listeningHistory = listeningHistoryRepository.getListeningHistoryForBackup(),
             preferences = BackupPreferences(
+                folderSelectionMode = appPreferences.folderSelectionMode.name,
                 selectedLibraryFolders = appPreferences.selectedLibraryFolders
                     .map { it.toPortableFolderSelection() }
                     .filter { it.isNotBlank() }
@@ -192,7 +194,14 @@ class BackupRepository(
                 audioOffloadPreference = AudioOffloadPreference.fromStorageValue(
                     preferences.audioOffloadPreference
                 ),
-                selectedLibraryFolders = preferences.selectedLibraryFolders.toSet(),
+                folderSelectionMode = FolderSelection.fromStored(
+                    storedMode = preferences.folderSelectionMode,
+                    storedFolders = preferences.selectedLibraryFolders.toSet()
+                ).mode,
+                selectedLibraryFolders = FolderSelection.fromStored(
+                    storedMode = preferences.folderSelectionMode,
+                    storedFolders = preferences.selectedLibraryFolders.toSet()
+                ).customFolders,
                 songsViewMode = LibraryViewMode.fromStorageValue(preferences.songsViewMode),
                 albumsViewMode = LibraryViewMode.fromStorageValue(preferences.albumsViewMode),
                 artistsViewMode = LibraryViewMode.fromStorageValue(preferences.artistsViewMode),

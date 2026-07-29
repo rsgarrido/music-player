@@ -23,10 +23,12 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.R
 import com.example.cdplaya.data.LibraryFolder
+import com.example.cdplaya.data.FolderSelectionMode
 
 @Composable
 fun FolderSelectionScreen(
     libraryFolders: List<LibraryFolder>,
+    folderSelectionMode: FolderSelectionMode,
     selectedLibraryFolders: Set<String>,
     onBackClick: () -> Unit,
     onFolderToggle: (String) -> Unit,
@@ -56,10 +58,12 @@ fun FolderSelectionScreen(
         }
 
         Text(
-            text = if (selectedLibraryFolders.isEmpty()) {
-                "No folders selected. Showing all detected music."
-            } else {
-                "${selectedLibraryFolders.size} folder(s) selected."
+            text = when {
+                folderSelectionMode == FolderSelectionMode.ALL ->
+                    "All detected music folders are selected."
+                selectedLibraryFolders.isEmpty() ->
+                    "No music folders are selected."
+                else -> "${selectedLibraryFolders.size} folder(s) selected."
             },
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)

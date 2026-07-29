@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import android.net.Uri
 import com.example.cdplaya.data.EditableSongTags
 import com.example.cdplaya.data.LibraryFolder
+import com.example.cdplaya.data.FolderSelectionMode
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
@@ -59,12 +60,18 @@ import com.example.cdplaya.ui.tageditor.DiscardTagChangesDialog
 import com.example.cdplaya.ui.tageditor.TagEditorScreen
 import com.example.cdplaya.ui.tageditor.rememberTagEditorActions
 import kotlinx.coroutines.flow.StateFlow
+import com.example.cdplaya.mediaaccess.MediaAccessState
 
 
 @Composable
 internal fun MusicScreen(
     songs: List<Song>,
-    permissionGranted: Boolean,
+    mediaAccessState: MediaAccessState,
+    isLibraryLoading: Boolean,
+    libraryErrorMessage: String?,
+    onRequestAudioAccess: () -> Unit,
+    onRequestArtworkAccess: () -> Unit,
+    onOpenAppSettings: () -> Unit,
     currentSong: Song?,
     isPlayerConnected: Boolean,
     previousHistoryCount: Int,
@@ -100,6 +107,7 @@ internal fun MusicScreen(
     onUndoPlayNextSongsClick: (List<Song>) -> Unit,
     onUndoAddSongsToQueueClick: (List<Song>) -> Unit,
     libraryFolders: List<LibraryFolder>,
+    folderSelectionMode: FolderSelectionMode,
     selectedLibraryFolders: Set<String>,
     onLibraryFolderToggle: (String) -> Unit,
     onSelectAllLibraryFolders: () -> Unit,
@@ -462,7 +470,12 @@ internal fun MusicScreen(
         } else {
             MusicScreenBody(
                 songs = songs,
-                permissionGranted = permissionGranted,
+                mediaAccessState = mediaAccessState,
+                isLibraryLoading = isLibraryLoading,
+                libraryErrorMessage = libraryErrorMessage,
+                onRequestAudioAccess = onRequestAudioAccess,
+                onRequestArtworkAccess = onRequestArtworkAccess,
+                onOpenAppSettings = onOpenAppSettings,
                 currentSong = currentSong,
                 isPlayerConnected = isPlayerConnected,
                 previousHistoryCount = previousHistoryCount,
@@ -474,6 +487,7 @@ internal fun MusicScreen(
                 queuedSongs = queuedSongs,
                 upcomingSongs = upcomingSongs,
                 libraryFolders = libraryFolders,
+                folderSelectionMode = folderSelectionMode,
                 selectedLibraryFolders = selectedLibraryFolders,
                 favoriteMembershipKeys = favoriteMembershipKeys,
                 unresolvedFavoriteCount = unresolvedFavoriteCount,

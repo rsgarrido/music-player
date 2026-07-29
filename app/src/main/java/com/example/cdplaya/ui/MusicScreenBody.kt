@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.LibraryFolder
+import com.example.cdplaya.data.FolderSelectionMode
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
@@ -65,11 +66,17 @@ import com.example.cdplaya.ui.state.modeFor
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewOption
 import kotlinx.coroutines.flow.StateFlow
+import com.example.cdplaya.mediaaccess.MediaAccessState
 
 @Composable
 internal fun MusicScreenBody(
     songs: List<Song>,
-    permissionGranted: Boolean,
+    mediaAccessState: MediaAccessState,
+    isLibraryLoading: Boolean,
+    libraryErrorMessage: String?,
+    onRequestAudioAccess: () -> Unit,
+    onRequestArtworkAccess: () -> Unit,
+    onOpenAppSettings: () -> Unit,
     currentSong: Song?,
     isPlayerConnected: Boolean,
     previousHistoryCount: Int,
@@ -81,6 +88,7 @@ internal fun MusicScreenBody(
     queuedSongs: List<Song>,
     upcomingSongs: List<Song>,
     libraryFolders: List<LibraryFolder>,
+    folderSelectionMode: FolderSelectionMode,
     selectedLibraryFolders: Set<String>,
     favoriteMembershipKeys: Set<String>,
     unresolvedFavoriteCount: Int,
@@ -193,6 +201,7 @@ internal fun MusicScreenBody(
         isFolderScreenVisible -> {
             FolderSelectionScreen(
                 libraryFolders = libraryFolders,
+                folderSelectionMode = folderSelectionMode,
                 selectedLibraryFolders = selectedLibraryFolders,
                 onBackClick = onFolderBackClick,
                 onFolderToggle = onLibraryFolderToggle,
@@ -307,7 +316,12 @@ internal fun MusicScreenBody(
             ) { destination ->
                 if (destination == MainDestination.HOME) {
                 HomeScreen(
-                    permissionGranted = permissionGranted,
+                    mediaAccessState = mediaAccessState,
+                    isLibraryLoading = isLibraryLoading,
+                    libraryErrorMessage = libraryErrorMessage,
+                    onRequestAudioAccess = onRequestAudioAccess,
+                    onRequestArtworkAccess = onRequestArtworkAccess,
+                    onOpenAppSettings = onOpenAppSettings,
                     recentlyPlayedSongs = recentlyPlayedSongs,
                     recentlyAddedSongs = recentlyAddedLibrarySongs,
                     favoriteSongs = songs.filter { song ->
@@ -408,9 +422,12 @@ internal fun MusicScreenBody(
                         }
                     )
 
-                    if (!permissionGranted) {
-                        Text(
-                            text = "Audio and image permissions are needed to show your music.",
+                    if (!mediaAccessState.hasAudioAccess) {
+                        MediaAccessNotice(
+                            state = mediaAccessState,
+                            onRequestAudioAccess = onRequestAudioAccess,
+                            onRequestArtworkAccess = onRequestArtworkAccess,
+                            onOpenAppSettings = onOpenAppSettings,
                             modifier = Modifier.padding(16.dp)
                         )
                     } else {
@@ -434,7 +451,18 @@ internal fun MusicScreenBody(
                             onSearchQueryChange = onSearchQueryChange
                         )
 
-                        MusicLibraryContent(
+                        when {
+                            isLibraryLoading -> LibraryLoadingNotice(
+                                modifier = Modifier.padding(16.dp)
+                            )
+                            libraryErrorMessage != null -> LibraryErrorNotice(
+                                message = libraryErrorMessage,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                            songs.isEmpty() -> EmptyLibraryNotice(
+                                modifier = Modifier.padding(16.dp)
+                            )
+                            else -> MusicLibraryContent(
                             selectedLibraryTab = selectedLibraryTab,
                             songs = songs,
                             searchQuery = searchQuery,
@@ -497,8 +525,9 @@ internal fun MusicScreenBody(
                             recentlyAddedSongs = recentlyAddedLibrarySongs,
                             mostPlayedSongs = mostPlayedSongs,
                             bottomContentPadding = bottomContentPadding,
-                            modifier = Modifier.weight(1f)
-                        )
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                     }
                 }
