@@ -104,7 +104,6 @@ internal fun formatBitPerfectFeasibilityReport(
     appendLine("- No support is inferred for other devices.")
     appendLine("- Device/vendor bit-perfect support is optional.")
 }
-
 private fun AudioSourceFormat?.formatForFeasibility(): String {
     if (this == null) return "Unknown"
     return listOfNotNull(
@@ -166,4 +165,3 @@ private fun MixerAttributeSnapshot?.formatForFeasibility(): String {
         "mask=${channelMask ?: "Unknown"}, " +
         "behavior=$mixerBehavior"
 }
-

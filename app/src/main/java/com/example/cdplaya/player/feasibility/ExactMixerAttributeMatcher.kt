@@ -9,7 +9,6 @@ data class ExactMixerAttributeMatch(
         get() = selected != null &&
             rejectionReason == FeasibilityRejectionReason.NONE
 }
-
 object ExactMixerAttributeMatcher {
     fun select(
         output: Media3OutputConfigSnapshot?,
@@ -80,4 +79,3 @@ object ExactMixerAttributeMatcher {
         return ExactMixerAttributeMatch(selected = exactMatches.first().value)
     }
 }
-

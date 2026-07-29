@@ -160,4 +160,3 @@ class FeasibilityAudioOutputProviderTest {
         verify(delegate, times(1)).release()
     }
 }
-
