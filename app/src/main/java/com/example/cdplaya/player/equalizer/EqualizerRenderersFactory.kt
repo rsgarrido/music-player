@@ -6,6 +6,7 @@ import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.AudioOutputProvider
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 
 /**
@@ -17,14 +18,15 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink
 @OptIn(UnstableApi::class)
 internal class EqualizerRenderersFactory(
     context: Context,
-    private val equalizerAudioProcessor: EqualizerAudioProcessor
+    private val equalizerAudioProcessor: EqualizerAudioProcessor,
+    private val audioOutputProvider: AudioOutputProvider? = null
 ) : DefaultRenderersFactory(context) {
     override fun buildAudioSink(
         context: Context,
         enableFloatOutput: Boolean,
         enableAudioOutputPlaybackParams: Boolean
     ): AudioSink {
-        return DefaultAudioSink.Builder(context)
+        val builder = DefaultAudioSink.Builder(context)
             .setAudioProcessors(
                 arrayOf<AudioProcessor>(equalizerAudioProcessor)
             )
@@ -32,7 +34,8 @@ internal class EqualizerRenderersFactory(
             .setEnableAudioOutputPlaybackParameters(
                 enableAudioOutputPlaybackParams
             )
-            .build()
+        audioOutputProvider?.let(builder::setAudioOutputProvider)
+        return builder.build()
     }
 
     internal fun processorInstanceForTest(): EqualizerAudioProcessor {
