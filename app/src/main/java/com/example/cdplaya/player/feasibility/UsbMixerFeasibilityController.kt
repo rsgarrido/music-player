@@ -157,7 +157,14 @@ internal class UsbMixerFeasibilityController(
     }
 
     fun cleanup(): FeasibilityCleanupResult {
-        if (cleaned) return bridge.state.value.cleanupResult
+        if (cleaned) {
+            val currentResult = bridge.state.value.cleanupResult
+            if (currentResult == FeasibilityCleanupResult.PENDING) {
+                bridge.recordCleanup(FeasibilityCleanupResult.NOT_REQUIRED)
+                return FeasibilityCleanupResult.NOT_REQUIRED
+            }
+            return currentResult
+        }
         cleaned = true
         val clearResult = if (setAttempted) {
             try {

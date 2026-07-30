@@ -63,7 +63,11 @@ internal object BitPerfectFeasibilityRuntimeBridge {
         ) { current ->
             current.copy(
                 probeMode = mode,
-                rejectionReason = null,
+                rejectionReason = if (mode == FeasibilityProbeMode.OFF) {
+                    current.rejectionReason
+                } else {
+                    null
+                },
                 cleanupResult = if (
                     mode == FeasibilityProbeMode.EXPERIMENTAL_USB_EXACT_PATH
                 ) {
@@ -240,7 +244,6 @@ internal object BitPerfectFeasibilityRuntimeBridge {
         mutate(FeasibilityEventType.ACTIVATION_REJECTED, reason = reason) {
             it.copy(
                 rejectionReason = reason,
-                setResult = false,
                 exactFormatConfirmed = false
             )
         }

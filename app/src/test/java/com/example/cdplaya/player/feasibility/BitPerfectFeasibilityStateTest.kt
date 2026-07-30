@@ -77,6 +77,25 @@ class BitPerfectFeasibilityStateTest {
     }
 
     @Test
+    fun unsupportedRejectionSurvivesOffWithoutInventingASetAttempt() {
+        BitPerfectFeasibilityRuntimeBridge.setMode(
+            FeasibilityProbeMode.EXPERIMENTAL_USB_EXACT_PATH
+        )
+        BitPerfectFeasibilityRuntimeBridge.recordActivationRejected(
+            FeasibilityRejectionReason.NO_BIT_PERFECT_ATTRIBUTE
+        )
+        BitPerfectFeasibilityRuntimeBridge.setMode(FeasibilityProbeMode.OFF)
+
+        val state = BitPerfectFeasibilityRuntimeBridge.state.value
+        assertEquals(FeasibilityProbeMode.OFF, state.probeMode)
+        assertEquals(
+            FeasibilityRejectionReason.NO_BIT_PERFECT_ATTRIBUTE,
+            state.rejectionReason
+        )
+        assertNull(state.setResult)
+    }
+
+    @Test
     fun exactFormatNeedsConfirmedMixerOutputAndActualTrackAgreement() {
         val exact = MixerAttributeSnapshot(
             encoding = 21,

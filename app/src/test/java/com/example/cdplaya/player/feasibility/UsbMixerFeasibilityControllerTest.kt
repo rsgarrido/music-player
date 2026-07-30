@@ -3,6 +3,7 @@ package com.example.cdplaya.player.feasibility
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -66,10 +67,24 @@ class UsbMixerFeasibilityControllerTest {
                 )
             )
         )
+        val result = controller(backend).activate(output)
         assertEquals(
             FeasibilityRejectionReason.NO_BIT_PERFECT_ATTRIBUTE,
-            controller(backend).activate(output).rejectionReason
+            result.rejectionReason
         )
+        val state = BitPerfectFeasibilityRuntimeBridge.state.value
+        assertEquals(
+            FeasibilityRejectionReason.NO_BIT_PERFECT_ATTRIBUTE,
+            state.rejectionReason
+        )
+        assertEquals(
+            FeasibilityCleanupResult.NOT_REQUIRED,
+            state.cleanupResult
+        )
+        assertNull(state.selectedMixerAttribute)
+        assertNull(state.setResult)
+        assertEquals(0, backend.clearCount)
+        assertEquals(0, backend.removeListenerCount)
     }
 
     @Test
