@@ -26,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,8 +53,6 @@ import com.example.cdplaya.player.audio.formatEqualizerPlanLatency
 import com.example.cdplaya.player.audio.formatEqualizerStatus
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeBridge
 import com.example.cdplaya.player.equalizer.EqualizerProcessorMeasuredConfiguration
-import com.example.cdplaya.player.feasibility.BitPerfectFeasibilityRuntimeBridge
-import com.example.cdplaya.player.feasibility.formatBitPerfectFeasibilityReport
 import com.example.cdplaya.player.waveform.WaveformCache
 import com.example.cdplaya.player.waveform.WaveformCacheStats
 import com.example.cdplaya.player.waveform.WaveformRepository
@@ -347,8 +344,6 @@ internal fun DiagnosticsScreen(
     val version = remember(context) { context.appVersion() }
     val copiedMessage = stringResource(R.string.diagnostics_copied)
     val cacheClearedMessage = stringResource(R.string.diagnostics_cache_cleared)
-    val feasibilitySnapshot by
-        BitPerfectFeasibilityRuntimeBridge.state.collectAsState()
 
     val snapshot = DiagnosticsSnapshot(
         appVersionName = version.first,
@@ -688,126 +683,6 @@ internal fun DiagnosticsScreen(
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-        if (BuildConfig.DEBUG) {
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            Text(
-                text = "USB bit-perfect feasibility (Experimental)",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(
-                    horizontal = 16.dp,
-                    vertical = 8.dp
-                )
-            )
-            DiagnosticValue(
-                "Probe mode",
-                feasibilitySnapshot.probeMode.name
-            )
-            DiagnosticValue(
-                "Media3 output encoding / rate / mask",
-                feasibilitySnapshot.media3OutputConfig?.let {
-                    "${it.encoding ?: "Unknown"} / " +
-                        "${it.sampleRateHz ?: "Unknown"} / " +
-                        (it.channelMask ?: "Unknown")
-                } ?: "Unknown"
-            )
-            DiagnosticValue(
-                "Actual AudioTrack encoding / rate / mask",
-                feasibilitySnapshot.audioTrackFormat?.let {
-                    "${it.encoding ?: "Unknown"} / " +
-                        "${it.sampleRateHz ?: "Unknown"} / " +
-                        (it.channelMask ?: "Unknown")
-                } ?: "Unknown"
-            )
-            DiagnosticValue(
-                "AudioTrack route",
-                feasibilitySnapshot.audioTrackFormat
-                    ?.routedDeviceCategory
-                    ?.name
-                    ?: "Unknown"
-            )
-            DiagnosticValue(
-                "Bit-perfect mixer attributes",
-                feasibilitySnapshot.supportedMixerAttributes
-                    .count {
-                        it.mixerBehavior.name == "BIT_PERFECT"
-                    }
-                    .toString()
-            )
-            DiagnosticValue(
-                "Activation rejection",
-                feasibilitySnapshot.rejectionReason?.name ?: "None"
-            )
-            DiagnosticValue(
-                "Cleanup",
-                feasibilitySnapshot.cleanupResult.name
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        BitPerfectFeasibilityRuntimeBridge
-                            .requestObserveCurrentOutput()
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Observe current output")
-                }
-                OutlinedButton(
-                    onClick = {
-                        BitPerfectFeasibilityRuntimeBridge
-                            .requestExactUsbProbe()
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Run exact USB probe")
-                }
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedButton(
-                    onClick = {
-                        BitPerfectFeasibilityRuntimeBridge
-                            .requestStopAndClear()
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Stop and clear probe")
-                }
-                OutlinedButton(
-                    onClick = {
-                        context.copyToClipboard(
-                            formatBitPerfectFeasibilityReport(
-                                feasibilitySnapshot,
-                                audioOutputUiState.sourceFormat
-                            )
-                        )
-                        statusMessage = copiedMessage
-                    },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Copy feasibility report")
-                }
-            }
-            Text(
-                text = "The probe is session-only. A set call alone is not " +
-                    "success: the preferred attribute, AudioTrack format, " +
-                    "USB route, unprocessed stream, and cleanup must all " +
-                    "be confirmed.",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(
-                    horizontal = 16.dp,
-                    vertical = 8.dp
-                )
-            )
-        }
         DiagnosticValue(
             stringResource(R.string.diagnostics_connection),
             stringResource(if (isPlaybackConnected) R.string.diagnostics_connected else R.string.diagnostics_disconnected)

@@ -20,12 +20,10 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DecoderReuseEvaluation
 import androidx.media3.exoplayer.analytics.AnalyticsListener
-import androidx.media3.exoplayer.audio.AudioTrackAudioOutputProvider
 import androidx.media3.session.LibraryResult
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import com.example.cdplaya.MainActivity
-import com.example.cdplaya.BuildConfig
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.performance.PerformanceTraceNames
@@ -42,13 +40,6 @@ import com.example.cdplaya.player.equalizer.EqualizerRenderersFactory
 import com.example.cdplaya.player.equalizer.EqualizerRuntimeBridge
 import com.example.cdplaya.player.equalizer.activeAutomaticHeadroomEnabled
 import com.example.cdplaya.player.equalizer.toDspConfiguration
-import com.example.cdplaya.player.feasibility.AndroidUsbMixerBackend
-import com.example.cdplaya.player.feasibility.BitPerfectFeasibilityRuntimeBridge
-import com.example.cdplaya.player.feasibility.FeasibilityEventType
-import com.example.cdplaya.player.feasibility.FeasibilityProbeMode
-import com.example.cdplaya.player.feasibility.FeasibilityRejectionReason
-import com.example.cdplaya.player.feasibility.FeasibilityAudioOutputProvider
-import com.example.cdplaya.player.feasibility.UsbMixerFeasibilityController
 import com.example.cdplaya.player.equalizer.limiter.LimiterConfiguration
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
@@ -74,12 +65,6 @@ class PlaybackService : MediaLibraryService() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var appPreferencesRepository: AppPreferencesRepository
     private lateinit var audioManager: AudioManager
-    private lateinit var feasibilityAudioOutputProvider:
-        FeasibilityAudioOutputProvider
-    private lateinit var usbMixerBackend: AndroidUsbMixerBackend
-    private lateinit var usbMixerController: UsbMixerFeasibilityController
-    private var feasibilityOutputRecreationInProgress = false
-    private var feasibilityPreferredDeviceApplied = false
     private var isRemotePlayback = false
     private val checkpointHandler = Handler(Looper.getMainLooper())
     private val checkpointRunnable = object : Runnable {
@@ -148,16 +133,6 @@ class PlaybackService : MediaLibraryService() {
             isRemotePlayback = deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE
             publishAudioRoute()
         }
-
-        override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
-            stopAndClearFeasibilityProbe()
-        }
-
-        override fun onPlaybackStateChanged(playbackState: Int) {
-            if (playbackState == Player.STATE_ENDED) {
-                stopAndClearFeasibilityProbe()
-            }
-        }
     }
 
     private val advancedAudioAnalyticsListener = object : AnalyticsListener {
@@ -185,37 +160,9 @@ class PlaybackService : MediaLibraryService() {
         }
 
         override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
-            if (
-                removedDevices.orEmpty().any {
-                    it.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
-                        it.type == AudioDeviceInfo.TYPE_USB_ACCESSORY ||
-                        it.type == AudioDeviceInfo.TYPE_USB_HEADSET
-                }
-            ) {
-                stopAndClearFeasibilityProbe()
-            }
             publishAudioRoute()
         }
     }
-
-    private val feasibilityController =
-        object : BitPerfectFeasibilityRuntimeBridge.Controller {
-            override fun observeCurrentOutput() {
-                stopAndClearFeasibilityProbe()
-                BitPerfectFeasibilityRuntimeBridge.setMode(
-                    FeasibilityProbeMode.OBSERVE_CURRENT_PATH
-                )
-                feasibilityAudioOutputProvider.publishRetainedCurrentFacts()
-            }
-
-            override fun runExactUsbProbe() {
-                runExactUsbFeasibilityProbe()
-            }
-
-            override fun stopAndClearProbe() {
-                stopAndClearFeasibilityProbe()
-            }
-        }
 
     private val libraryCallback = object : MediaLibrarySession.Callback {
         override fun onGetLibraryRoot(
@@ -309,25 +256,9 @@ class PlaybackService : MediaLibraryService() {
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .build()
 
-        feasibilityAudioOutputProvider =
-            FeasibilityAudioOutputProvider(
-                delegate = AudioTrackAudioOutputProvider.Builder(this).build(),
-                onOutputReleased = {
-                    if (
-                        !feasibilityOutputRecreationInProgress &&
-                        BitPerfectFeasibilityRuntimeBridge.state.value
-                            .probeMode ==
-                            FeasibilityProbeMode
-                                .EXPERIMENTAL_USB_EXACT_PATH
-                    ) {
-                        stopAndClearFeasibilityProbe()
-                    }
-                }
-            )
         val renderersFactory = EqualizerRenderersFactory(
             context = this,
-            equalizerAudioProcessor = equalizerAudioProcessor,
-            audioOutputProvider = feasibilityAudioOutputProvider
+            equalizerAudioProcessor = equalizerAudioProcessor
         )
         player = ExoPlayer.Builder(this, renderersFactory)
             .setAudioAttributes(audioAttributes, true)
@@ -335,12 +266,6 @@ class PlaybackService : MediaLibraryService() {
             .build()
         appPreferencesRepository = AppPreferencesRepository.getInstance(this)
         audioManager = getSystemService(AudioManager::class.java)
-        usbMixerBackend = AndroidUsbMixerBackend.create(this)
-        usbMixerController = UsbMixerFeasibilityController(usbMixerBackend)
-        BitPerfectFeasibilityRuntimeBridge.attachController(
-            feasibilityController
-        )
-        usbMixerController.clearStaleAtStartup()
         playerStateStorage = PlayerStateStorage(this)
         player.addListener(persistenceListener)
         player.addListener(advancedAudioPlayerListener)
@@ -374,10 +299,6 @@ class PlaybackService : MediaLibraryService() {
     }
 
     override fun onDestroy() {
-        stopAndClearFeasibilityProbe()
-        BitPerfectFeasibilityRuntimeBridge.detachController(
-            feasibilityController
-        )
         checkpointHandler.removeCallbacks(checkpointRunnable)
         saveServicePlaybackState()
         player.removeListener(persistenceListener)
@@ -392,107 +313,6 @@ class PlaybackService : MediaLibraryService() {
         serviceScope.cancel()
         AdvancedAudioRuntimeBridge.disconnect()
         super.onDestroy()
-    }
-
-    private fun runExactUsbFeasibilityProbe() {
-        stopAndClearFeasibilityProbe()
-        if (!BuildConfig.DEBUG) {
-            BitPerfectFeasibilityRuntimeBridge.recordActivationRejected(
-                FeasibilityRejectionReason.DEBUG_BUILD_REQUIRED
-            )
-            return
-        }
-        val state = BitPerfectFeasibilityRuntimeBridge.state.value
-        val output = state.media3OutputConfig
-        val equalizer = EqualizerRuntimeBridge.state.value
-        val rejection = when {
-            output == null ->
-                FeasibilityRejectionReason.OUTPUT_FORMAT_UNKNOWN
-            player.playbackParameters.speed != 1f ->
-                FeasibilityRejectionReason.NON_UNITY_PLAYBACK_SPEED
-            equalizer.effectivelyActive ->
-                FeasibilityRejectionReason.ACTIVE_EQUALIZER
-            equalizer.limiterRequestedEnabled ||
-                equalizer.limiterEffectivelyActive ->
-                FeasibilityRejectionReason.ACTIVE_LIMITER
-            appPreferencesRepository.state.value.replayGainMode !=
-                com.example.cdplaya.player.replaygain.ReplayGainMode.OFF ||
-                player.volume != 1f ->
-                FeasibilityRejectionReason.ACTIVE_REPLAY_GAIN
-            else -> null
-        }
-        BitPerfectFeasibilityRuntimeBridge.setMode(
-            FeasibilityProbeMode.EXPERIMENTAL_USB_EXACT_PATH
-        )
-        if (rejection != null) {
-            BitPerfectFeasibilityRuntimeBridge.recordActivationRejected(
-                rejection
-            )
-            stopAndClearFeasibilityProbe()
-            return
-        }
-
-        val result = usbMixerController.activate(output)
-        val device = if (Build.VERSION.SDK_INT >= 34) {
-            usbMixerBackend.selectedDevice
-        } else {
-            null
-        }
-        if (!result.activated || device == null) {
-            stopAndClearFeasibilityProbe()
-            return
-        }
-        feasibilityAudioOutputProvider.setIntendedUsbDevice(device)
-        player.setPreferredAudioDevice(device)
-        feasibilityPreferredDeviceApplied = true
-
-        // Stop/prepare forces the renderer and sink to create a matching
-        // AudioTrack after the UID-owned preferred mixer attribute is set.
-        // The playlist, current index, position, repeat, shuffle, session and
-        // authoritative ExoPlayer instance are retained.
-        val playWhenReady = player.playWhenReady
-        feasibilityOutputRecreationInProgress = true
-        try {
-            player.stop()
-            player.prepare()
-            player.playWhenReady = playWhenReady
-        } catch (failure: RuntimeException) {
-            BitPerfectFeasibilityRuntimeBridge.recordFailure(
-                FeasibilityEventType.INITIALIZATION_FAILED
-            )
-            stopAndClearFeasibilityProbe()
-        } finally {
-            feasibilityOutputRecreationInProgress = false
-        }
-    }
-
-    private fun stopAndClearFeasibilityProbe() {
-        if (
-            !::usbMixerController.isInitialized ||
-            !::feasibilityAudioOutputProvider.isInitialized
-        ) {
-            return
-        }
-        try {
-            usbMixerController.cleanup()
-        } finally {
-            feasibilityAudioOutputProvider.setIntendedUsbDevice(null)
-            if (
-                feasibilityPreferredDeviceApplied &&
-                ::player.isInitialized
-            ) {
-                player.setPreferredAudioDevice(null)
-            }
-            feasibilityPreferredDeviceApplied = false
-            if (
-                BitPerfectFeasibilityRuntimeBridge.state.value.probeMode !=
-                    FeasibilityProbeMode.OFF
-            ) {
-                BitPerfectFeasibilityRuntimeBridge.setMode(
-                    FeasibilityProbeMode.OFF
-                )
-            }
-        }
     }
 
     private fun observeAudioOffloadPreference() {
