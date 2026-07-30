@@ -11,14 +11,14 @@ bit-perfect.
 - Base description: merge of the stable Media3 1.10.1 upgrade
 - Implementation commit: `fc1c6ff` — Add USB audio feasibility observer and probe
 - Verification commit: `855cb26` — Add bit-perfect feasibility verification
-- Final HEAD: the report commit that contains this document; its exact hash is
-  supplied in the delivery summary because a commit cannot contain its own hash.
+- Initial Phase A report commit: `a62536f` — Document Phase A feasibility evidence
+- Closure commits: the focused hardware-discovered diagnostics fix and the
+  report commit that contains this document; exact hashes are supplied in the
+  delivery summary because a commit cannot contain its own hash.
 - Push status: not pushed
 - Final status: Phase A changes committed; the preserved user file below remains
   untracked.
 - Preserved unrelated file: untracked `STATUS_REPORT.md`
-- Complete diff from the base: 19 application/test files plus this report,
-  2,859 inserted lines and 4 deleted lines before the report's final edits.
 
 ## 2. Media3 1.10.1 API findings
 
@@ -221,25 +221,58 @@ Primary connected device:
 - Model: Samsung `SM-S908U1`
 - Android: 16
 - API: 36
-- Current route during validation: built-in speaker
-- Connected USB audio output: none
-- USB DAC safe label: not available
-- Supported USB mixer attributes: not queryable without a USB output
-- Bit-perfect attributes: not queryable
-- Exact matches: not queryable
-- Unsupported formats: no hardware-specific conclusion
-- Ambiguities: none observed because zero USB sinks were enumerated; the probe
-  rejects rather than guesses if multiple USB sinks are present
-- Preferred attribute set/query/listener: not attempted
-- AudioTrack USB route confirmation: not attempted
-- DAC display: not available
-- Cleanup: no preferred USB attribute was set
+- Device control: authorized wireless ADB while USB-C was occupied by the DAC
+- USB DAC safe label: Moondrop Dawn Pro 2
+- Physical topology: DAC connected directly to the S22 Ultra over USB-C; no hub
+- USB audio outputs enumerated by the probe: exactly one
+- Actual playback route: `USB`
+- Supported mixer attributes: 21
+- Default-behavior attributes: 21
+- Bit-perfect-behavior attributes: 0
+- Exact bit-perfect matches: 0
 
-API-36 enumeration returned the truthful no-USB result without attempting
-activation. The existing 45-case Android instrumentation suite passed before
-the change, and the focused four-case feasibility matrix passed after the
-change. No USB DAC was connected, so this phase cannot claim that the S22 Ultra
-plus a particular DAC activates Android's bit-perfect mixer behavior.
+The Dawn Pro 2 played normally and exposed the following attributes through
+`AudioManager.getSupportedMixerAttributes`. Encoding `2` is PCM16, encoding
+`21` is packed PCM24, encoding `22` is PCM32, and mask `12` is stereo. Every
+returned combination used `MIXER_BEHAVIOR_DEFAULT`; none used
+`MIXER_BEHAVIOR_BIT_PERFECT`.
+
+| # | Encoding | Rate (Hz) | Mask | Mixer behavior |
+|---:|---:|---:|---:|---|
+| 1 | 2 | 48,000 | 12 | DEFAULT |
+| 2 | 2 | 88,200 | 12 | DEFAULT |
+| 3 | 2 | 96,000 | 12 | DEFAULT |
+| 4 | 2 | 176,400 | 12 | DEFAULT |
+| 5 | 2 | 192,000 | 12 | DEFAULT |
+| 6 | 2 | 352,800 | 12 | DEFAULT |
+| 7 | 2 | 384,000 | 12 | DEFAULT |
+| 8 | 21 | 48,000 | 12 | DEFAULT |
+| 9 | 21 | 88,200 | 12 | DEFAULT |
+| 10 | 21 | 96,000 | 12 | DEFAULT |
+| 11 | 21 | 176,400 | 12 | DEFAULT |
+| 12 | 21 | 192,000 | 12 | DEFAULT |
+| 13 | 21 | 352,800 | 12 | DEFAULT |
+| 14 | 21 | 384,000 | 12 | DEFAULT |
+| 15 | 22 | 48,000 | 12 | DEFAULT |
+| 16 | 22 | 88,200 | 12 | DEFAULT |
+| 17 | 22 | 96,000 | 12 | DEFAULT |
+| 18 | 22 | 176,400 | 12 | DEFAULT |
+| 19 | 22 | 192,000 | 12 | DEFAULT |
+| 20 | 22 | 352,800 | 12 | DEFAULT |
+| 21 | 22 | 384,000 | 12 | DEFAULT |
+
+The normal Media3/AudioTrack observations were:
+
+| Source confirmed by CDPlaya | Processor | Media3 OutputConfig | Actual AudioTrack | Route | Audible result |
+|---|---|---|---|---|---|
+| FLAC, 44.1 kHz, stereo; source bit depth not reported | PCM16, 44.1 kHz, 299 observed buffers | PCM16, 44.1 kHz, mask 12, offload/tunneling false | PCM16, 44.1 kHz, mask 12, session 25561 | USB | Normal |
+| FLAC, 96 kHz, stereo; source bit depth not reported | Persistent processor received buffers; final post-fix configuration snapshot was not captured | PCM16, 96 kHz, mask 12, offload/tunneling false | PCM16, 96 kHz, mask 12, session 25529 | USB | Normal |
+
+The 96 kHz source had an exact encoding/rate/mask match among the default
+attributes, but no exact attribute with bit-perfect behavior. The probe
+therefore rejected `NO_BIT_PERFECT_ATTRIBUTE` without selecting or setting an
+attribute. Playback support and a USB route do not imply Android bit-perfect
+support.
 
 The Galaxy S9+ Android 10 and Galaxy Tab S9 were not connected during this
 workspace run. API-29 safety is enforced by the separate API-34 implementation
@@ -251,16 +284,53 @@ new physical regression on those devices remains outstanding.
 - Preconditions implemented: debug build, API 34+, exactly one USB sink, known
   non-offloaded/non-tunneled output, unity playback speed, inactive equalizer
   and limiter, ReplayGain off, and player volume 1.0.
-- Set/query/listener result: not attempted because no USB audio sink was
-  connected.
-- AudioTrack format/route/playback result: not tested with USB hardware.
-- Cleanup result: no preferred USB attribute was present or set; API-36 safe
-  enumeration completed without activation.
+- Physical preconditions used: EQ disabled, limiter disabled, ReplayGain off,
+  offload disabled, implicit app playback speed 1.0, and internal ExoPlayer
+  volume 1.0. Phone/DAC listening volume remained a downstream safe listening
+  control.
+- Candidate: PCM16, 96 kHz, stereo, mask 12.
+- Selection result: rejected with `NO_BIT_PERFECT_ATTRIBUTE` because all 21
+  returned attributes were default behavior.
+- Preferred set result: not attempted (`Unknown`), which is distinct from a
+  failed set call.
+- Preferred query result: null/none.
+- Preferred listener result: not applicable because no set was attempted.
+- Exact AudioTrack/route confirmation: not applicable to exact activation; the
+  ordinary AudioTrack independently matched PCM16/96 kHz/stereo and routed to
+  USB.
+- Processor buffer-free exact-stream confirmation: not applicable because no
+  exact stream was activated; ordinary playback continued through the
+  persistent processor path.
+- Cleanup result: `NOT_REQUIRED`; there was no owned preferred attribute to
+  clear.
 - Failure behavior: pure fake-backend tests cover no/multiple USB devices, no
   bit-perfect match, setter failure, listener failure, confirmation mismatch,
   idempotent success cleanup, and post-clear confirmation. Runtime exceptions
   converge on cleanup, and normal preferred-device routing is cleared only if
   this probe applied it.
+
+The first hardware report exposed a truthfulness defect in the unsupported
+path: the event history recorded `NO_BIT_PERFECT_ATTRIBUTE`, but the final
+snapshot erased the rejection when returning to `OFF`, showed a false set
+result although no set occurred, and left cleanup `PENDING`. The closure fix:
+
+- preserves the rejection when mode returns to `OFF`;
+- leaves set result unknown unless a set call actually occurred; and
+- resolves a pending cleanup to `NOT_REQUIRED` when nothing was set.
+
+Two focused JVM tests cover the state transition and controller outcome. The
+corrected hardware rerun reported:
+
+```text
+Probe mode: OFF
+Preferred set result: Unknown
+Preferred query result: None
+Cleanup result: NOT_REQUIRED
+Rejection reason: NO_BIT_PERFECT_ATTRIBUTE
+```
+
+The same fix also truthfully retained the earlier
+`OUTPUT_FORMAT_UNKNOWN` precondition rejection after a fresh process start.
 
 ## 8. Architecture decision
 
@@ -278,7 +348,7 @@ PARTIALLY
 
 Can the tested Android device and USB DAC activate Android's BIT_PERFECT
 mixer behavior?
-NOT TESTED
+NO — DEVICE/HAL COMBINATION DID NOT EXPOSE BIT-PERFECT ATTRIBUTES
 
 Is controlled player reconstruction required for the production design?
 YES
@@ -375,23 +445,121 @@ Opt-in existing performance verification:
   as a real outstanding verification result. No unrelated performance code or
   assertion was changed.
 
+### Comparative allocation benchmark closure
+
+The closure comparison used detached base `a6b0d5b1860f2116a94204772da2da19a481c0de`
+and Phase A HEAD `a62536f76daab1a4a8cb74a9309245f5d62aaf37` in separate
+worktrees on the same Windows 11 machine. Both used Gradle 9.4.1, launcher JVM
+23.0.2, the pinned Java 21 daemon toolchain, identical Gradle/wrapper
+configuration, the same Android SDK supplied through `ANDROID_HOME` and
+`ANDROID_SDK_ROOT`, and the `SAMSUNG MODE` power plan. Runs were serial, with no
+overlapping build or device workload.
+
+Every invocation used the same command after one excluded warm-up per revision:
+
+```powershell
+.\gradlew.bat --no-daemon `
+  "-Dequalizer.performance=true" `
+  :app:testDebugUnitTest `
+  --tests "com.example.cdplaya.player.equalizer.performance.EqualizerProcessorBenchmarkTest" `
+  --rerun-tasks `
+  --stacktrace
+```
+
+Cells below are `allocated bytes/call / median real-time factor / maximum
+real-time factor`. “Not reported” means the unchanged per-scenario assertion
+stopped the test before the later scenario.
+
+| Revision/run | flat-bypass | graphic-moderate | graphic-worst-high-rate-surround | Later reported scenarios | Assertion |
+|---|---:|---:|---:|---|---|
+| Base warm-up | 0.048 / 0.0002625 / 0.020775 | 0.744 / 0.003225 / 0.063300 | 29.328 / 0.0681375 / 0.126473 | Not reported | Fail: worst |
+| HEAD warm-up | 0.048 / 0.0002063 / 0.088331 | 29.432 / 0.0060188 / 0.086156 | Not reported | Not reported | Fail: graphic |
+| Base 1 | 0.048 / 0.0003750 / 0.017588 | 0.744 / 0.0025875 / 0.042900 | 29.328 / 0.0624094 / 0.091392 | Not reported | Fail: worst |
+| HEAD 1 | 0.936 / 0.0002063 / 0.099469 | 0.456 / 0.0024563 / 0.032325 | 28.968 / 0.0602391 / 0.087277 | Not reported | Fail: worst |
+| Base 2 | 0.048 / 0.0002063 / 0.062138 | 0.744 / 0.0026063 / 0.033713 | 29.328 / 0.0621609 / 0.111628 | Not reported | Fail: worst |
+| HEAD 2 | 0.048 / 0.0002063 / 0.065100 | 0.456 / 0.0024750 / 0.055838 | 28.824 / 0.0590063 / 0.114783 | Not reported | Fail: worst |
+| Base 3 | 0.936 / 0.0002250 / 0.050119 | 0.192 / 0.0027563 / 0.026606 | 29.184 / 0.0606422 / 0.102783 | Not reported | Fail: worst |
+| HEAD 3 | 0.936 / 0.0001688 / 0.051563 | 28.968 / 0.0026813 / 0.073275 | Not reported | Not reported | Fail: graphic |
+| Base 4 | 0.936 / 0.0001688 / 0.057713 | 0.608 / 0.0025688 / 0.091350 | 0.048 / 0.0585094 / 0.092583 | See full pass table below | Pass |
+| HEAD 4 | 0.048 / 0.0002250 / 0.039581 | 0.952 / 0.0039938 / 0.027394 | 29.328 / 0.0600234 / 0.104269 | Not reported | Fail: worst |
+| Base 5 | 0.048 / 0.0002813 / 0.029644 | 0.744 / 0.0025125 / 0.084844 | 29.328 / 0.0603844 / 0.146611 | Not reported | Fail: worst |
+| HEAD 5 | 0.936 / 0.0001500 / 0.081056 | 0.552 / 0.0026250 / 0.030469 | 28.824 / 0.0586078 / 0.094716 | Not reported | Fail: worst |
+
+Base run 4 was the only invocation that reached every scenario:
+
+| Scenario | Bytes/call | Median RTF | Maximum RTF |
+|---|---:|---:|---:|
+| `parametric-realistic` | 0.048 | 0.0077438 | 0.035438 |
+| `parametric-high-q-small-buffer` | 0.048 | 0.0055500 | 0.080963 |
+| `parametric-high-q-no-headroom` | 0.048 | 0.0052500 | 0.058613 |
+| `parametric-all-types-surround` | 0.048 | 0.0082031 | 0.028500 |
+| `parametric-realistic-limiter` | 0.048 | 0.0048000 | 0.032531 |
+
+Measured outcomes were base 1 pass/4 failures and HEAD 0 passes/5 failures. The
+base worst-scenario allocation median was 29.328 bytes/call with a
+0.048–29.328 spread; the four HEAD runs that reached that scenario had a 28.896
+median and 28.824–29.328 spread. The roughly 29-byte charge moved from the last
+scenario to `graphic-moderate` on both prior HEAD evidence and this comparison,
+and disappeared entirely on base run 4. This is consistent with fresh JVM/test
+worker initialization or allocation-instrumentation/scenario-order sensitivity.
+
+Conclusion: the threshold failure existed at the exact pre-Phase-A base, and
+Phase A HEAD did not increase the measured steady allocation. No Phase
+A-specific allocation regression was demonstrated. Production DSP,
+feasibility instrumentation, and the unchanged 16-byte assertion were therefore
+left untouched. The temporary base worktree was removed and pruned; active
+branch/HEAD remained intact.
+
+### Hardware-closure verification
+
+The hardware-discovered truthfulness fix changes only session diagnostics and
+cleanup state. It does not touch DSP, the equalizer processor hot path, Media3
+format selection, or the 16-byte allocation assertion.
+
+- Focused state/controller command:
+  `.\gradlew.bat --no-daemon :app:testDebugUnitTest --tests 'com.example.cdplaya.player.feasibility.BitPerfectFeasibilityStateTest' --tests 'com.example.cdplaya.player.feasibility.UsbMixerFeasibilityControllerTest' --stacktrace`
+  passed: 14 tests, 0 failures/errors/skips.
+- Final aggregate command:
+  `.\gradlew.bat --no-daemon :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleRelease :app:assembleBenchmark :benchmark:assembleBenchmarkBenchmark :app:assembleDebugAndroidTest --stacktrace`
+  passed in 4m54s with 217 actionable tasks. The final forced JVM rerun passed
+  in 2m07s: 615 tests, 0 failures, 0 errors, 4 skipped, 125 suites. Lint had
+  0 fatal issues, 0 errors, 74 warnings, and 1 informational issue. Debug,
+  minified release/R8, app benchmark, benchmark-module, and instrumentation APK
+  assembly all passed.
+- Sixty-minute-equivalent command:
+  `.\gradlew.bat --no-daemon '-Dequalizer.performance=true' '-Dequalizer.longRun=true' :app:testDebugUnitTest --tests 'com.example.cdplaya.player.equalizer.performance.EqualizerProcessorLongRunTest' --rerun-tasks --stacktrace`
+  passed in 2m30s: 3,600 equivalent seconds, 42,188 calls, and 172,802,048
+  frames.
+- The unchanged allocation command was rerun on corrected HEAD. Flat bypass
+  reported 0.048 bytes/call, median RTF 0.0002250, maximum RTF 0.074513.
+  `graphic-moderate` reported 29.728 bytes/call, median RTF 0.0032438,
+  maximum RTF 0.168094, and failed the unchanged 16-byte assertion. This is
+  consistent with the completed base/HEAD measurement-sensitivity evidence; the
+  diagnostics-only fix did not introduce processor work.
+- Connected command targeted the authorized wireless serial through
+  `ANDROID_SERIAL`:
+  `.\gradlew.bat --no-daemon :app:connectedDebugAndroidTest --stacktrace`
+  passed in 1m18s on `SM-S908U1`/Android 16: 49 tests, 0 failures, 0 errors,
+  0 skipped, 21.15s XML test time. The Dawn Pro 2 remained attached. The
+  test-services `No UID` app-ops line remained a harmless runner setup message.
+
 ## 10. Device validation
 
 | Device | Android/API | APK SHA-256 | Route and scenarios | Result / not tested |
 |---|---|---|---|---|
-| Samsung Galaxy S22 Ultra `SM-S908U1` | Android 16 / API 36 | debug `2B529E6D14A9514BCE37C0A4A90444ADD4A930A4B98802053EF4FD2846DF1FFB` | Built-in speaker; 49 connected cases, four feasibility cases, exact final APK cold launch | Install succeeded; cold launch succeeded in 793 ms; process remained alive; no fatal startup log. No USB DAC, USB route, mixer set/query/listener, playback fixture, disconnect/reconnect, DAC display, or audible-gap result. |
+| Samsung Galaxy S22 Ultra `SM-S908U1` | Android 16 / API 36 | debug `0909BC8CFCD2BFE29234533C748D4A750C04EFBBBD75B676289FFFE59F471BFB` | Normal phone output; Dawn Pro 2 USB output; 44.1/96 kHz FLAC; full ordinary playback checklist; disconnect/reconnect; background/screen-off; process restart; 49 connected tests | Install preserved data. Corrected APK cold-launched in 1,086 ms and post-cleanup process restart cold-launched in 793 ms. Ordinary and DAC playback remained normal, routes returned to USB after reconnect, no new click/pop or audible problem was reported, and process-scoped error logs were clean. Exact activation was unsupported because the device/HAL returned no bit-perfect attribute. |
 | Samsung Galaxy S9+ | Not connected / expected Android 10 target | Not installed | None | Physical API-29 regression not performed. |
 | Samsung Galaxy Tab S9 | Not connected; version not inferred | Not installed | None | Additional modern-device regression not performed. |
 
 Final APK artifacts:
 
-| Artifact | SHA-256 |
-|---|---|
-| `app-debug.apk` | `2B529E6D14A9514BCE37C0A4A90444ADD4A930A4B98802053EF4FD2846DF1FFB` |
-| `app-release-unsigned.apk` | `75F0581D364807C3DEBE20631FA62764D9A2935CC3C8E035F420BDB55BC7D837` |
-| `app-benchmark.apk` | `C6A213F0BF4AE4867CD77E53C898D67C72A4ECBA01B0E5B2B39A9577962429F8` |
-| `benchmark-benchmarkBenchmark.apk` | `2AE21E05061C75B0AECBED05BCFDEF4FD4007F0A1B61E752C526D168B4F6913B` |
-| `app-debug-androidTest.apk` | `E1B50BAA4634CE2A3784D3F6FBCB9AD67A7F2C3EC12C53666756AD13C280DEB5` |
+| Artifact | Bytes | SHA-256 |
+|---|---:|---|
+| `app-debug.apk` | 27,151,713 | `0909BC8CFCD2BFE29234533C748D4A750C04EFBBBD75B676289FFFE59F471BFB` |
+| `app-release-unsigned.apk` | 4,222,045 | `0379009A2EEEB4EC7B742D612218718FA44FD110EF94D31335B93FCE5B7E5AEF` |
+| `app-benchmark.apk` | 18,062,801 | `61B13AF53AD95094F2C9F00222CB074053499BABE2622D842AB9051678E495C0` |
+| `benchmark-benchmarkBenchmark.apk` | 46,455,401 | `2AE21E05061C75B0AECBED05BCFDEF4FD4007F0A1B61E752C526D168B4F6913B` |
+| `app-debug-androidTest.apk` | 1,161,648 | `E1B50BAA4634CE2A3784D3F6FBCB9AD67A7F2C3EC12C53666756AD13C280DEB5` |
 
 ## 11. Files changed
 
@@ -403,17 +571,17 @@ Final APK artifacts:
 | `app/src/main/java/com/example/cdplaya/player/equalizer/EqualizerRenderersFactory.kt` | Installs the forwarding provider in the existing sink. | Dormant production-safe observation point; no second sink/player. |
 | `app/src/main/java/com/example/cdplaya/player/feasibility/BitPerfectFeasibilityModels.kt` | Framework-free session evidence and enums. | Non-persisted Phase A facts. |
 | `app/src/main/java/com/example/cdplaya/player/feasibility/BitPerfectFeasibilityReportFormatter.kt` | Produces sanitized copied diagnostics. | Experimental/debug reporting without raw identifiers. |
-| `app/src/main/java/com/example/cdplaya/player/feasibility/BitPerfectFeasibilityRuntimeBridge.kt` | Bounded in-process state and service control bridge. | Dormant unless explicitly invoked; no ownership duplication. |
+| `app/src/main/java/com/example/cdplaya/player/feasibility/BitPerfectFeasibilityRuntimeBridge.kt` | Bounded in-process state and service control bridge; closure fix preserves unsupported/precondition rejection facts after returning to Off without inventing a set attempt. | Dormant unless explicitly invoked; no ownership duplication. |
 | `app/src/main/java/com/example/cdplaya/player/feasibility/ExactMixerAttributeMatcher.kt` | Strict encoding/rate/mask/behavior matching. | Pure Phase A eligibility evidence. |
 | `app/src/main/java/com/example/cdplaya/player/feasibility/FeasibilityAudioOutputProvider.kt` | Delegates Media3 behavior while observing format, real AudioTrack, reuse, and lifecycle. | Production-safe forwarding seam; activation remains experimental. |
-| `app/src/main/java/com/example/cdplaya/player/feasibility/UsbMixerFeasibilityController.kt` | API-gated USB enumeration, set/query/listen/clear, and exception-safe cleanup. | Experimental Android 14+ probe with API-29-safe loading. |
+| `app/src/main/java/com/example/cdplaya/player/feasibility/UsbMixerFeasibilityController.kt` | API-gated USB enumeration, set/query/listen/clear, and exception-safe cleanup; closure fix resolves a no-set pending state to cleanup not required. | Experimental Android 14+ probe with API-29-safe loading. |
 | `app/src/main/java/com/example/cdplaya/ui/settings/DiagnosticsScreen.kt` | Adds explicit debug-only Observe, Exact probe, Stop/Clear, and Copy controls. | No preference, badge, or production claim. |
 | `app/src/test/java/com/example/cdplaya/player/feasibility/BitPerfectFeasibilityArchitectureTest.kt` | Enforces one service/player/session and no production preference/badge. | Phase A scope guard. |
-| `app/src/test/java/com/example/cdplaya/player/feasibility/BitPerfectFeasibilityStateTest.kt` | Tests safe defaults, immutability, bounded events, and exact actual-track confirmation. | Phase A state integrity. |
+| `app/src/test/java/com/example/cdplaya/player/feasibility/BitPerfectFeasibilityStateTest.kt` | Tests safe defaults, immutability, bounded events, exact actual-track confirmation, and truthful unsupported rejection retention. | Phase A state integrity. |
 | `app/src/test/java/com/example/cdplaya/player/feasibility/DeterministicWavFixtureGeneratorTest.kt` | Generates and hashes copyright-free fixtures. | Test-only evidence; no APK asset. |
 | `app/src/test/java/com/example/cdplaya/player/feasibility/ExactMixerAttributeMatcherTest.kt` | Covers exact matches and every mismatch/ambiguity class. | Pure Phase A selection proof. |
 | `app/src/test/java/com/example/cdplaya/player/feasibility/FeasibilityAudioOutputProviderTest.kt` | Covers delegation, snapshots, reuse, lifecycle, and failure publication. | Phase A observer verification. |
-| `app/src/test/java/com/example/cdplaya/player/feasibility/UsbMixerFeasibilityControllerTest.kt` | Covers SDK/device rejection, set/listener/query failures, and idempotent cleanup. | Hardware-independent cleanup proof. |
+| `app/src/test/java/com/example/cdplaya/player/feasibility/UsbMixerFeasibilityControllerTest.kt` | Covers SDK/device rejection, default-only hardware, no-set cleanup, set/listener/query failures, and idempotent cleanup. | Hardware-independent cleanup proof. |
 | `app/src/androidTest/java/com/example/cdplaya/player/feasibility/BitPerfectFeasibilityInstrumentationTest.kt` | Exercises real Media3 sink/provider and actual AudioTrack creation plus safe API-36 USB inspection. | Device-only Phase A boundary evidence. |
 | `docs/audio/phase-a-bit-perfect-feasibility.md` | Records contracts, matrices, commands, caveats, hashes, and architecture decision. | Phase A deliverable; no runtime impact. |
 
@@ -431,18 +599,26 @@ Final APK artifacts:
   output release call cleanup.
 - Startup clears a stale media preferred attribute only for USB outputs visible
   to the same UID; it does not clear arbitrary non-USB or untracked pairs.
-- No USB output was connected and no preferred mixer attribute was discovered
-  or set during this run, so no stale attribute remained from validation.
+- The Dawn Pro 2 was connected, but no bit-perfect attribute was exposed and no
+  preferred mixer attribute was selected or set. Explicit Stop/Clear and a
+  subsequent process restart both left the probe Off with no queried preferred
+  attribute and no stale state.
 
 ## 13. Known limitations
 
-- No USB DAC was connected; supported attributes, exact matches, set/query
-  results, callbacks, USB route, disconnect/reconnect, audible gaps, and DAC
-  display evidence remain untested.
+- The tested S22 Ultra/Dawn Pro 2 device/HAL combination exposed only default
+  mixer behavior. A real preferred set/query/listener callback, exact-route
+  confirmation, buffer-free exact stream, post-set clear, and bit-perfect
+  format transition therefore could not be exercised.
+- Normal USB playback was observed at 44.1 and 96 kHz. No confirmed 48 or
+  192 kHz source was exercised, and CDPlaya diagnostics did not report source
+  bit depth, so no 16-bit or 24-bit source claim is made.
+- The DAC's own sample-rate display was not recorded; it would have been
+  secondary evidence only.
 - No physical Android 10 or Tab S9 regression was possible in this run.
-- No decoded FLAC/WAV fixture was played through a service-owned ExoPlayer queue;
-  the decisive comparisons isolate the post-decoder raw-PCM sink/provider
-  boundary.
+- Real 44.1 and 96 kHz FLAC files were played through the service-owned
+  ExoPlayer queue, while the deterministic test matrices continue to isolate
+  the post-decoder raw-PCM sink/provider boundary.
 - Processor-backed cases configure the real sink but do not create or feed the
   AudioTrack. Processor-free cases create and inspect actual AudioTracks.
 - Queue/history/session continuity across controlled reconstruction is not
@@ -450,13 +626,17 @@ Final APK artifacts:
 - The stock Media3 1.10.1 sink cannot preserve packed high-resolution integer PCM
   while retaining the ordinary processor chain, and its float path is not
   equivalent to packed integer PCM.
-- Audible gap/click/pop behavior requires a connected DAC and manual playback.
+- Manual disconnect/reconnect, background, screen-off, transport, queue,
+  repeat/shuffle, EQ/limiter/ReplayGain/offload, notification, and ordinary
+  playback checks passed without a reported new audible problem. These are
+  human observations, not electrical bitstream measurements.
 - The existing opt-in processor allocation microbenchmark failed its unchanged
-  16-byte/call threshold twice in different scenarios; this Phase A did not
-  change DSP performance code or weaken the assertion.
-- Phase B should wait for supported USB hardware if it is expected to claim
-  device/HAL activation. The application-architecture prototype can proceed,
-  but production eligibility and UX cannot be approved from this run alone.
+  16-byte/call threshold on base, original HEAD, and corrected HEAD with a
+  movable roughly 29-byte current-thread charge. Phase A did not change DSP
+  performance code or weaken the assertion.
+- Supported USB hardware is still required before any future phase can claim
+  Android bit-perfect activation. The application architecture remains
+  feasible, but this exact phone/DAC pair is not eligible for that path.
 
 ## 14. Final result
 
