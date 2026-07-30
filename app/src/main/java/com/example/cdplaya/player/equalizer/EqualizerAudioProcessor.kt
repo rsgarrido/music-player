@@ -10,8 +10,6 @@ import androidx.media3.common.util.UnstableApi
 import com.example.cdplaya.player.equalizer.limiter.LimiterPreparedConfiguration
 import com.example.cdplaya.player.equalizer.limiter.LimiterTelemetryAccumulator
 import com.example.cdplaya.player.equalizer.limiter.LookaheadLimiterEngine
-import com.example.cdplaya.player.feasibility.BitPerfectFeasibilityRuntimeBridge
-import com.example.cdplaya.player.feasibility.FeasibilityAudioFormatSnapshot
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.math.abs
@@ -114,18 +112,6 @@ internal class EqualizerAudioProcessor(
             configured = true,
             bypassed = true
         )
-        BitPerfectFeasibilityRuntimeBridge.recordProcessorConfigured(
-            input = FeasibilityAudioFormatSnapshot(
-                encoding = inputAudioFormat.encoding,
-                sampleRateHz = inputAudioFormat.sampleRate,
-                channelCount = inputAudioFormat.channelCount
-            ),
-            output = FeasibilityAudioFormatSnapshot(
-                encoding = inputAudioFormat.encoding,
-                sampleRateHz = inputAudioFormat.sampleRate,
-                channelCount = inputAudioFormat.channelCount
-            )
-        )
         return inputAudioFormat
     }
 
@@ -174,7 +160,6 @@ internal class EqualizerAudioProcessor(
         }
 
         if (inputByteCount == 0) return
-        BitPerfectFeasibilityRuntimeBridge.recordProcessorBuffer()
         val performanceTelemetry =
             runtimeBridge.performanceTelemetryIfEnabled()
         val processingStartedNanos = if (

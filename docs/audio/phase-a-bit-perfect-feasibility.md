@@ -1,5 +1,13 @@
 # Phase A: Android USB bit-perfect feasibility
 
+> **Historical feasibility report**
+>
+> This document records the Phase A prototype and its evidence. The experimental
+> runtime implementation described here was later removed from the production
+> application after native Android bit-perfect playback was deferred. The
+> original implementation remains available in Git history. See
+> [Native Android Bit-Perfect Playback — Deferred](native-bit-perfect-decision.md).
+
 This document records feasibility evidence only. It does not describe a production
 bit-perfect feature and it does not claim that ordinary CDPlaya playback is
 bit-perfect.
@@ -278,6 +286,45 @@ The Galaxy S9+ Android 10 and Galaxy Tab S9 were not connected during this
 workspace run. API-29 safety is enforced by the separate API-34 implementation
 class, the SDK-gated factory, lint, min-SDK compilation, and JVM fake tests, but
 new physical regression on those devices remains outstanding.
+
+### Later Galaxy S24 Ultra result
+
+A later manual test used a device identified by the user as a Samsung Galaxy S24
+Ultra with a Moondrop Dawn Pro 2 connected directly through USB-C. Its exact
+Android version, API level, firmware, and model code were not reported.
+
+The source was a stereo FLAC at 96,000 Hz; source bit depth was not reported.
+Ordinary playback routed through the DAC over USB. The actual AudioTrack used
+PCM16 encoding `2`, 96,000 Hz, and stereo channel mask `12`. The persistent
+equalizer processor observed 118 buffers, so this was ordinary processor-backed
+playback and is not evidence of bit-perfect output or source bit-depth
+preservation.
+
+Android returned 21 supported mixer attributes. Each of PCM16 encoding `2`,
+packed PCM24 encoding `21`, and PCM32 encoding `22` was returned at 48,000,
+88,200, 96,000, 176,400, 192,000, 352,800, and 384,000 Hz with stereo channel
+mask `12`. Every attribute used `MIXER_BEHAVIOR_DEFAULT`; none used
+`MIXER_BEHAVIOR_BIT_PERFECT`.
+
+| Observation | Result |
+|---|---|
+| Supported mixer attributes | 21 |
+| Bit-perfect attributes | 0 |
+| Probe rejection | `NO_BIT_PERFECT_ATTRIBUTE` |
+| Selected exact attribute | None |
+| Preferred set | Not attempted / Unknown |
+| Preferred query | None |
+| Cleanup | `NOT_REQUIRED` |
+
+Both tested combinations therefore produced the same relevant capability result:
+
+```text
+Galaxy S22 Ultra + Dawn Pro 2: 0 BIT_PERFECT attributes
+Galaxy S24 Ultra + Dawn Pro 2: 0 BIT_PERFECT attributes
+```
+
+These two observations do not establish identical behavior for every Galaxy S22,
+Galaxy S24, Samsung phone, Dawn Pro 2, firmware, or phone/DAC combination.
 
 ## 7. Experimental activation
 
