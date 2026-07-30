@@ -48,4 +48,37 @@ class ExpandedPlayerDragStateTest {
             )
         )
     }
+
+    @Test
+    fun deliberateUpwardDistanceOpensLyrics() {
+        assertTrue(
+            shouldOpenLyrics(
+                offsetY = -181f,
+                containerHeightPx = 1_000f,
+                velocityY = 0f
+            )
+        )
+    }
+
+    @Test
+    fun fastUpwardFlingOpensLyricsBeforeDistanceThreshold() {
+        assertTrue(
+            shouldOpenLyrics(
+                offsetY = -40f,
+                containerHeightPx = 1_000f,
+                velocityY = ExpandedPlayerLyricsVelocityPxPerSecond
+            )
+        )
+    }
+
+    @Test
+    fun shortUpwardMovementDoesNotOpenLyrics() {
+        assertFalse(
+            shouldOpenLyrics(
+                offsetY = -100f,
+                containerHeightPx = 1_000f,
+                velocityY = -500f
+            )
+        )
+    }
 }

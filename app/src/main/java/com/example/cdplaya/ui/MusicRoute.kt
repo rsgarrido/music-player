@@ -39,6 +39,8 @@ internal fun MusicRoute(
     val equalizerScreenState by
         musicViewModel.equalizerScreenState
             .collectAsStateWithLifecycle()
+    val lyricsPlaybackUiState by
+        musicViewModel.lyricsPlaybackUiState.collectAsStateWithLifecycle()
     if (!playerAppearanceUiState.isLoaded || !libraryAppearanceUiState.isLoaded) return
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
@@ -90,6 +92,7 @@ internal fun MusicRoute(
         isShuffleEnabled = playbackUiState.isShuffleEnabled,
         repeatMode = playbackUiState.repeatMode,
         playbackProgressUiState = musicViewModel.playbackProgressUiState,
+        lyricsPlaybackUiState = lyricsPlaybackUiState,
         queuedSongs = playbackUiState.queuedSongs,
         upcomingSongs = playbackUiState.upcomingSongs,
         snackbarHostState = snackbarHostState,
@@ -128,6 +131,10 @@ internal fun MusicRoute(
         onSeekChange = { position ->
             musicViewModel.seekTo(position)
         },
+        onLyricsVisibilityChanged = musicViewModel::setLyricsVisible,
+        onSuspendLyricsAutoFollow = musicViewModel::suspendLyricsAutoFollow,
+        onReturnLyricsToCurrentLine = musicViewModel::returnLyricsToCurrentLine,
+        onRescanLyrics = musicViewModel::rescanLyrics,
         onShuffleClick = {
             musicViewModel.toggleShuffle()
         },

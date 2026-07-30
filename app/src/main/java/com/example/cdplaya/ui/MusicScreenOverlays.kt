@@ -26,12 +26,15 @@ import com.example.cdplaya.ui.queue.QueueScreen
 import com.example.cdplaya.ui.settings.SleepTimerDialog
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
+import com.example.cdplaya.lyrics.LyricsPlaybackUiState
+import com.example.cdplaya.ui.lyrics.LyricsScreen
 import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicScreenOverlays(
     isPlayerExpanded: Boolean,
+    isLyricsVisible: Boolean,
     currentSong: Song?,
     previousPreviewSong: Song?,
     nextPreviewSong: Song?,
@@ -52,6 +55,13 @@ fun MusicScreenOverlays(
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit,
+    lyricsPlaybackUiState: LyricsPlaybackUiState,
+    onOpenLyrics: () -> Unit,
+    onCloseLyrics: () -> Unit,
+    onSuspendLyricsAutoFollow: () -> Unit,
+    onReturnLyricsToCurrentLine: () -> Unit,
+    onRescanLyrics: () -> Unit,
+    onOpenLyricsSettings: () -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseExpandedPlayer: () -> Unit,
@@ -84,7 +94,7 @@ fun MusicScreenOverlays(
 ) {
 
     ImmersiveSystemBarsEffect(
-        isImmersive = isPlayerExpanded &&
+        isImmersive = isPlayerExpanded && !isLyricsVisible &&
                 (selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL ||
                         selectedPlayerTheme == PlayerTheme.POCKET_FLIP ||
                         selectedPlayerTheme == PlayerTheme.POCKET_CASSETTE)
@@ -106,7 +116,8 @@ fun MusicScreenOverlays(
                 tokens = selectedPlayerThemeTokens,
                 modernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
                 modernSeekbarStyle = selectedModernSeekbarStyle,
-                isVisualizerWorkAllowed = !isExpandedUpNextSheetVisible &&
+                isVisualizerWorkAllowed = !isLyricsVisible &&
+                    !isExpandedUpNextSheetVisible &&
                     !isSleepTimerDialogVisible &&
                     !isCreatePlaylistDialogVisible &&
                     songPendingPlaylistAdd == null &&
@@ -127,6 +138,7 @@ fun MusicScreenOverlays(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseExpandedPlayer,
+                onOpenLyrics = onOpenLyrics,
                 onOpenUpNextClick = onShowExpandedUpNextSheet,
                 onOpenSleepTimerClick = onShowExpandedSleepTimer,
                 onOpenMoreClick = onShowExpandedMore,
@@ -137,6 +149,20 @@ fun MusicScreenOverlays(
             )
             }
         }
+    }
+
+    if (isPlayerExpanded && isLyricsVisible && currentSong != null) {
+        LyricsScreen(
+            state = lyricsPlaybackUiState,
+            isPlaying = isPlaying,
+            onBack = onCloseLyrics,
+            onPlayPause = onPlayPauseClick,
+            onSeek = onSeekChange,
+            onSuspendAutoFollow = onSuspendLyricsAutoFollow,
+            onReturnToCurrentLine = onReturnLyricsToCurrentLine,
+            onRescan = onRescanLyrics,
+            onOpenSettings = onOpenLyricsSettings
+        )
     }
 
     if (isExpandedUpNextSheetVisible) {

@@ -22,12 +22,15 @@ import kotlin.math.max
 
 internal const val ExpandedPlayerCollapseThresholdFraction = 0.26f
 internal const val ExpandedPlayerCollapseVelocityPxPerSecond = 1_400f
+internal const val ExpandedPlayerLyricsThresholdFraction = 0.18f
+internal const val ExpandedPlayerLyricsVelocityPxPerSecond = -1_400f
 private const val HorizontalSwipeThresholdPx = 120f
 
 @Stable
 class ExpandedPlayerDragState internal constructor(
     private val coroutineScope: CoroutineScope,
-    private val onCollapse: () -> Unit
+    private val onCollapse: () -> Unit,
+    private val onOpenLyrics: () -> Unit
 ) {
     var offsetY by mutableFloatStateOf(0f)
         private set
@@ -49,13 +52,27 @@ class ExpandedPlayerDragState internal constructor(
     }
 
     fun dragBy(deltaY: Float) {
-        offsetY = (offsetY + deltaY).coerceIn(0f, containerHeightPx)
+        offsetY = (offsetY + deltaY).coerceIn(-containerHeightPx, containerHeightPx)
     }
 
     fun settle(velocityY: Float) {
         settleJob?.cancel()
 
-        if (shouldCollapseExpandedPlayer(
+        if (shouldOpenLyrics(
+                offsetY = offsetY,
+                containerHeightPx = containerHeightPx,
+                velocityY = velocityY
+            )
+        ) {
+            settleJob = coroutineScope.launch {
+                animateOffsetTo(
+                    targetOffset = minOf(offsetY, -containerHeightPx * 0.3f),
+                    durationMillis = 100
+                )
+                onOpenLyrics()
+                offsetY = 0f
+            }
+        } else if (shouldCollapseExpandedPlayer(
                 offsetY = offsetY,
                 containerHeightPx = containerHeightPx,
                 velocityY = velocityY
@@ -97,17 +114,30 @@ class ExpandedPlayerDragState internal constructor(
 
 @Composable
 fun rememberExpandedPlayerDragState(
-    onCollapse: () -> Unit
+    onCollapse: () -> Unit,
+    onOpenLyrics: () -> Unit = {}
 ): ExpandedPlayerDragState {
     val currentOnCollapse by rememberUpdatedState(onCollapse)
+    val currentOnOpenLyrics by rememberUpdatedState(onOpenLyrics)
     val coroutineScope = rememberCoroutineScope()
 
     return remember(coroutineScope) {
         ExpandedPlayerDragState(
             coroutineScope = coroutineScope,
-            onCollapse = { currentOnCollapse() }
+            onCollapse = { currentOnCollapse() },
+            onOpenLyrics = { currentOnOpenLyrics() }
         )
     }
+}
+
+internal fun shouldOpenLyrics(
+    offsetY: Float,
+    containerHeightPx: Float,
+    velocityY: Float
+): Boolean {
+    val distanceThreshold = containerHeightPx * ExpandedPlayerLyricsThresholdFraction
+    return offsetY <= -distanceThreshold ||
+            velocityY <= ExpandedPlayerLyricsVelocityPxPerSecond
 }
 
 internal fun shouldCollapseExpandedPlayer(

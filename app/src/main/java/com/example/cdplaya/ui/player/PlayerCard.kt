@@ -36,6 +36,7 @@ fun PlayerCard(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onOpenUpNextClick: () -> Unit = {},
+    onOpenLyrics: () -> Unit = {},
     isCurrentSongFavorite: Boolean = false,
     onToggleFavoriteClick: (Song) -> Unit = {},
 ) {
@@ -65,6 +66,7 @@ fun PlayerCard(
             onShuffleClick = onShuffleClick,
             onRepeatClick = onRepeatClick,
             onCollapseClick = onCollapseClick,
+            onOpenLyrics = onOpenLyrics,
             onOpenUpNextClick = onOpenUpNextClick,
             onToggleFavoriteClick = onToggleFavoriteClick,
             albumArtSize = albumArtSize,

@@ -58,6 +58,7 @@ fun ModernExpandedPlayer(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
+    onOpenLyrics: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
@@ -132,7 +133,10 @@ fun ModernExpandedPlayer(
         onNextClick()
     }
 
-    val dragState = rememberExpandedPlayerDragState(onCollapseClick)
+    val dragState = rememberExpandedPlayerDragState(
+        onCollapse = onCollapseClick,
+        onOpenLyrics = onOpenLyrics
+    )
     val verticalDragState = rememberDraggableState { deltaY ->
         dragState.dragBy(deltaY)
     }

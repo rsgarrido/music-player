@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +62,7 @@ import com.example.cdplaya.ui.tageditor.TagEditorScreen
 import com.example.cdplaya.ui.tageditor.rememberTagEditorActions
 import kotlinx.coroutines.flow.StateFlow
 import com.example.cdplaya.mediaaccess.MediaAccessState
+import com.example.cdplaya.lyrics.LyricsPlaybackUiState
 
 
 @Composable
@@ -82,6 +84,7 @@ internal fun MusicScreen(
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
     playbackProgressUiState: StateFlow<PlaybackProgressUiState>,
+    lyricsPlaybackUiState: LyricsPlaybackUiState,
     snackbarHostState: SnackbarHostState,
     onUndoAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
@@ -91,6 +94,10 @@ internal fun MusicScreen(
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit,
+    onLyricsVisibilityChanged: (Boolean) -> Unit,
+    onSuspendLyricsAutoFollow: () -> Unit,
+    onReturnLyricsToCurrentLine: () -> Unit,
+    onRescanLyrics: () -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     queuedSongs: List<Song>,
@@ -178,6 +185,7 @@ internal fun MusicScreen(
 
     val overlayState = rememberMusicOverlayState()
     var isPlayerExpanded by overlayState.isPlayerExpanded
+    var isLyricsVisible by rememberSaveable { mutableStateOf(false) }
     var isFolderScreenVisible by overlayState.isFolderScreenVisible
     var isSettingsScreenVisible by overlayState.isSettingsScreenVisible
     var isDiagnosticsScreenVisible by overlayState.isDiagnosticsScreenVisible
@@ -193,6 +201,13 @@ internal fun MusicScreen(
     var hasUnsavedTagChanges by remember { mutableStateOf(false) }
     var isDiscardTagChangesDialogVisible by remember { mutableStateOf(false) }
     var selectedArtworkUriForTagEdit by remember { mutableStateOf<Uri?>(null) }
+
+    LaunchedEffect(isLyricsVisible) {
+        onLyricsVisibilityChanged(isLyricsVisible)
+    }
+    LaunchedEffect(currentSong?.id) {
+        if (currentSong == null) isLyricsVisible = false
+    }
 
     val tagEditorActions = rememberTagEditorActions(
         snackbarHostState = snackbarHostState,
@@ -276,6 +291,7 @@ internal fun MusicScreen(
         )
 
         isPlayerExpanded = false
+        isLyricsVisible = false
         selectedArtistName = null
         selectedAlbumFolderPath = null
         selectedPlaylistId = null
@@ -341,6 +357,10 @@ internal fun MusicScreen(
         when {
             songPendingTagEdit != null -> {
                 requestCloseTagEditor()
+            }
+
+            isLyricsVisible -> {
+                isLyricsVisible = false
             }
 
             isExpandedUpNextSheetVisible -> {
@@ -768,6 +788,7 @@ internal fun MusicScreen(
         if (selectedSongForTagEdit == null) {
             MusicScreenOverlays(
                 isPlayerExpanded = isPlayerExpanded,
+                isLyricsVisible = isLyricsVisible,
                 currentSong = currentSong,
                 previousPreviewSong = previousPreviewSong,
                 nextPreviewSong = nextPreviewSong,
@@ -786,6 +807,21 @@ internal fun MusicScreen(
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
                 onSeekChange = onSeekChange,
+                lyricsPlaybackUiState = lyricsPlaybackUiState,
+                onOpenLyrics = {
+                    isLyricsVisible = true
+                },
+                onCloseLyrics = {
+                    isLyricsVisible = false
+                },
+                onSuspendLyricsAutoFollow = onSuspendLyricsAutoFollow,
+                onReturnLyricsToCurrentLine = onReturnLyricsToCurrentLine,
+                onRescanLyrics = onRescanLyrics,
+                onOpenLyricsSettings = {
+                    isLyricsVisible = false
+                    isPlayerExpanded = false
+                    isSettingsScreenVisible = true
+                },
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseExpandedPlayer = {

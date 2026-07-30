@@ -354,6 +354,9 @@ class PlaybackController(
         savePlayerState()
     }
 
+    fun getCurrentPositionForLyrics(): Long =
+        musicPlayer.getCurrentPosition().coerceAtLeast(0).toLong()
+
     fun toggleShuffle() {
         isShuffleEnabled = !isShuffleEnabled
         playbackNavigationHistory.clearAll()
