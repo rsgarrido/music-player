@@ -79,6 +79,8 @@ fun MiniPlayerHost(
             state = state,
             callbacks = callbacks,
             tokens = tokens,
+            morphCallbacks = defaultMorphCallbacks,
+            morphOwnsVisuals = morphOwnsVisuals,
             modifier = measuredModifier
         )
 

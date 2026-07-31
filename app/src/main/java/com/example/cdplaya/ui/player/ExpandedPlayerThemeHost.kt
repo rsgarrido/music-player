@@ -19,6 +19,10 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelPlayerMorph
+import com.example.cdplaya.ui.player.classicwheel.playerMorphRendererFor
+import com.example.cdplaya.ui.player.classicwheel.PlayerMorphRenderer
+import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelMorphGeometry
 import com.example.cdplaya.ui.player.modern.ModernExpandedPlayer
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
@@ -208,7 +212,14 @@ fun ExpandedPlayerThemeHost(
         }
 
         PlayerTheme.CLASSIC_WHEEL -> {
-            ClassicWheelExpandedPlayer(
+            val geometry = resolveClassicWheelMorphGeometry(
+                playerMorphState.progress, endpointBounds
+            )
+            ClassicWheelPlayerMorph(
+                progress = playerMorphState.progress,
+                geometry = geometry,
+                tokens = tokens
+            ) { screenAlpha, wheelAlpha, controlsActive -> ClassicWheelExpandedPlayer(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
@@ -227,8 +238,11 @@ fun ExpandedPlayerThemeHost(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 songs = songs,
                 onSongClick = onSongClick,
-                tokens = tokens
-            )
+                tokens = tokens,
+                screenAlpha = screenAlpha,
+                wheelAlpha = wheelAlpha,
+                wheelInputEnabled = controlsActive
+            ) }
         }
 
         PlayerTheme.RETRO_RACK -> {

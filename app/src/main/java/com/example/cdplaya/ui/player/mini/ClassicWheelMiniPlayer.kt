@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,6 +29,8 @@ fun ClassicWheelMiniPlayer(
     state: MiniPlayerState,
     callbacks: MiniPlayerCallbacks,
     tokens: PlayerThemeTokens,
+    morphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
+    morphOwnsVisuals: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val wheelColor = tokens.accentColor
@@ -37,9 +40,12 @@ fun ClassicWheelMiniPlayer(
     MiniPlayerScaffold(
         state = state,
         callbacks = callbacks,
-        modifier = modifier,
+        modifier = modifier.graphicsLayer {
+            alpha = if (morphOwnsVisuals) 0f else 1f
+        },
         containerColor = tokens.shellColor,
-        borderColor = tokens.shellColor.darken(0.35f)
+        borderColor = tokens.shellColor.darken(0.35f),
+        defaultMorphCallbacks = morphCallbacks
     ) { displayedState ->
         Row(verticalAlignment = Alignment.CenterVertically) {
             MiniPlayerArtwork(

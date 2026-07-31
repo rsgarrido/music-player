@@ -21,10 +21,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.playerEndpointInput
 import kotlinx.coroutines.delay
 
 
@@ -48,16 +50,21 @@ fun ClassicWheelExpandedPlayer(
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
-    tokens: PlayerThemeTokens = ClassicWheelDefaultTokens
+    tokens: PlayerThemeTokens = ClassicWheelDefaultTokens,
+    screenAlpha: Float = 1f,
+    wheelAlpha: Float = 1f,
+    wheelInputEnabled: Boolean = true,
+    modifier: Modifier = Modifier
 ) {
     val palette = remember(tokens) { ClassicWheelPalette.from(tokens) }
 
     CompositionLocalProvider(LocalClassicWheelPalette provides palette) {
     BoxWithConstraints(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(ClassicWheelColors.shell)
             .padding(horizontal = 14.dp, vertical = 16.dp)
+            .graphicsLayer { alpha = screenAlpha.coerceIn(0f, 1f) }
     ) {
         val menuState = remember {
             ClassicWheelMenuState()
@@ -308,7 +315,17 @@ fun ClassicWheelExpandedPlayer(
                 } else {
                     55f
                 },
-                modifier = Modifier.size(wheelSize)
+                modifier = Modifier
+                    .size(wheelSize)
+                    .graphicsLayer {
+                        alpha = wheelAlpha.coerceIn(0f, 1f)
+                        scaleX = 0.82f + 0.18f * wheelAlpha.coerceIn(0f, 1f)
+                        scaleY = scaleX
+                    }
+                    .then(
+                        if (wheelInputEnabled) Modifier else
+                            Modifier.playerEndpointInput(false)
+                    )
             )
         }
     }

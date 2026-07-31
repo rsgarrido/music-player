@@ -58,6 +58,8 @@ import com.example.cdplaya.ui.player.modern.DefaultMorphMetadataOwner
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
 import com.example.cdplaya.ui.player.modern.defaultMorphMetadataOwner
 import com.example.cdplaya.ui.player.modern.resolveDefaultPlayerMorphGeometry
+import com.example.cdplaya.ui.player.classicwheel.classicWheelMorphTravelDistance
+import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelMorphGeometry
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
@@ -447,6 +449,25 @@ internal fun MusicScreen(
                         isMorphActive = !playerMorphState.isCollapsedAndIdle,
                         geometryReady = defaultMorphGeometry != null
                     ) == DefaultMorphMetadataOwner.Morph
+        val classicWheelMorphOwnsVisuals =
+            selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL &&
+                    !playerMorphState.isCollapsedAndIdle &&
+                    resolveClassicWheelMorphGeometry(
+                        playerMorphState.progress,
+                        playerEndpointBounds
+                    ) != null
+        val classicMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
+            DefaultMiniPlayerMorphCallbacks(
+                onDragStart = {
+                    playerMorphState.beginDragWithRange(
+                        classicWheelMorphTravelDistance(playerEndpointBounds)
+                    )
+                },
+                onDragBy = playerMorphState::dragBy,
+                onDragEnd = playerMorphState::endDrag,
+                onDragCancel = playerMorphState::cancelDrag
+            )
+        }
         val defaultMiniMorphCallbacks = remember(
             playerMorphState,
             playerEndpointBounds
@@ -813,14 +834,12 @@ internal fun MusicScreen(
                 },
                 onMiniPlayerBoundsChanged = playerEndpointBounds::updateMini,
                 defaultMorphBounds = defaultMorphBounds,
-                defaultMorphCallbacks = if (
-                    selectedPlayerTheme == PlayerTheme.DEFAULT
-                ) {
-                    defaultMiniMorphCallbacks
-                } else {
-                    null
+                defaultMorphCallbacks = when (selectedPlayerTheme) {
+                    PlayerTheme.DEFAULT -> defaultMiniMorphCallbacks
+                    PlayerTheme.CLASSIC_WHEEL -> classicMiniMorphCallbacks
+                    else -> null
                 },
-                morphOwnsVisuals = defaultMorphOwnsVisuals,
+                morphOwnsVisuals = defaultMorphOwnsVisuals || classicWheelMorphOwnsVisuals,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
