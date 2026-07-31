@@ -36,7 +36,10 @@ internal fun ModernPlayerArtwork(
     carouselState: ModernArtworkCarouselState,
     artworkSize: Dp,
     transitionStyle: ModernArtworkTransitionStyle,
-    style: ModernPlayerStyle
+    style: ModernPlayerStyle,
+    modifier: Modifier = Modifier,
+    gesturesEnabled: Boolean = true,
+    renderArtwork: Boolean = true
 ) {
     val horizontalDragState = rememberDraggableState { deltaX ->
         carouselState.dragBy(deltaX)
@@ -44,7 +47,7 @@ internal fun ModernPlayerArtwork(
     val carouselItems = carouselSongs.items()
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(artworkSize)
             .onSizeChanged { size ->
                 carouselState.updateArtworkWidth(size.width)
@@ -52,6 +55,7 @@ internal fun ModernPlayerArtwork(
             .draggable(
                 state = horizontalDragState,
                 orientation = Orientation.Horizontal,
+                enabled = gesturesEnabled,
                 onDragStarted = { carouselState.startDrag() },
                 onDragStopped = { velocityX ->
                     carouselState.settle(
@@ -62,7 +66,7 @@ internal fun ModernPlayerArtwork(
             ),
         contentAlignment = Alignment.Center
     ) {
-        carouselItems.forEach { item ->
+        if (renderArtwork) carouselItems.forEach { item ->
             key(item.song.id) {
                 ModernPlayerArtworkCard(
                     song = item.song,

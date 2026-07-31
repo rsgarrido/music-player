@@ -33,6 +33,8 @@ import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.player.PlayerCard
 import com.example.cdplaya.ui.player.PlayerMorphState
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.mini.DefaultMiniPlayerMorphCallbacks
 import com.example.cdplaya.ui.player.SleepTimerStatusBanner
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 
@@ -158,7 +160,10 @@ fun MiniPlayerSection(
     sleepTimerDisplayText: String,
     onSleepTimerClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onMiniPlayerBoundsChanged: (Rect) -> Unit = {}
+    onMiniPlayerBoundsChanged: (Rect) -> Unit = {},
+    defaultMorphBounds: DefaultPlayerMorphBounds? = null,
+    defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
+    morphOwnsVisuals: Boolean = false
 ) {
     Column(modifier = modifier) {
         SleepTimerStatusBanner(
@@ -191,7 +196,10 @@ fun MiniPlayerSection(
                 song.membershipKey() in favoriteMembershipKeys
             } == true,
             onToggleFavoriteClick = onToggleFavoriteClick,
-            onMiniPlayerBoundsChanged = onMiniPlayerBoundsChanged
+            onMiniPlayerBoundsChanged = onMiniPlayerBoundsChanged,
+            defaultMorphBounds = defaultMorphBounds,
+            defaultMorphCallbacks = defaultMorphCallbacks,
+            morphOwnsVisuals = morphOwnsVisuals
         )
     }
 }

@@ -14,6 +14,8 @@ import com.example.cdplaya.ui.player.mini.MiniPlayerCallbacks
 import com.example.cdplaya.ui.player.mini.MiniPlayerHost
 import com.example.cdplaya.ui.player.mini.MiniPlayerState
 import com.example.cdplaya.ui.player.modern.ModernExpandedPlayer
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.mini.DefaultMiniPlayerMorphCallbacks
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 
 @Composable
@@ -42,6 +44,9 @@ fun PlayerCard(
     isCurrentSongFavorite: Boolean = false,
     onToggleFavoriteClick: (Song) -> Unit = {},
     onMiniPlayerBoundsChanged: (Rect) -> Unit = {},
+    defaultMorphBounds: DefaultPlayerMorphBounds? = null,
+    defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
+    morphOwnsVisuals: Boolean = false,
 ) {
     if (currentSong == null) {
         return
@@ -97,6 +102,9 @@ fun PlayerCard(
                 onExpandClick = onExpandClick
             ),
             onBoundsChanged = onMiniPlayerBoundsChanged,
+            defaultMorphBounds = defaultMorphBounds,
+            defaultMorphCallbacks = defaultMorphCallbacks,
+            morphOwnsVisuals = morphOwnsVisuals,
             modifier = modifier
         )
     }

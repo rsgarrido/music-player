@@ -29,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
@@ -68,6 +70,9 @@ fun ModernExpandedPlayer(
     modifier: Modifier = Modifier,
     style: ModernPlayerStyle = ModernPlayerDefaults.style(),
     albumArtSize: Dp = ModernPlayerDefaults.MaximumArtworkSize,
+    defaultMorphBounds: DefaultPlayerMorphBounds? = null,
+    defaultMorphVisualState: DefaultPlayerMorphVisualState? = null,
+    defaultMorphDragRangePx: Float? = null,
     lyricsContent: @Composable () -> Unit = {}
 ) {
     if (currentSong == null) {
@@ -138,24 +143,38 @@ fun ModernExpandedPlayer(
     }
 
     var containerHeightPx by remember { mutableFloatStateOf(1f) }
+    var isMorphDrag by remember { mutableStateOf(false) }
     val verticalDragState = rememberDraggableState { deltaY ->
-        if (deltaY < 0f || lyricsTransitionState.progress > 0f) {
+        if (playerMorphState.progress < 1f &&
+            lyricsTransitionState.progress == 0f
+        ) {
+            isMorphDrag = true
+            playerMorphState.dragBy(deltaY)
+        } else if (deltaY < 0f || lyricsTransitionState.progress > 0f) {
             if (lyricsTransitionState.progress == 0f) {
                 lyricsTransitionState.beginOpeningDrag()
             }
             lyricsTransitionState.dragOpeningBy(deltaY, containerHeightPx)
             playerMorphState.updateProgressFromDrag(1f)
         } else {
+            isMorphDrag = true
             playerMorphState.dragBy(deltaY)
         }
     }
     val dragProgress = 1f - playerMorphState.progress
+    val morphOwnsPersistentContent = defaultMorphVisualState?.isReady == true
 
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(
-                Color.Black.copy(alpha = 0.24f * (1f - dragProgress))
+                Color.Black.copy(
+                    alpha = if (defaultMorphVisualState == null) {
+                        0.24f * (1f - dragProgress)
+                    } else {
+                        0f
+                    }
+                )
             )
             .onSizeChanged { size ->
                 containerHeightPx = size.height.toFloat().coerceAtLeast(1f)
@@ -171,45 +190,78 @@ fun ModernExpandedPlayer(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    translationY = dragProgress * containerHeightPx * 0.46f
-                    val contentScale = 1f - dragProgress * 0.04f
-                    scaleX = contentScale
-                    scaleY = contentScale
-                    alpha = 1f - dragProgress * 0.1f
-                    shape = RoundedCornerShape(28.dp * dragProgress)
-                    clip = dragProgress > 0f
+                    if (defaultMorphVisualState == null) {
+                        translationY = dragProgress * containerHeightPx * 0.46f
+                        val contentScale = 1f - dragProgress * 0.04f
+                        scaleX = contentScale
+                        scaleY = contentScale
+                        alpha = 1f - dragProgress * 0.1f
+                        shape = RoundedCornerShape(28.dp * dragProgress)
+                        clip = dragProgress > 0f
+                    }
                 }
-                .background(style.backgroundColor)
+                .background(
+                    if (defaultMorphVisualState == null) {
+                        style.backgroundColor
+                    } else {
+                        Color.Transparent
+                    }
+                )
                 .draggable(
                     state = verticalDragState,
                     orientation = Orientation.Vertical,
                     onDragStarted = {
-                        playerMorphState.beginDrag(containerHeightPx)
+                        isMorphDrag = playerMorphState.progress < 1f
+                        val morphDragRange = defaultMorphDragRangePx
+                        if (morphDragRange != null) {
+                            playerMorphState.beginDragWithRange(morphDragRange)
+                        } else {
+                            playerMorphState.beginDrag(containerHeightPx)
+                        }
                     },
                     enabled = !lyricsTransitionState.lyricsInteractive,
                     onDragStopped = { velocityY ->
-                        if (lyricsTransitionState.progress > 0f ||
-                            velocityY <= PlayerLyricsTransitionState.OPEN_VELOCITY_PX_PER_SECOND
+                        if (!isMorphDrag && (
+                            lyricsTransitionState.progress > 0f ||
+                            playerMorphState.progress >= 1f &&
+                            velocityY <=
+                            PlayerLyricsTransitionState.OPEN_VELOCITY_PX_PER_SECOND
+                            )
                         ) {
                             playerMorphState.snapTo(PlayerPresentation.Expanded)
                             lyricsTransitionState.settleOpening(velocityY)
                         } else {
                             playerMorphState.endDrag(velocityY)
                         }
+                        isMorphDrag = false
                     }
                 )
         ) {
-            ModernPlayerBackground(
-                currentSong = currentSong,
-                style = style
-            )
+            if (defaultMorphVisualState == null ||
+                defaultMorphVisualState.expensiveContentActive
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            alpha = defaultMorphVisualState?.backgroundAlpha ?: 1f
+                        }
+                ) {
+                    ModernPlayerBackground(
+                        currentSong = currentSong,
+                        style = style
+                    )
+                }
+            }
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .graphicsLayer {
-                        alpha = 1f - dragProgress * 0.18f
-                        translationY = dragProgress * 14.dp.toPx()
+                        if (defaultMorphVisualState == null) {
+                            alpha = 1f - dragProgress * 0.18f
+                            translationY = dragProgress * 14.dp.toPx()
+                        }
                     }
                     .statusBarsPadding()
                     .navigationBarsPadding()
@@ -224,7 +276,16 @@ fun ModernExpandedPlayer(
                     carouselState = carouselState,
                     artworkSize = foregroundAlbumArtSize,
                     transitionStyle = artworkTransitionStyle,
-                    style = style
+                    style = style,
+                    modifier = Modifier
+                        .onGloballyPositioned { coordinates ->
+                            defaultMorphBounds?.updateExpandedArtwork(
+                                coordinates.boundsInRoot()
+                            )
+                        }
+                        .hiddenFromDefaultMorph(morphOwnsPersistentContent),
+                    gesturesEnabled = !lyricsTransitionState.lyricsInteractive,
+                    renderArtwork = defaultMorphVisualState == null
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -235,7 +296,15 @@ fun ModernExpandedPlayer(
                     audioQualityRepository = audioQualityRepository,
                     transitionStyle = artworkTransitionStyle,
                     style = style,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    onPersistentContentBoundsChanged = { bounds ->
+                        defaultMorphBounds?.updateExpandedText(bounds)
+                    },
+                    hidePersistentContent = morphOwnsPersistentContent,
+                    expandedContentAlpha =
+                        defaultMorphVisualState?.metadataAlpha ?: 1f,
+                    loadExpandedMetadata =
+                        defaultMorphVisualState?.expensiveContentActive ?: true
                 )
 
                 lyricsContent()
@@ -245,11 +314,27 @@ fun ModernExpandedPlayer(
                 ModernPlayerSeekBar(
                     currentPosition = currentPosition,
                     duration = duration,
-                    onSeekChange = onSeekChange,
+                    onSeekChange = if (defaultMorphVisualState == null ||
+                        playerMorphState.settledPresentation ==
+                        PlayerPresentation.Expanded
+                    ) {
+                        onSeekChange
+                    } else {
+                        {}
+                    },
                     seekbarStyle = seekbarStyle,
                     waveformSeed = "${currentSong.id}|${currentSong.filePath}|${currentSong.title}",
                     waveformData = waveformData,
-                    style = style
+                    style = style,
+                    modifier = Modifier
+                        .graphicsLayer {
+                            alpha = defaultMorphVisualState?.metadataAlpha ?: 1f
+                        }
+                        .suppressDefaultMorphSemantics(
+                            defaultMorphVisualState != null &&
+                                    playerMorphState.settledPresentation !=
+                                    PlayerPresentation.Expanded
+                        )
                 )
 
                 Spacer(modifier = Modifier.height(18.dp))
@@ -263,7 +348,24 @@ fun ModernExpandedPlayer(
                     onNextClick = onNextButtonClick,
                     onShuffleClick = onShuffleClick,
                     onRepeatClick = onRepeatClick,
-                    style = style
+                    style = style,
+                    modifier = Modifier.suppressDefaultMorphSemantics(
+                        defaultMorphVisualState != null &&
+                                playerMorphState.settledPresentation !=
+                                PlayerPresentation.Expanded
+                    ),
+                    primaryControlModifier = Modifier
+                        .onGloballyPositioned { coordinates ->
+                            defaultMorphBounds?.updateExpandedPlayPause(
+                                coordinates.boundsInRoot()
+                            )
+                        }
+                        .hiddenFromDefaultMorph(morphOwnsPersistentContent),
+                    expandedControlsAlpha =
+                        defaultMorphVisualState?.controlsAlpha ?: 1f,
+                    controlsEnabled = defaultMorphVisualState == null ||
+                            playerMorphState.settledPresentation ==
+                            PlayerPresentation.Expanded
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))

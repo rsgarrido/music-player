@@ -9,6 +9,7 @@ import androidx.compose.ui.unit.Dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
 
 data class MiniPlayerState(
     val currentSong: Song,
@@ -23,6 +24,13 @@ data class MiniPlayerCallbacks(
     val onPreviousClick: () -> Unit,
     val onNextClick: () -> Unit,
     val onExpandClick: () -> Unit
+)
+
+data class DefaultMiniPlayerMorphCallbacks(
+    val onDragStart: () -> Unit,
+    val onDragBy: (Float) -> Unit,
+    val onDragEnd: (Float) -> Unit,
+    val onDragCancel: () -> Unit
 )
 
 internal enum class MiniPlayerVariant {
@@ -49,7 +57,10 @@ fun MiniPlayerHost(
     state: MiniPlayerState,
     callbacks: MiniPlayerCallbacks,
     modifier: Modifier = Modifier,
-    onBoundsChanged: (Rect) -> Unit = {}
+    onBoundsChanged: (Rect) -> Unit = {},
+    defaultMorphBounds: DefaultPlayerMorphBounds? = null,
+    defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
+    morphOwnsVisuals: Boolean = false
 ) {
     val measuredModifier = modifier.onGloballyPositioned { coordinates ->
         onBoundsChanged(coordinates.boundsInRoot())
@@ -58,6 +69,9 @@ fun MiniPlayerHost(
         MiniPlayerVariant.MODERN -> ModernMiniPlayer(
             state = state,
             callbacks = callbacks,
+            morphBounds = defaultMorphBounds,
+            morphCallbacks = defaultMorphCallbacks,
+            morphOwnsVisuals = morphOwnsVisuals,
             modifier = measuredModifier
         )
 

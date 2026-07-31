@@ -51,6 +51,11 @@ import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.player.rememberPlayerLyricsTransitionState
 import com.example.cdplaya.ui.player.PlayerMorphHost
 import com.example.cdplaya.ui.player.playerEndpointInput
+import com.example.cdplaya.ui.player.PlayerBoundsMeasurement
+import com.example.cdplaya.ui.player.mini.DefaultMiniPlayerMorphCallbacks
+import com.example.cdplaya.ui.player.modern.DefaultMorphMinimumDragRangePx
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.modern.resolveDefaultPlayerMorphGeometry
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
@@ -65,6 +70,7 @@ import com.example.cdplaya.ui.tageditor.rememberTagEditorActions
 import kotlinx.coroutines.flow.StateFlow
 import com.example.cdplaya.mediaaccess.MediaAccessState
 import com.example.cdplaya.lyrics.LyricsPlaybackUiState
+import kotlin.math.abs
 
 
 @Composable
@@ -427,6 +433,48 @@ internal fun MusicScreen(
                 .fillMaxSize()
                 .appShellBackground()
         ) { playerEndpointBounds ->
+        val defaultMorphBounds = remember { DefaultPlayerMorphBounds() }
+        val defaultMorphGeometry = resolveDefaultPlayerMorphGeometry(
+            progress = playerMorphState.progress,
+            endpointBounds = playerEndpointBounds,
+            elementBounds = defaultMorphBounds
+        )
+        val defaultMorphOwnsVisuals =
+            selectedPlayerTheme == PlayerTheme.DEFAULT &&
+                    !playerMorphState.isCollapsedAndIdle &&
+                    defaultMorphGeometry != null
+        val defaultMiniMorphCallbacks = remember(
+            playerMorphState,
+            playerEndpointBounds
+        ) {
+            DefaultMiniPlayerMorphCallbacks(
+                onDragStart = {
+                    val miniBounds = defaultMorphBounds.miniSurface ?: (
+                            playerEndpointBounds.mini as?
+                                    PlayerBoundsMeasurement.Measured
+                            )?.bounds
+                    val expandedBounds = (
+                            playerEndpointBounds.expanded as?
+                                    PlayerBoundsMeasurement.Measured
+                            )?.bounds
+                    val travelDistance = if (miniBounds != null &&
+                        expandedBounds != null
+                    ) {
+                        abs(miniBounds.top - expandedBounds.top)
+                    } else {
+                        DefaultMorphMinimumDragRangePx
+                    }
+                    playerMorphState.beginDragWithRange(
+                        progressRangePx = travelDistance.coerceAtLeast(
+                            DefaultMorphMinimumDragRangePx
+                        )
+                    )
+                },
+                onDragBy = playerMorphState::dragBy,
+                onDragEnd = playerMorphState::endDrag,
+                onDragCancel = playerMorphState::cancelDrag
+            )
+        }
         val selectedSongForTagEdit = songPendingTagEdit
         val shouldShowBottomMiniPlayer = currentSong != null &&
                 !isFolderScreenVisible &&
@@ -447,6 +495,7 @@ internal fun MusicScreen(
         }
         LaunchedEffect(selectedPlayerTheme) {
             playerEndpointBounds.markMiniStale()
+            defaultMorphBounds.clearExpanded()
         }
         val navigationBarInset = WindowInsets.navigationBars
             .asPaddingValues()
@@ -759,6 +808,15 @@ internal fun MusicScreen(
                     isSleepTimerDialogVisible = true
                 },
                 onMiniPlayerBoundsChanged = playerEndpointBounds::updateMini,
+                defaultMorphBounds = defaultMorphBounds,
+                defaultMorphCallbacks = if (
+                    selectedPlayerTheme == PlayerTheme.DEFAULT
+                ) {
+                    defaultMiniMorphCallbacks
+                } else {
+                    null
+                },
+                morphOwnsVisuals = defaultMorphOwnsVisuals,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
@@ -889,6 +947,8 @@ internal fun MusicScreen(
                 selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                 selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
                 selectedModernSeekbarStyle = selectedModernSeekbarStyle,
+                playerEndpointBounds = playerEndpointBounds,
+                defaultMorphBounds = defaultMorphBounds,
                 songs = songs,
                 onSongClick = onSongClick
             )

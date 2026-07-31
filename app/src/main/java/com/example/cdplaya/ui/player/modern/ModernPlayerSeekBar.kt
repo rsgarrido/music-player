@@ -40,12 +40,14 @@ internal fun ModernPlayerSeekBar(
     onSeekChange: (Int) -> Unit,
     seekbarStyle: ModernSeekbarStyle,
     waveformSeed: String,
+    modifier: Modifier = Modifier,
     waveformData: WaveformData? = null,
     style: ModernPlayerStyle
 ) {
     val safeDuration = duration.coerceAtLeast(1)
     val safePosition = currentPosition.coerceIn(0, safeDuration)
 
+    Box(modifier = modifier.fillMaxWidth()) {
     when (seekbarStyle) {
         ModernSeekbarStyle.CLASSIC_BAR -> ClassicSeekbar(
             safePosition = safePosition,
@@ -187,6 +189,7 @@ internal fun ModernPlayerSeekBar(
             color = style.timeColor
         )
     }
+}
 }
 
 @Composable

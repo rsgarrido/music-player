@@ -23,6 +23,8 @@ import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.ExpandedPlayerThemeHost
 import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
 import com.example.cdplaya.ui.player.PlayerMorphState
+import com.example.cdplaya.ui.player.PlayerEndpointBounds
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
 import com.example.cdplaya.ui.player.lyricsVisualAlpha
 import com.example.cdplaya.ui.player.playerVisualAlpha
 import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
@@ -98,7 +100,9 @@ fun MusicScreenOverlays(
     selectedPlayerTheme: PlayerTheme,
     selectedPlayerThemeTokens: PlayerThemeTokens,
     selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
-    selectedModernSeekbarStyle: ModernSeekbarStyle
+    selectedModernSeekbarStyle: ModernSeekbarStyle,
+    playerEndpointBounds: PlayerEndpointBounds,
+    defaultMorphBounds: DefaultPlayerMorphBounds
 ) {
     val isPlayerExpanded = playerMorphState.shouldComposeExpanded
 
@@ -164,7 +168,9 @@ fun MusicScreenOverlays(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 songs = songs,
                 upcomingSongs = upcomingSongs,
-                onSongClick = onSongClick
+                onSongClick = onSongClick,
+                endpointBounds = playerEndpointBounds,
+                defaultMorphBounds = defaultMorphBounds
             )
             }
         }
