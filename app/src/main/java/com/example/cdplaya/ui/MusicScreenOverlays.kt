@@ -25,6 +25,8 @@ import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
 import com.example.cdplaya.ui.player.PlayerMorphState
 import com.example.cdplaya.ui.player.PlayerEndpointBounds
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
+import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
 import com.example.cdplaya.ui.player.lyricsVisualAlpha
 import com.example.cdplaya.ui.player.playerVisualAlpha
 import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
@@ -102,15 +104,18 @@ fun MusicScreenOverlays(
     selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
     selectedModernSeekbarStyle: ModernSeekbarStyle,
     playerEndpointBounds: PlayerEndpointBounds,
-    defaultMorphBounds: DefaultPlayerMorphBounds
+    defaultMorphBounds: DefaultPlayerMorphBounds,
+    classicMorphBounds: ClassicWheelMorphBounds,
+    retroRackMorphBounds: RetroRackMorphBounds
 ) {
     val isPlayerExpanded = playerMorphState.shouldComposeExpanded
 
     ImmersiveSystemBarsEffect(
-        isImmersive = isPlayerExpanded && !isLyricsVisible &&
-                (selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL ||
-                        selectedPlayerTheme == PlayerTheme.POCKET_FLIP ||
-                        selectedPlayerTheme == PlayerTheme.POCKET_CASSETTE)
+        isImmersive = shouldUseImmersivePlayerSystemBars(
+            selectedPlayerTheme,
+            isPlayerExpanded,
+            isLyricsVisible
+        )
     )
 
     if (isPlayerExpanded && currentSong != null) {
@@ -170,7 +175,9 @@ fun MusicScreenOverlays(
                 upcomingSongs = upcomingSongs,
                 onSongClick = onSongClick,
                 endpointBounds = playerEndpointBounds,
-                defaultMorphBounds = defaultMorphBounds
+                defaultMorphBounds = defaultMorphBounds,
+                classicMorphBounds = classicMorphBounds,
+                retroRackMorphBounds = retroRackMorphBounds
             )
             }
         }
@@ -261,6 +268,18 @@ fun MusicScreenOverlays(
             }
         )
     }
+}
+
+internal fun shouldUseImmersivePlayerSystemBars(
+    theme: PlayerTheme,
+    isPlayerExpanded: Boolean,
+    isLyricsVisible: Boolean
+): Boolean = isPlayerExpanded && !isLyricsVisible && when (theme) {
+    PlayerTheme.CLASSIC_WHEEL,
+    PlayerTheme.RETRO_RACK,
+    PlayerTheme.POCKET_FLIP,
+    PlayerTheme.POCKET_CASSETTE -> true
+    PlayerTheme.DEFAULT -> false
 }
 
 internal fun Modifier.blockPlayerInput(blocked: Boolean): Modifier =

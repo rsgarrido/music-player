@@ -19,6 +19,13 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelExpandedPlayer
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelPlayerMorph
+import com.example.cdplaya.ui.player.classicwheel.playerMorphRendererFor
+import com.example.cdplaya.ui.player.classicwheel.PlayerMorphRenderer
+import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelMorphGeometry
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
+import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelSharedGeometry
+import com.example.cdplaya.ui.player.classicwheel.classicWheelMorphTravelDistance
 import com.example.cdplaya.ui.player.modern.ModernExpandedPlayer
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
@@ -26,6 +33,15 @@ import com.example.cdplaya.ui.player.modern.selectNearbyWaveformSongs
 import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
+import com.example.cdplaya.ui.player.retrorack.RetroRackPlayerMorph
+import com.example.cdplaya.ui.player.retrorack.resolveRetroRackMorphGeometry
+import com.example.cdplaya.ui.player.retrorack.shouldRunRetroRackExpandedWork
+import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
+import com.example.cdplaya.ui.player.retrorack.resolveRetroRackSharedGeometry
+import com.example.cdplaya.ui.player.retrorack.retroRackSharedOwner
+import com.example.cdplaya.ui.player.retrorack.retroRackMorphTravelDistance
+import com.example.cdplaya.ui.player.retrorack.RetroRackMorphSpec
+import com.example.cdplaya.ui.player.retrorack.retroRackDistanceThreshold
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.PlayerEndpointBounds
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorph
@@ -69,7 +85,9 @@ fun ExpandedPlayerThemeHost(
     upcomingSongs: List<Song>,
     onSongClick: (Song, List<Song>) -> Unit,
     endpointBounds: PlayerEndpointBounds,
-    defaultMorphBounds: DefaultPlayerMorphBounds
+    defaultMorphBounds: DefaultPlayerMorphBounds,
+    classicMorphBounds: ClassicWheelMorphBounds,
+    retroRackMorphBounds: RetroRackMorphBounds
 ) {
     val shouldLoadWaveform = shouldLoadExpandedPlayerWaveform(
         selectedPlayerTheme = selectedPlayerTheme,
@@ -208,7 +226,20 @@ fun ExpandedPlayerThemeHost(
         }
 
         PlayerTheme.CLASSIC_WHEEL -> {
-            ClassicWheelExpandedPlayer(
+            val geometry = resolveClassicWheelMorphGeometry(
+                playerMorphState.progress, endpointBounds
+            )
+            val sharedGeometry = resolveClassicWheelSharedGeometry(
+                playerMorphState.progress, classicMorphBounds
+            )
+            ClassicWheelPlayerMorph(
+                progress = playerMorphState.progress,
+                geometry = geometry,
+                sharedGeometry = sharedGeometry,
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                tokens = tokens
+            ) { screenAlpha, wheelAlpha, controlsActive -> ClassicWheelExpandedPlayer(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
@@ -227,15 +258,41 @@ fun ExpandedPlayerThemeHost(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 songs = songs,
                 onSongClick = onSongClick,
-                tokens = tokens
-            )
+                tokens = tokens,
+                screenAlpha = screenAlpha,
+                wheelAlpha = wheelAlpha,
+                wheelInputEnabled = controlsActive,
+                morphBounds = classicMorphBounds,
+                sharedContentVisible = sharedGeometry == null
+                ,onMorphDragStart = {
+                    playerMorphState.beginDragWithRange(classicWheelMorphTravelDistance(endpointBounds))
+                }
+                ,onMorphDragBy = playerMorphState::dragBy
+                ,onMorphDragEnd = playerMorphState::endDrag
+                ,onMorphDragCancel = playerMorphState::cancelDrag
+                ,wheelPlayControlAlpha = if (controlsActive) 1f else 0f
+            ) }
         }
 
         PlayerTheme.RETRO_RACK -> {
+            val geometry = resolveRetroRackMorphGeometry(playerMorphState.progress, endpointBounds)
+            val sharedGeometry = resolveRetroRackSharedGeometry(playerMorphState.progress, retroRackMorphBounds)
+            val sharedOwner = retroRackSharedOwner(playerMorphState.progress, sharedGeometry != null)
+            RetroRackPlayerMorph(
+                progress = playerMorphState.progress,
+                geometry = geometry,
+                sharedGeometry = sharedGeometry,
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                currentPosition = currentPosition,
+                duration = duration,
+                onPlayPauseClick = onPlayPauseClick,
+                tokens = tokens
+            ) { deckReveal, spectrumReveal, queueReveal, controlsReveal, inputEnabled ->
             RetroRackExpandedPlayer(
                 currentSong = currentSong,
                 waveformData = waveformData,
-                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
+                isVisualizerWorkAllowed = isVisualizerWorkAllowed && shouldRunRetroRackExpandedWork(playerMorphState.progress),
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
@@ -253,8 +310,30 @@ fun ExpandedPlayerThemeHost(
                 onOpenUpNextClick = onOpenUpNextClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onSongClick = onSongClick,
-                tokens = tokens
-            )
+                tokens = tokens,
+                deckReveal = deckReveal,
+                spectrumReveal = spectrumReveal,
+                queueReveal = queueReveal,
+                controlsReveal = controlsReveal,
+                inputEnabled = inputEnabled,
+                morphBounds = retroRackMorphBounds,
+                sharedOwner = sharedOwner,
+                onMorphDragStart = {
+                    val travel = retroRackMorphTravelDistance(endpointBounds)
+                    playerMorphState.beginDragWithRange(
+                        progressRangePx = travel,
+                        distanceThresholdPx = retroRackDistanceThreshold(travel)
+                    )
+                },
+                onMorphDragBy = playerMorphState::dragBy,
+                onMorphDragEnd = { velocity ->
+                    playerMorphState.endDragWithVelocityThreshold(
+                        velocity,
+                        RetroRackMorphSpec.collapseVelocityThresholdPxPerSecond
+                    )
+                },
+                onMorphDragCancel = playerMorphState::cancelDrag
+            ) }
         }
 
         PlayerTheme.POCKET_FLIP -> {

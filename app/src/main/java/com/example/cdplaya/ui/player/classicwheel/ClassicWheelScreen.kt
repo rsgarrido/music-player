@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 
@@ -49,6 +50,8 @@ fun ClassicWheelScreen(
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
+    morphBounds: ClassicWheelMorphBounds? = null,
+    sharedContentVisible: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -84,7 +87,9 @@ fun ClassicWheelScreen(
                         onShuffleClick = onShuffleClick,
                         onRepeatClick = onRepeatClick,
                         onOpenUpNextClick = onOpenUpNextClick,
-                        onToggleFavoriteClick = onToggleFavoriteClick
+                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        morphBounds = morphBounds,
+                        sharedContentVisible = sharedContentVisible
                     )
                 }
 

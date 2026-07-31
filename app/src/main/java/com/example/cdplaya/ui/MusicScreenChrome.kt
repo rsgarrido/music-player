@@ -34,6 +34,8 @@ import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.player.PlayerCard
 import com.example.cdplaya.ui.player.PlayerMorphState
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
+import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
 import com.example.cdplaya.ui.player.mini.DefaultMiniPlayerMorphCallbacks
 import com.example.cdplaya.ui.player.SleepTimerStatusBanner
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -162,6 +164,8 @@ fun MiniPlayerSection(
     modifier: Modifier = Modifier,
     onMiniPlayerBoundsChanged: (Rect) -> Unit = {},
     defaultMorphBounds: DefaultPlayerMorphBounds? = null,
+    classicMorphBounds: ClassicWheelMorphBounds? = null,
+    retroRackMorphBounds: RetroRackMorphBounds? = null,
     defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
     morphOwnsVisuals: Boolean = false
 ) {
@@ -198,6 +202,8 @@ fun MiniPlayerSection(
             onToggleFavoriteClick = onToggleFavoriteClick,
             onMiniPlayerBoundsChanged = onMiniPlayerBoundsChanged,
             defaultMorphBounds = defaultMorphBounds,
+            classicMorphBounds = classicMorphBounds,
+            retroRackMorphBounds = retroRackMorphBounds,
             defaultMorphCallbacks = defaultMorphCallbacks,
             morphOwnsVisuals = morphOwnsVisuals
         )

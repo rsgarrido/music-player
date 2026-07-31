@@ -21,10 +21,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.playerEndpointInput
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import kotlinx.coroutines.delay
 
 
@@ -48,15 +56,25 @@ fun ClassicWheelExpandedPlayer(
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
-    tokens: PlayerThemeTokens = ClassicWheelDefaultTokens
+    tokens: PlayerThemeTokens = ClassicWheelDefaultTokens,
+    screenAlpha: Float = 1f,
+    wheelAlpha: Float = 1f,
+    wheelInputEnabled: Boolean = true,
+    morphBounds: ClassicWheelMorphBounds? = null,
+    sharedContentVisible: Boolean = true,
+    onMorphDragStart: () -> Unit = {},
+    onMorphDragBy: (Float) -> Unit = {},
+    onMorphDragEnd: (Float) -> Unit = {},
+    onMorphDragCancel: () -> Unit = {},
+    wheelPlayControlAlpha: Float = 1f,
+    modifier: Modifier = Modifier
 ) {
     val palette = remember(tokens) { ClassicWheelPalette.from(tokens) }
 
     CompositionLocalProvider(LocalClassicWheelPalette provides palette) {
     BoxWithConstraints(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
-            .background(ClassicWheelColors.shell)
             .padding(horizontal = 14.dp, vertical = 16.dp)
     ) {
         val menuState = remember {
@@ -258,7 +276,9 @@ fun ClassicWheelExpandedPlayer(
         )
 
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = screenAlpha.coerceIn(0f, 1f) },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
@@ -289,6 +309,14 @@ fun ClassicWheelExpandedPlayer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(screenHeight)
+                    .classicWheelCollapseDrag(
+                        onStart = onMorphDragStart,
+                        onDelta = onMorphDragBy,
+                        onEnd = onMorphDragEnd,
+                        onCancel = onMorphDragCancel
+                    ),
+                morphBounds = morphBounds,
+                sharedContentVisible = sharedContentVisible
             )
 
             ClassicControlWheel(
@@ -308,11 +336,52 @@ fun ClassicWheelExpandedPlayer(
                 } else {
                     55f
                 },
-                modifier = Modifier.size(wheelSize)
+                playControlAlpha = wheelPlayControlAlpha,
+                modifier = Modifier
+                    .size(wheelSize)
+                    .onGloballyPositioned { coordinates ->
+                        val wheel = coordinates.boundsInRoot()
+                        val width = wheel.width * .28f
+                        val height = wheel.height * .24f
+                        morphBounds?.updateExpandedPlayPause(
+                            androidx.compose.ui.geometry.Rect(
+                                wheel.center.x - width / 2f,
+                                wheel.bottom - height - wheel.height * .06f,
+                                wheel.center.x + width / 2f,
+                                wheel.bottom - wheel.height * .06f
+                            )
+                        )
+                    }
+                    .graphicsLayer {
+                        alpha = wheelAlpha.coerceIn(0f, 1f)
+                        scaleX = 0.82f + 0.18f * wheelAlpha.coerceIn(0f, 1f)
+                        scaleY = scaleX
+                    }
+                    .then(
+                        if (wheelInputEnabled) Modifier else
+                            Modifier.playerEndpointInput(false)
+                    )
             )
         }
     }
     }
+}
+
+private fun Modifier.classicWheelCollapseDrag(
+    onStart: () -> Unit, onDelta: (Float) -> Unit, onEnd: (Float) -> Unit, onCancel: () -> Unit
+): Modifier = pointerInput(onStart, onDelta, onEnd, onCancel) {
+    var owns = false
+    val velocity = VelocityTracker()
+    detectDragGestures(
+        onDragStart = { owns = false; velocity.resetTracking() },
+        onDrag = { change, amount ->
+            velocity.addPosition(change.uptimeMillis, change.position)
+            if (!owns && kotlin.math.abs(amount.y) > kotlin.math.abs(amount.x)) { owns = true; onStart() }
+            if (owns) { change.consume(); onDelta(amount.y) }
+        },
+        onDragEnd = { if (owns) onEnd(velocity.calculateVelocity().y) },
+        onDragCancel = { if (owns) onCancel() }
+    )
 }
 
 private fun handleClassicWheelMenuAction(

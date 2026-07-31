@@ -58,6 +58,13 @@ import com.example.cdplaya.ui.player.modern.DefaultMorphMetadataOwner
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
 import com.example.cdplaya.ui.player.modern.defaultMorphMetadataOwner
 import com.example.cdplaya.ui.player.modern.resolveDefaultPlayerMorphGeometry
+import com.example.cdplaya.ui.player.classicwheel.classicWheelMorphTravelDistance
+import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelMorphGeometry
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
+import com.example.cdplaya.ui.player.retrorack.resolveRetroRackMorphGeometry
+import com.example.cdplaya.ui.player.retrorack.retroRackMorphTravelDistance
+import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
+import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelSharedGeometry
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
@@ -436,6 +443,8 @@ internal fun MusicScreen(
                 .appShellBackground()
         ) { playerEndpointBounds ->
         val defaultMorphBounds = remember { DefaultPlayerMorphBounds() }
+        val classicMorphBounds = remember { ClassicWheelMorphBounds() }
+        val retroRackMorphBounds = remember { RetroRackMorphBounds() }
         val defaultMorphGeometry = resolveDefaultPlayerMorphGeometry(
             progress = playerMorphState.progress,
             endpointBounds = playerEndpointBounds,
@@ -447,6 +456,39 @@ internal fun MusicScreen(
                         isMorphActive = !playerMorphState.isCollapsedAndIdle,
                         geometryReady = defaultMorphGeometry != null
                     ) == DefaultMorphMetadataOwner.Morph
+        val classicWheelMorphOwnsVisuals =
+            selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL &&
+                    !playerMorphState.isCollapsedAndIdle &&
+                    resolveClassicWheelMorphGeometry(
+                        playerMorphState.progress,
+                        playerEndpointBounds
+                    ) != null && resolveClassicWheelSharedGeometry(
+                        playerMorphState.progress,
+                        classicMorphBounds
+                    ) != null
+        val retroRackMorphOwnsVisuals = selectedPlayerTheme == PlayerTheme.RETRO_RACK &&
+                !playerMorphState.isCollapsedAndIdle &&
+                resolveRetroRackMorphGeometry(playerMorphState.progress, playerEndpointBounds) != null
+        val classicMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
+            DefaultMiniPlayerMorphCallbacks(
+                onDragStart = {
+                    playerMorphState.beginDragWithRange(
+                        classicWheelMorphTravelDistance(playerEndpointBounds)
+                    )
+                },
+                onDragBy = playerMorphState::dragBy,
+                onDragEnd = playerMorphState::endDrag,
+                onDragCancel = playerMorphState::cancelDrag
+            )
+        }
+        val retroRackMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
+            DefaultMiniPlayerMorphCallbacks(
+                onDragStart = { playerMorphState.beginDragWithRange(retroRackMorphTravelDistance(playerEndpointBounds)) },
+                onDragBy = playerMorphState::dragBy,
+                onDragEnd = playerMorphState::endDrag,
+                onDragCancel = playerMorphState::cancelDrag
+            )
+        }
         val defaultMiniMorphCallbacks = remember(
             playerMorphState,
             playerEndpointBounds
@@ -813,14 +855,15 @@ internal fun MusicScreen(
                 },
                 onMiniPlayerBoundsChanged = playerEndpointBounds::updateMini,
                 defaultMorphBounds = defaultMorphBounds,
-                defaultMorphCallbacks = if (
-                    selectedPlayerTheme == PlayerTheme.DEFAULT
-                ) {
-                    defaultMiniMorphCallbacks
-                } else {
-                    null
+                classicMorphBounds = classicMorphBounds,
+                retroRackMorphBounds = retroRackMorphBounds,
+                defaultMorphCallbacks = when (selectedPlayerTheme) {
+                    PlayerTheme.DEFAULT -> defaultMiniMorphCallbacks
+                    PlayerTheme.CLASSIC_WHEEL -> classicMiniMorphCallbacks
+                    PlayerTheme.RETRO_RACK -> retroRackMiniMorphCallbacks
+                    else -> null
                 },
-                morphOwnsVisuals = defaultMorphOwnsVisuals,
+                morphOwnsVisuals = defaultMorphOwnsVisuals || classicWheelMorphOwnsVisuals || retroRackMorphOwnsVisuals,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
@@ -953,6 +996,8 @@ internal fun MusicScreen(
                 selectedModernSeekbarStyle = selectedModernSeekbarStyle,
                 playerEndpointBounds = playerEndpointBounds,
                 defaultMorphBounds = defaultMorphBounds,
+                classicMorphBounds = classicMorphBounds,
+                retroRackMorphBounds = retroRackMorphBounds,
                 songs = songs,
                 onSongClick = onSongClick
             )
