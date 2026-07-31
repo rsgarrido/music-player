@@ -54,7 +54,9 @@ import com.example.cdplaya.ui.player.playerEndpointInput
 import com.example.cdplaya.ui.player.PlayerBoundsMeasurement
 import com.example.cdplaya.ui.player.mini.DefaultMiniPlayerMorphCallbacks
 import com.example.cdplaya.ui.player.modern.DefaultMorphMinimumDragRangePx
+import com.example.cdplaya.ui.player.modern.DefaultMorphMetadataOwner
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.modern.defaultMorphMetadataOwner
 import com.example.cdplaya.ui.player.modern.resolveDefaultPlayerMorphGeometry
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
@@ -441,8 +443,10 @@ internal fun MusicScreen(
         )
         val defaultMorphOwnsVisuals =
             selectedPlayerTheme == PlayerTheme.DEFAULT &&
-                    !playerMorphState.isCollapsedAndIdle &&
-                    defaultMorphGeometry != null
+                    defaultMorphMetadataOwner(
+                        isMorphActive = !playerMorphState.isCollapsedAndIdle,
+                        geometryReady = defaultMorphGeometry != null
+                    ) == DefaultMorphMetadataOwner.Morph
         val defaultMiniMorphCallbacks = remember(
             playerMorphState,
             playerEndpointBounds

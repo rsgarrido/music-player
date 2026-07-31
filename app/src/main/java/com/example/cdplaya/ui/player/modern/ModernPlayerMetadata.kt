@@ -25,6 +25,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.audioquality.AudioQualityInfo
@@ -44,6 +45,16 @@ internal fun ModernPlayerMetadataCarousel(
     loadExpandedMetadata: Boolean = true
 ) {
     var pageWidthPx by remember { mutableFloatStateOf(1f) }
+    var stableAnchorBounds by remember { mutableStateOf<Rect?>(null) }
+    var persistentContentSize by remember { mutableStateOf(IntSize.Zero) }
+
+    fun publishStableDestination() {
+        resolveStableMetadataDestination(
+            anchorBounds = stableAnchorBounds,
+            persistentContentSize = persistentContentSize
+        )?.let(onPersistentContentBoundsChanged)
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -51,6 +62,10 @@ internal fun ModernPlayerMetadataCarousel(
                 if (size.width > 0) {
                     pageWidthPx = size.width.toFloat()
                 }
+            }
+            .onGloballyPositioned { coordinates ->
+                stableAnchorBounds = coordinates.boundsInRoot()
+                publishStableDestination()
             },
         contentAlignment = Alignment.TopStart
     ) {
@@ -60,8 +75,10 @@ internal fun ModernPlayerMetadataCarousel(
                     modifier = Modifier
                         .fillMaxWidth()
                         .graphicsLayer {
-                            val gestureOffset =
-                                carouselState.offsetX / carouselState.artworkWidthPx
+                            val gestureOffset = normalizedModernCarouselOffset(
+                                offsetX = carouselState.offsetX,
+                                artworkWidthPx = carouselState.artworkWidthPx
+                            )
                             val transform = modernMetadataPageTransform(
                                 style = transitionStyle,
                                 gestureOffset = gestureOffset,
@@ -85,8 +102,14 @@ internal fun ModernPlayerMetadataCarousel(
                         song = item.song,
                         audioQualityRepository = audioQualityRepository,
                         style = style,
-                        onPersistentContentBoundsChanged =
-                            onPersistentContentBoundsChanged,
+                        onPersistentContentSizeChanged = if (item.isCurrent) {
+                            { size ->
+                                persistentContentSize = size
+                                publishStableDestination()
+                            }
+                        } else {
+                            {}
+                        },
                         hidePersistentContent = hidePersistentContent,
                         expandedContentAlpha = expandedContentAlpha,
                         loadExpandedMetadata = loadExpandedMetadata
@@ -102,7 +125,7 @@ private fun ModernPlayerMetadataPage(
     song: Song,
     audioQualityRepository: AudioQualityRepository,
     style: ModernPlayerStyle,
-    onPersistentContentBoundsChanged: (Rect) -> Unit,
+    onPersistentContentSizeChanged: (IntSize) -> Unit,
     hidePersistentContent: Boolean,
     expandedContentAlpha: Float,
     loadExpandedMetadata: Boolean
@@ -123,7 +146,7 @@ private fun ModernPlayerMetadataPage(
         ModernPlayerMetadata(
             currentSong = song,
             style = style,
-            onPersistentContentBoundsChanged = onPersistentContentBoundsChanged,
+            onPersistentContentSizeChanged = onPersistentContentSizeChanged,
             hidePersistentContent = hidePersistentContent,
             expandedContentAlpha = expandedContentAlpha
         )
@@ -143,7 +166,7 @@ private fun ModernPlayerMetadataPage(
 internal fun ModernPlayerMetadata(
     currentSong: Song,
     style: ModernPlayerStyle,
-    onPersistentContentBoundsChanged: (Rect) -> Unit = {},
+    onPersistentContentSizeChanged: (IntSize) -> Unit = {},
     hidePersistentContent: Boolean = false,
     expandedContentAlpha: Float = 1f
 ) {
@@ -154,9 +177,7 @@ internal fun ModernPlayerMetadata(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .onGloballyPositioned { coordinates ->
-                    onPersistentContentBoundsChanged(coordinates.boundsInRoot())
-                }
+                .onSizeChanged(onPersistentContentSizeChanged)
                 .hiddenFromDefaultMorph(hidePersistentContent)
         ) {
             Text(
@@ -187,4 +208,23 @@ internal fun ModernPlayerMetadata(
             modifier = Modifier.graphicsLayer { alpha = expandedContentAlpha }
         )
     }
+}
+
+internal fun resolveStableMetadataDestination(
+    anchorBounds: Rect?,
+    persistentContentSize: IntSize
+): Rect? {
+    if (!anchorBounds.isValidMorphRect() ||
+        persistentContentSize.width <= 0 ||
+        persistentContentSize.height <= 0
+    ) {
+        return null
+    }
+
+    return Rect(
+        left = anchorBounds!!.left,
+        top = anchorBounds.top,
+        right = anchorBounds.left + persistentContentSize.width,
+        bottom = anchorBounds.top + persistentContentSize.height
+    )
 }

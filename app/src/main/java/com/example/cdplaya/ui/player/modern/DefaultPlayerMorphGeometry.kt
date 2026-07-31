@@ -31,6 +31,11 @@ enum class DefaultMorphEndpointActivity {
     Expanded
 }
 
+enum class DefaultMorphMetadataOwner {
+    Mini,
+    Morph
+}
+
 @Stable
 class DefaultPlayerMorphBounds {
     var miniSurface by mutableStateOf<Rect?>(null)
@@ -151,6 +156,16 @@ fun defaultMorphEndpointActivity(progress: Float): DefaultMorphEndpointActivity 
         0f -> DefaultMorphEndpointActivity.Mini
         1f -> DefaultMorphEndpointActivity.Expanded
         else -> DefaultMorphEndpointActivity.Transition
+    }
+
+fun defaultMorphMetadataOwner(
+    isMorphActive: Boolean,
+    geometryReady: Boolean
+): DefaultMorphMetadataOwner =
+    if (isMorphActive && geometryReady) {
+        DefaultMorphMetadataOwner.Morph
+    } else {
+        DefaultMorphMetadataOwner.Mini
     }
 
 fun shouldUseDefaultMorph(playerTheme: PlayerTheme): Boolean =
