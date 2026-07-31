@@ -36,11 +36,15 @@ fun PlayerCard(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onOpenUpNextClick: () -> Unit = {},
+    onOpenLyrics: () -> Unit = {},
     isCurrentSongFavorite: Boolean = false,
     onToggleFavoriteClick: (Song) -> Unit = {},
 ) {
     if (currentSong == null) {
         return
+    }
+    val lyricsTransitionState = rememberPlayerLyricsTransitionState(false) { visible ->
+        if (visible) onOpenLyrics()
     }
 
     val albumArtSize by animateDpAsState(
@@ -65,6 +69,7 @@ fun PlayerCard(
             onShuffleClick = onShuffleClick,
             onRepeatClick = onRepeatClick,
             onCollapseClick = onCollapseClick,
+            lyricsTransitionState = lyricsTransitionState,
             onOpenUpNextClick = onOpenUpNextClick,
             onToggleFavoriteClick = onToggleFavoriteClick,
             albumArtSize = albumArtSize,

@@ -22,6 +22,8 @@ import kotlin.math.max
 
 internal const val ExpandedPlayerCollapseThresholdFraction = 0.26f
 internal const val ExpandedPlayerCollapseVelocityPxPerSecond = 1_400f
+internal const val ExpandedPlayerLyricsThresholdFraction = 0.18f
+internal const val ExpandedPlayerLyricsVelocityPxPerSecond = -1_400f
 private const val HorizontalSwipeThresholdPx = 120f
 
 @Stable
@@ -48,8 +50,13 @@ class ExpandedPlayerDragState internal constructor(
         settleJob?.cancel()
     }
 
+    fun resetToExpanded() {
+        settleJob?.cancel()
+        offsetY = 0f
+    }
+
     fun dragBy(deltaY: Float) {
-        offsetY = (offsetY + deltaY).coerceIn(0f, containerHeightPx)
+        offsetY = (offsetY + deltaY).coerceIn(-containerHeightPx, containerHeightPx)
     }
 
     fun settle(velocityY: Float) {
@@ -108,6 +115,16 @@ fun rememberExpandedPlayerDragState(
             onCollapse = { currentOnCollapse() }
         )
     }
+}
+
+internal fun shouldOpenLyrics(
+    offsetY: Float,
+    containerHeightPx: Float,
+    velocityY: Float
+): Boolean {
+    val distanceThreshold = containerHeightPx * ExpandedPlayerLyricsThresholdFraction
+    return offsetY <= -distanceThreshold ||
+            velocityY <= ExpandedPlayerLyricsVelocityPxPerSecond
 }
 
 internal fun shouldCollapseExpandedPlayer(

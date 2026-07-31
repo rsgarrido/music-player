@@ -23,6 +23,9 @@ import com.example.cdplaya.data.backup.BackupRestoreResult
 import com.example.cdplaya.data.backup.BackupRestoreSummary
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
+import com.example.cdplaya.lyrics.LocalLyricsServices
+import com.example.cdplaya.lyrics.LyricsPlaybackController
+import com.example.cdplaya.lyrics.LyricsPositionSource
 import com.example.cdplaya.data.playlistfile.M3uExportResult
 import com.example.cdplaya.data.playlistfile.PlaylistImportResult
 import com.example.cdplaya.data.playlistfile.PreparedPlaylistExport
@@ -206,6 +209,15 @@ class MusicViewModel(
         context = appContext,
         coroutineScope = viewModelScope
     )
+    private val lyricsPlaybackController = LyricsPlaybackController(
+        repository = LocalLyricsServices.shared(appContext).repository,
+        playbackState = playbackController.uiState,
+        positionSource = LyricsPositionSource(
+            playbackController::getCurrentPositionForLyrics
+        ),
+        scope = viewModelScope
+    )
+    val lyricsPlaybackUiState = lyricsPlaybackController.uiState
 
     private val sleepTimerController = SleepTimerController(
         coroutineScope = viewModelScope,
@@ -530,6 +542,23 @@ class MusicViewModel(
 
     fun seekTo(position: Int) {
         playbackController.seekTo(position)
+        lyricsPlaybackController.onSeek(position.toLong())
+    }
+
+    fun setLyricsVisible(visible: Boolean) {
+        lyricsPlaybackController.setVisible(visible)
+    }
+
+    fun suspendLyricsAutoFollow() {
+        lyricsPlaybackController.suspendAutoFollow()
+    }
+
+    fun returnLyricsToCurrentLine() {
+        lyricsPlaybackController.returnToCurrentLine()
+    }
+
+    fun rescanLyrics() {
+        lyricsPlaybackController.rescan()
     }
 
     fun toggleShuffle() {

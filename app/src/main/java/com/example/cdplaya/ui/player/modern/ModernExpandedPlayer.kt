@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
@@ -36,6 +37,7 @@ import com.example.cdplaya.player.audioquality.AudioQualityRepository
 import com.example.cdplaya.player.waveform.WaveformData
 import com.example.cdplaya.player.waveform.WaveformRepository
 import com.example.cdplaya.ui.player.rememberExpandedPlayerDragState
+import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
 
 @Composable
 fun ModernExpandedPlayer(
@@ -58,6 +60,7 @@ fun ModernExpandedPlayer(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
+    lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
@@ -132,9 +135,20 @@ fun ModernExpandedPlayer(
         onNextClick()
     }
 
-    val dragState = rememberExpandedPlayerDragState(onCollapseClick)
+    val dragState = rememberExpandedPlayerDragState(
+        onCollapse = onCollapseClick
+    )
+    var containerHeightPx by remember { mutableFloatStateOf(1f) }
     val verticalDragState = rememberDraggableState { deltaY ->
-        dragState.dragBy(deltaY)
+        if (deltaY < 0f || lyricsTransitionState.progress > 0f) {
+            if (lyricsTransitionState.progress == 0f) {
+                lyricsTransitionState.beginOpeningDrag()
+            }
+            lyricsTransitionState.dragOpeningBy(deltaY, containerHeightPx)
+            dragState.resetToExpanded()
+        } else {
+            dragState.dragBy(deltaY)
+        }
     }
     val dragProgress = dragState.progress
 
@@ -146,6 +160,7 @@ fun ModernExpandedPlayer(
             )
             .onSizeChanged { size ->
                 dragState.updateContainerHeight(size.height)
+                containerHeightPx = size.height.toFloat().coerceAtLeast(1f)
             }
     ) {
         val foregroundAlbumArtSize = minOf(
@@ -171,7 +186,17 @@ fun ModernExpandedPlayer(
                     state = verticalDragState,
                     orientation = Orientation.Vertical,
                     onDragStarted = { dragState.startDrag() },
-                    onDragStopped = { velocityY -> dragState.settle(velocityY) }
+                    enabled = !lyricsTransitionState.lyricsInteractive,
+                    onDragStopped = { velocityY ->
+                        if (lyricsTransitionState.progress > 0f ||
+                            velocityY <= PlayerLyricsTransitionState.OPEN_VELOCITY_PX_PER_SECOND
+                        ) {
+                            dragState.resetToExpanded()
+                            lyricsTransitionState.settleOpening(velocityY)
+                        } else {
+                            dragState.settle(velocityY)
+                        }
+                    }
                 )
         ) {
             ModernPlayerBackground(

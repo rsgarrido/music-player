@@ -156,6 +156,8 @@ fun SettingsScreen(
             }
         )
 
+        LyricsFolderSettings()
+
         HorizontalDivider(
             modifier = Modifier.padding(vertical = 8.dp)
         )

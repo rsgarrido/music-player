@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,7 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
+import com.example.cdplaya.ui.player.rememberPlayerLyricsTransitionState
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
@@ -61,6 +63,7 @@ import com.example.cdplaya.ui.tageditor.TagEditorScreen
 import com.example.cdplaya.ui.tageditor.rememberTagEditorActions
 import kotlinx.coroutines.flow.StateFlow
 import com.example.cdplaya.mediaaccess.MediaAccessState
+import com.example.cdplaya.lyrics.LyricsPlaybackUiState
 
 
 @Composable
@@ -82,6 +85,7 @@ internal fun MusicScreen(
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
     playbackProgressUiState: StateFlow<PlaybackProgressUiState>,
+    lyricsPlaybackUiState: LyricsPlaybackUiState,
     snackbarHostState: SnackbarHostState,
     onUndoAddToQueueClick: (Song) -> Unit,
     modifier: Modifier = Modifier,
@@ -91,6 +95,10 @@ internal fun MusicScreen(
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit,
+    onLyricsVisibilityChanged: (Boolean) -> Unit,
+    onSuspendLyricsAutoFollow: () -> Unit,
+    onReturnLyricsToCurrentLine: () -> Unit,
+    onRescanLyrics: () -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     queuedSongs: List<Song>,
@@ -178,6 +186,11 @@ internal fun MusicScreen(
 
     val overlayState = rememberMusicOverlayState()
     var isPlayerExpanded by overlayState.isPlayerExpanded
+    var isLyricsVisible by rememberSaveable { mutableStateOf(false) }
+    val lyricsTransitionState = rememberPlayerLyricsTransitionState(
+        initiallyLyricsVisible = isLyricsVisible,
+        onCompositionVisibilityChanged = { isLyricsVisible = it }
+    )
     var isFolderScreenVisible by overlayState.isFolderScreenVisible
     var isSettingsScreenVisible by overlayState.isSettingsScreenVisible
     var isDiagnosticsScreenVisible by overlayState.isDiagnosticsScreenVisible
@@ -193,6 +206,13 @@ internal fun MusicScreen(
     var hasUnsavedTagChanges by remember { mutableStateOf(false) }
     var isDiscardTagChangesDialogVisible by remember { mutableStateOf(false) }
     var selectedArtworkUriForTagEdit by remember { mutableStateOf<Uri?>(null) }
+
+    LaunchedEffect(isLyricsVisible) {
+        onLyricsVisibilityChanged(isLyricsVisible)
+    }
+    LaunchedEffect(currentSong?.id) {
+        if (currentSong == null) lyricsTransitionState.snapToExpanded()
+    }
 
     val tagEditorActions = rememberTagEditorActions(
         snackbarHostState = snackbarHostState,
@@ -276,6 +296,7 @@ internal fun MusicScreen(
         )
 
         isPlayerExpanded = false
+        lyricsTransitionState.snapToExpanded()
         selectedArtistName = null
         selectedAlbumFolderPath = null
         selectedPlaylistId = null
@@ -341,6 +362,10 @@ internal fun MusicScreen(
         when {
             songPendingTagEdit != null -> {
                 requestCloseTagEditor()
+            }
+
+            isLyricsVisible -> {
+                lyricsTransitionState.returnToExpanded()
             }
 
             isExpandedUpNextSheetVisible -> {
@@ -768,6 +793,8 @@ internal fun MusicScreen(
         if (selectedSongForTagEdit == null) {
             MusicScreenOverlays(
                 isPlayerExpanded = isPlayerExpanded,
+                isLyricsVisible = isLyricsVisible,
+                lyricsTransitionState = lyricsTransitionState,
                 currentSong = currentSong,
                 previousPreviewSong = previousPreviewSong,
                 nextPreviewSong = nextPreviewSong,
@@ -786,6 +813,15 @@ internal fun MusicScreen(
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
                 onSeekChange = onSeekChange,
+                lyricsPlaybackUiState = lyricsPlaybackUiState,
+                onSuspendLyricsAutoFollow = onSuspendLyricsAutoFollow,
+                onReturnLyricsToCurrentLine = onReturnLyricsToCurrentLine,
+                onRescanLyrics = onRescanLyrics,
+                onOpenLyricsSettings = {
+                    lyricsTransitionState.snapToExpanded()
+                    isPlayerExpanded = false
+                    isSettingsScreenVisible = true
+                },
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseExpandedPlayer = {

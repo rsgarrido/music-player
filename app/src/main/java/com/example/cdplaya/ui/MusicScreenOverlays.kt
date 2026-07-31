@@ -10,12 +10,20 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.ExpandedPlayerThemeHost
+import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
+import com.example.cdplaya.ui.player.lyricsVisualAlpha
+import com.example.cdplaya.ui.player.playerVisualAlpha
 import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
@@ -26,12 +34,16 @@ import com.example.cdplaya.ui.queue.QueueScreen
 import com.example.cdplaya.ui.settings.SleepTimerDialog
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
+import com.example.cdplaya.lyrics.LyricsPlaybackUiState
+import com.example.cdplaya.ui.lyrics.LyricsScreen
 import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicScreenOverlays(
     isPlayerExpanded: Boolean,
+    isLyricsVisible: Boolean,
+    lyricsTransitionState: PlayerLyricsTransitionState,
     currentSong: Song?,
     previousPreviewSong: Song?,
     nextPreviewSong: Song?,
@@ -52,6 +64,11 @@ fun MusicScreenOverlays(
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit,
+    lyricsPlaybackUiState: LyricsPlaybackUiState,
+    onSuspendLyricsAutoFollow: () -> Unit,
+    onReturnLyricsToCurrentLine: () -> Unit,
+    onRescanLyrics: () -> Unit,
+    onOpenLyricsSettings: () -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseExpandedPlayer: () -> Unit,
@@ -84,7 +101,7 @@ fun MusicScreenOverlays(
 ) {
 
     ImmersiveSystemBarsEffect(
-        isImmersive = isPlayerExpanded &&
+        isImmersive = isPlayerExpanded && !isLyricsVisible &&
                 (selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL ||
                         selectedPlayerTheme == PlayerTheme.POCKET_FLIP ||
                         selectedPlayerTheme == PlayerTheme.POCKET_CASSETTE)
@@ -94,11 +111,20 @@ fun MusicScreenOverlays(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer {
+                    val progress = lyricsTransitionState.progress
+                    translationY = -56.dp.toPx() * progress
+                    val scale = 1f - 0.025f * progress
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = playerVisualAlpha(progress)
+                }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                     onClick = {}
                 )
+                .blockPlayerInput(lyricsTransitionState.lyricsOwnsInput)
         ) {
             PlaybackProgress(playbackProgressUiState) { progress ->
             ExpandedPlayerThemeHost(
@@ -106,7 +132,8 @@ fun MusicScreenOverlays(
                 tokens = selectedPlayerThemeTokens,
                 modernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
                 modernSeekbarStyle = selectedModernSeekbarStyle,
-                isVisualizerWorkAllowed = !isExpandedUpNextSheetVisible &&
+                isVisualizerWorkAllowed = !isLyricsVisible &&
+                    !isExpandedUpNextSheetVisible &&
                     !isSleepTimerDialogVisible &&
                     !isCreatePlaylistDialogVisible &&
                     songPendingPlaylistAdd == null &&
@@ -127,6 +154,7 @@ fun MusicScreenOverlays(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseExpandedPlayer,
+                lyricsTransitionState = lyricsTransitionState,
                 onOpenUpNextClick = onShowExpandedUpNextSheet,
                 onOpenSleepTimerClick = onShowExpandedSleepTimer,
                 onOpenMoreClick = onShowExpandedMore,
@@ -137,6 +165,27 @@ fun MusicScreenOverlays(
             )
             }
         }
+    }
+
+    if (isPlayerExpanded && lyricsTransitionState.lyricsComposed && currentSong != null) {
+        LyricsScreen(
+            state = lyricsPlaybackUiState,
+            isPlaying = isPlaying,
+            transitionState = lyricsTransitionState,
+            interactive = lyricsTransitionState.lyricsInteractive,
+            onBack = lyricsTransitionState::returnToExpanded,
+            onPlayPause = onPlayPauseClick,
+            onSeek = onSeekChange,
+            onSuspendAutoFollow = onSuspendLyricsAutoFollow,
+            onReturnToCurrentLine = onReturnLyricsToCurrentLine,
+            onRescan = onRescanLyrics,
+            onOpenSettings = onOpenLyricsSettings,
+            modifier = Modifier.graphicsLayer {
+                val progress = lyricsTransitionState.progress
+                alpha = lyricsVisualAlpha(progress)
+                translationY = (1f - progress) * 88.dp.toPx()
+            }
+        )
     }
 
     if (isExpandedUpNextSheetVisible) {
@@ -204,3 +253,22 @@ fun MusicScreenOverlays(
         )
     }
 }
+
+internal fun Modifier.blockPlayerInput(blocked: Boolean): Modifier =
+    if (!blocked) {
+        this
+    } else {
+        this.then(
+            Modifier
+                .clearAndSetSemantics { }
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent(PointerEventPass.Initial)
+                                .changes
+                                .forEach { it.consume() }
+                        }
+                    }
+                }
+        )
+    }

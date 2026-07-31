@@ -1,7 +1,20 @@
 package com.example.cdplaya.ui.player
 
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
@@ -38,6 +51,7 @@ fun ExpandedPlayerThemeHost(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
+    lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
     onOpenSleepTimerClick: () -> Unit,
     onOpenMoreClick: () -> Unit,
@@ -77,6 +91,45 @@ fun ExpandedPlayerThemeHost(
         prefetchSongs = nearbyWaveformSongs
     )
 
+    var hostHeightPx by remember { mutableFloatStateOf(1f) }
+    var hostDragOffset by remember { mutableFloatStateOf(0f) }
+    val hostDragState = rememberDraggableState { delta ->
+        if (delta < 0f && lyricsTransitionState.progress == 0f) {
+            lyricsTransitionState.beginOpeningDrag()
+        }
+        hostDragOffset = (hostDragOffset + delta).coerceAtMost(0f)
+        lyricsTransitionState.dragOpeningBy(delta, hostHeightPx)
+    }
+    val sharedGestureModifier = if (selectedPlayerTheme == PlayerTheme.DEFAULT) {
+        Modifier
+    } else {
+        Modifier
+            .onSizeChanged { size -> hostHeightPx = size.height.toFloat().coerceAtLeast(1f) }
+            .draggable(
+                state = hostDragState,
+                orientation = Orientation.Vertical,
+                enabled = !lyricsTransitionState.lyricsInteractive,
+                onDragStarted = { hostDragOffset = 0f },
+                onDragStopped = { velocity ->
+                    lyricsTransitionState.settleOpening(velocity)
+                    hostDragOffset = 0f
+                }
+            )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .semantics {
+                customActions = listOf(
+                    CustomAccessibilityAction("Open lyrics") {
+                        lyricsTransitionState.openLyrics()
+                        true
+                    }
+                )
+            }
+            .then(sharedGestureModifier)
+    ) {
     when (selectedPlayerTheme) {
         PlayerTheme.DEFAULT -> {
             ModernExpandedPlayer(
@@ -99,6 +152,7 @@ fun ExpandedPlayerThemeHost(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseClick,
+                lyricsTransitionState = lyricsTransitionState,
                 onOpenUpNextClick = onOpenUpNextClick,
                 onToggleFavoriteClick = onToggleFavoriteClick
             )
@@ -201,5 +255,6 @@ fun ExpandedPlayerThemeHost(
             )
         }
 
+    }
     }
 }
