@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,21 +45,23 @@ internal fun ModernPlayerSeekBar(
     waveformData: WaveformData? = null,
     style: ModernPlayerStyle
 ) {
-    val safeDuration = duration.coerceAtLeast(1)
-    val safePosition = currentPosition.coerceIn(0, safeDuration)
+    val values = resolveModernSeekbarValues(
+        currentPosition = currentPosition,
+        duration = duration
+    )
 
-    Box(modifier = modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
     when (seekbarStyle) {
         ModernSeekbarStyle.CLASSIC_BAR -> ClassicSeekbar(
-            safePosition = safePosition,
-            safeDuration = safeDuration,
+            safePosition = values.sliderPosition,
+            safeDuration = values.sliderDuration,
             onSeekChange = onSeekChange,
             style = style
         )
 
         ModernSeekbarStyle.SLIM_LINE -> VisualSeekbar(
-            safePosition = safePosition,
-            safeDuration = safeDuration,
+            safePosition = values.sliderPosition,
+            safeDuration = values.sliderDuration,
             onSeekChange = onSeekChange,
             thumbSize = 8.dp,
             thumbColor = style.contentColor
@@ -72,8 +75,8 @@ internal fun ModernPlayerSeekBar(
         }
 
         ModernSeekbarStyle.THICK_CAPSULE -> VisualSeekbar(
-            safePosition = safePosition,
-            safeDuration = safeDuration,
+            safePosition = values.sliderPosition,
+            safeDuration = values.sliderDuration,
             onSeekChange = onSeekChange,
             thumbSize = 20.dp,
             thumbColor = style.contentColor
@@ -87,8 +90,8 @@ internal fun ModernPlayerSeekBar(
         }
 
         ModernSeekbarStyle.SEGMENTED -> VisualSeekbar(
-            safePosition = safePosition,
-            safeDuration = safeDuration,
+            safePosition = values.sliderPosition,
+            safeDuration = values.sliderDuration,
             onSeekChange = onSeekChange,
             thumbSize = 1.dp,
             thumbColor = Color.Transparent
@@ -109,8 +112,8 @@ internal fun ModernPlayerSeekBar(
                 waveformData = waveformData
             )
             VisualSeekbar(
-                safePosition = safePosition,
-                safeDuration = safeDuration,
+                safePosition = values.sliderPosition,
+                safeDuration = values.sliderDuration,
                 onSeekChange = onSeekChange,
                 thumbSize = 1.dp,
                 thumbColor = Color.Transparent
@@ -133,8 +136,8 @@ internal fun ModernPlayerSeekBar(
                 waveformData = waveformData
             )
             VisualSeekbar(
-                safePosition = safePosition,
-                safeDuration = safeDuration,
+                safePosition = values.sliderPosition,
+                safeDuration = values.sliderDuration,
                 onSeekChange = onSeekChange,
                 thumbSize = 1.dp,
                 thumbColor = Color.Transparent
@@ -157,8 +160,8 @@ internal fun ModernPlayerSeekBar(
                 waveformData = waveformData
             )
             VisualSeekbar(
-                safePosition = safePosition,
-                safeDuration = safeDuration,
+                safePosition = values.sliderPosition,
+                safeDuration = values.sliderDuration,
                 onSeekChange = onSeekChange,
                 thumbSize = 1.dp,
                 thumbColor = Color.Transparent
@@ -178,18 +181,62 @@ internal fun ModernPlayerSeekBar(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            text = formatDuration(safePosition),
+            text = formatDuration(values.displayPosition),
             style = MaterialTheme.typography.bodySmall,
             color = style.timeColor
         )
 
         Text(
-            text = formatDuration(duration),
+            text = formatDuration(values.displayDuration),
             style = MaterialTheme.typography.bodySmall,
             color = style.timeColor
         )
     }
 }
+}
+
+internal data class ModernSeekbarValues(
+    val sliderPosition: Int,
+    val sliderDuration: Int,
+    val displayPosition: Int,
+    val displayDuration: Int
+)
+
+internal fun resolveModernSeekbarValues(
+    currentPosition: Int,
+    duration: Int
+): ModernSeekbarValues {
+    val displayDuration = duration.coerceAtLeast(0)
+    val displayPosition = currentPosition.coerceIn(0, displayDuration)
+    return ModernSeekbarValues(
+        sliderPosition = displayPosition,
+        sliderDuration = displayDuration.coerceAtLeast(1),
+        displayPosition = displayPosition,
+        displayDuration = displayDuration
+    )
+}
+
+internal data class ModernSeekbarVerticalLayout(
+    val trackTop: Float,
+    val trackBottom: Float,
+    val timingTop: Float,
+    val timingBottom: Float
+)
+
+internal fun resolveModernSeekbarVerticalLayout(
+    trackHeightPx: Float,
+    timingHeightPx: Float,
+    spacingPx: Float = 0f
+): ModernSeekbarVerticalLayout {
+    val safeTrackHeight = trackHeightPx.coerceAtLeast(0f)
+    val safeTimingHeight = timingHeightPx.coerceAtLeast(0f)
+    val safeSpacing = spacingPx.coerceAtLeast(0f)
+    return ModernSeekbarVerticalLayout(
+        trackTop = 0f,
+        trackBottom = safeTrackHeight,
+        timingTop = safeTrackHeight + safeSpacing,
+        timingBottom = safeTrackHeight + safeSpacing + safeTimingHeight
+    )
 }
 
 @Composable
