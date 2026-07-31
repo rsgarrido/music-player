@@ -11,10 +11,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ClassicWheelPlayerMorphGeometryTest {
-    @Test fun `classic wheel selects its renderer while other retro themes retain endpoints`() {
+    @Test fun `classic wheel selects its renderer while incomplete retro themes retain endpoints`() {
         assertEquals(PlayerMorphRenderer.DEFAULT, playerMorphRendererFor(PlayerTheme.DEFAULT))
         assertEquals(PlayerMorphRenderer.CLASSIC_WHEEL, playerMorphRendererFor(PlayerTheme.CLASSIC_WHEEL))
-        assertEquals(PlayerMorphRenderer.ENDPOINT, playerMorphRendererFor(PlayerTheme.RETRO_RACK))
+        assertEquals(PlayerMorphRenderer.RETRO_RACK, playerMorphRendererFor(PlayerTheme.RETRO_RACK))
         assertEquals(PlayerMorphRenderer.ENDPOINT, playerMorphRendererFor(PlayerTheme.POCKET_FLIP))
         assertEquals(PlayerMorphRenderer.ENDPOINT, playerMorphRendererFor(PlayerTheme.POCKET_CASSETTE))
     }
