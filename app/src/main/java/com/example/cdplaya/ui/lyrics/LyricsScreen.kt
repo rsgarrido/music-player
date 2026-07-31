@@ -74,10 +74,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.lyrics.LyricCueContent
+import com.example.cdplaya.lyrics.LyricAnchorGeometry
 import com.example.cdplaya.lyrics.LyricsAutoFollowController
 import com.example.cdplaya.lyrics.LyricsCandidate
 import com.example.cdplaya.lyrics.LyricsDocument
@@ -86,7 +88,7 @@ import com.example.cdplaya.lyrics.LyricsScrollRequest
 import com.example.cdplaya.lyrics.LyricsUnavailableReason
 import com.example.cdplaya.lyrics.StaticLyricLine
 import com.example.cdplaya.lyrics.generateLyricsNameCandidates
-import com.example.cdplaya.lyrics.lyricsAnchorCorrection
+import com.example.cdplaya.lyrics.calculateLyricAnchorScrollDelta
 import com.example.cdplaya.lyrics.toLyricsIdentity
 import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
 import kotlinx.coroutines.launch
@@ -120,19 +122,15 @@ fun LyricsScreen(
         modifier = modifier
             .fillMaxSize()
             .onSizeChanged { surfaceHeightPx = it.height.coerceAtLeast(1) }
-            .then(
-                if (interactive) {
-                    Modifier
-                } else {
-                    Modifier.pointerInput(Unit) {
-                        awaitPointerEventScope {
-                            while (true) {
-                                awaitPointerEvent().changes.forEach { it.consume() }
-                            }
-                        }
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        // A full-size pointer node keeps lower siblings out of the hit path.
+                        // Observe at Final so child controls retain ownership of their events.
+                        awaitPointerEvent(PointerEventPass.Final)
                     }
                 }
-            )
+            }
             .background(MaterialTheme.colorScheme.surface)
             .testTag(LyricsScreenTag)
     ) {
@@ -359,6 +357,7 @@ private fun SyncedLyricsList(
     val followController = remember { LyricsAutoFollowController() }
     var viewportHeight by remember { mutableIntStateOf(0) }
     val density = LocalDensity.current
+    val anchorTolerancePx = with(density) { 6.dp.toPx() }
     val topPadding = with(density) {
         (viewportHeight * 0.42f).toDp().coerceAtLeast(34.dp)
     }
@@ -393,7 +392,7 @@ private fun SyncedLyricsList(
             return@LaunchedEffect
         }
         followController.onActiveItemChanged(activeIndex, anchorRevision)?.let { request ->
-            listState.anchorItem(request, viewportHeight)
+            listState.anchorItem(request, anchorTolerancePx)
         }
     }
 
@@ -428,7 +427,7 @@ private fun SyncedLyricsList(
                         onReturnToCurrentLine()
                         followController.returnToCurrent(index)?.let { request ->
                             scope.launch {
-                                listState.anchorItem(request, viewportHeight)
+                                listState.anchorItem(request, anchorTolerancePx)
                             }
                         }
                     }
@@ -442,7 +441,7 @@ private fun SyncedLyricsList(
                 onReturnToCurrentLine()
                 followController.returnToCurrent(activeIndex)?.let { request ->
                     scope.launch {
-                        listState.anchorItem(request, viewportHeight)
+                        listState.anchorItem(request, anchorTolerancePx)
                     }
                 }
             }
@@ -620,24 +619,40 @@ private fun LyricsDocument.Synced.toDisplayGroups(): List<LyricsDisplayGroup> =
 
 private suspend fun androidx.compose.foundation.lazy.LazyListState.anchorItem(
     request: LyricsScrollRequest,
-    viewportHeight: Int
+    tolerancePx: Float
 ) {
-    if (viewportHeight <= 0) return
+    if (request.itemIndex < 0) return
     if (layoutInfo.visibleItemsInfo.none { it.index == request.itemIndex }) {
         scrollToItem(request.itemIndex)
         withFrameNanos { }
     }
-    val item = layoutInfo.visibleItemsInfo.firstOrNull { it.index == request.itemIndex }
-        ?: return
-    val correction = lyricsAnchorCorrection(
-        viewportStartOffset = 0,
-        viewportEndOffset = viewportHeight,
-        itemOffset = item.offset,
-        itemSize = item.size
-    )
-    if (kotlin.math.abs(correction) < 1f) return
-    if (request.animate) animateScrollBy(correction) else scrollBy(correction)
+
+    repeat(MAX_ANCHOR_CORRECTION_PASSES) { pass ->
+        val currentLayout = layoutInfo
+        val item = currentLayout.visibleItemsInfo
+            .firstOrNull { it.index == request.itemIndex }
+            ?: return
+        val correction = calculateLyricAnchorScrollDelta(
+            geometry = LyricAnchorGeometry(
+                viewportStartPx = currentLayout.viewportStartOffset,
+                viewportEndPx = currentLayout.viewportEndOffset,
+                itemOffsetPx = item.offset,
+                itemSizePx = item.size
+            ),
+            tolerancePx = tolerancePx
+        )
+        if (correction == 0f) return
+
+        if (request.animate && pass == 0) {
+            animateScrollBy(correction)
+        } else {
+            scrollBy(correction)
+        }
+        withFrameNanos { }
+    }
 }
+
+private const val MAX_ANCHOR_CORRECTION_PASSES = 3
 
 private data class UnavailableContent(
     val title: String,

@@ -68,31 +68,6 @@ class LyricsAutoFollowControllerTest {
     }
 
     @Test
-    fun viewportAnchorUsesFortyTwoPercentOfActualHeight() {
-        assertEquals(-420, lyricsAnchorScrollOffset(1_000))
-        assertEquals(-840, lyricsAnchorScrollOffset(2_000))
-    }
-
-    @Test
-    fun actualItemGeometryProducesCorrectionInTheRightDirection() {
-        assertEquals(
-            -220f,
-            lyricsAnchorCorrection(0, 1_000, 100, 200),
-            0.01f
-        )
-        assertEquals(
-            280f,
-            lyricsAnchorCorrection(0, 1_000, 600, 200),
-            0.01f
-        )
-        assertEquals(
-            30f,
-            lyricsAnchorCorrection(0, 1_000, 400, 100),
-            0.01f
-        )
-    }
-
-    @Test
     fun viewportChangeReissuesAnchorForSameCueButRepeatedTicksDoNot() {
         val controller = LyricsAutoFollowController()
 

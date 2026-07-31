@@ -3,10 +3,31 @@ package com.example.cdplaya.ui.player
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlayerLyricsTransitionStateTest {
+    @Test
+    fun lyricsOwnsInputFromFirstProgressUntilExpandedSettlement() {
+        val scope = CoroutineScope(Dispatchers.Unconfined)
+        val state = PlayerLyricsTransitionState(false, scope) {}
+
+        assertFalse(state.lyricsOwnsInput)
+        state.beginOpeningDrag()
+        state.dragOpeningBy(deltaY = -1f, heightPx = 1_000f)
+        assertTrue(state.lyricsOwnsInput)
+        state.snapToExpanded()
+        assertFalse(state.lyricsOwnsInput)
+
+        val closingState = PlayerLyricsTransitionState(true, scope) {}
+        closingState.beginClosingDrag()
+        closingState.dragClosingBy(deltaY = 1_000f, heightPx = 1_000f)
+        assertTrue(closingState.lyricsOwnsInput)
+        closingState.snapToExpanded()
+        assertFalse(closingState.lyricsOwnsInput)
+    }
+
     @Test
     fun dragDistanceDirectlyControlsSharedProgressAndComposesLyricsEarly() {
         var composed = false

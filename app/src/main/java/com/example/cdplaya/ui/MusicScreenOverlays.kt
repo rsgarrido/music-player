@@ -11,6 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
@@ -121,6 +124,7 @@ fun MusicScreenOverlays(
                     indication = null,
                     onClick = {}
                 )
+                .blockPlayerInput(lyricsTransitionState.lyricsOwnsInput)
         ) {
             PlaybackProgress(playbackProgressUiState) { progress ->
             ExpandedPlayerThemeHost(
@@ -249,3 +253,22 @@ fun MusicScreenOverlays(
         )
     }
 }
+
+internal fun Modifier.blockPlayerInput(blocked: Boolean): Modifier =
+    if (!blocked) {
+        this
+    } else {
+        this.then(
+            Modifier
+                .clearAndSetSemantics { }
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent(PointerEventPass.Initial)
+                                .changes
+                                .forEach { it.consume() }
+                        }
+                    }
+                }
+        )
+    }

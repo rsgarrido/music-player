@@ -44,6 +44,9 @@ class PlayerLyricsTransitionState internal constructor(
     val lyricsInteractive: Boolean
         get() = progress >= 0.92f
 
+    val lyricsOwnsInput: Boolean
+        get() = progress > 0f || settledSurface == PlayerSurfaceState.LYRICS
+
     fun beginOpeningDrag() {
         animationJob?.cancel()
         isDragging = true

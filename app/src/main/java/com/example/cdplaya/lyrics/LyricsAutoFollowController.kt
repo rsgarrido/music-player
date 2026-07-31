@@ -45,18 +45,3 @@ class LyricsAutoFollowController(
         return LyricsScrollRequest(itemIndex = itemIndex, animate = true)
     }
 }
-
-internal fun lyricsAnchorScrollOffset(viewportHeightPx: Int): Int =
-    -(viewportHeightPx * 0.42f).toInt()
-
-internal fun lyricsAnchorCorrection(
-    viewportStartOffset: Int,
-    viewportEndOffset: Int,
-    itemOffset: Int,
-    itemSize: Int
-): Float {
-    val viewportHeight = viewportEndOffset - viewportStartOffset
-    val desiredCenter = viewportStartOffset + viewportHeight * 0.42f
-    val currentCenter = itemOffset + itemSize / 2f
-    return currentCenter - desiredCenter
-}
