@@ -51,6 +51,7 @@ fun ExpandedPlayerThemeHost(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
+    playerMorphState: PlayerMorphState,
     lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
     onOpenSleepTimerClick: () -> Unit,
@@ -152,6 +153,7 @@ fun ExpandedPlayerThemeHost(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseClick,
+                playerMorphState = playerMorphState,
                 lyricsTransitionState = lyricsTransitionState,
                 onOpenUpNextClick = onOpenUpNextClick,
                 onToggleFavoriteClick = onToggleFavoriteClick

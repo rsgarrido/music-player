@@ -36,7 +36,8 @@ import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.audioquality.AudioQualityRepository
 import com.example.cdplaya.player.waveform.WaveformData
 import com.example.cdplaya.player.waveform.WaveformRepository
-import com.example.cdplaya.ui.player.rememberExpandedPlayerDragState
+import com.example.cdplaya.ui.player.PlayerMorphState
+import com.example.cdplaya.ui.player.PlayerPresentation
 import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
 
 @Composable
@@ -60,6 +61,7 @@ fun ModernExpandedPlayer(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
+    playerMorphState: PlayerMorphState,
     lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
@@ -135,9 +137,6 @@ fun ModernExpandedPlayer(
         onNextClick()
     }
 
-    val dragState = rememberExpandedPlayerDragState(
-        onCollapse = onCollapseClick
-    )
     var containerHeightPx by remember { mutableFloatStateOf(1f) }
     val verticalDragState = rememberDraggableState { deltaY ->
         if (deltaY < 0f || lyricsTransitionState.progress > 0f) {
@@ -145,12 +144,12 @@ fun ModernExpandedPlayer(
                 lyricsTransitionState.beginOpeningDrag()
             }
             lyricsTransitionState.dragOpeningBy(deltaY, containerHeightPx)
-            dragState.resetToExpanded()
+            playerMorphState.updateProgressFromDrag(1f)
         } else {
-            dragState.dragBy(deltaY)
+            playerMorphState.dragBy(deltaY)
         }
     }
-    val dragProgress = dragState.progress
+    val dragProgress = 1f - playerMorphState.progress
 
     BoxWithConstraints(
         modifier = modifier
@@ -159,7 +158,6 @@ fun ModernExpandedPlayer(
                 Color.Black.copy(alpha = 0.24f * (1f - dragProgress))
             )
             .onSizeChanged { size ->
-                dragState.updateContainerHeight(size.height)
                 containerHeightPx = size.height.toFloat().coerceAtLeast(1f)
             }
     ) {
@@ -173,7 +171,7 @@ fun ModernExpandedPlayer(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    translationY = dragState.offsetY
+                    translationY = dragProgress * containerHeightPx * 0.46f
                     val contentScale = 1f - dragProgress * 0.04f
                     scaleX = contentScale
                     scaleY = contentScale
@@ -185,16 +183,18 @@ fun ModernExpandedPlayer(
                 .draggable(
                     state = verticalDragState,
                     orientation = Orientation.Vertical,
-                    onDragStarted = { dragState.startDrag() },
+                    onDragStarted = {
+                        playerMorphState.beginDrag(containerHeightPx)
+                    },
                     enabled = !lyricsTransitionState.lyricsInteractive,
                     onDragStopped = { velocityY ->
                         if (lyricsTransitionState.progress > 0f ||
                             velocityY <= PlayerLyricsTransitionState.OPEN_VELOCITY_PX_PER_SECOND
                         ) {
-                            dragState.resetToExpanded()
+                            playerMorphState.snapTo(PlayerPresentation.Expanded)
                             lyricsTransitionState.settleOpening(velocityY)
                         } else {
-                            dragState.settle(velocityY)
+                            playerMorphState.endDrag(velocityY)
                         }
                     }
                 )

@@ -11,6 +11,8 @@ import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.navigation.MainDestination
 import com.example.cdplaya.ui.navigation.PlaybackLaunchContext
 import com.example.cdplaya.ui.navigation.playbackLaunchContextSaver
+import com.example.cdplaya.ui.player.PlayerMorphState
+import com.example.cdplaya.ui.player.rememberPlayerMorphState
 
 @Stable
 class MusicNavigationState internal constructor(
@@ -89,7 +91,7 @@ enum class MusicOverlayDestination { UP_NEXT, CREATE_PLAYLIST, SLEEP_TIMER }
 
 @Stable
 class MusicOverlayState internal constructor(
-    val isPlayerExpanded: MutableState<Boolean>,
+    val playerMorphState: PlayerMorphState,
     private val primaryDestination: MutableState<MusicPrimaryDestination?>,
     private val transientDestination: MutableState<MusicOverlayDestination?>
 ) {
@@ -109,15 +111,15 @@ class MusicOverlayState internal constructor(
 
 @Composable
 fun rememberMusicOverlayState(): MusicOverlayState {
-    val isPlayerExpanded = rememberSaveable { mutableStateOf(false) }
+    val playerMorphState = rememberPlayerMorphState()
     val primaryDestination = rememberSaveable {
         mutableStateOf<MusicPrimaryDestination?>(null)
     }
     val transientDestination = rememberSaveable {
         mutableStateOf<MusicOverlayDestination?>(null)
     }
-    return remember(isPlayerExpanded, primaryDestination, transientDestination) {
-        MusicOverlayState(isPlayerExpanded, primaryDestination, transientDestination)
+    return remember(playerMorphState, primaryDestination, transientDestination) {
+        MusicOverlayState(playerMorphState, primaryDestination, transientDestination)
     }
 }
 

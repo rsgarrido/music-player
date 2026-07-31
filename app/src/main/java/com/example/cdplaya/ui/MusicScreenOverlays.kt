@@ -22,6 +22,7 @@ import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.ExpandedPlayerThemeHost
 import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
+import com.example.cdplaya.ui.player.PlayerMorphState
 import com.example.cdplaya.ui.player.lyricsVisualAlpha
 import com.example.cdplaya.ui.player.playerVisualAlpha
 import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
@@ -41,7 +42,7 @@ import kotlinx.coroutines.flow.StateFlow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicScreenOverlays(
-    isPlayerExpanded: Boolean,
+    playerMorphState: PlayerMorphState,
     isLyricsVisible: Boolean,
     lyricsTransitionState: PlayerLyricsTransitionState,
     currentSong: Song?,
@@ -99,6 +100,7 @@ fun MusicScreenOverlays(
     selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
     selectedModernSeekbarStyle: ModernSeekbarStyle
 ) {
+    val isPlayerExpanded = playerMorphState.shouldComposeExpanded
 
     ImmersiveSystemBarsEffect(
         isImmersive = isPlayerExpanded && !isLyricsVisible &&
@@ -154,6 +156,7 @@ fun MusicScreenOverlays(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseExpandedPlayer,
+                playerMorphState = playerMorphState,
                 lyricsTransitionState = lyricsTransitionState,
                 onOpenUpNextClick = onShowExpandedUpNextSheet,
                 onOpenSleepTimerClick = onShowExpandedSleepTimer,

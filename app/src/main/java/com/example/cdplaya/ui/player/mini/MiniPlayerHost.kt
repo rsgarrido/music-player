@@ -2,6 +2,9 @@ package com.example.cdplaya.ui.player.mini
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
@@ -45,41 +48,45 @@ fun MiniPlayerHost(
     tokens: PlayerThemeTokens,
     state: MiniPlayerState,
     callbacks: MiniPlayerCallbacks,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onBoundsChanged: (Rect) -> Unit = {}
 ) {
+    val measuredModifier = modifier.onGloballyPositioned { coordinates ->
+        onBoundsChanged(coordinates.boundsInRoot())
+    }
     when (miniPlayerVariantFor(selectedPlayerTheme)) {
         MiniPlayerVariant.MODERN -> ModernMiniPlayer(
             state = state,
             callbacks = callbacks,
-            modifier = modifier
+            modifier = measuredModifier
         )
 
         MiniPlayerVariant.CLASSIC_WHEEL -> ClassicWheelMiniPlayer(
             state = state,
             callbacks = callbacks,
             tokens = tokens,
-            modifier = modifier
+            modifier = measuredModifier
         )
 
         MiniPlayerVariant.POCKET_CASSETTE -> PocketCassetteMiniPlayer(
             state = state,
             callbacks = callbacks,
             tokens = tokens,
-            modifier = modifier
+            modifier = measuredModifier
         )
 
         MiniPlayerVariant.POCKET_FLIP -> PocketFlipMiniPlayer(
             state = state,
             callbacks = callbacks,
             tokens = tokens,
-            modifier = modifier
+            modifier = measuredModifier
         )
 
         MiniPlayerVariant.RETRO_RACK -> RetroRackMiniPlayer(
             state = state,
             callbacks = callbacks,
             tokens = tokens,
-            modifier = modifier
+            modifier = measuredModifier
         )
     }
 }

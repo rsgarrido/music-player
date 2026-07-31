@@ -10,16 +10,16 @@ import org.junit.Test
 class ExpandedPlayerDragStateTest {
     @Test
     fun lyricsTransitionCanExplicitlyResetExpandedPlayerOffset() {
-        val state = ExpandedPlayerDragState(
-            coroutineScope = CoroutineScope(Dispatchers.Unconfined),
-            onCollapse = {}
+        val state = PlayerMorphState(
+            initialPresentation = PlayerPresentation.Expanded,
+            coroutineScope = CoroutineScope(Dispatchers.Unconfined)
         )
-        state.updateContainerHeight(1_000)
-        state.dragBy(-240f)
+        state.beginDrag(1_000f)
+        state.dragBy(240f)
 
-        state.resetToExpanded()
+        state.snapTo(PlayerPresentation.Expanded)
 
-        assertEquals(0f, state.offsetY, 0f)
+        assertEquals(1f, state.progress, 0f)
     }
 
     @Test

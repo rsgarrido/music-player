@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
@@ -26,6 +27,7 @@ fun PlayerCard(
     repeatMode: RepeatMode,
     selectedPlayerTheme: PlayerTheme,
     selectedPlayerThemeTokens: PlayerThemeTokens,
+    playerMorphState: PlayerMorphState,
     modifier: Modifier = Modifier,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
@@ -39,6 +41,7 @@ fun PlayerCard(
     onOpenLyrics: () -> Unit = {},
     isCurrentSongFavorite: Boolean = false,
     onToggleFavoriteClick: (Song) -> Unit = {},
+    onMiniPlayerBoundsChanged: (Rect) -> Unit = {},
 ) {
     if (currentSong == null) {
         return
@@ -69,6 +72,7 @@ fun PlayerCard(
             onShuffleClick = onShuffleClick,
             onRepeatClick = onRepeatClick,
             onCollapseClick = onCollapseClick,
+            playerMorphState = playerMorphState,
             lyricsTransitionState = lyricsTransitionState,
             onOpenUpNextClick = onOpenUpNextClick,
             onToggleFavoriteClick = onToggleFavoriteClick,
@@ -92,6 +96,7 @@ fun PlayerCard(
                 onNextClick = onNextClick,
                 onExpandClick = onExpandClick
             ),
+            onBoundsChanged = onMiniPlayerBoundsChanged,
             modifier = modifier
         )
     }
