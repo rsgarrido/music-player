@@ -83,7 +83,8 @@ class PlayerMorphState internal constructor(
     private var settleJob: Job? = null
     private var dragStartPresentation = initialPresentation
     private var dragDistancePx = 0f
-    private var dragContainerHeightPx = 1f
+    private var dragProgressRangePx = 1f
+    private var dragDistanceThresholdPx = 1f
 
     var targetPresentation by mutableStateOf(initialPresentation)
         private set
@@ -137,6 +138,19 @@ class PlayerMorphState internal constructor(
 
     fun beginDrag(containerHeightPx: Float) {
         if (containerHeightPx <= 0f) return
+        beginDragWithRange(
+            progressRangePx = containerHeightPx * PlayerMorphDragRangeFraction,
+            distanceThresholdPx = containerHeightPx *
+                    PlayerMorphDistanceThresholdFraction
+        )
+    }
+
+    fun beginDragWithRange(
+        progressRangePx: Float,
+        distanceThresholdPx: Float = progressRangePx *
+                PlayerMorphDistanceThresholdFraction
+    ) {
+        if (progressRangePx <= 0f) return
         settleJob?.cancel()
         isDragging = true
         dragStartPresentation = if (progress <= 0f) {
@@ -147,15 +161,14 @@ class PlayerMorphState internal constructor(
             targetPresentation
         }
         dragDistancePx = 0f
-        dragContainerHeightPx = containerHeightPx
+        dragProgressRangePx = progressRangePx.coerceAtLeast(1f)
+        dragDistanceThresholdPx = distanceThresholdPx.coerceAtLeast(1f)
     }
 
     fun dragBy(deltaY: Float) {
         if (!isDragging) return
         dragDistancePx += deltaY
-        val progressDelta = -deltaY / (
-                dragContainerHeightPx * PlayerMorphDragRangeFraction
-                )
+        val progressDelta = -deltaY / dragProgressRangePx
         coroutineScope.launch {
             animatedProgress.snapTo(
                 (animatedProgress.value + progressDelta).coerceIn(0f, 1f)
@@ -175,10 +188,10 @@ class PlayerMorphState internal constructor(
         if (!isDragging) return
         isDragging = false
         animateTo(
-            selectPlayerMorphTarget(
+            selectPlayerMorphTargetForThreshold(
                 startPresentation = dragStartPresentation,
                 dragDistancePx = dragDistancePx,
-                containerHeightPx = dragContainerHeightPx,
+                distanceThresholdPx = dragDistanceThresholdPx,
                 velocityY = velocityY
             )
         )
@@ -233,6 +246,21 @@ internal fun selectPlayerMorphTarget(
     containerHeightPx: Float,
     velocityY: Float
 ): PlayerPresentation {
+    return selectPlayerMorphTargetForThreshold(
+        startPresentation = startPresentation,
+        dragDistancePx = dragDistancePx,
+        distanceThresholdPx = containerHeightPx *
+                PlayerMorphDistanceThresholdFraction,
+        velocityY = velocityY
+    )
+}
+
+private fun selectPlayerMorphTargetForThreshold(
+    startPresentation: PlayerPresentation,
+    dragDistancePx: Float,
+    distanceThresholdPx: Float,
+    velocityY: Float
+): PlayerPresentation {
     if (velocityY >= PlayerMorphVelocityThresholdPxPerSecond) {
         return PlayerPresentation.Collapsed
     }
@@ -240,10 +268,9 @@ internal fun selectPlayerMorphTarget(
         return PlayerPresentation.Expanded
     }
 
-    val distanceThreshold = containerHeightPx * PlayerMorphDistanceThresholdFraction
     return when {
-        dragDistancePx >= distanceThreshold -> PlayerPresentation.Collapsed
-        dragDistancePx <= -distanceThreshold -> PlayerPresentation.Expanded
+        dragDistancePx >= distanceThresholdPx -> PlayerPresentation.Collapsed
+        dragDistancePx <= -distanceThresholdPx -> PlayerPresentation.Expanded
         else -> startPresentation
     }
 }
