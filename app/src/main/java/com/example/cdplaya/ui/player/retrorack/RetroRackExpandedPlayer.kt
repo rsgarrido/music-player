@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.graphicsLayer
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
@@ -65,6 +66,7 @@ import com.example.cdplaya.performance.PerformanceTraceNames
 import com.example.cdplaya.performance.VisualizerPerformanceCounters
 import com.example.cdplaya.performance.tracePerformance
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.playerEndpointInput
 import kotlin.math.sin
 
 @Composable
@@ -89,7 +91,12 @@ fun RetroRackExpandedPlayer(
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
-    tokens: PlayerThemeTokens = RetroRackDefaultTokens
+    tokens: PlayerThemeTokens = RetroRackDefaultTokens,
+    deckReveal: Float = 1f,
+    spectrumReveal: Float = 1f,
+    queueReveal: Float = 1f,
+    controlsReveal: Float = 1f,
+    inputEnabled: Boolean = true
 ) {
     val palette = remember(tokens) { RetroRackPalette.from(tokens) }
     val playbackContext = listOfNotNull(currentSong) + upcomingSongs
@@ -129,7 +136,7 @@ fun RetroRackExpandedPlayer(
     ) {
         RackModule(
             title = "CDPLAYA // MAIN DECK",
-            modifier = Modifier.height(mainDeckHeight),
+            modifier = Modifier.height(mainDeckHeight).graphicsLayer { alpha = deckReveal },
             trailingAction = {
                 RackIconButton(
                     icon = Icons.Filled.Close,
@@ -154,13 +161,15 @@ fun RetroRackExpandedPlayer(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
-                compact = compact
+                compact = compact,
+                controlsReveal = controlsReveal,
+                inputEnabled = inputEnabled
             )
         }
 
         RackModule(
             title = "SPECTRUM MONITOR // VISUAL",
-            modifier = Modifier.height(if (compact) 72.dp else 88.dp),
+            modifier = Modifier.height(if (compact) 72.dp else 88.dp).graphicsLayer { alpha = spectrumReveal; scaleY = .92f + .08f * spectrumReveal },
             trailingAction = {
                 RackIndicator(color = visualProfile.accent)
             }
@@ -168,7 +177,7 @@ fun RetroRackExpandedPlayer(
             DecorativeSpectrum(
                 profile = visualProfile,
                 waveformData = waveformData,
-                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
+                isVisualizerWorkAllowed = isVisualizerWorkAllowed && spectrumReveal > .99f,
                 isPlaying = isPlaying,
                 currentPosition = currentPosition,
                 duration = duration,
@@ -178,7 +187,7 @@ fun RetroRackExpandedPlayer(
 
         RackModule(
             title = "PLAYBACK RACK // ${playbackContext.size.toString().padStart(2, '0')} TRACKS",
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).graphicsLayer { alpha = queueReveal; scaleY = .9f + .1f * queueReveal },
             trailingAction = {
                 RackIconButton(
                     icon = Icons.Filled.List,
@@ -193,7 +202,8 @@ fun RetroRackExpandedPlayer(
                 currentSong = currentSong,
                 upcomingSongs = upcomingSongs,
                 playbackContext = playbackContext,
-                onSongClick = onSongClick
+                onSongClick = onSongClick,
+                inputEnabled = inputEnabled && queueReveal > .99f
             )
         }
     }
@@ -216,7 +226,9 @@ private fun MainDeck(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
-    compact: Boolean
+    compact: Boolean,
+    controlsReveal: Float,
+    inputEnabled: Boolean
 ) {
     val fontScale = LocalDensity.current.fontScale
     val displayHeight = when {
@@ -314,7 +326,7 @@ private fun MainDeck(
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = controlsReveal }.playerEndpointInput(inputEnabled && controlsReveal > .99f),
             horizontalArrangement = Arrangement.spacedBy(3.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -454,12 +466,14 @@ private fun RackPlaylist(
     currentSong: Song?,
     upcomingSongs: List<Song>,
     playbackContext: List<Song>,
-    onSongClick: (Song, List<Song>) -> Unit
+    onSongClick: (Song, List<Song>) -> Unit,
+    inputEnabled: Boolean
 ) {
     val rows = listOfNotNull(currentSong) + upcomingSongs
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
+            .playerEndpointInput(inputEnabled)
             .background(DisplayBlack)
             .rackBevel()
             .padding(vertical = 2.dp)

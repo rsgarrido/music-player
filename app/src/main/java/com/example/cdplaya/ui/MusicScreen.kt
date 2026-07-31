@@ -61,6 +61,8 @@ import com.example.cdplaya.ui.player.modern.resolveDefaultPlayerMorphGeometry
 import com.example.cdplaya.ui.player.classicwheel.classicWheelMorphTravelDistance
 import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelMorphGeometry
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
+import com.example.cdplaya.ui.player.retrorack.resolveRetroRackMorphGeometry
+import com.example.cdplaya.ui.player.retrorack.retroRackMorphTravelDistance
 import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelSharedGeometry
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
@@ -462,6 +464,9 @@ internal fun MusicScreen(
                         playerMorphState.progress,
                         classicMorphBounds
                     ) != null
+        val retroRackMorphOwnsVisuals = selectedPlayerTheme == PlayerTheme.RETRO_RACK &&
+                !playerMorphState.isCollapsedAndIdle &&
+                resolveRetroRackMorphGeometry(playerMorphState.progress, playerEndpointBounds) != null
         val classicMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
             DefaultMiniPlayerMorphCallbacks(
                 onDragStart = {
@@ -469,6 +474,14 @@ internal fun MusicScreen(
                         classicWheelMorphTravelDistance(playerEndpointBounds)
                     )
                 },
+                onDragBy = playerMorphState::dragBy,
+                onDragEnd = playerMorphState::endDrag,
+                onDragCancel = playerMorphState::cancelDrag
+            )
+        }
+        val retroRackMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
+            DefaultMiniPlayerMorphCallbacks(
+                onDragStart = { playerMorphState.beginDragWithRange(retroRackMorphTravelDistance(playerEndpointBounds)) },
                 onDragBy = playerMorphState::dragBy,
                 onDragEnd = playerMorphState::endDrag,
                 onDragCancel = playerMorphState::cancelDrag
@@ -844,9 +857,10 @@ internal fun MusicScreen(
                 defaultMorphCallbacks = when (selectedPlayerTheme) {
                     PlayerTheme.DEFAULT -> defaultMiniMorphCallbacks
                     PlayerTheme.CLASSIC_WHEEL -> classicMiniMorphCallbacks
+                    PlayerTheme.RETRO_RACK -> retroRackMiniMorphCallbacks
                     else -> null
                 },
-                morphOwnsVisuals = defaultMorphOwnsVisuals || classicWheelMorphOwnsVisuals,
+                morphOwnsVisuals = defaultMorphOwnsVisuals || classicWheelMorphOwnsVisuals || retroRackMorphOwnsVisuals,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()

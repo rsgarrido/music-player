@@ -33,6 +33,9 @@ import com.example.cdplaya.ui.player.modern.selectNearbyWaveformSongs
 import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
+import com.example.cdplaya.ui.player.retrorack.RetroRackPlayerMorph
+import com.example.cdplaya.ui.player.retrorack.resolveRetroRackMorphGeometry
+import com.example.cdplaya.ui.player.retrorack.shouldRunRetroRackExpandedWork
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.PlayerEndpointBounds
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorph
@@ -265,10 +268,12 @@ fun ExpandedPlayerThemeHost(
         }
 
         PlayerTheme.RETRO_RACK -> {
+            val geometry = resolveRetroRackMorphGeometry(playerMorphState.progress, endpointBounds)
+            RetroRackPlayerMorph(progress = playerMorphState.progress, geometry = geometry) { deckReveal, spectrumReveal, queueReveal, controlsReveal, inputEnabled ->
             RetroRackExpandedPlayer(
                 currentSong = currentSong,
                 waveformData = waveformData,
-                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
+                isVisualizerWorkAllowed = isVisualizerWorkAllowed && shouldRunRetroRackExpandedWork(playerMorphState.progress),
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
@@ -286,8 +291,13 @@ fun ExpandedPlayerThemeHost(
                 onOpenUpNextClick = onOpenUpNextClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onSongClick = onSongClick,
-                tokens = tokens
-            )
+                tokens = tokens,
+                deckReveal = deckReveal,
+                spectrumReveal = spectrumReveal,
+                queueReveal = queueReveal,
+                controlsReveal = controlsReveal,
+                inputEnabled = inputEnabled
+            ) }
         }
 
         PlayerTheme.POCKET_FLIP -> {

@@ -24,11 +24,12 @@ internal object ClassicWheelMorphSpec {
     const val MinimumDragRangePx = 48f
 }
 
-internal enum class PlayerMorphRenderer { DEFAULT, CLASSIC_WHEEL, ENDPOINT }
+internal enum class PlayerMorphRenderer { DEFAULT, CLASSIC_WHEEL, RETRO_RACK, ENDPOINT }
 
 internal fun playerMorphRendererFor(theme: PlayerTheme): PlayerMorphRenderer = when (theme) {
     PlayerTheme.DEFAULT -> PlayerMorphRenderer.DEFAULT
     PlayerTheme.CLASSIC_WHEEL -> PlayerMorphRenderer.CLASSIC_WHEEL
+    PlayerTheme.RETRO_RACK -> PlayerMorphRenderer.RETRO_RACK
     else -> PlayerMorphRenderer.ENDPOINT
 }
 
