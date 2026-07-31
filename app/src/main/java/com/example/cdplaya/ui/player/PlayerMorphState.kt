@@ -185,6 +185,13 @@ class PlayerMorphState internal constructor(
     }
 
     fun endDrag(velocityY: Float) {
+        endDragWithVelocityThreshold(velocityY, PlayerMorphVelocityThresholdPxPerSecond)
+    }
+
+    fun endDragWithVelocityThreshold(
+        velocityY: Float,
+        velocityThresholdPxPerSecond: Float
+    ) {
         if (!isDragging) return
         isDragging = false
         animateTo(
@@ -192,7 +199,8 @@ class PlayerMorphState internal constructor(
                 startPresentation = dragStartPresentation,
                 dragDistancePx = dragDistancePx,
                 distanceThresholdPx = dragDistanceThresholdPx,
-                velocityY = velocityY
+                velocityY = velocityY,
+                velocityThresholdPxPerSecond = velocityThresholdPxPerSecond
             )
         )
     }
@@ -255,16 +263,17 @@ internal fun selectPlayerMorphTarget(
     )
 }
 
-private fun selectPlayerMorphTargetForThreshold(
+internal fun selectPlayerMorphTargetForThreshold(
     startPresentation: PlayerPresentation,
     dragDistancePx: Float,
     distanceThresholdPx: Float,
-    velocityY: Float
+    velocityY: Float,
+    velocityThresholdPxPerSecond: Float = PlayerMorphVelocityThresholdPxPerSecond
 ): PlayerPresentation {
-    if (velocityY >= PlayerMorphVelocityThresholdPxPerSecond) {
+    if (velocityY >= velocityThresholdPxPerSecond) {
         return PlayerPresentation.Collapsed
     }
-    if (velocityY <= -PlayerMorphVelocityThresholdPxPerSecond) {
+    if (velocityY <= -velocityThresholdPxPerSecond) {
         return PlayerPresentation.Expanded
     }
 

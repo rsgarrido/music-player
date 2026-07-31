@@ -40,6 +40,8 @@ import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
 import com.example.cdplaya.ui.player.retrorack.resolveRetroRackSharedGeometry
 import com.example.cdplaya.ui.player.retrorack.retroRackSharedOwner
 import com.example.cdplaya.ui.player.retrorack.retroRackMorphTravelDistance
+import com.example.cdplaya.ui.player.retrorack.RetroRackMorphSpec
+import com.example.cdplaya.ui.player.retrorack.retroRackDistanceThreshold
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.PlayerEndpointBounds
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorph
@@ -317,10 +319,19 @@ fun ExpandedPlayerThemeHost(
                 morphBounds = retroRackMorphBounds,
                 sharedOwner = sharedOwner,
                 onMorphDragStart = {
-                    playerMorphState.beginDragWithRange(retroRackMorphTravelDistance(endpointBounds))
+                    val travel = retroRackMorphTravelDistance(endpointBounds)
+                    playerMorphState.beginDragWithRange(
+                        progressRangePx = travel,
+                        distanceThresholdPx = retroRackDistanceThreshold(travel)
+                    )
                 },
                 onMorphDragBy = playerMorphState::dragBy,
-                onMorphDragEnd = playerMorphState::endDrag,
+                onMorphDragEnd = { velocity ->
+                    playerMorphState.endDragWithVelocityThreshold(
+                        velocity,
+                        RetroRackMorphSpec.collapseVelocityThresholdPxPerSecond
+                    )
+                },
                 onMorphDragCancel = playerMorphState::cancelDrag
             ) }
         }

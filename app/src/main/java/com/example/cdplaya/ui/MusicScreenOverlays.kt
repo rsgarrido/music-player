@@ -111,10 +111,11 @@ fun MusicScreenOverlays(
     val isPlayerExpanded = playerMorphState.shouldComposeExpanded
 
     ImmersiveSystemBarsEffect(
-        isImmersive = isPlayerExpanded && !isLyricsVisible &&
-                (selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL ||
-                        selectedPlayerTheme == PlayerTheme.POCKET_FLIP ||
-                        selectedPlayerTheme == PlayerTheme.POCKET_CASSETTE)
+        isImmersive = shouldUseImmersivePlayerSystemBars(
+            selectedPlayerTheme,
+            isPlayerExpanded,
+            isLyricsVisible
+        )
     )
 
     if (isPlayerExpanded && currentSong != null) {
@@ -267,6 +268,18 @@ fun MusicScreenOverlays(
             }
         )
     }
+}
+
+internal fun shouldUseImmersivePlayerSystemBars(
+    theme: PlayerTheme,
+    isPlayerExpanded: Boolean,
+    isLyricsVisible: Boolean
+): Boolean = isPlayerExpanded && !isLyricsVisible && when (theme) {
+    PlayerTheme.CLASSIC_WHEEL,
+    PlayerTheme.RETRO_RACK,
+    PlayerTheme.POCKET_FLIP,
+    PlayerTheme.POCKET_CASSETTE -> true
+    PlayerTheme.DEFAULT -> false
 }
 
 internal fun Modifier.blockPlayerInput(blocked: Boolean): Modifier =

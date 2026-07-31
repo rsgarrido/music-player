@@ -3,6 +3,10 @@ package com.example.cdplaya.ui.player.retrorack
 import androidx.compose.ui.geometry.Rect
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.ui.player.PlayerEndpointBounds
+import com.example.cdplaya.ui.player.PlayerMorphDistanceThresholdFraction
+import com.example.cdplaya.ui.player.PlayerMorphVelocityThresholdPxPerSecond
+import com.example.cdplaya.ui.player.PlayerPresentation
+import com.example.cdplaya.ui.player.selectPlayerMorphTargetForThreshold
 import com.example.cdplaya.ui.player.classicwheel.PlayerMorphRenderer
 import com.example.cdplaya.ui.player.classicwheel.playerMorphRendererFor
 import org.junit.Assert.assertEquals
@@ -81,12 +85,43 @@ class RetroRackPlayerMorphGeometryTest {
         assertTrue(retroRackExpandedInputEnabled(1f))
     }
 
-    @Test fun `only explicit non interactive headers start collapse`() {
+    @Test fun `explicit non interactive rack regions start collapse`() {
         assertTrue(retroRackCanStartCollapse(RetroRackGestureRegion.SAFE_HEADER))
+        assertTrue(retroRackCanStartCollapse(RetroRackGestureRegion.ARTWORK))
+        assertTrue(retroRackCanStartCollapse(RetroRackGestureRegion.METADATA))
+        assertTrue(retroRackCanStartCollapse(RetroRackGestureRegion.SPECTRUM_BODY))
         assertFalse(retroRackCanStartCollapse(RetroRackGestureRegion.BUTTON))
         assertFalse(retroRackCanStartCollapse(RetroRackGestureRegion.SEEK))
         assertFalse(retroRackCanStartCollapse(RetroRackGestureRegion.QUEUE))
-        assertFalse(retroRackCanStartCollapse(RetroRackGestureRegion.SPECTRUM))
+        assertFalse(retroRackCanStartCollapse(RetroRackGestureRegion.SPECTRUM_CONTROL))
+    }
+
+    @Test fun `rack collapse thresholds are modestly more sensitive without changing shared defaults`() {
+        assertEquals(.26f, PlayerMorphDistanceThresholdFraction)
+        assertEquals(1_400f, PlayerMorphVelocityThresholdPxPerSecond)
+        assertEquals(.22f, RetroRackMorphSpec.collapseDistanceThresholdFraction)
+        assertEquals(1_150f, RetroRackMorphSpec.collapseVelocityThresholdPxPerSecond)
+        assertEquals(220f, retroRackDistanceThreshold(1_000f))
+        assertEquals(
+            PlayerPresentation.Expanded,
+            selectPlayerMorphTargetForThreshold(
+                PlayerPresentation.Expanded, 100f, 220f, 700f,
+                RetroRackMorphSpec.collapseVelocityThresholdPxPerSecond
+            )
+        )
+        assertEquals(
+            PlayerPresentation.Collapsed,
+            selectPlayerMorphTargetForThreshold(
+                PlayerPresentation.Expanded, 10f, 220f, 1_200f,
+                RetroRackMorphSpec.collapseVelocityThresholdPxPerSecond
+            )
+        )
+        assertEquals(
+            PlayerPresentation.Expanded,
+            selectPlayerMorphTargetForThreshold(
+                PlayerPresentation.Expanded, 10f, 260f, 1_200f
+            )
+        )
     }
 
     private fun endpoints() = PlayerEndpointBounds().also {

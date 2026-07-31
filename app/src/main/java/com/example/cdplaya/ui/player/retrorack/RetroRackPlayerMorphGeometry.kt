@@ -25,6 +25,8 @@ internal object RetroRackMorphSpec {
     const val expandedInputAt = .96f
     const val expensiveWorkAt = .52f
     const val minimumDragRangePx = 48f
+    const val collapseDistanceThresholdFraction = .22f
+    const val collapseVelocityThresholdPxPerSecond = 1_150f
 }
 
 internal data class RetroRackMorphGeometry(val shell: Rect)
@@ -74,9 +76,24 @@ internal fun retroRackSharedOwner(progress: Float, geometryReady: Boolean) = whe
     else -> RetroRackSharedOwner.TRANSITION
 }
 
-internal enum class RetroRackGestureRegion { SAFE_HEADER, BUTTON, SEEK, QUEUE, SPECTRUM }
-internal fun retroRackCanStartCollapse(region: RetroRackGestureRegion): Boolean =
-    region == RetroRackGestureRegion.SAFE_HEADER
+internal enum class RetroRackGestureRegion {
+    SAFE_HEADER, ARTWORK, METADATA, SPECTRUM_BODY,
+    BUTTON, SEEK, QUEUE, SPECTRUM_CONTROL
+}
+internal fun retroRackCanStartCollapse(region: RetroRackGestureRegion): Boolean = when (region) {
+    RetroRackGestureRegion.SAFE_HEADER,
+    RetroRackGestureRegion.ARTWORK,
+    RetroRackGestureRegion.METADATA,
+    RetroRackGestureRegion.SPECTRUM_BODY -> true
+    RetroRackGestureRegion.BUTTON,
+    RetroRackGestureRegion.SEEK,
+    RetroRackGestureRegion.QUEUE,
+    RetroRackGestureRegion.SPECTRUM_CONTROL -> false
+}
+
+internal fun retroRackDistanceThreshold(travelDistancePx: Float): Float =
+    travelDistancePx.coerceAtLeast(RetroRackMorphSpec.minimumDragRangePx) *
+            RetroRackMorphSpec.collapseDistanceThresholdFraction
 
 internal fun resolveRetroRackMorphGeometry(
     progress: Float, endpointBounds: PlayerEndpointBounds

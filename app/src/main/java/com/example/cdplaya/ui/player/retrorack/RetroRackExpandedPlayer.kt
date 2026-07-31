@@ -181,9 +181,10 @@ fun RetroRackExpandedPlayer(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 compact = compact,
                 controlsReveal = controlsReveal,
-                inputEnabled = inputEnabled
-                ,morphBounds = morphBounds
-                ,sharedOwner = sharedOwner
+                inputEnabled = inputEnabled,
+                morphBounds = morphBounds,
+                sharedOwner = sharedOwner,
+                modifier = safeHeaderGesture
             )
         }
 
@@ -202,7 +203,7 @@ fun RetroRackExpandedPlayer(
                 isPlaying = isPlaying,
                 currentPosition = currentPosition,
                 duration = duration,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize().then(safeHeaderGesture)
             )
         }
 
@@ -253,7 +254,8 @@ private fun MainDeck(
     controlsReveal: Float,
     inputEnabled: Boolean,
     morphBounds: RetroRackMorphBounds?,
-    sharedOwner: RetroRackSharedOwner
+    sharedOwner: RetroRackSharedOwner,
+    modifier: Modifier
 ) {
     val fontScale = LocalDensity.current.fontScale
     val displayHeight = when {
@@ -282,6 +284,7 @@ private fun MainDeck(
                     .rackBevel()
                     .padding(2.dp)
                     .onGloballyPositioned { morphBounds?.updateExpandedArtwork(it.boundsInRoot()) }
+                    .then(modifier)
             ) {
                 if (sharedOwner == RetroRackSharedOwner.EXPANDED) {
                     AsyncImage(
@@ -297,7 +300,8 @@ private fun MainDeck(
                     .weight(1f)
                     .background(DisplayBlack)
                     .rackBevel()
-                    .padding(horizontal = 6.dp, vertical = 3.dp),
+                    .padding(horizontal = 6.dp, vertical = 3.dp)
+                    .then(modifier),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
