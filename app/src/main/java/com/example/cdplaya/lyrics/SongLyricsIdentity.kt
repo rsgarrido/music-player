@@ -8,6 +8,9 @@ fun Song.toLyricsIdentity(): SongLyricsIdentity {
     }
     return SongLyricsIdentity(
         audioFileName = fileName,
+        title = title,
+        artist = artist,
+        albumArtist = albumArtist,
         relativeDirectory = relativePath,
         fallbackDirectory = folderPath.ifBlank {
             filePath.substringBeforeLast('/', "").substringBeforeLast('\\', "")

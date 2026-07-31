@@ -7,8 +7,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 fun interface LyricsPositionSource {
@@ -20,7 +18,8 @@ class LyricsPlaybackController(
     playbackState: StateFlow<PlaybackUiState>,
     private val positionSource: LyricsPositionSource,
     private val scope: CoroutineScope,
-    private val tickerIntervalMs: Long = DEFAULT_TICKER_INTERVAL_MS
+    private val tickerIntervalMs: Long = DEFAULT_TICKER_INTERVAL_MS,
+    private val monotonicTimeMs: () -> Long = { System.nanoTime() / 1_000_000L }
 ) {
     private val _uiState = kotlinx.coroutines.flow.MutableStateFlow<LyricsPlaybackUiState>(
         LyricsPlaybackUiState.Hidden
@@ -34,23 +33,20 @@ class LyricsPlaybackController(
     private var autoFollowEnabled = true
     private var lookupJob: Job? = null
     private var tickerJob: Job? = null
+    private var pendingSeek: PendingSeek? = null
 
     init {
         scope.launch {
-            playbackState
-                .map { state -> state.currentSong }
-                .distinctUntilChanged { first, second -> first?.id == second?.id }
-                .collect { song -> onSongChanged(song) }
-        }
-        scope.launch {
-            playbackState
-                .map { state -> state.isPlaying }
-                .distinctUntilChanged()
-                .collect { playing ->
-                    isPlaying = playing
+            playbackState.collect { state ->
+                if (currentSong?.id != state.currentSong?.id) {
+                    onSongChanged(state.currentSong)
+                }
+                if (isPlaying != state.isPlaying) {
+                    isPlaying = state.isPlaying
                     updatePositionNow()
                     updateTicker()
                 }
+            }
         }
     }
 
@@ -78,6 +74,10 @@ class LyricsPlaybackController(
     }
 
     fun onSeek(positionMs: Long) {
+        pendingSeek = PendingSeek(
+            positionMs = positionMs,
+            expiresAtMs = monotonicTimeMs() + PENDING_SEEK_WINDOW_MS
+        )
         updatePosition(positionMs)
     }
 
@@ -89,6 +89,7 @@ class LyricsPlaybackController(
         currentSong = song
         currentContent = if (song == null) Content.None else Content.Loading
         autoFollowEnabled = true
+        pendingSeek = null
         publish()
         startLookup(song, refreshIndex = false)
         updatePositionNow()
@@ -129,10 +130,26 @@ class LyricsPlaybackController(
 
     private fun updatePositionNow() {
         if (currentContent is Content.Synced) {
-            updatePosition(positionSource.currentPositionMs())
+            updateReportedPosition(positionSource.currentPositionMs())
         } else {
             publish()
         }
+    }
+
+    private fun updateReportedPosition(positionMs: Long) {
+        val pending = pendingSeek
+        if (pending != null) {
+            val reachedTarget = kotlin.math.abs(positionMs - pending.positionMs) <=
+                    PENDING_SEEK_TOLERANCE_MS
+            if (reachedTarget) {
+                pendingSeek = null
+            } else if (monotonicTimeMs() < pending.expiresAtMs) {
+                return
+            } else {
+                pendingSeek = null
+            }
+        }
+        updatePosition(positionMs)
     }
 
     private fun updatePosition(positionMs: Long) {
@@ -228,7 +245,14 @@ class LyricsPlaybackController(
         ) : Content
     }
 
+    private data class PendingSeek(
+        val positionMs: Long,
+        val expiresAtMs: Long
+    )
+
     companion object {
         const val DEFAULT_TICKER_INTERVAL_MS = 100L
+        const val PENDING_SEEK_WINDOW_MS = 750L
+        const val PENDING_SEEK_TOLERANCE_MS = 1_000L
     }
 }

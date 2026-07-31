@@ -43,6 +43,9 @@ fun PlayerCard(
     if (currentSong == null) {
         return
     }
+    val lyricsTransitionState = rememberPlayerLyricsTransitionState(false) { visible ->
+        if (visible) onOpenLyrics()
+    }
 
     val albumArtSize by animateDpAsState(
         targetValue = if (isExpanded) 292.dp else 52.dp,
@@ -66,7 +69,7 @@ fun PlayerCard(
             onShuffleClick = onShuffleClick,
             onRepeatClick = onRepeatClick,
             onCollapseClick = onCollapseClick,
-            onOpenLyrics = onOpenLyrics,
+            lyricsTransitionState = lyricsTransitionState,
             onOpenUpNextClick = onOpenUpNextClick,
             onToggleFavoriteClick = onToggleFavoriteClick,
             albumArtSize = albumArtSize,

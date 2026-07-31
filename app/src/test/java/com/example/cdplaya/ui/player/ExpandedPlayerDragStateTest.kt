@@ -1,10 +1,27 @@
 package com.example.cdplaya.ui.player
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ExpandedPlayerDragStateTest {
+    @Test
+    fun lyricsTransitionCanExplicitlyResetExpandedPlayerOffset() {
+        val state = ExpandedPlayerDragState(
+            coroutineScope = CoroutineScope(Dispatchers.Unconfined),
+            onCollapse = {}
+        )
+        state.updateContainerHeight(1_000)
+        state.dragBy(-240f)
+
+        state.resetToExpanded()
+
+        assertEquals(0f, state.offsetY, 0f)
+    }
+
     @Test
     fun distancePastThresholdCollapses() {
         assertTrue(

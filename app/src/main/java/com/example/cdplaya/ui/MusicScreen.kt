@@ -49,6 +49,7 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
+import com.example.cdplaya.ui.player.rememberPlayerLyricsTransitionState
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
@@ -186,6 +187,10 @@ internal fun MusicScreen(
     val overlayState = rememberMusicOverlayState()
     var isPlayerExpanded by overlayState.isPlayerExpanded
     var isLyricsVisible by rememberSaveable { mutableStateOf(false) }
+    val lyricsTransitionState = rememberPlayerLyricsTransitionState(
+        initiallyLyricsVisible = isLyricsVisible,
+        onCompositionVisibilityChanged = { isLyricsVisible = it }
+    )
     var isFolderScreenVisible by overlayState.isFolderScreenVisible
     var isSettingsScreenVisible by overlayState.isSettingsScreenVisible
     var isDiagnosticsScreenVisible by overlayState.isDiagnosticsScreenVisible
@@ -206,7 +211,7 @@ internal fun MusicScreen(
         onLyricsVisibilityChanged(isLyricsVisible)
     }
     LaunchedEffect(currentSong?.id) {
-        if (currentSong == null) isLyricsVisible = false
+        if (currentSong == null) lyricsTransitionState.snapToExpanded()
     }
 
     val tagEditorActions = rememberTagEditorActions(
@@ -291,7 +296,7 @@ internal fun MusicScreen(
         )
 
         isPlayerExpanded = false
-        isLyricsVisible = false
+        lyricsTransitionState.snapToExpanded()
         selectedArtistName = null
         selectedAlbumFolderPath = null
         selectedPlaylistId = null
@@ -360,7 +365,7 @@ internal fun MusicScreen(
             }
 
             isLyricsVisible -> {
-                isLyricsVisible = false
+                lyricsTransitionState.returnToExpanded()
             }
 
             isExpandedUpNextSheetVisible -> {
@@ -789,6 +794,7 @@ internal fun MusicScreen(
             MusicScreenOverlays(
                 isPlayerExpanded = isPlayerExpanded,
                 isLyricsVisible = isLyricsVisible,
+                lyricsTransitionState = lyricsTransitionState,
                 currentSong = currentSong,
                 previousPreviewSong = previousPreviewSong,
                 nextPreviewSong = nextPreviewSong,
@@ -808,17 +814,11 @@ internal fun MusicScreen(
                 onNextClick = onNextClick,
                 onSeekChange = onSeekChange,
                 lyricsPlaybackUiState = lyricsPlaybackUiState,
-                onOpenLyrics = {
-                    isLyricsVisible = true
-                },
-                onCloseLyrics = {
-                    isLyricsVisible = false
-                },
                 onSuspendLyricsAutoFollow = onSuspendLyricsAutoFollow,
                 onReturnLyricsToCurrentLine = onReturnLyricsToCurrentLine,
                 onRescanLyrics = onRescanLyrics,
                 onOpenLyricsSettings = {
-                    isLyricsVisible = false
+                    lyricsTransitionState.snapToExpanded()
                     isPlayerExpanded = false
                     isSettingsScreenVisible = true
                 },

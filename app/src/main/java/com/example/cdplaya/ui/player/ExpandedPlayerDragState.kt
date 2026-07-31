@@ -29,8 +29,7 @@ private const val HorizontalSwipeThresholdPx = 120f
 @Stable
 class ExpandedPlayerDragState internal constructor(
     private val coroutineScope: CoroutineScope,
-    private val onCollapse: () -> Unit,
-    private val onOpenLyrics: () -> Unit
+    private val onCollapse: () -> Unit
 ) {
     var offsetY by mutableFloatStateOf(0f)
         private set
@@ -51,6 +50,11 @@ class ExpandedPlayerDragState internal constructor(
         settleJob?.cancel()
     }
 
+    fun resetToExpanded() {
+        settleJob?.cancel()
+        offsetY = 0f
+    }
+
     fun dragBy(deltaY: Float) {
         offsetY = (offsetY + deltaY).coerceIn(-containerHeightPx, containerHeightPx)
     }
@@ -58,21 +62,7 @@ class ExpandedPlayerDragState internal constructor(
     fun settle(velocityY: Float) {
         settleJob?.cancel()
 
-        if (shouldOpenLyrics(
-                offsetY = offsetY,
-                containerHeightPx = containerHeightPx,
-                velocityY = velocityY
-            )
-        ) {
-            settleJob = coroutineScope.launch {
-                animateOffsetTo(
-                    targetOffset = minOf(offsetY, -containerHeightPx * 0.3f),
-                    durationMillis = 100
-                )
-                onOpenLyrics()
-                offsetY = 0f
-            }
-        } else if (shouldCollapseExpandedPlayer(
+        if (shouldCollapseExpandedPlayer(
                 offsetY = offsetY,
                 containerHeightPx = containerHeightPx,
                 velocityY = velocityY
@@ -114,18 +104,15 @@ class ExpandedPlayerDragState internal constructor(
 
 @Composable
 fun rememberExpandedPlayerDragState(
-    onCollapse: () -> Unit,
-    onOpenLyrics: () -> Unit = {}
+    onCollapse: () -> Unit
 ): ExpandedPlayerDragState {
     val currentOnCollapse by rememberUpdatedState(onCollapse)
-    val currentOnOpenLyrics by rememberUpdatedState(onOpenLyrics)
     val coroutineScope = rememberCoroutineScope()
 
     return remember(coroutineScope) {
         ExpandedPlayerDragState(
             coroutineScope = coroutineScope,
-            onCollapse = { currentOnCollapse() },
-            onOpenLyrics = { currentOnOpenLyrics() }
+            onCollapse = { currentOnCollapse() }
         )
     }
 }

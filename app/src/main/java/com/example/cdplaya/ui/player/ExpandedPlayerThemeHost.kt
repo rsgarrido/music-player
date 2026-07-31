@@ -51,7 +51,7 @@ fun ExpandedPlayerThemeHost(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
-    onOpenLyrics: () -> Unit,
+    lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
     onOpenSleepTimerClick: () -> Unit,
     onOpenMoreClick: () -> Unit,
@@ -94,7 +94,11 @@ fun ExpandedPlayerThemeHost(
     var hostHeightPx by remember { mutableFloatStateOf(1f) }
     var hostDragOffset by remember { mutableFloatStateOf(0f) }
     val hostDragState = rememberDraggableState { delta ->
+        if (delta < 0f && lyricsTransitionState.progress == 0f) {
+            lyricsTransitionState.beginOpeningDrag()
+        }
         hostDragOffset = (hostDragOffset + delta).coerceAtMost(0f)
+        lyricsTransitionState.dragOpeningBy(delta, hostHeightPx)
     }
     val sharedGestureModifier = if (selectedPlayerTheme == PlayerTheme.DEFAULT) {
         Modifier
@@ -104,11 +108,10 @@ fun ExpandedPlayerThemeHost(
             .draggable(
                 state = hostDragState,
                 orientation = Orientation.Vertical,
+                enabled = !lyricsTransitionState.lyricsInteractive,
                 onDragStarted = { hostDragOffset = 0f },
                 onDragStopped = { velocity ->
-                    if (shouldOpenLyrics(hostDragOffset, hostHeightPx, velocity)) {
-                        onOpenLyrics()
-                    }
+                    lyricsTransitionState.settleOpening(velocity)
                     hostDragOffset = 0f
                 }
             )
@@ -120,7 +123,7 @@ fun ExpandedPlayerThemeHost(
             .semantics {
                 customActions = listOf(
                     CustomAccessibilityAction("Open lyrics") {
-                        onOpenLyrics()
+                        lyricsTransitionState.openLyrics()
                         true
                     }
                 )
@@ -149,7 +152,7 @@ fun ExpandedPlayerThemeHost(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseClick,
-                onOpenLyrics = onOpenLyrics,
+                lyricsTransitionState = lyricsTransitionState,
                 onOpenUpNextClick = onOpenUpNextClick,
                 onToggleFavoriteClick = onToggleFavoriteClick
             )

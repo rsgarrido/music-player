@@ -54,9 +54,29 @@ data class LyricsIndexResult(
 
 data class SongLyricsIdentity(
     val audioFileName: String,
+    val title: String = "",
+    val artist: String = "",
+    val albumArtist: String = "",
     val relativeDirectory: String,
     val fallbackDirectory: String,
     val volumeId: String?
+)
+
+enum class LyricsNameCandidateSource {
+    AUDIO_STEM,
+    TITLE,
+    TRACK_NUMBER_STRIPPED_AUDIO_STEM,
+    ARTIST_TITLE,
+    TITLE_ARTIST,
+    ALBUM_ARTIST_TITLE,
+    TITLE_ALBUM_ARTIST
+}
+
+data class LyricsNameCandidate(
+    val displayStem: String,
+    val normalizedStem: String,
+    val source: LyricsNameCandidateSource,
+    val priority: Int
 )
 
 data class LyricsCandidate(

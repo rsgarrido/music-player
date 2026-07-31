@@ -3,9 +3,9 @@ package com.example.cdplaya.ui.lyrics
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,12 +43,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -73,6 +74,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.lyrics.LyricCueContent
@@ -83,7 +85,10 @@ import com.example.cdplaya.lyrics.LyricsPlaybackUiState
 import com.example.cdplaya.lyrics.LyricsScrollRequest
 import com.example.cdplaya.lyrics.LyricsUnavailableReason
 import com.example.cdplaya.lyrics.StaticLyricLine
-import com.example.cdplaya.lyrics.lyricsAnchorScrollOffset
+import com.example.cdplaya.lyrics.generateLyricsNameCandidates
+import com.example.cdplaya.lyrics.lyricsAnchorCorrection
+import com.example.cdplaya.lyrics.toLyricsIdentity
+import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
 import kotlinx.coroutines.launch
 
 const val LyricsScreenTag = "lyrics_screen"
@@ -91,11 +96,14 @@ const val LyricsListTag = "lyrics_list"
 const val LyricsReturnTag = "lyrics_return_to_current"
 const val LyricsBackTag = "lyrics_back"
 const val LyricsPlayPauseTag = "lyrics_play_pause"
+const val LyricsHeaderTag = "lyrics_header"
 
 @Composable
 fun LyricsScreen(
     state: LyricsPlaybackUiState,
     isPlaying: Boolean,
+    transitionState: PlayerLyricsTransitionState,
+    interactive: Boolean,
     onBack: () -> Unit,
     onPlayPause: () -> Unit,
     onSeek: (Int) -> Unit,
@@ -106,10 +114,25 @@ fun LyricsScreen(
     modifier: Modifier = Modifier
 ) {
     val song = state.songOrNull() ?: return
+    var surfaceHeightPx by remember { mutableIntStateOf(1) }
 
     Box(
         modifier = modifier
             .fillMaxSize()
+            .onSizeChanged { surfaceHeightPx = it.height.coerceAtLeast(1) }
+            .then(
+                if (interactive) {
+                    Modifier
+                } else {
+                    Modifier.pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                awaitPointerEvent().changes.forEach { it.consume() }
+                            }
+                        }
+                    }
+                }
+            )
             .background(MaterialTheme.colorScheme.surface)
             .testTag(LyricsScreenTag)
     ) {
@@ -119,6 +142,9 @@ fun LyricsScreen(
             LyricsHeader(
                 song = song,
                 isPlaying = isPlaying,
+                transitionState = transitionState,
+                surfaceHeightPx = surfaceHeightPx,
+                interactive = interactive,
                 onBack = onBack,
                 onPlayPause = onPlayPause,
                 modifier = Modifier
@@ -137,7 +163,8 @@ fun LyricsScreen(
                         state = state,
                         onSeek = onSeek,
                         onSuspendAutoFollow = onSuspendAutoFollow,
-                        onReturnToCurrentLine = onReturnToCurrentLine
+                        onReturnToCurrentLine = onReturnToCurrentLine,
+                        interactive = interactive
                     )
                     is LyricsPlaybackUiState.Unsynced -> UnsyncedLyricsList(state.lyrics)
                     is LyricsPlaybackUiState.Unavailable -> LyricsUnavailable(
@@ -182,24 +209,34 @@ private fun LyricsArtworkBackground(song: Song) {
 private fun LyricsHeader(
     song: Song,
     isPlaying: Boolean,
+    transitionState: PlayerLyricsTransitionState,
+    surfaceHeightPx: Int,
+    interactive: Boolean,
     onBack: () -> Unit,
     onPlayPause: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var dragDistance by remember { mutableFloatStateOf(0f) }
-    val dragState = rememberDraggableState { delta ->
-        dragDistance = (dragDistance + delta).coerceAtLeast(0f)
-    }
-
     Row(
         modifier = modifier
-            .draggable(
-                state = dragState,
-                orientation = Orientation.Vertical,
-                onDragStarted = { dragDistance = 0f },
-                onDragStopped = { velocity ->
-                    if (shouldCloseLyricsFromHeader(dragDistance, velocity)) onBack()
-                    dragDistance = 0f
+            .testTag(LyricsHeaderTag)
+            .then(
+                if (!interactive) {
+                    Modifier
+                } else {
+                    Modifier.pointerInput(transitionState, surfaceHeightPx) {
+                        detectVerticalDragGestures(
+                            onDragStart = { transitionState.beginClosingDrag() },
+                            onVerticalDrag = { change, dragAmount ->
+                                change.consume()
+                                transitionState.dragClosingBy(
+                                    dragAmount,
+                                    surfaceHeightPx.toFloat()
+                                )
+                            },
+                            onDragEnd = { transitionState.settleClosing(0f) },
+                            onDragCancel = { transitionState.settleClosing(0f) }
+                        )
+                    }
                 }
             )
             .background(
@@ -212,6 +249,7 @@ private fun LyricsHeader(
     ) {
         IconButton(
             onClick = onBack,
+            enabled = interactive,
             modifier = Modifier.testTag(LyricsBackTag)
         ) {
             Icon(
@@ -256,6 +294,7 @@ private fun LyricsHeader(
 
         IconButton(
             onClick = onPlayPause,
+            enabled = interactive,
             modifier = Modifier
                 .testTag(LyricsPlayPauseTag)
                 .semantics {
@@ -304,11 +343,16 @@ private fun SyncedLyricsList(
     state: LyricsPlaybackUiState.Synced,
     onSeek: (Int) -> Unit,
     onSuspendAutoFollow: () -> Unit,
-    onReturnToCurrentLine: () -> Unit
+    onReturnToCurrentLine: () -> Unit,
+    interactive: Boolean
 ) {
     val groups = remember(state.lyrics) { state.lyrics.toDisplayGroups() }
+    var optimisticTimestamp by remember(state.song.id, state.lyrics) {
+        mutableStateOf<Long?>(null)
+    }
+    val displayedActiveTimestamp = optimisticTimestamp ?: state.activeGroup?.timestampMs
     val activeIndex = groups.indexOfFirst {
-        it.timestampMs == state.activeGroup?.timestampMs
+        it.timestampMs == displayedActiveTimestamp
     }.takeIf { it >= 0 }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -337,13 +381,19 @@ private fun SyncedLyricsList(
     LaunchedEffect(state.song.id) {
         followController.onTrackChanged()
     }
-    LaunchedEffect(activeIndex, state.autoFollowEnabled, viewportHeight) {
+    LaunchedEffect(state.activeGroup?.timestampMs) {
+        if (state.activeGroup?.timestampMs != null) optimisticTimestamp = null
+    }
+    val anchorRevision = remember(viewportHeight, groups) {
+        viewportHeight to groups.map { it.timestampMs }
+    }
+    LaunchedEffect(activeIndex, state.autoFollowEnabled, anchorRevision) {
         if (!state.autoFollowEnabled) {
             followController.onUserScroll()
             return@LaunchedEffect
         }
-        followController.onActiveItemChanged(activeIndex)?.let { request ->
-            listState.performScroll(request, viewportHeight)
+        followController.onActiveItemChanged(activeIndex, anchorRevision)?.let { request ->
+            listState.anchorItem(request, viewportHeight)
         }
     }
 
@@ -357,24 +407,28 @@ private fun SyncedLyricsList(
                 .nestedScroll(nestedScrollConnection)
                 .onSizeChanged { viewportHeight = it.height }
                 .testTag(LyricsListTag)
+            ,
+            userScrollEnabled = interactive
         ) {
             itemsIndexed(
                 items = groups,
                 key = { _, group -> "${group.timestampMs}:${group.firstCueIndex}" }
             ) { index, group ->
                 val isActive = index == activeIndex
-                val isPast = state.activeGroup != null &&
-                        group.timestampMs < state.activeGroup.timestampMs
+                val isPast = displayedActiveTimestamp != null &&
+                        group.timestampMs < displayedActiveTimestamp
                 SyncedLyricRow(
                     group = group,
                     isActive = isActive,
                     isPast = isPast,
+                    enabled = interactive,
                     onClick = {
+                        optimisticTimestamp = group.timestampMs
                         onSeek(group.timestampMs.coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
                         onReturnToCurrentLine()
                         followController.returnToCurrent(index)?.let { request ->
                             scope.launch {
-                                listState.performScroll(request, viewportHeight)
+                                listState.anchorItem(request, viewportHeight)
                             }
                         }
                     }
@@ -388,7 +442,7 @@ private fun SyncedLyricsList(
                 onReturnToCurrentLine()
                 followController.returnToCurrent(activeIndex)?.let { request ->
                     scope.launch {
-                        listState.performScroll(request, viewportHeight)
+                        listState.anchorItem(request, viewportHeight)
                     }
                 }
             }
@@ -401,6 +455,7 @@ private fun SyncedLyricRow(
     group: LyricsDisplayGroup,
     isActive: Boolean,
     isPast: Boolean,
+    enabled: Boolean,
     onClick: () -> Unit
 ) {
     val color by animateColorAsState(
@@ -420,6 +475,7 @@ private fun SyncedLyricRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(
+                enabled = enabled,
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 onClick = onClick
@@ -562,16 +618,25 @@ private fun LyricsDocument.Synced.toDisplayGroups(): List<LyricsDisplayGroup> =
             }
         }
 
-private suspend fun androidx.compose.foundation.lazy.LazyListState.performScroll(
+private suspend fun androidx.compose.foundation.lazy.LazyListState.anchorItem(
     request: LyricsScrollRequest,
     viewportHeight: Int
 ) {
-    val offset = lyricsAnchorScrollOffset(viewportHeight)
-    if (request.animate) {
-        animateScrollToItem(request.itemIndex, offset)
-    } else {
-        scrollToItem(request.itemIndex, offset)
+    if (viewportHeight <= 0) return
+    if (layoutInfo.visibleItemsInfo.none { it.index == request.itemIndex }) {
+        scrollToItem(request.itemIndex)
+        withFrameNanos { }
     }
+    val item = layoutInfo.visibleItemsInfo.firstOrNull { it.index == request.itemIndex }
+        ?: return
+    val correction = lyricsAnchorCorrection(
+        viewportStartOffset = 0,
+        viewportEndOffset = viewportHeight,
+        itemOffset = item.offset,
+        itemSize = item.size
+    )
+    if (kotlin.math.abs(correction) < 1f) return
+    if (request.animate) animateScrollBy(correction) else scrollBy(correction)
 }
 
 private data class UnavailableContent(
@@ -592,7 +657,14 @@ private fun unavailableContent(
     )
     LyricsUnavailableReason.NotFound -> UnavailableContent(
         title = "No local lyrics found",
-        detail = "Expected sidecar: ${song.expectedLyricsFileName()}",
+        detail = buildString {
+            append("Tried names including:\n")
+            append(
+                generateLyricsNameCandidates(song.toLyricsIdentity())
+                    .take(4)
+                    .joinToString("\n") { "${it.displayStem}.lrc" }
+            )
+        },
         canRescan = true
     )
     is LyricsUnavailableReason.Ambiguous -> UnavailableContent(
@@ -626,15 +698,6 @@ private fun unavailableContent(
         detail = reason.documentUri.substringAfterLast('/'),
         canRescan = true
     )
-}
-
-private fun Song.expectedLyricsFileName(): String {
-    val audioName = displayName.ifBlank {
-        filePath.substringAfterLast('/').substringAfterLast('\\')
-    }
-    val dot = audioName.lastIndexOf('.')
-    val stem = if (dot > 0) audioName.substring(0, dot) else audioName
-    return "${stem.ifBlank { "Track" }}.lrc"
 }
 
 private fun LyricsPlaybackUiState.songOrNull(): Song? = when (this) {

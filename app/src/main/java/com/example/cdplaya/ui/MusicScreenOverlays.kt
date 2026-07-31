@@ -10,12 +10,17 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.ExpandedPlayerThemeHost
+import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
+import com.example.cdplaya.ui.player.lyricsVisualAlpha
+import com.example.cdplaya.ui.player.playerVisualAlpha
 import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
@@ -35,6 +40,7 @@ import kotlinx.coroutines.flow.StateFlow
 fun MusicScreenOverlays(
     isPlayerExpanded: Boolean,
     isLyricsVisible: Boolean,
+    lyricsTransitionState: PlayerLyricsTransitionState,
     currentSong: Song?,
     previousPreviewSong: Song?,
     nextPreviewSong: Song?,
@@ -56,8 +62,6 @@ fun MusicScreenOverlays(
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit,
     lyricsPlaybackUiState: LyricsPlaybackUiState,
-    onOpenLyrics: () -> Unit,
-    onCloseLyrics: () -> Unit,
     onSuspendLyricsAutoFollow: () -> Unit,
     onReturnLyricsToCurrentLine: () -> Unit,
     onRescanLyrics: () -> Unit,
@@ -104,6 +108,14 @@ fun MusicScreenOverlays(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .graphicsLayer {
+                    val progress = lyricsTransitionState.progress
+                    translationY = -56.dp.toPx() * progress
+                    val scale = 1f - 0.025f * progress
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = playerVisualAlpha(progress)
+                }
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -138,7 +150,7 @@ fun MusicScreenOverlays(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseClick = onCollapseExpandedPlayer,
-                onOpenLyrics = onOpenLyrics,
+                lyricsTransitionState = lyricsTransitionState,
                 onOpenUpNextClick = onShowExpandedUpNextSheet,
                 onOpenSleepTimerClick = onShowExpandedSleepTimer,
                 onOpenMoreClick = onShowExpandedMore,
@@ -151,17 +163,24 @@ fun MusicScreenOverlays(
         }
     }
 
-    if (isPlayerExpanded && isLyricsVisible && currentSong != null) {
+    if (isPlayerExpanded && lyricsTransitionState.lyricsComposed && currentSong != null) {
         LyricsScreen(
             state = lyricsPlaybackUiState,
             isPlaying = isPlaying,
-            onBack = onCloseLyrics,
+            transitionState = lyricsTransitionState,
+            interactive = lyricsTransitionState.lyricsInteractive,
+            onBack = lyricsTransitionState::returnToExpanded,
             onPlayPause = onPlayPauseClick,
             onSeek = onSeekChange,
             onSuspendAutoFollow = onSuspendLyricsAutoFollow,
             onReturnToCurrentLine = onReturnLyricsToCurrentLine,
             onRescan = onRescanLyrics,
-            onOpenSettings = onOpenLyricsSettings
+            onOpenSettings = onOpenLyricsSettings,
+            modifier = Modifier.graphicsLayer {
+                val progress = lyricsTransitionState.progress
+                alpha = lyricsVisualAlpha(progress)
+                translationY = (1f - progress) * 88.dp.toPx()
+            }
         )
     }
 

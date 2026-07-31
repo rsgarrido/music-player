@@ -10,6 +10,9 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
+import androidx.compose.ui.geometry.Offset
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.lyrics.ActiveLyricGroup
 import com.example.cdplaya.lyrics.LyricCue
@@ -18,6 +21,9 @@ import com.example.cdplaya.lyrics.LyricsDocument
 import com.example.cdplaya.lyrics.LyricsPlaybackUiState
 import com.example.cdplaya.lyrics.LyricsUnavailableReason
 import com.example.cdplaya.lyrics.StaticLyricLine
+import com.example.cdplaya.ui.player.rememberPlayerLyricsTransitionState
+import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
+import com.example.cdplaya.ui.player.PlayerSurfaceState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -28,10 +34,14 @@ class LyricsScreenTest {
     val composeRule = createAndroidComposeRule<ComponentActivity>()
 
     @Test
-    fun loadingAndPermissionStatesRender() {
+    fun loadingStateRenders() {
         setContent(LyricsPlaybackUiState.Loading(song()))
         composeRule.onNodeWithText("Loading local lyrics…").assertExists()
 
+    }
+
+    @Test
+    fun permissionStateRenders() {
         setContent(
             LyricsPlaybackUiState.Unavailable(
                 song(),
@@ -64,6 +74,7 @@ class LyricsScreenTest {
             .assertIsSelected()
             .assertHasClickAction()
         composeRule.onNodeWithText("Second line").performClick()
+        composeRule.onNodeWithText("Second line").assertIsSelected()
         composeRule.runOnIdle { assertEquals(2_000, seekPosition) }
     }
 
@@ -120,6 +131,57 @@ class LyricsScreenTest {
         }
     }
 
+    @Test
+    fun noMatchShowsMultipleDeterministicNames() {
+        setContent(
+            LyricsPlaybackUiState.Unavailable(
+                song(),
+                LyricsUnavailableReason.NotFound
+            )
+        )
+
+        composeRule.onNodeWithText("No local lyrics found").assertExists()
+        composeRule.onNodeWithText("track.lrc", substring = true).assertExists()
+        composeRule.onNodeWithText("Song.lrc", substring = true).assertExists()
+        composeRule.onNodeWithText("Artist - Song.lrc", substring = true).assertExists()
+    }
+
+    @Test
+    fun headerDownwardDragSettlesAtExpanded() {
+        lateinit var transitionState: PlayerLyricsTransitionState
+        composeRule.setContent {
+            MaterialTheme {
+                transitionState = rememberPlayerLyricsTransitionState(true) {}
+                LyricsScreen(
+                    state = LyricsPlaybackUiState.Loading(song()),
+                    isPlaying = false,
+                    transitionState = transitionState,
+                    interactive = true,
+                    onBack = {},
+                    onPlayPause = {},
+                    onSeek = {},
+                    onSuspendAutoFollow = {},
+                    onReturnToCurrentLine = {},
+                    onRescan = {},
+                    onOpenSettings = {}
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag(LyricsHeaderTag).performTouchInput {
+            swipe(
+                start = center,
+                end = center + Offset(0f, 1_000f),
+                durationMillis = 700
+            )
+        }
+        composeRule.mainClock.advanceTimeBy(500)
+        composeRule.runOnIdle {
+            assertEquals(PlayerSurfaceState.EXPANDED, transitionState.settledSurface)
+            assertEquals(0f, transitionState.progress, 0.01f)
+        }
+    }
+
     private fun setContent(
         state: LyricsPlaybackUiState,
         onBack: () -> Unit = {},
@@ -129,9 +191,12 @@ class LyricsScreenTest {
     ) {
         composeRule.setContent {
             MaterialTheme {
+                val transitionState = rememberPlayerLyricsTransitionState(true) {}
                 LyricsScreen(
                     state = state,
                     isPlaying = false,
+                    transitionState = transitionState,
+                    interactive = true,
                     onBack = onBack,
                     onPlayPause = onPlayPause,
                     onSeek = onSeek,

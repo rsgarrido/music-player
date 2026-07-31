@@ -11,20 +11,27 @@ class LyricsAutoFollowController(
     var isEnabled: Boolean = true
         private set
     private var lastRequestedIndex: Int? = null
+    private var lastAnchorRevision: Any? = null
 
     fun onTrackChanged() {
         isEnabled = true
         lastRequestedIndex = null
+        lastAnchorRevision = null
     }
 
     fun onUserScroll() {
         isEnabled = false
     }
 
-    fun onActiveItemChanged(itemIndex: Int?): LyricsScrollRequest? {
-        if (!isEnabled || itemIndex == null || itemIndex == lastRequestedIndex) return null
+    fun onActiveItemChanged(
+        itemIndex: Int?,
+        anchorRevision: Any? = Unit
+    ): LyricsScrollRequest? {
+        if (!isEnabled || itemIndex == null) return null
+        if (itemIndex == lastRequestedIndex && anchorRevision == lastAnchorRevision) return null
         val previous = lastRequestedIndex
         lastRequestedIndex = itemIndex
+        lastAnchorRevision = anchorRevision
         return LyricsScrollRequest(
             itemIndex = itemIndex,
             animate = previous != null && kotlin.math.abs(itemIndex - previous) <= largeJumpThreshold
@@ -41,3 +48,15 @@ class LyricsAutoFollowController(
 
 internal fun lyricsAnchorScrollOffset(viewportHeightPx: Int): Int =
     -(viewportHeightPx * 0.42f).toInt()
+
+internal fun lyricsAnchorCorrection(
+    viewportStartOffset: Int,
+    viewportEndOffset: Int,
+    itemOffset: Int,
+    itemSize: Int
+): Float {
+    val viewportHeight = viewportEndOffset - viewportStartOffset
+    val desiredCenter = viewportStartOffset + viewportHeight * 0.42f
+    val currentCenter = itemOffset + itemSize / 2f
+    return currentCenter - desiredCenter
+}

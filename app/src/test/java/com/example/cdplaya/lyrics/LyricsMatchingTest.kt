@@ -147,13 +147,12 @@ class LyricsMatchingTest {
     }
 
     @Test
-    fun noMatchingStemAndNoTitleFallback() {
-        assertEquals(
-            LyricsMatchResult.NotFound,
+    fun trackNumberStrippedStemMatchesExactSibling() {
+        assertTrue(
             LocalLyricsMatcher.match(
                 song("01 - Thrill.flac", "Music/Album"),
                 listOf(file("Thrill.lrc", "Music/Album"))
-            )
+            ) is LyricsMatchResult.Match
         )
     }
 
@@ -170,12 +169,166 @@ class LyricsMatchingTest {
         assertEquals(preferred, (first as LyricsMatchResult.Match).file)
     }
 
+    @Test
+    fun commonMetadataCandidatesAreGeneratedInStablePriorityOrder() {
+        val candidates = generateLyricsNameCandidates(
+            song(
+                name = "08 Forest.flac",
+                relativeDirectory = "Music/System of A Down",
+                title = "Forest",
+                artist = "System of A Down"
+            )
+        )
+
+        assertEquals(
+            listOf(
+                "08 Forest",
+                "Forest",
+                "System of A Down - Forest",
+                "Forest - System of A Down"
+            ),
+            candidates.map(LyricsNameCandidate::displayStem)
+        )
+        assertEquals(LyricsNameCandidateSource.AUDIO_STEM, candidates.first().source)
+    }
+
+    @Test
+    fun physicalDeviceForestAndCherishFilesMatchExactly() {
+        val forest = song(
+            "08 Forest.flac",
+            "Music/System of A Down",
+            title = "Forest",
+            artist = "System of A Down"
+        )
+        val cherish = song(
+            "ILLIT - Cherish (My Love).flac",
+            "Music/ILLIT",
+            title = "Cherish (My Love)",
+            artist = "ILLIT"
+        )
+
+        assertEquals(
+            "System of A Down - Forest.lrc",
+            (LocalLyricsMatcher.match(
+                forest,
+                listOf(file("System of A Down - Forest.lrc", "Music/System of A Down"))
+            ) as LyricsMatchResult.Match).file.displayName
+        )
+        assertEquals(
+            "Cherish (My Love) - ILLIT.lrc",
+            (LocalLyricsMatcher.match(
+                cherish,
+                listOf(file("Cherish (My Love) - ILLIT.lrc", "Music/ILLIT"))
+            ) as LyricsMatchResult.Match).file.displayName
+        )
+    }
+
+    @Test
+    fun trackPrefixesAreConservative() {
+        assertEquals("Forest", stripLeadingTrackNumber("08 Forest"))
+        assertEquals("Intro", stripLeadingTrackNumber("01 - Intro"))
+        assertEquals("Forest", stripLeadingTrackNumber("1-08 Forest"))
+        assertEquals("Forest", stripLeadingTrackNumber("1.08 Forest"))
+        assertEquals("LOVE 2000", stripLeadingTrackNumber("LOVE 2000"))
+        assertEquals("1985", stripLeadingTrackNumber("1985"))
+        assertEquals("22", stripLeadingTrackNumber("22"))
+    }
+
+    @Test
+    fun candidatesPreserveMeaningfulTextAndNormalizeOnlySeparatorVariants() {
+        val identity = song(
+            "01 Song-live.flac",
+            "Music",
+            title = "Song-live (Remix)",
+            artist = "BANDâ€”NAME",
+            albumArtist = "ãƒãƒ³ãƒ‰"
+        )
+        val candidates = generateLyricsNameCandidates(identity)
+
+        assertTrue(candidates.any { it.displayStem == "Song-live (Remix)" })
+        assertTrue(candidates.any { it.displayStem == "ãƒãƒ³ãƒ‰ - Song-live (Remix)" })
+        assertEquals(
+            normalizeLyricsCandidateStem("Artist - Title"),
+            normalizeLyricsCandidateStem("Artist \u2013 Title")
+        )
+        assertEquals(
+            normalizeLyricsCandidateStem("Artist - Title"),
+            normalizeLyricsCandidateStem("Artist \u2014 Title")
+        )
+        assertNotEquals(
+            normalizeLyricsCandidateStem("Song-live"),
+            normalizeLyricsCandidateStem("Song live")
+        )
+    }
+
+    @Test
+    fun duplicateCandidatesAndUnknownArtistsAreIgnored() {
+        val candidates = generateLyricsNameCandidates(
+            song(
+                "Forest.flac",
+                "Music",
+                title = "Forest",
+                artist = "Unknown Artist",
+                albumArtist = "<unknown>"
+            )
+        )
+
+        assertEquals(listOf("Forest"), candidates.map(LyricsNameCandidate::displayStem))
+    }
+
+    @Test
+    fun directSiblingStemBeatsMetadataAliasButDirectoryEvidenceWinsGlobally() {
+        val identity = song(
+            "08 Forest.flac",
+            "Music/Album",
+            title = "Forest",
+            artist = "System of A Down"
+        )
+        val directSibling = file("08 Forest.lrc", "Music/Album", "content://direct")
+        val aliasSibling = file(
+            "System of A Down - Forest.lrc",
+            "Music/Album",
+            "content://alias"
+        )
+        assertEquals(
+            directSibling,
+            (LocalLyricsMatcher.match(identity, listOf(aliasSibling, directSibling))
+                    as LyricsMatchResult.Match).file
+        )
+
+        val directElsewhere = file("08 Forest.lrc", "Elsewhere", "content://elsewhere")
+        assertEquals(
+            aliasSibling,
+            (LocalLyricsMatcher.match(identity, listOf(directElsewhere, aliasSibling))
+                    as LyricsMatchResult.Match).file
+        )
+    }
+
+    @Test
+    fun equallyRankedAliasesRemainAmbiguousIndependentOfInputOrder() {
+        val identity = song("08 Forest.flac", "", title = "Forest")
+        val first = file("Forest.lrc", "A", "content://a")
+        val second = file("Forest.lrc", "B", "content://b")
+
+        val forward = LocalLyricsMatcher.match(identity, listOf(first, second))
+        val reverse = LocalLyricsMatcher.match(identity, listOf(second, first))
+
+        assertTrue(forward is LyricsMatchResult.Ambiguous)
+        assertEquals(forward, reverse)
+    }
+
     private fun song(
         name: String,
         relativeDirectory: String,
-        volume: String? = null
+        volume: String? = null,
+        title: String = "",
+        artist: String = "",
+        albumArtist: String = ""
     ) = SongLyricsIdentity(
         audioFileName = name,
+        title = title,
+        artist = artist,
+        albumArtist = albumArtist,
         relativeDirectory = relativeDirectory,
         fallbackDirectory = "",
         volumeId = volume

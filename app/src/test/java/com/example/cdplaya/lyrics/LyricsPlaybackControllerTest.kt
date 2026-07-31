@@ -170,8 +170,8 @@ class LyricsPlaybackControllerTest {
 
         fixture.controller.setVisible(true)
         fixture.controller.awaitState<LyricsPlaybackUiState.Synced>()
-        delay(45)
-        assertTrue(reads.get() > hiddenReads)
+        delay(100)
+        assertTrue("hidden=$hiddenReads current=${reads.get()}", reads.get() > hiddenReads)
 
         fixture.playback.value = playback(song(1), isPlaying = false)
         delay(20)
@@ -242,8 +242,51 @@ class LyricsPlaybackControllerTest {
         )
     }
 
+    @Test
+    fun optimisticSeekIsNotOverwrittenByStalePreSeekTicks() = runBlocking {
+        var now = 0L
+        var reportedPosition = 1_100L
+        val repository = PlaybackLyricsRepository().apply {
+            defaultResult = found(
+                LyricsDocument.Synced(
+                    listOf(cue(1_000, "First"), cue(5_000, "Future"))
+                )
+            )
+        }
+        val fixture = fixture(
+            repository = repository,
+            position = { reportedPosition },
+            monotonicTimeMs = { now }
+        )
+        fixture.controller.setVisible(true)
+        fixture.playback.value = playback(song(1), isPlaying = true)
+        fixture.controller.awaitState<LyricsPlaybackUiState.Synced>()
+
+        fixture.controller.onSeek(5_000)
+        assertEquals(
+            listOf("Future"),
+            (fixture.controller.uiState.value as LyricsPlaybackUiState.Synced)
+                .activeGroup?.lines
+        )
+        delay(30)
+        assertEquals(
+            listOf("Future"),
+            (fixture.controller.uiState.value as LyricsPlaybackUiState.Synced)
+                .activeGroup?.lines
+        )
+
+        reportedPosition = 5_050L
+        delay(20)
+        assertEquals(
+            listOf("Future"),
+            (fixture.controller.uiState.value as LyricsPlaybackUiState.Synced)
+                .activeGroup?.lines
+        )
+    }
+
     private fun fixture(
         repository: PlaybackLyricsRepository,
+        monotonicTimeMs: () -> Long = { System.nanoTime() / 1_000_000L },
         position: () -> Long = { 0L }
     ): Fixture {
         val playback = MutableStateFlow(PlaybackUiState())
@@ -252,7 +295,8 @@ class LyricsPlaybackControllerTest {
             playbackState = playback,
             positionSource = LyricsPositionSource(position),
             scope = scope,
-            tickerIntervalMs = 10L
+            tickerIntervalMs = 10L,
+            monotonicTimeMs = monotonicTimeMs
         )
         return Fixture(controller, playback)
     }
