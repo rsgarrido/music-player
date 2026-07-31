@@ -186,7 +186,8 @@ private fun DefaultMorphArtwork(
         ModernPlayerAlbumImage(
             currentSong = song,
             contentDescription = "Album art for ${song.title}",
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            retainPreviousPainter = false
         )
     }
 }

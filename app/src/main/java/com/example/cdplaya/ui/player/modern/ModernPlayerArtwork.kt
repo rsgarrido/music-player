@@ -137,11 +137,15 @@ internal fun ModernPlayerAlbumImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
-    transitionDurationMillis: Int = ModernPlayerDefaults.SongTransitionDurationMillis
+    transitionDurationMillis: Int = ModernPlayerDefaults.SongTransitionDurationMillis,
+    retainPreviousPainter: Boolean = true
 ) {
     val context = LocalContext.current
     val fallbackPainter = painterResource(R.drawable.ic_media_play)
-    var retainedPainter by remember { mutableStateOf<Painter?>(null) }
+    val painterRetentionKey = if (retainPreviousPainter) Unit else currentSong.id
+    var retainedPainter by remember(painterRetentionKey) {
+        mutableStateOf<Painter?>(null)
+    }
     val request = remember(currentSong.id, currentSong.albumArtUri) {
         ImageRequest.Builder(context)
             .data(currentSong.albumArtUri)
