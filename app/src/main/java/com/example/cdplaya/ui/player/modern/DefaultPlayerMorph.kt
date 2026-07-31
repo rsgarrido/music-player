@@ -18,6 +18,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -36,7 +37,6 @@ import androidx.compose.ui.text.lerp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.cdplaya.data.Song
 import kotlin.math.roundToInt
 
 data class DefaultPlayerMorphVisualState(
@@ -48,10 +48,11 @@ data class DefaultPlayerMorphVisualState(
 )
 
 @Composable
-fun DefaultPlayerMorph(
+internal fun DefaultPlayerMorph(
     progress: Float,
     geometry: DefaultPlayerMorphGeometry?,
-    currentSong: Song,
+    carouselPresentation: ModernArtworkCarouselPresentation,
+    artworkTransitionStyle: ModernArtworkTransitionStyle,
     isPlaying: Boolean,
     onPlayPauseClick: () -> Unit,
     style: ModernPlayerStyle,
@@ -133,13 +134,15 @@ fun DefaultPlayerMorph(
 
         if (geometry != null) {
             DefaultMorphArtwork(
-                song = currentSong,
+                carouselPresentation = carouselPresentation,
+                transitionStyle = artworkTransitionStyle,
                 bounds = geometry.artwork,
                 progress = safeProgress,
                 style = style
             )
             DefaultMorphTitleArtist(
-                song = currentSong,
+                carouselPresentation = carouselPresentation,
+                transitionStyle = artworkTransitionStyle,
                 bounds = geometry.text,
                 progress = safeProgress,
                 style = style
@@ -157,11 +160,13 @@ fun DefaultPlayerMorph(
 
 @Composable
 private fun DefaultMorphArtwork(
-    song: Song,
+    carouselPresentation: ModernArtworkCarouselPresentation,
+    transitionStyle: ModernArtworkTransitionStyle,
     bounds: androidx.compose.ui.geometry.Rect,
     progress: Float,
     style: ModernPlayerStyle
 ) {
+    val density = LocalDensity.current
     val radius = interpolateMorphCornerRadius(
         collapsedRadius = 10f,
         expandedRadius = 30f,
@@ -183,18 +188,23 @@ private fun DefaultMorphArtwork(
                 clip = true
             }
     ) {
-        ModernPlayerAlbumImage(
-            currentSong = song,
-            contentDescription = "Album art for ${song.title}",
-            modifier = Modifier.fillMaxSize(),
-            retainPreviousPainter = false
+        ModernPlayerArtworkPages(
+            carouselItems = carouselPresentation.songs.items(),
+            carouselState = carouselPresentation.state,
+            transitionStyle = transitionStyle,
+            style = style,
+            artworkSize = with(density) {
+                bounds.width.coerceAtLeast(1f).toDp()
+            },
+            decoratePages = false
         )
     }
 }
 
 @Composable
 private fun DefaultMorphTitleArtist(
-    song: Song,
+    carouselPresentation: ModernArtworkCarouselPresentation,
+    transitionStyle: ModernArtworkTransitionStyle,
     bounds: androidx.compose.ui.geometry.Rect,
     progress: Float,
     style: ModernPlayerStyle
@@ -209,30 +219,67 @@ private fun DefaultMorphTitleArtist(
         MaterialTheme.typography.titleMedium,
         progress
     )
-    Column(
-        modifier = Modifier.placeInRootBounds(bounds)
+    Box(
+        modifier = Modifier.placeInRootBounds(bounds),
+        contentAlignment = Alignment.TopStart
     ) {
-        Text(
-            text = song.title.ifBlank { "Unknown Title" },
-            style = titleStyle,
-            color = lerpColor(
-                MaterialTheme.colorScheme.onSurface,
-                style.contentColor,
-                progress
-            ),
-            maxLines = if (progress < 0.55f) 1 else 2
-        )
-        Spacer(modifier = Modifier.height((6f * progress).dp))
-        Text(
-            text = song.artist.ifBlank { "Unknown Artist" },
-            style = artistStyle,
-            color = lerpColor(
-                MaterialTheme.colorScheme.onSurfaceVariant,
-                style.secondaryContentColor,
-                progress
-            ),
-            maxLines = 1
-        )
+        carouselPresentation.songs.items().forEach { item ->
+            key(item.song.id) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            val gestureOffset = normalizedModernCarouselOffset(
+                                offsetX = carouselPresentation.state.offsetX,
+                                artworkWidthPx =
+                                    carouselPresentation.state.artworkWidthPx
+                            )
+                            val transform = modernMetadataPageTransform(
+                                style = transitionStyle,
+                                gestureOffset = gestureOffset,
+                                restingOffset = item.restingOffsetMultiplier,
+                                isCurrent = item.isCurrent
+                            )
+                            translationX =
+                                transform.translationMultiplier * bounds.width
+                            scaleX = transform.scale
+                            scaleY = transform.scale
+                            alpha = transform.alpha
+                            rotationY = transform.rotationY
+                            transformOrigin =
+                                androidx.compose.ui.graphics.TransformOrigin.Center
+                            if (transform.rotationY != 0f) {
+                                cameraDistance =
+                                    COVER_FLOW_METADATA_CAMERA_DISTANCE_MULTIPLIER *
+                                        density
+                            }
+                        }
+                        .suppressDefaultMorphSemantics(!item.isCurrent)
+                ) {
+                    Text(
+                        text = item.song.title.ifBlank { "Unknown Title" },
+                        style = titleStyle,
+                        color = lerpColor(
+                            MaterialTheme.colorScheme.onSurface,
+                            style.contentColor,
+                            progress
+                        ),
+                        maxLines = if (progress < 0.55f) 1 else 2
+                    )
+                    Spacer(modifier = Modifier.height((6f * progress).dp))
+                    Text(
+                        text = item.song.artist.ifBlank { "Unknown Artist" },
+                        style = artistStyle,
+                        color = lerpColor(
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                            style.secondaryContentColor,
+                            progress
+                        ),
+                        maxLines = 1
+                    )
+                }
+            }
+        }
     }
 }
 

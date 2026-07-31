@@ -30,6 +30,24 @@ import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 import com.example.cdplaya.data.Song
 
+internal enum class ModernArtworkRenderingPolicy {
+    Slide,
+    DepthScale,
+    Parallax,
+    CoverFlow,
+    StackReveal
+}
+
+internal fun modernArtworkRenderingPolicy(
+    style: ModernArtworkTransitionStyle
+): ModernArtworkRenderingPolicy = when (style) {
+    ModernArtworkTransitionStyle.SLIDE -> ModernArtworkRenderingPolicy.Slide
+    ModernArtworkTransitionStyle.DEPTH_SCALE -> ModernArtworkRenderingPolicy.DepthScale
+    ModernArtworkTransitionStyle.PARALLAX -> ModernArtworkRenderingPolicy.Parallax
+    ModernArtworkTransitionStyle.COVER_FLOW -> ModernArtworkRenderingPolicy.CoverFlow
+    ModernArtworkTransitionStyle.STACK_REVEAL -> ModernArtworkRenderingPolicy.StackReveal
+}
+
 @Composable
 internal fun ModernPlayerArtwork(
     carouselSongs: ModernCarouselSongs,
@@ -66,38 +84,84 @@ internal fun ModernPlayerArtwork(
             ),
         contentAlignment = Alignment.Center
     ) {
-        if (renderArtwork) carouselItems.forEach { item ->
+        if (renderArtwork) {
+            ModernPlayerArtworkPages(
+                carouselItems = carouselItems,
+                carouselState = carouselState,
+                transitionStyle = transitionStyle,
+                style = style,
+                artworkSize = artworkSize,
+                decoratePages = true
+            )
+        }
+    }
+}
+
+@Composable
+internal fun ModernPlayerArtworkPages(
+    carouselItems: List<ModernCarouselItem>,
+    carouselState: ModernArtworkCarouselState,
+    transitionStyle: ModernArtworkTransitionStyle,
+    style: ModernPlayerStyle,
+    artworkSize: Dp,
+    decoratePages: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        carouselItems.forEach { item ->
             key(item.song.id) {
-                ModernPlayerArtworkCard(
-                    song = item.song,
-                    artworkSize = artworkSize,
-                    style = style,
-                    contentDescription = if (item.isCurrent) {
-                        "Album art for ${item.song.title}"
-                    } else {
-                        null
-                    },
-                    elevation = if (item.isCurrent) 18.dp else 10.dp,
-                    modifier = Modifier.graphicsLayer {
-                        val gestureOffset =
-                            carouselState.offsetX / carouselState.artworkWidthPx
-                        val transform = modernArtworkPageTransform(
-                            style = transitionStyle,
-                            gestureOffset = gestureOffset,
-                            restingOffset = item.restingOffsetMultiplier,
-                            isCurrent = item.isCurrent
-                        )
-                        translationX = transform.translationMultiplier *
-                            carouselState.artworkWidthPx
-                        scaleX = transform.scale
-                        scaleY = transform.scale
-                        alpha = transform.alpha
-                        rotationY = transform.rotationY
-                        if (transform.rotationY != 0f) {
-                            cameraDistance = COVER_FLOW_CAMERA_DISTANCE_MULTIPLIER * density
-                        }
+                val pageModifier = Modifier.graphicsLayer {
+                    val gestureOffset = normalizedModernCarouselOffset(
+                        offsetX = carouselState.offsetX,
+                        artworkWidthPx = carouselState.artworkWidthPx
+                    )
+                    val transform = modernArtworkPageTransform(
+                        style = transitionStyle,
+                        gestureOffset = gestureOffset,
+                        restingOffset = item.restingOffsetMultiplier,
+                        isCurrent = item.isCurrent
+                    )
+                    translationX = transform.translationMultiplier *
+                        carouselState.artworkWidthPx
+                    scaleX = transform.scale
+                    scaleY = transform.scale
+                    alpha = transform.alpha
+                    rotationY = transform.rotationY
+                    if (transform.rotationY != 0f) {
+                        cameraDistance = COVER_FLOW_CAMERA_DISTANCE_MULTIPLIER * density
                     }
-                )
+                }
+                val contentDescription = if (item.isCurrent) {
+                    "Album art for ${item.song.title}"
+                } else {
+                    null
+                }
+                if (decoratePages) {
+                    ModernPlayerArtworkCard(
+                        song = item.song,
+                        artworkSize = artworkSize,
+                        style = style,
+                        contentDescription = contentDescription,
+                        elevation = if (item.isCurrent) 18.dp else 10.dp,
+                        modifier = pageModifier
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(artworkSize)
+                            .then(pageModifier)
+                    ) {
+                        ModernPlayerAlbumImage(
+                            currentSong = item.song,
+                            contentDescription = contentDescription,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
             }
         }
     }

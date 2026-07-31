@@ -26,15 +26,15 @@ internal fun modernArtworkPageTransform(
     val pageOffset = gestureOffset + restingOffset
     val distanceFromCenter = abs(pageOffset).coerceIn(0f, 1f)
 
-    return when (style) {
-        ModernArtworkTransitionStyle.SLIDE,
-        ModernArtworkTransitionStyle.PARALLAX -> slideArtworkTransform(
+    return when (modernArtworkRenderingPolicy(style)) {
+        ModernArtworkRenderingPolicy.Slide,
+        ModernArtworkRenderingPolicy.Parallax -> slideArtworkTransform(
             pageOffset = pageOffset,
             progress = progress,
             isCurrent = isCurrent
         )
 
-        ModernArtworkTransitionStyle.DEPTH_SCALE -> {
+        ModernArtworkRenderingPolicy.DepthScale -> {
             val pageAlpha = 1f - DEPTH_ALPHA_REDUCTION * distanceFromCenter
             ModernArtworkPageTransform(
                 translationMultiplier = pageOffset,
@@ -47,7 +47,7 @@ internal fun modernArtworkPageTransform(
             )
         }
 
-        ModernArtworkTransitionStyle.COVER_FLOW -> {
+        ModernArtworkRenderingPolicy.CoverFlow -> {
             val pageAlpha = 1f - COVER_FLOW_ALPHA_REDUCTION * distanceFromCenter
             ModernArtworkPageTransform(
                 translationMultiplier = pageOffset,
@@ -62,7 +62,7 @@ internal fun modernArtworkPageTransform(
             )
         }
 
-        ModernArtworkTransitionStyle.STACK_REVEAL -> stackRevealArtworkTransform(
+        ModernArtworkRenderingPolicy.StackReveal -> stackRevealArtworkTransform(
             gestureOffset = gestureOffset,
             restingOffset = restingOffset,
             pageOffset = pageOffset,

@@ -16,13 +16,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +41,7 @@ import com.example.cdplaya.ui.player.PlayerPresentation
 import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
 
 @Composable
-fun ModernExpandedPlayer(
+internal fun ModernExpandedPlayer(
     currentSong: Song?,
     previousPreviewSong: Song? = null,
     nextPreviewSong: Song? = null,
@@ -73,6 +71,7 @@ fun ModernExpandedPlayer(
     defaultMorphBounds: DefaultPlayerMorphBounds? = null,
     defaultMorphVisualState: DefaultPlayerMorphVisualState? = null,
     defaultMorphDragRangePx: Float? = null,
+    carouselPresentation: ModernArtworkCarouselPresentation? = null,
     lyricsContent: @Composable () -> Unit = {}
 ) {
     if (currentSong == null) {
@@ -81,66 +80,22 @@ fun ModernExpandedPlayer(
 
     val context = LocalContext.current
     val audioQualityRepository = remember(context) { AudioQualityRepository(context) }
-    val carouselState = rememberModernArtworkCarouselState(
-        onPrevious = onPreviousClick,
-        onNext = onNextClick
-    )
-    val actualCarouselSongs = ModernCarouselSongs(
-        current = currentSong,
-        previous = previousPreviewSong,
-        next = nextPreviewSong
-    )
-    var displayedCarouselSongs by remember {
-        mutableStateOf(actualCarouselSongs)
-    }
-    val latestActualCarouselSongs by rememberUpdatedState(actualCarouselSongs)
-
-    LaunchedEffect(currentSong.id) {
-        if (displayedCarouselSongs.current.id != currentSong.id) {
-            val transition = carouselState.consumeTransitionForSongChange(
-                newSongId = currentSong.id
+    val ownedCarouselPresentation =
+        if (carouselPresentation == null) {
+            rememberModernArtworkCarouselPresentation(
+                currentSong = currentSong,
+                previousPreviewSong = previousPreviewSong,
+                nextPreviewSong = nextPreviewSong,
+                onPreviousClick = onPreviousClick,
+                onNextClick = onNextClick
             )
-            val hasMatchingPreview = transition?.let { pending ->
-                displayedCarouselSongs.previewFor(pending.direction)?.id ==
-                    currentSong.id
-            } ?: false
-
-            if (transition != null && hasMatchingPreview) {
-                carouselState.animateSongChange(
-                    direction = transition.direction,
-                    durationMillis = if (transition.startedFromDrag) {
-                        MODERN_ARTWORK_ACCEPTED_DRAG_DURATION_MILLIS
-                    } else {
-                        MODERN_ARTWORK_BUTTON_TRANSITION_DURATION_MILLIS
-                    }
-                )
-            }
-
-            displayedCarouselSongs = latestActualCarouselSongs
-            carouselState.resetForSongChange()
+        } else {
+            null
         }
-    }
-
-    LaunchedEffect(actualCarouselSongs) {
-        if (displayedCarouselSongs.current.id == actualCarouselSongs.current.id) {
-            displayedCarouselSongs = actualCarouselSongs
-        }
-    }
-
-    val onPreviousButtonClick = {
-        carouselState.recordButtonNavigation(
-            direction = ModernCarouselDirection.PREVIOUS,
-            sourceSongId = currentSong.id
-        )
-        onPreviousClick()
-    }
-    val onNextButtonClick = {
-        carouselState.recordButtonNavigation(
-            direction = ModernCarouselDirection.NEXT,
-            sourceSongId = currentSong.id
-        )
-        onNextClick()
-    }
+    val activeCarouselPresentation =
+        carouselPresentation ?: requireNotNull(ownedCarouselPresentation)
+    val carouselState = activeCarouselPresentation.state
+    val displayedCarouselSongs = activeCarouselPresentation.songs
 
     var containerHeightPx by remember { mutableFloatStateOf(1f) }
     var isMorphDrag by remember { mutableStateOf(false) }
@@ -344,8 +299,8 @@ fun ModernExpandedPlayer(
                     isShuffleEnabled = isShuffleEnabled,
                     repeatMode = repeatMode,
                     onPlayPauseClick = onPlayPauseClick,
-                    onPreviousClick = onPreviousButtonClick,
-                    onNextClick = onNextButtonClick,
+                    onPreviousClick = activeCarouselPresentation.onPreviousButtonClick,
+                    onNextClick = activeCarouselPresentation.onNextButtonClick,
                     onShuffleClick = onShuffleClick,
                     onRepeatClick = onRepeatClick,
                     style = style,

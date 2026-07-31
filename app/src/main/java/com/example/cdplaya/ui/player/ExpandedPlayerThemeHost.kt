@@ -32,6 +32,7 @@ import com.example.cdplaya.ui.player.modern.DefaultPlayerMorph
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
 import com.example.cdplaya.ui.player.modern.ModernPlayerDefaults
 import com.example.cdplaya.ui.player.modern.resolveDefaultPlayerMorphGeometry
+import com.example.cdplaya.ui.player.modern.rememberModernArtworkCarouselPresentation
 import com.example.cdplaya.ui.player.modern.shouldRunDefaultExpandedWork
 import com.example.cdplaya.ui.player.modern.defaultMorphTravelDistance
 
@@ -152,10 +153,19 @@ fun ExpandedPlayerThemeHost(
                     endpointBounds = endpointBounds,
                     elementBounds = defaultMorphBounds
                 )
+                val carouselPresentation =
+                    rememberModernArtworkCarouselPresentation(
+                        currentSong = currentSong,
+                        previousPreviewSong = previousPreviewSong,
+                        nextPreviewSong = nextPreviewSong,
+                        onPreviousClick = onPreviousClick,
+                        onNextClick = onNextClick
+                    )
                 DefaultPlayerMorph(
                     progress = playerMorphState.progress,
                     geometry = geometry,
-                    currentSong = currentSong,
+                    carouselPresentation = carouselPresentation,
+                    artworkTransitionStyle = modernArtworkTransitionStyle,
                     isPlaying = isPlaying,
                     onPlayPauseClick = onPlayPauseClick,
                     style = modernStyle
@@ -187,6 +197,7 @@ fun ExpandedPlayerThemeHost(
                         style = modernStyle,
                         defaultMorphBounds = defaultMorphBounds,
                         defaultMorphVisualState = visualState,
+                        carouselPresentation = carouselPresentation,
                         defaultMorphDragRangePx = defaultMorphTravelDistance(
                             endpointBounds = endpointBounds,
                             elementBounds = defaultMorphBounds
