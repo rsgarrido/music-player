@@ -366,6 +366,8 @@ private class PlaybackLyricsRepository : LocalLyricsRepository {
     var defaultResult: LyricsLookupResult = LyricsLookupResult.NotFound
     var lookup: suspend (SongLyricsIdentity) -> LyricsLookupResult = { defaultResult }
 
+    override suspend fun loadCachedIndexSummary(): LyricsIndexSummary? = null
+
     override suspend fun addRoot(root: LyricsRoot): LyricsIndexResult =
         error("Not used")
 

@@ -16,6 +16,19 @@ class DefaultLocalLyricsRepository(
     override val roots = rootStore.roots
     private val refreshMutex = Mutex()
 
+    override suspend fun loadCachedIndexSummary(): LyricsIndexSummary? =
+        withContext(ioDispatcher) {
+            val snapshot = indexStore.load() ?: return@withContext null
+            val configuredUris = roots.value.mapTo(linkedSetOf(), LyricsRoot::uri)
+            val cachedUris = snapshot.indexedRootUris +
+                snapshot.issues.map(LyricsRootIssue::rootUri)
+            if (cachedUris != configuredUris) return@withContext null
+            LyricsIndexSummary(
+                fileCount = snapshot.files.size,
+                indexedRootUris = snapshot.indexedRootUris
+            )
+        }
+
     override suspend fun addRoot(root: LyricsRoot): LyricsIndexResult = withContext(ioDispatcher) {
         rootStore.addRoot(root)
         refreshIndex()

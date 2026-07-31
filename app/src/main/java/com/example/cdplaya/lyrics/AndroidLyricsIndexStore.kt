@@ -14,9 +14,7 @@ class AndroidLyricsIndexStore(
 
     override suspend fun load(): LyricsIndexSnapshot? = withContext(ioDispatcher) {
         if (!indexFile.isFile) return@withContext null
-        runCatching {
-            lyricsStorageJson.decodeFromString<LyricsIndexSnapshot>(indexFile.readText())
-        }.getOrNull()
+        decodeLyricsIndexSnapshotOrNull(indexFile.readText())
     }
 
     override suspend fun save(snapshot: LyricsIndexSnapshot) = withContext(ioDispatcher) {
@@ -37,3 +35,8 @@ class AndroidLyricsIndexStore(
         const val INDEX_FILE_NAME = "lyrics_index.json"
     }
 }
+
+internal fun decodeLyricsIndexSnapshotOrNull(value: String): LyricsIndexSnapshot? =
+    runCatching {
+        lyricsStorageJson.decodeFromString<LyricsIndexSnapshot>(value)
+    }.getOrNull()

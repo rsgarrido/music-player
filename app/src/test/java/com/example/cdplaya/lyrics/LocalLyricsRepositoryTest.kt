@@ -8,6 +8,39 @@ import org.junit.Test
 
 class LocalLyricsRepositoryTest {
     @Test
+    fun cachedIndexSummaryReturnsPersistedCountWithoutScanning() = runBlocking {
+        val root = root()
+        val fixture = fixture(root)
+        fixture.indexStore.snapshot = LyricsIndexSnapshot(
+            files = (0 until 30).map { index ->
+                file("content://file/$index", "Track $index.lrc", "Album")
+            },
+            indexedRootUris = setOf(root.uri),
+            generatedAtEpochMs = 1L
+        )
+
+        assertEquals(
+            LyricsIndexSummary(30, setOf(root.uri)),
+            fixture.repository.loadCachedIndexSummary()
+        )
+    }
+
+    @Test
+    fun cachedIndexSummaryRejectsMissingOrRootStaleSnapshots() = runBlocking {
+        val root = root()
+        val fixture = fixture(root)
+
+        assertEquals(null, fixture.repository.loadCachedIndexSummary())
+
+        fixture.indexStore.snapshot = LyricsIndexSnapshot(
+            files = listOf(file("content://file", "Track.lrc", "Album")),
+            indexedRootUris = setOf("content://different-root"),
+            generatedAtEpochMs = 1L
+        )
+        assertEquals(null, fixture.repository.loadCachedIndexSummary())
+    }
+
+    @Test
     fun addingAndRemovingRootRefreshesThePersistedIndex() = runBlocking {
         val fixture = fixture()
         val root = root()

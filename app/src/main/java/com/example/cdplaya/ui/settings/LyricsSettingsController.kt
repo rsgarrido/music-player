@@ -2,13 +2,13 @@ package com.example.cdplaya.ui.settings
 
 import android.content.Context
 import android.net.Uri
-import com.example.cdplaya.lyrics.AndroidLyricsFolderAccess
 import com.example.cdplaya.lyrics.LocalLyricsRepository
 import com.example.cdplaya.lyrics.LocalLyricsServices
 import com.example.cdplaya.lyrics.LyricsRoot
 import com.example.cdplaya.lyrics.LyricsRootIssue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,22 +29,34 @@ data class LyricsFolderUiItem(
     val hasPersistedAccess: Boolean
 )
 
-class LyricsSettingsController private constructor(
+internal class LyricsSettingsController(
     private val repository: LocalLyricsRepository,
-    private val folderAccess: AndroidLyricsFolderAccess
+    private val retainReadAccess: (Uri) -> Result<LyricsRoot>,
+    private val hasReadAccess: (String) -> Boolean,
+    private val scope: CoroutineScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Main.immediate
+    )
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val _state = MutableStateFlow(LyricsFolderUiState())
     val state: StateFlow<LyricsFolderUiState> = _state.asStateFlow()
+    private val hydrationJob: Job
 
     init {
+        hydrationJob = scope.launch {
+            val summary = runCatching {
+                repository.loadCachedIndexSummary()
+            }.getOrNull()
+            _state.value = _state.value.copy(
+                indexedFileCount = summary?.fileCount ?: 0
+            )
+        }
         scope.launch {
             repository.roots.collectLatest { roots ->
                 _state.value = _state.value.copy(
                     roots = roots.map { root ->
                         LyricsFolderUiItem(
                             root = root,
-                            hasPersistedAccess = folderAccess.hasReadAccess(root.uri)
+                            hasPersistedAccess = hasReadAccess(root.uri)
                         )
                     }
                 )
@@ -55,7 +67,7 @@ class LyricsSettingsController private constructor(
     fun addRoot(uri: Uri) {
         launchScan {
             val root = withContext(Dispatchers.IO) {
-                folderAccess.retainReadAccess(uri).getOrElse {
+                retainReadAccess(uri).getOrElse {
                     throw LyricsFolderAccessException()
                 }
             }
@@ -79,6 +91,7 @@ class LyricsSettingsController private constructor(
         if (_state.value.isScanning) return
         _state.value = _state.value.copy(isScanning = true, message = null)
         scope.launch {
+            hydrationJob.join()
             runCatching { block() }.fold(
                 onSuccess = { snapshot ->
                     val permissionCount = snapshot.issues.count {
@@ -96,7 +109,7 @@ class LyricsSettingsController private constructor(
                         roots = repository.roots.value.map { root ->
                             LyricsFolderUiItem(
                                 root = root,
-                                hasPersistedAccess = folderAccess.hasReadAccess(root.uri)
+                                hasPersistedAccess = hasReadAccess(root.uri)
                             )
                         },
                         indexedFileCount = snapshot.files.size,
@@ -127,7 +140,8 @@ class LyricsSettingsController private constructor(
                 instance ?: LocalLyricsServices.shared(context).let { services ->
                     LyricsSettingsController(
                         repository = services.repository,
-                        folderAccess = services.folderAccess
+                        retainReadAccess = services.folderAccess::retainReadAccess,
+                        hasReadAccess = services.folderAccess::hasReadAccess
                     )
                 }.also { instance = it }
             }

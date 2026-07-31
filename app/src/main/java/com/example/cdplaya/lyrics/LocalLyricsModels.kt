@@ -52,6 +52,11 @@ data class LyricsIndexResult(
     val snapshot: LyricsIndexSnapshot
 )
 
+data class LyricsIndexSummary(
+    val fileCount: Int,
+    val indexedRootUris: Set<String>
+)
+
 data class SongLyricsIdentity(
     val audioFileName: String,
     val title: String = "",
@@ -133,6 +138,7 @@ interface LyricsDocumentReader {
 
 interface LocalLyricsRepository {
     val roots: StateFlow<List<LyricsRoot>>
+    suspend fun loadCachedIndexSummary(): LyricsIndexSummary?
     suspend fun addRoot(root: LyricsRoot): LyricsIndexResult
     suspend fun removeRoot(rootUri: String): LyricsIndexResult
     suspend fun refreshIndex(): LyricsIndexResult
