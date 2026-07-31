@@ -227,6 +227,7 @@ fun ExpandedPlayerThemeHost(
                 geometry = geometry,
                 sharedGeometry = sharedGeometry,
                 currentSong = currentSong,
+                isPlaying = isPlaying,
                 tokens = tokens
             ) { screenAlpha, wheelAlpha, controlsActive -> ClassicWheelExpandedPlayer(
                 currentSong = currentSong,
@@ -259,6 +260,7 @@ fun ExpandedPlayerThemeHost(
                 ,onMorphDragBy = playerMorphState::dragBy
                 ,onMorphDragEnd = playerMorphState::endDrag
                 ,onMorphDragCancel = playerMorphState::cancelDrag
+                ,wheelPlayControlAlpha = if (controlsActive) 1f else 0f
             ) }
         }
 

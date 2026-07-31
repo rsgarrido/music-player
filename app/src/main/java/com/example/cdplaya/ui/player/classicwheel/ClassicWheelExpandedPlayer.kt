@@ -25,6 +25,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
@@ -64,6 +66,7 @@ fun ClassicWheelExpandedPlayer(
     onMorphDragBy: (Float) -> Unit = {},
     onMorphDragEnd: (Float) -> Unit = {},
     onMorphDragCancel: () -> Unit = {},
+    wheelPlayControlAlpha: Float = 1f,
     modifier: Modifier = Modifier
 ) {
     val palette = remember(tokens) { ClassicWheelPalette.from(tokens) }
@@ -72,9 +75,7 @@ fun ClassicWheelExpandedPlayer(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .background(ClassicWheelColors.shell)
             .padding(horizontal = 14.dp, vertical = 16.dp)
-            .graphicsLayer { alpha = screenAlpha.coerceIn(0f, 1f) }
     ) {
         val menuState = remember {
             ClassicWheelMenuState()
@@ -275,7 +276,9 @@ fun ClassicWheelExpandedPlayer(
         )
 
         Column(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer { alpha = screenAlpha.coerceIn(0f, 1f) },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceEvenly
         ) {
@@ -333,8 +336,22 @@ fun ClassicWheelExpandedPlayer(
                 } else {
                     55f
                 },
+                playControlAlpha = wheelPlayControlAlpha,
                 modifier = Modifier
                     .size(wheelSize)
+                    .onGloballyPositioned { coordinates ->
+                        val wheel = coordinates.boundsInRoot()
+                        val width = wheel.width * .28f
+                        val height = wheel.height * .24f
+                        morphBounds?.updateExpandedPlayPause(
+                            androidx.compose.ui.geometry.Rect(
+                                wheel.center.x - width / 2f,
+                                wheel.bottom - height - wheel.height * .06f,
+                                wheel.center.x + width / 2f,
+                                wheel.bottom - wheel.height * .06f
+                            )
+                        )
+                    }
                     .graphicsLayer {
                         alpha = wheelAlpha.coerceIn(0f, 1f)
                         scaleX = 0.82f + 0.18f * wheelAlpha.coerceIn(0f, 1f)

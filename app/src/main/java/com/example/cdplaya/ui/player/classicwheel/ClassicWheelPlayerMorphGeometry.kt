@@ -39,19 +39,23 @@ class ClassicWheelMorphBounds {
     var miniArtwork by mutableStateOf<Rect?>(null); private set
     var miniTitle by mutableStateOf<Rect?>(null); private set
     var miniArtist by mutableStateOf<Rect?>(null); private set
+    var miniPlayPause by mutableStateOf<Rect?>(null); private set
     var expandedArtwork by mutableStateOf<Rect?>(null); private set
     var expandedTitle by mutableStateOf<Rect?>(null); private set
     var expandedArtist by mutableStateOf<Rect?>(null); private set
+    var expandedPlayPause by mutableStateOf<Rect?>(null); private set
     fun updateMiniArtwork(value: Rect) { miniArtwork = miniArtwork.keepValid(value) }
     fun updateMiniTitle(value: Rect) { miniTitle = miniTitle.keepValid(value) }
     fun updateMiniArtist(value: Rect) { miniArtist = miniArtist.keepValid(value) }
+    fun updateMiniPlayPause(value: Rect) { miniPlayPause = miniPlayPause.keepValid(value) }
     fun updateExpandedArtwork(value: Rect) { expandedArtwork = expandedArtwork.keepValid(value) }
     fun updateExpandedTitle(value: Rect) { expandedTitle = expandedTitle.keepValid(value) }
     fun updateExpandedArtist(value: Rect) { expandedArtist = expandedArtist.keepValid(value) }
+    fun updateExpandedPlayPause(value: Rect) { expandedPlayPause = expandedPlayPause.keepValid(value) }
 }
 
 internal data class ClassicWheelSharedGeometry(
-    val artwork: Rect, val title: Rect, val artist: Rect
+    val artwork: Rect, val title: Rect, val artist: Rect, val playPause: Rect
 )
 
 internal fun resolveClassicWheelMorphGeometry(
@@ -69,11 +73,13 @@ internal fun resolveClassicWheelSharedGeometry(
 ): ClassicWheelSharedGeometry? {
     if (!bounds.miniArtwork.isValidClassicWheelRect() || !bounds.expandedArtwork.isValidClassicWheelRect() ||
         !bounds.miniTitle.isValidClassicWheelRect() || !bounds.expandedTitle.isValidClassicWheelRect() ||
-        !bounds.miniArtist.isValidClassicWheelRect() || !bounds.expandedArtist.isValidClassicWheelRect()) return null
+        !bounds.miniArtist.isValidClassicWheelRect() || !bounds.expandedArtist.isValidClassicWheelRect() ||
+        !bounds.miniPlayPause.isValidClassicWheelRect() || !bounds.expandedPlayPause.isValidClassicWheelRect()) return null
     return ClassicWheelSharedGeometry(
         interpolateMorphRect(bounds.miniArtwork!!, bounds.expandedArtwork!!, progress),
         interpolateMorphRect(bounds.miniTitle!!, bounds.expandedTitle!!, progress),
-        interpolateMorphRect(bounds.miniArtist!!, bounds.expandedArtist!!, progress)
+        interpolateMorphRect(bounds.miniArtist!!, bounds.expandedArtist!!, progress),
+        interpolateMorphRect(bounds.miniPlayPause!!, bounds.expandedPlayPause!!, progress)
     )
 }
 

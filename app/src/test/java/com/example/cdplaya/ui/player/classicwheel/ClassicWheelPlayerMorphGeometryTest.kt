@@ -56,11 +56,15 @@ class ClassicWheelPlayerMorphGeometryTest {
             it.updateExpandedTitle(Rect(185f, 120f, 360f, 170f))
             it.updateMiniArtist(Rect(70f, 734f, 240f, 750f))
             it.updateExpandedArtist(Rect(185f, 176f, 360f, 205f))
+            it.updateMiniPlayPause(Rect(330f, 705f, 378f, 753f))
+            it.updateExpandedPlayPause(Rect(170f, 600f, 250f, 670f))
         }
         assertEquals(Rect(16f, 710f, 60f, 754f), resolveClassicWheelSharedGeometry(0f, elements)!!.artwork)
         assertEquals(Rect(30f, 120f, 170f, 260f), resolveClassicWheelSharedGeometry(1f, elements)!!.artwork)
         assertEquals(Rect(70f, 710f, 240f, 730f), resolveClassicWheelSharedGeometry(0f, elements)!!.title)
         assertEquals(Rect(185f, 176f, 360f, 205f), resolveClassicWheelSharedGeometry(1f, elements)!!.artist)
+        assertEquals(Rect(330f, 705f, 378f, 753f), resolveClassicWheelSharedGeometry(0f, elements)!!.playPause)
+        assertEquals(Rect(170f, 600f, 250f, 670f), resolveClassicWheelSharedGeometry(1f, elements)!!.playPause)
     }
 
     @Test fun `invalid measurement preserves the last valid anchor`() {

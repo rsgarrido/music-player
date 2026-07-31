@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.PI
@@ -41,6 +42,7 @@ fun ClassicControlWheel(
     rotationItemCount: Int,
     isRotationEnabled: Boolean,
     rotationStepDegrees: Float,
+    playControlAlpha: Float = 1f,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -167,6 +169,7 @@ fun ClassicControlWheel(
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 26.dp)
                 .size(72.dp)
+                .graphicsLayer { alpha = playControlAlpha.coerceIn(0f, 1f) }
         ) {
             Icon(
                 imageVector = if (isPlaying) {

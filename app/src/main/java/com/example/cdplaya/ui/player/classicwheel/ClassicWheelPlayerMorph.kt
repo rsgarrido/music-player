@@ -9,9 +9,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -35,6 +44,7 @@ internal fun ClassicWheelPlayerMorph(
     geometry: ClassicWheelMorphGeometry?,
     sharedGeometry: ClassicWheelSharedGeometry?,
     currentSong: Song?,
+    isPlaying: Boolean,
     tokens: PlayerThemeTokens,
     content: @Composable (screenAlpha: Float, wheelAlpha: Float, controlsActive: Boolean) -> Unit
 ) {
@@ -55,20 +65,37 @@ internal fun ClassicWheelPlayerMorph(
                     .background(tokens.shellColor)
             )
         }
-        content(
-            classicWheelScreenReveal(safeProgress),
-            classicWheelWheelReveal(safeProgress),
-            classicWheelExpandedControlsActive(safeProgress)
-        )
-        if (sharedGeometry != null && currentSong != null) {
-            ClassicWheelMorphSharedContent(sharedGeometry, safeProgress, currentSong)
+        Box(
+            Modifier
+                .fillMaxSize()
+                .clipClassicWheelShell(geometry, safeProgress)
+        ) {
+            content(
+                classicWheelScreenReveal(safeProgress),
+                classicWheelWheelReveal(safeProgress),
+                classicWheelExpandedControlsActive(safeProgress)
+            )
+            if (sharedGeometry != null && currentSong != null) {
+                ClassicWheelMorphSharedContent(sharedGeometry, safeProgress, currentSong, isPlaying)
+            }
         }
     }
 }
 
+private fun Modifier.clipClassicWheelShell(
+    geometry: ClassicWheelMorphGeometry?, progress: Float
+): Modifier = drawWithContent {
+    val shell = geometry?.shell ?: return@drawWithContent
+    val radius = 18.dp.toPx() * (1f - progress.coerceIn(0f, 1f))
+    val path = Path().apply {
+        addRoundRect(RoundRect(shell, CornerRadius(radius, radius)))
+    }
+    clipPath(path) { this@drawWithContent.drawContent() }
+}
+
 @Composable
 private fun ClassicWheelMorphSharedContent(
-    geometry: ClassicWheelSharedGeometry, progress: Float, song: Song
+    geometry: ClassicWheelSharedGeometry, progress: Float, song: Song, isPlaying: Boolean
 ) {
     val density = LocalDensity.current
     val artworkRadius = (8f - 5f * progress).coerceAtLeast(3f).dp
@@ -107,4 +134,23 @@ private fun ClassicWheelMorphSharedContent(
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
     )
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(geometry.playPause.left.roundToInt(), geometry.playPause.top.roundToInt()) }
+            .size(with(density) { geometry.playPause.width.toDp() }, with(density) { geometry.playPause.height.toDp() })
+            .clip(RoundedCornerShape(percent = 50))
+            .background(
+                ClassicWheelColors.wheel.copy(
+                    alpha = (1f - ((progress - .86f) / .14f).coerceIn(0f, 1f)) *
+                        (1f - .30f * progress)
+                )
+            ),
+        contentAlignment = androidx.compose.ui.Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+            contentDescription = null,
+            tint = ClassicWheelColors.wheelContent
+        )
+    }
 }
