@@ -69,4 +69,62 @@ class ModernPlayerSeekBarTest {
         assertEquals(0.6f, blended[0], 0.0001f)
         assertEquals(0.7f, blended[1], 0.0001f)
     }
+
+    @Test
+    fun timingLayoutReservesASeparateRowBelowSeekbar() {
+        val layout = resolveModernSeekbarVerticalLayout(
+            trackHeightPx = 48f,
+            timingHeightPx = 18f
+        )
+
+        assertEquals(0f, layout.trackTop, 0f)
+        assertEquals(48f, layout.trackBottom, 0f)
+        assertEquals(48f, layout.timingTop, 0f)
+        assertEquals(66f, layout.timingBottom, 0f)
+        assertTrue(layout.timingTop >= layout.trackBottom)
+    }
+
+    @Test
+    fun timingLabelsNeverOccupyWaveformVerticalBounds() {
+        ModernSeekbarStyle.values().forEach { style ->
+            val trackHeight = when (style) {
+                ModernSeekbarStyle.WAVEFORM_PEAKS -> 36f
+                ModernSeekbarStyle.WAVEFORM_PREVIEW,
+                ModernSeekbarStyle.WAVEFORM_GLOW -> 32f
+                else -> 48f
+            }
+            val layout = resolveModernSeekbarVerticalLayout(
+                trackHeightPx = trackHeight,
+                timingHeightPx = 18f
+            )
+
+            assertTrue(
+                "${style.displayName} timing row overlaps its track",
+                layout.timingTop >= layout.trackBottom
+            )
+        }
+    }
+
+    @Test
+    fun unknownOrZeroDurationUsesSafeSliderAndDisplayValues() {
+        assertEquals(
+            ModernSeekbarValues(
+                sliderPosition = 0,
+                sliderDuration = 1,
+                displayPosition = 0,
+                displayDuration = 0
+            ),
+            resolveModernSeekbarValues(
+                currentPosition = 12_000,
+                duration = 0
+            )
+        )
+        assertEquals(
+            0,
+            resolveModernSeekbarValues(
+                currentPosition = -1,
+                duration = -1
+            ).displayDuration
+        )
+    }
 }

@@ -2,10 +2,14 @@ package com.example.cdplaya.ui.player.mini
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
 
 data class MiniPlayerState(
     val currentSong: Song,
@@ -20,6 +24,13 @@ data class MiniPlayerCallbacks(
     val onPreviousClick: () -> Unit,
     val onNextClick: () -> Unit,
     val onExpandClick: () -> Unit
+)
+
+data class DefaultMiniPlayerMorphCallbacks(
+    val onDragStart: () -> Unit,
+    val onDragBy: (Float) -> Unit,
+    val onDragEnd: (Float) -> Unit,
+    val onDragCancel: () -> Unit
 )
 
 internal enum class MiniPlayerVariant {
@@ -45,41 +56,51 @@ fun MiniPlayerHost(
     tokens: PlayerThemeTokens,
     state: MiniPlayerState,
     callbacks: MiniPlayerCallbacks,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onBoundsChanged: (Rect) -> Unit = {},
+    defaultMorphBounds: DefaultPlayerMorphBounds? = null,
+    defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
+    morphOwnsVisuals: Boolean = false
 ) {
+    val measuredModifier = modifier.onGloballyPositioned { coordinates ->
+        onBoundsChanged(coordinates.boundsInRoot())
+    }
     when (miniPlayerVariantFor(selectedPlayerTheme)) {
         MiniPlayerVariant.MODERN -> ModernMiniPlayer(
             state = state,
             callbacks = callbacks,
-            modifier = modifier
+            morphBounds = defaultMorphBounds,
+            morphCallbacks = defaultMorphCallbacks,
+            morphOwnsVisuals = morphOwnsVisuals,
+            modifier = measuredModifier
         )
 
         MiniPlayerVariant.CLASSIC_WHEEL -> ClassicWheelMiniPlayer(
             state = state,
             callbacks = callbacks,
             tokens = tokens,
-            modifier = modifier
+            modifier = measuredModifier
         )
 
         MiniPlayerVariant.POCKET_CASSETTE -> PocketCassetteMiniPlayer(
             state = state,
             callbacks = callbacks,
             tokens = tokens,
-            modifier = modifier
+            modifier = measuredModifier
         )
 
         MiniPlayerVariant.POCKET_FLIP -> PocketFlipMiniPlayer(
             state = state,
             callbacks = callbacks,
             tokens = tokens,
-            modifier = modifier
+            modifier = measuredModifier
         )
 
         MiniPlayerVariant.RETRO_RACK -> RetroRackMiniPlayer(
             state = state,
             callbacks = callbacks,
             tokens = tokens,
-            modifier = modifier
+            modifier = measuredModifier
         )
     }
 }

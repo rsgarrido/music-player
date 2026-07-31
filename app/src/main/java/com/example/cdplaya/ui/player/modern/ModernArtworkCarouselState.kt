@@ -4,9 +4,11 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -68,6 +70,14 @@ internal data class ModernPendingSongTransition(
     val direction: ModernCarouselDirection,
     val sourceSongId: Long,
     val startedFromDrag: Boolean
+)
+
+@Stable
+internal data class ModernArtworkCarouselPresentation(
+    val songs: ModernCarouselSongs,
+    val state: ModernArtworkCarouselState,
+    val onPreviousButtonClick: () -> Unit,
+    val onNextButtonClick: () -> Unit
 )
 
 @Stable
@@ -230,6 +240,89 @@ internal fun rememberModernArtworkCarouselState(
             onNext = { currentOnNext() }
         )
     }
+}
+
+@Composable
+internal fun rememberModernArtworkCarouselPresentation(
+    currentSong: Song,
+    previousPreviewSong: Song?,
+    nextPreviewSong: Song?,
+    onPreviousClick: () -> Unit,
+    onNextClick: () -> Unit
+): ModernArtworkCarouselPresentation {
+    val carouselState = rememberModernArtworkCarouselState(
+        onPrevious = onPreviousClick,
+        onNext = onNextClick
+    )
+    val actualCarouselSongs = ModernCarouselSongs(
+        current = currentSong,
+        previous = previousPreviewSong,
+        next = nextPreviewSong
+    )
+    var displayedCarouselSongs by remember {
+        mutableStateOf(actualCarouselSongs)
+    }
+    val latestActualCarouselSongs by rememberUpdatedState(actualCarouselSongs)
+
+    LaunchedEffect(currentSong.id) {
+        if (displayedCarouselSongs.current.id != currentSong.id) {
+            val transition = carouselState.consumeTransitionForSongChange(
+                newSongId = currentSong.id
+            )
+            val hasMatchingPreview = transition?.let { pending ->
+                displayedCarouselSongs.previewFor(pending.direction)?.id ==
+                    currentSong.id
+            } ?: false
+
+            if (transition != null && hasMatchingPreview) {
+                carouselState.animateSongChange(
+                    direction = transition.direction,
+                    durationMillis = if (transition.startedFromDrag) {
+                        MODERN_ARTWORK_ACCEPTED_DRAG_DURATION_MILLIS
+                    } else {
+                        MODERN_ARTWORK_BUTTON_TRANSITION_DURATION_MILLIS
+                    }
+                )
+            }
+
+            displayedCarouselSongs = latestActualCarouselSongs
+            carouselState.resetForSongChange()
+        }
+    }
+
+    LaunchedEffect(actualCarouselSongs) {
+        if (displayedCarouselSongs.current.id == actualCarouselSongs.current.id) {
+            displayedCarouselSongs = actualCarouselSongs
+        }
+    }
+
+    return ModernArtworkCarouselPresentation(
+        songs = displayedCarouselSongs,
+        state = carouselState,
+        onPreviousButtonClick = {
+            carouselState.recordButtonNavigation(
+                direction = ModernCarouselDirection.PREVIOUS,
+                sourceSongId = currentSong.id
+            )
+            onPreviousClick()
+        },
+        onNextButtonClick = {
+            carouselState.recordButtonNavigation(
+                direction = ModernCarouselDirection.NEXT,
+                sourceSongId = currentSong.id
+            )
+            onNextClick()
+        }
+    )
+}
+
+internal fun normalizedModernCarouselOffset(
+    offsetX: Float,
+    artworkWidthPx: Float
+): Float = if (artworkWidthPx > 0f) {
+    (offsetX / artworkWidthPx).coerceIn(-1f, 1f)
+} else {
+    0f
 }
 
 internal fun resolveModernArtworkSwipe(

@@ -27,6 +27,14 @@ import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
+import com.example.cdplaya.ui.player.PlayerEndpointBounds
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorph
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.modern.ModernPlayerDefaults
+import com.example.cdplaya.ui.player.modern.resolveDefaultPlayerMorphGeometry
+import com.example.cdplaya.ui.player.modern.rememberModernArtworkCarouselPresentation
+import com.example.cdplaya.ui.player.modern.shouldRunDefaultExpandedWork
+import com.example.cdplaya.ui.player.modern.defaultMorphTravelDistance
 
 @Composable
 fun ExpandedPlayerThemeHost(
@@ -51,6 +59,7 @@ fun ExpandedPlayerThemeHost(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
+    playerMorphState: PlayerMorphState,
     lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
     onOpenSleepTimerClick: () -> Unit,
@@ -58,12 +67,17 @@ fun ExpandedPlayerThemeHost(
     onToggleFavoriteClick: (Song) -> Unit,
     songs: List<Song>,
     upcomingSongs: List<Song>,
-    onSongClick: (Song, List<Song>) -> Unit
+    onSongClick: (Song, List<Song>) -> Unit,
+    endpointBounds: PlayerEndpointBounds,
+    defaultMorphBounds: DefaultPlayerMorphBounds
 ) {
     val shouldLoadWaveform = shouldLoadExpandedPlayerWaveform(
         selectedPlayerTheme = selectedPlayerTheme,
         modernSeekbarStyle = modernSeekbarStyle
-    )
+    ) && (
+            selectedPlayerTheme != PlayerTheme.DEFAULT ||
+                    shouldRunDefaultExpandedWork(playerMorphState.progress)
+            )
     val shouldPrefetchWaveforms = selectedPlayerTheme == PlayerTheme.DEFAULT &&
             modernSeekbarStyle.usesWaveformData
     val nearbyWaveformSongs = remember(
@@ -132,30 +146,65 @@ fun ExpandedPlayerThemeHost(
     ) {
     when (selectedPlayerTheme) {
         PlayerTheme.DEFAULT -> {
-            ModernExpandedPlayer(
-                currentSong = currentSong,
-                previousPreviewSong = previousPreviewSong,
-                nextPreviewSong = nextPreviewSong,
-                artworkTransitionStyle = modernArtworkTransitionStyle,
-                seekbarStyle = modernSeekbarStyle,
-                waveformData = waveformData,
-                isPlaying = isPlaying,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
-                isCurrentSongFavorite = isCurrentSongFavorite,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onCollapseClick = onCollapseClick,
-                lyricsTransitionState = lyricsTransitionState,
-                onOpenUpNextClick = onOpenUpNextClick,
-                onToggleFavoriteClick = onToggleFavoriteClick
-            )
+            if (currentSong != null) {
+                val modernStyle = ModernPlayerDefaults.style()
+                val geometry = resolveDefaultPlayerMorphGeometry(
+                    progress = playerMorphState.progress,
+                    endpointBounds = endpointBounds,
+                    elementBounds = defaultMorphBounds
+                )
+                val carouselPresentation =
+                    rememberModernArtworkCarouselPresentation(
+                        currentSong = currentSong,
+                        previousPreviewSong = previousPreviewSong,
+                        nextPreviewSong = nextPreviewSong,
+                        onPreviousClick = onPreviousClick,
+                        onNextClick = onNextClick
+                    )
+                DefaultPlayerMorph(
+                    progress = playerMorphState.progress,
+                    geometry = geometry,
+                    carouselPresentation = carouselPresentation,
+                    artworkTransitionStyle = modernArtworkTransitionStyle,
+                    isPlaying = isPlaying,
+                    onPlayPauseClick = onPlayPauseClick,
+                    style = modernStyle
+                ) { visualState ->
+                    ModernExpandedPlayer(
+                        currentSong = currentSong,
+                        previousPreviewSong = previousPreviewSong,
+                        nextPreviewSong = nextPreviewSong,
+                        artworkTransitionStyle = modernArtworkTransitionStyle,
+                        seekbarStyle = modernSeekbarStyle,
+                        waveformData = waveformData,
+                        isPlaying = isPlaying,
+                        isShuffleEnabled = isShuffleEnabled,
+                        repeatMode = repeatMode,
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        isCurrentSongFavorite = isCurrentSongFavorite,
+                        onPlayPauseClick = onPlayPauseClick,
+                        onPreviousClick = onPreviousClick,
+                        onNextClick = onNextClick,
+                        onSeekChange = onSeekChange,
+                        onShuffleClick = onShuffleClick,
+                        onRepeatClick = onRepeatClick,
+                        onCollapseClick = onCollapseClick,
+                        playerMorphState = playerMorphState,
+                        lyricsTransitionState = lyricsTransitionState,
+                        onOpenUpNextClick = onOpenUpNextClick,
+                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        style = modernStyle,
+                        defaultMorphBounds = defaultMorphBounds,
+                        defaultMorphVisualState = visualState,
+                        carouselPresentation = carouselPresentation,
+                        defaultMorphDragRangePx = defaultMorphTravelDistance(
+                            endpointBounds = endpointBounds,
+                            elementBounds = defaultMorphBounds
+                        )
+                    )
+                }
+            }
         }
 
         PlayerTheme.CLASSIC_WHEEL -> {

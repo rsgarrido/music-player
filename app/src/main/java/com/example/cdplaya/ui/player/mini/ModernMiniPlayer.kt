@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui.player.mini
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,13 +14,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
 
 @Composable
 fun ModernMiniPlayer(
     state: MiniPlayerState,
     callbacks: MiniPlayerCallbacks,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    morphBounds: DefaultPlayerMorphBounds? = null,
+    morphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
+    morphOwnsVisuals: Boolean = false
 ) {
     MiniPlayerScaffold(
         state = state,
@@ -27,20 +35,39 @@ fun ModernMiniPlayer(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
         borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.76f),
-        tonalElevation = 4.dp
+        tonalElevation = 4.dp,
+        defaultMorphCallbacks = morphCallbacks,
+        onSurfaceBoundsChanged = { bounds ->
+            morphBounds?.updateMiniSurface(bounds)
+        }
     ) { displayedState ->
         Row(verticalAlignment = Alignment.CenterVertically) {
-            MiniPlayerArtwork(
-                song = displayedState.currentSong,
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(displayedState.albumArtSize)
-                    .clip(RoundedCornerShape(10.dp))
-            )
+            val artworkModifier = Modifier
+                .fillMaxHeight()
+                .width(displayedState.albumArtSize)
+                .clip(RoundedCornerShape(10.dp))
+                .onGloballyPositioned { coordinates ->
+                    morphBounds?.updateMiniArtwork(coordinates.boundsInRoot())
+                }
+            if (morphOwnsVisuals) {
+                Box(modifier = artworkModifier)
+            } else {
+                MiniPlayerArtwork(
+                    song = displayedState.currentSong,
+                    modifier = artworkModifier
+                )
+            }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .onGloballyPositioned { coordinates ->
+                        morphBounds?.updateMiniText(coordinates.boundsInRoot())
+                    }
+                    .graphicsLayer { alpha = if (morphOwnsVisuals) 0f else 1f }
+            ) {
                 Text(
                     text = displayedState.currentSong.miniTitle,
                     style = MaterialTheme.typography.titleMedium,
@@ -55,7 +82,12 @@ fun ModernMiniPlayer(
 
             MiniPlayerPlayPauseButton(
                 isPlaying = displayedState.isPlaying,
-                onClick = callbacks.onPlayPauseClick
+                onClick = callbacks.onPlayPauseClick,
+                modifier = Modifier
+                    .onGloballyPositioned { coordinates ->
+                        morphBounds?.updateMiniPlayPause(coordinates.boundsInRoot())
+                    }
+                    .graphicsLayer { alpha = if (morphOwnsVisuals) 0f else 1f }
             )
         }
     }

@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -31,6 +32,9 @@ import com.example.cdplaya.ui.library.LibrarySortDropdown
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.player.PlayerCard
+import com.example.cdplaya.ui.player.PlayerMorphState
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.mini.DefaultMiniPlayerMorphCallbacks
 import com.example.cdplaya.ui.player.SleepTimerStatusBanner
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 
@@ -141,6 +145,7 @@ fun MiniPlayerSection(
     duration: Int,
     selectedPlayerTheme: PlayerTheme,
     selectedPlayerThemeTokens: PlayerThemeTokens,
+    playerMorphState: PlayerMorphState,
     favoriteMembershipKeys: Set<String>,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
@@ -154,7 +159,11 @@ fun MiniPlayerSection(
     isSleepTimerActive: Boolean,
     sleepTimerDisplayText: String,
     onSleepTimerClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onMiniPlayerBoundsChanged: (Rect) -> Unit = {},
+    defaultMorphBounds: DefaultPlayerMorphBounds? = null,
+    defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
+    morphOwnsVisuals: Boolean = false
 ) {
     Column(modifier = modifier) {
         SleepTimerStatusBanner(
@@ -173,6 +182,7 @@ fun MiniPlayerSection(
             duration = duration,
             selectedPlayerTheme = selectedPlayerTheme,
             selectedPlayerThemeTokens = selectedPlayerThemeTokens,
+            playerMorphState = playerMorphState,
             onPlayPauseClick = onPlayPauseClick,
             onPreviousClick = onPreviousClick,
             onNextClick = onNextClick,
@@ -185,7 +195,11 @@ fun MiniPlayerSection(
             isCurrentSongFavorite = currentSong?.let { song ->
                 song.membershipKey() in favoriteMembershipKeys
             } == true,
-            onToggleFavoriteClick = onToggleFavoriteClick
+            onToggleFavoriteClick = onToggleFavoriteClick,
+            onMiniPlayerBoundsChanged = onMiniPlayerBoundsChanged,
+            defaultMorphBounds = defaultMorphBounds,
+            defaultMorphCallbacks = defaultMorphCallbacks,
+            morphOwnsVisuals = morphOwnsVisuals
         )
     }
 }

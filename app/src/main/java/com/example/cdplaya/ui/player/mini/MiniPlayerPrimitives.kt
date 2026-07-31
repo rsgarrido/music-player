@@ -31,8 +31,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -53,6 +57,8 @@ internal fun MiniPlayerScaffold(
     borderColor: Color,
     shape: Shape = RoundedCornerShape(18.dp),
     tonalElevation: Dp = 0.dp,
+    defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
+    onSurfaceBoundsChanged: (Rect) -> Unit = {},
     content: @Composable (MiniPlayerState) -> Unit
 ) {
     var isNextTransition by remember { mutableStateOf(true) }
@@ -62,6 +68,9 @@ internal fun MiniPlayerScaffold(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 6.dp)
+            .onGloballyPositioned { coordinates ->
+                onSurfaceBoundsChanged(coordinates.boundsInRoot())
+            }
             .semantics {
                 role = Role.Button
                 contentDescription = miniPlayerOpenContentDescription(state.currentSong)
@@ -74,7 +83,8 @@ internal fun MiniPlayerScaffold(
                 onSwipeRight = {
                     isNextTransition = false
                     callbacks.onPreviousClick()
-                }
+                },
+                defaultMorphCallbacks = defaultMorphCallbacks
             ),
         shape = shape,
         color = containerColor,
@@ -167,29 +177,57 @@ internal fun normalizedMiniPlayerProgress(currentPosition: Int, duration: Int): 
 
 private fun Modifier.miniPlayerSwipeGestures(
     onSwipeLeft: () -> Unit,
-    onSwipeRight: () -> Unit
+    onSwipeRight: () -> Unit,
+    defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks?
 ): Modifier = pointerInput(Unit) {
     var totalDragX = 0f
     var totalDragY = 0f
+    val velocityTracker = VelocityTracker()
+    var ownsVerticalDrag = false
 
     detectDragGestures(
         onDragStart = {
             totalDragX = 0f
             totalDragY = 0f
+            velocityTracker.resetTracking()
+            ownsVerticalDrag = false
         },
         onDrag = { change, dragAmount ->
-            change.consume()
             totalDragX += dragAmount.x
             totalDragY += dragAmount.y
+            velocityTracker.addPosition(change.uptimeMillis, change.position)
+            if (defaultMorphCallbacks == null) {
+                change.consume()
+            } else if (!ownsVerticalDrag &&
+                abs(totalDragY) > abs(totalDragX)
+            ) {
+                ownsVerticalDrag = true
+                defaultMorphCallbacks.onDragStart()
+            }
+            if (ownsVerticalDrag) {
+                change.consume()
+                defaultMorphCallbacks?.onDragBy(dragAmount.y)
+            } else if (abs(totalDragX) > abs(totalDragY)) {
+                change.consume()
+            }
         },
         onDragEnd = {
-            val swipeThreshold = 120f
-            if (abs(totalDragX) > abs(totalDragY)) {
+            if (ownsVerticalDrag) {
+                defaultMorphCallbacks?.onDragEnd(
+                    velocityTracker.calculateVelocity().y
+                )
+            } else if (abs(totalDragX) > abs(totalDragY)) {
+                val swipeThreshold = 120f
                 if (totalDragX > swipeThreshold) {
                     onSwipeRight()
                 } else if (totalDragX < -swipeThreshold) {
                     onSwipeLeft()
                 }
+            }
+        },
+        onDragCancel = {
+            if (ownsVerticalDrag) {
+                defaultMorphCallbacks?.onDragCancel()
             }
         }
     )

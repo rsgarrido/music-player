@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.graphicsLayer
 import com.example.cdplaya.player.RepeatMode
 
 @Composable
@@ -38,15 +39,20 @@ internal fun ModernPlayerControls(
     onNextClick: () -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
-    style: ModernPlayerStyle
+    style: ModernPlayerStyle,
+    modifier: Modifier = Modifier,
+    primaryControlModifier: Modifier = Modifier,
+    expandedControlsAlpha: Float = 1f,
+    controlsEnabled: Boolean = true
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth()
     ) {
         ModernPlayerModeIconButton(
-            onClick = onShuffleClick,
+            onClick = { if (controlsEnabled) onShuffleClick() },
+            modifier = Modifier.graphicsLayer { alpha = expandedControlsAlpha },
             style = style
         ) {
             Icon(
@@ -60,7 +66,10 @@ internal fun ModernPlayerControls(
             )
         }
 
-        IconButton(onClick = onPreviousClick) {
+        IconButton(
+            onClick = { if (controlsEnabled) onPreviousClick() },
+            modifier = Modifier.graphicsLayer { alpha = expandedControlsAlpha }
+        ) {
             Icon(
                 imageVector = Icons.Filled.SkipPrevious,
                 contentDescription = "Previous song",
@@ -71,11 +80,15 @@ internal fun ModernPlayerControls(
 
         ModernPlayerPlayPauseButton(
             isPlaying = isPlaying,
-            onClick = onPlayPauseClick,
-            style = style
+            onClick = { if (controlsEnabled) onPlayPauseClick() },
+            style = style,
+            modifier = primaryControlModifier
         )
 
-        IconButton(onClick = onNextClick) {
+        IconButton(
+            onClick = { if (controlsEnabled) onNextClick() },
+            modifier = Modifier.graphicsLayer { alpha = expandedControlsAlpha }
+        ) {
             Icon(
                 imageVector = Icons.Filled.SkipNext,
                 contentDescription = "Next song",
@@ -85,7 +98,8 @@ internal fun ModernPlayerControls(
         }
 
         ModernPlayerModeIconButton(
-            onClick = onRepeatClick,
+            onClick = { if (controlsEnabled) onRepeatClick() },
+            modifier = Modifier.graphicsLayer { alpha = expandedControlsAlpha },
             style = style
         ) {
             Icon(
@@ -114,10 +128,11 @@ private fun ModernPlayerPlayPauseButton(
     isPlaying: Boolean,
     onClick: () -> Unit,
     style: ModernPlayerStyle,
+    modifier: Modifier = Modifier,
 ) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = Modifier
+        modifier = modifier
             .size(82.dp)
             .shadow(
                 elevation = 14.dp,
@@ -162,10 +177,11 @@ private fun ModernPlayerPlayPauseButton(
 private fun ModernPlayerModeIconButton(
     onClick: () -> Unit,
     style: ModernPlayerStyle,
+    modifier: Modifier = Modifier,
     icon: @Composable () -> Unit
 ) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(48.dp)
             .clip(style.modeControlShape),
         contentAlignment = Alignment.Center

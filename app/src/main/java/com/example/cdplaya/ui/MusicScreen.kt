@@ -3,7 +3,6 @@ package com.example.cdplaya.ui
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -50,6 +49,15 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.player.rememberPlayerLyricsTransitionState
+import com.example.cdplaya.ui.player.PlayerMorphHost
+import com.example.cdplaya.ui.player.playerEndpointInput
+import com.example.cdplaya.ui.player.PlayerBoundsMeasurement
+import com.example.cdplaya.ui.player.mini.DefaultMiniPlayerMorphCallbacks
+import com.example.cdplaya.ui.player.modern.DefaultMorphMinimumDragRangePx
+import com.example.cdplaya.ui.player.modern.DefaultMorphMetadataOwner
+import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.modern.defaultMorphMetadataOwner
+import com.example.cdplaya.ui.player.modern.resolveDefaultPlayerMorphGeometry
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
@@ -64,6 +72,7 @@ import com.example.cdplaya.ui.tageditor.rememberTagEditorActions
 import kotlinx.coroutines.flow.StateFlow
 import com.example.cdplaya.mediaaccess.MediaAccessState
 import com.example.cdplaya.lyrics.LyricsPlaybackUiState
+import kotlin.math.abs
 
 
 @Composable
@@ -185,7 +194,8 @@ internal fun MusicScreen(
     var selectedFavoriteSortOption by navigationState.selectedFavoriteSortOption
 
     val overlayState = rememberMusicOverlayState()
-    var isPlayerExpanded by overlayState.isPlayerExpanded
+    val playerMorphState = overlayState.playerMorphState
+    val isPlayerExpanded = playerMorphState.isExpandedOrTransitioning
     var isLyricsVisible by rememberSaveable { mutableStateOf(false) }
     val lyricsTransitionState = rememberPlayerLyricsTransitionState(
         initiallyLyricsVisible = isLyricsVisible,
@@ -295,7 +305,6 @@ internal fun MusicScreen(
             playlistIds = playlists.mapTo(mutableSetOf()) { playlist -> playlist.playlistId }
         )
 
-        isPlayerExpanded = false
         lyricsTransitionState.snapToExpanded()
         selectedArtistName = null
         selectedAlbumFolderPath = null
@@ -349,7 +358,7 @@ internal fun MusicScreen(
     BackHandler(
         enabled = songPendingTagEdit != null ||
                 isExpandedUpNextSheetVisible ||
-                isPlayerExpanded ||
+                playerMorphState.shouldConsumeBack ||
                 isFolderScreenVisible ||
                 isDiagnosticsScreenVisible ||
                 isEqualizerScreenVisible ||
@@ -372,7 +381,8 @@ internal fun MusicScreen(
                 isExpandedUpNextSheetVisible = false
             }
 
-            isPlayerExpanded -> {
+            playerMorphState.shouldConsumeBack -> {
+                playerMorphState.collapse()
                 restorePlaybackLaunchContext()
             }
 
@@ -419,14 +429,58 @@ internal fun MusicScreen(
         tokens = selectedPlayerThemeTokens
     )
     CompositionLocalProvider(LocalAppShellAccent provides appShellAccent) {
-        Box(
+        PlayerMorphHost(
+            morphState = playerMorphState,
             modifier = modifier
                 .fillMaxSize()
                 .appShellBackground()
+        ) { playerEndpointBounds ->
+        val defaultMorphBounds = remember { DefaultPlayerMorphBounds() }
+        val defaultMorphGeometry = resolveDefaultPlayerMorphGeometry(
+            progress = playerMorphState.progress,
+            endpointBounds = playerEndpointBounds,
+            elementBounds = defaultMorphBounds
+        )
+        val defaultMorphOwnsVisuals =
+            selectedPlayerTheme == PlayerTheme.DEFAULT &&
+                    defaultMorphMetadataOwner(
+                        isMorphActive = !playerMorphState.isCollapsedAndIdle,
+                        geometryReady = defaultMorphGeometry != null
+                    ) == DefaultMorphMetadataOwner.Morph
+        val defaultMiniMorphCallbacks = remember(
+            playerMorphState,
+            playerEndpointBounds
         ) {
+            DefaultMiniPlayerMorphCallbacks(
+                onDragStart = {
+                    val miniBounds = defaultMorphBounds.miniSurface ?: (
+                            playerEndpointBounds.mini as?
+                                    PlayerBoundsMeasurement.Measured
+                            )?.bounds
+                    val expandedBounds = (
+                            playerEndpointBounds.expanded as?
+                                    PlayerBoundsMeasurement.Measured
+                            )?.bounds
+                    val travelDistance = if (miniBounds != null &&
+                        expandedBounds != null
+                    ) {
+                        abs(miniBounds.top - expandedBounds.top)
+                    } else {
+                        DefaultMorphMinimumDragRangePx
+                    }
+                    playerMorphState.beginDragWithRange(
+                        progressRangePx = travelDistance.coerceAtLeast(
+                            DefaultMorphMinimumDragRangePx
+                        )
+                    )
+                },
+                onDragBy = playerMorphState::dragBy,
+                onDragEnd = playerMorphState::endDrag,
+                onDragCancel = playerMorphState::cancelDrag
+            )
+        }
         val selectedSongForTagEdit = songPendingTagEdit
         val shouldShowBottomMiniPlayer = currentSong != null &&
-                !isPlayerExpanded &&
                 !isFolderScreenVisible &&
                 !isDiagnosticsScreenVisible &&
                 !isEqualizerScreenVisible &&
@@ -437,7 +491,16 @@ internal fun MusicScreen(
                 !isDiagnosticsScreenVisible &&
                 !isEqualizerScreenVisible &&
                 !isSettingsScreenVisible &&
-                selectedSongForTagEdit == null
+                 selectedSongForTagEdit == null
+        LaunchedEffect(shouldShowBottomMiniPlayer) {
+            if (!shouldShowBottomMiniPlayer) {
+                playerEndpointBounds.markMiniStale()
+            }
+        }
+        LaunchedEffect(selectedPlayerTheme) {
+            playerEndpointBounds.markMiniStale()
+            defaultMorphBounds.clearExpanded()
+        }
         val navigationBarInset = WindowInsets.navigationBars
             .asPaddingValues()
             .calculateBottomPadding()
@@ -599,7 +662,7 @@ internal fun MusicScreen(
                     selectedFavoriteSortOption = option
                 },
                 onExpandPlayerClick = {
-                    isPlayerExpanded = true
+                    playerMorphState.expand()
                 },
                 onMiniPlayerUpNextClick = {
                     selectedLibraryTab = LibraryTab.QUEUE
@@ -724,6 +787,7 @@ internal fun MusicScreen(
                 duration = progress.duration,
                 selectedPlayerTheme = selectedPlayerTheme,
                 selectedPlayerThemeTokens = selectedPlayerThemeTokens,
+                playerMorphState = playerMorphState,
                 favoriteMembershipKeys = favoriteMembershipKeys,
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
@@ -732,7 +796,7 @@ internal fun MusicScreen(
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onExpandClick = {
-                    isPlayerExpanded = true
+                    playerMorphState.expand()
                 },
                 onOpenUpNextClick = {
                     selectedLibraryTab = LibraryTab.QUEUE
@@ -747,10 +811,21 @@ internal fun MusicScreen(
                 onSleepTimerClick = {
                     isSleepTimerDialogVisible = true
                 },
+                onMiniPlayerBoundsChanged = playerEndpointBounds::updateMini,
+                defaultMorphBounds = defaultMorphBounds,
+                defaultMorphCallbacks = if (
+                    selectedPlayerTheme == PlayerTheme.DEFAULT
+                ) {
+                    defaultMiniMorphCallbacks
+                } else {
+                    null
+                },
+                morphOwnsVisuals = defaultMorphOwnsVisuals,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
                     .padding(bottom = AppBottomNavigationHeight)
+                    .playerEndpointInput(playerMorphState.isCollapsedAndIdle)
             )
             }
         }
@@ -792,7 +867,7 @@ internal fun MusicScreen(
 
         if (selectedSongForTagEdit == null) {
             MusicScreenOverlays(
-                isPlayerExpanded = isPlayerExpanded,
+                playerMorphState = playerMorphState,
                 isLyricsVisible = isLyricsVisible,
                 lyricsTransitionState = lyricsTransitionState,
                 currentSong = currentSong,
@@ -819,12 +894,13 @@ internal fun MusicScreen(
                 onRescanLyrics = onRescanLyrics,
                 onOpenLyricsSettings = {
                     lyricsTransitionState.snapToExpanded()
-                    isPlayerExpanded = false
+                    playerMorphState.collapse()
                     isSettingsScreenVisible = true
                 },
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
                 onCollapseExpandedPlayer = {
+                    playerMorphState.collapse()
                     restorePlaybackLaunchContext()
                 },
                 onShowExpandedUpNextSheet = {
@@ -834,6 +910,7 @@ internal fun MusicScreen(
                     isSleepTimerDialogVisible = true
                 },
                 onShowExpandedMore = {
+                    playerMorphState.collapse()
                     restorePlaybackLaunchContext()
                     isSettingsScreenVisible = true
                 },
@@ -874,6 +951,8 @@ internal fun MusicScreen(
                 selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                 selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
                 selectedModernSeekbarStyle = selectedModernSeekbarStyle,
+                playerEndpointBounds = playerEndpointBounds,
+                defaultMorphBounds = defaultMorphBounds,
                 songs = songs,
                 onSongClick = onSongClick
             )
