@@ -25,6 +25,7 @@ import com.example.cdplaya.ui.player.PlayerLyricsTransitionState
 import com.example.cdplaya.ui.player.PlayerMorphState
 import com.example.cdplaya.ui.player.PlayerEndpointBounds
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import com.example.cdplaya.ui.player.lyricsVisualAlpha
 import com.example.cdplaya.ui.player.playerVisualAlpha
 import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
@@ -102,7 +103,8 @@ fun MusicScreenOverlays(
     selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
     selectedModernSeekbarStyle: ModernSeekbarStyle,
     playerEndpointBounds: PlayerEndpointBounds,
-    defaultMorphBounds: DefaultPlayerMorphBounds
+    defaultMorphBounds: DefaultPlayerMorphBounds,
+    classicMorphBounds: ClassicWheelMorphBounds
 ) {
     val isPlayerExpanded = playerMorphState.shouldComposeExpanded
 
@@ -170,7 +172,8 @@ fun MusicScreenOverlays(
                 upcomingSongs = upcomingSongs,
                 onSongClick = onSongClick,
                 endpointBounds = playerEndpointBounds,
-                defaultMorphBounds = defaultMorphBounds
+                defaultMorphBounds = defaultMorphBounds,
+                classicMorphBounds = classicMorphBounds
             )
             }
         }

@@ -60,6 +60,8 @@ import com.example.cdplaya.ui.player.modern.defaultMorphMetadataOwner
 import com.example.cdplaya.ui.player.modern.resolveDefaultPlayerMorphGeometry
 import com.example.cdplaya.ui.player.classicwheel.classicWheelMorphTravelDistance
 import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelMorphGeometry
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
+import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelSharedGeometry
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
@@ -438,6 +440,7 @@ internal fun MusicScreen(
                 .appShellBackground()
         ) { playerEndpointBounds ->
         val defaultMorphBounds = remember { DefaultPlayerMorphBounds() }
+        val classicMorphBounds = remember { ClassicWheelMorphBounds() }
         val defaultMorphGeometry = resolveDefaultPlayerMorphGeometry(
             progress = playerMorphState.progress,
             endpointBounds = playerEndpointBounds,
@@ -455,6 +458,9 @@ internal fun MusicScreen(
                     resolveClassicWheelMorphGeometry(
                         playerMorphState.progress,
                         playerEndpointBounds
+                    ) != null && resolveClassicWheelSharedGeometry(
+                        playerMorphState.progress,
+                        classicMorphBounds
                     ) != null
         val classicMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
             DefaultMiniPlayerMorphCallbacks(
@@ -834,6 +840,7 @@ internal fun MusicScreen(
                 },
                 onMiniPlayerBoundsChanged = playerEndpointBounds::updateMini,
                 defaultMorphBounds = defaultMorphBounds,
+                classicMorphBounds = classicMorphBounds,
                 defaultMorphCallbacks = when (selectedPlayerTheme) {
                     PlayerTheme.DEFAULT -> defaultMiniMorphCallbacks
                     PlayerTheme.CLASSIC_WHEEL -> classicMiniMorphCallbacks
@@ -972,6 +979,7 @@ internal fun MusicScreen(
                 selectedModernSeekbarStyle = selectedModernSeekbarStyle,
                 playerEndpointBounds = playerEndpointBounds,
                 defaultMorphBounds = defaultMorphBounds,
+                classicMorphBounds = classicMorphBounds,
                 songs = songs,
                 onSongClick = onSongClick
             )

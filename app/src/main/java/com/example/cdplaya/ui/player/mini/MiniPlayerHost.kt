@@ -10,6 +10,7 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 
 data class MiniPlayerState(
     val currentSong: Song,
@@ -59,6 +60,7 @@ fun MiniPlayerHost(
     modifier: Modifier = Modifier,
     onBoundsChanged: (Rect) -> Unit = {},
     defaultMorphBounds: DefaultPlayerMorphBounds? = null,
+    classicMorphBounds: ClassicWheelMorphBounds? = null,
     defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
     morphOwnsVisuals: Boolean = false
 ) {
@@ -81,6 +83,7 @@ fun MiniPlayerHost(
             tokens = tokens,
             morphCallbacks = defaultMorphCallbacks,
             morphOwnsVisuals = morphOwnsVisuals,
+            morphBounds = classicMorphBounds,
             modifier = measuredModifier
         )
 

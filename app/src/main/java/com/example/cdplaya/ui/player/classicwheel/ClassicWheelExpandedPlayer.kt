@@ -22,11 +22,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.playerEndpointInput
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import kotlinx.coroutines.delay
 
 
@@ -54,6 +58,12 @@ fun ClassicWheelExpandedPlayer(
     screenAlpha: Float = 1f,
     wheelAlpha: Float = 1f,
     wheelInputEnabled: Boolean = true,
+    morphBounds: ClassicWheelMorphBounds? = null,
+    sharedContentVisible: Boolean = true,
+    onMorphDragStart: () -> Unit = {},
+    onMorphDragBy: (Float) -> Unit = {},
+    onMorphDragEnd: (Float) -> Unit = {},
+    onMorphDragCancel: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val palette = remember(tokens) { ClassicWheelPalette.from(tokens) }
@@ -296,6 +306,14 @@ fun ClassicWheelExpandedPlayer(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(screenHeight)
+                    .classicWheelCollapseDrag(
+                        onStart = onMorphDragStart,
+                        onDelta = onMorphDragBy,
+                        onEnd = onMorphDragEnd,
+                        onCancel = onMorphDragCancel
+                    ),
+                morphBounds = morphBounds,
+                sharedContentVisible = sharedContentVisible
             )
 
             ClassicControlWheel(
@@ -330,6 +348,23 @@ fun ClassicWheelExpandedPlayer(
         }
     }
     }
+}
+
+private fun Modifier.classicWheelCollapseDrag(
+    onStart: () -> Unit, onDelta: (Float) -> Unit, onEnd: (Float) -> Unit, onCancel: () -> Unit
+): Modifier = pointerInput(onStart, onDelta, onEnd, onCancel) {
+    var owns = false
+    val velocity = VelocityTracker()
+    detectDragGestures(
+        onDragStart = { owns = false; velocity.resetTracking() },
+        onDrag = { change, amount ->
+            velocity.addPosition(change.uptimeMillis, change.position)
+            if (!owns && kotlin.math.abs(amount.y) > kotlin.math.abs(amount.x)) { owns = true; onStart() }
+            if (owns) { change.consume(); onDelta(amount.y) }
+        },
+        onDragEnd = { if (owns) onEnd(velocity.calculateVelocity().y) },
+        onDragCancel = { if (owns) onCancel() }
+    )
 }
 
 private fun handleClassicWheelMenuAction(

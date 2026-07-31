@@ -23,6 +23,9 @@ import com.example.cdplaya.ui.player.classicwheel.ClassicWheelPlayerMorph
 import com.example.cdplaya.ui.player.classicwheel.playerMorphRendererFor
 import com.example.cdplaya.ui.player.classicwheel.PlayerMorphRenderer
 import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelMorphGeometry
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
+import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelSharedGeometry
+import com.example.cdplaya.ui.player.classicwheel.classicWheelMorphTravelDistance
 import com.example.cdplaya.ui.player.modern.ModernExpandedPlayer
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
@@ -73,7 +76,8 @@ fun ExpandedPlayerThemeHost(
     upcomingSongs: List<Song>,
     onSongClick: (Song, List<Song>) -> Unit,
     endpointBounds: PlayerEndpointBounds,
-    defaultMorphBounds: DefaultPlayerMorphBounds
+    defaultMorphBounds: DefaultPlayerMorphBounds,
+    classicMorphBounds: ClassicWheelMorphBounds
 ) {
     val shouldLoadWaveform = shouldLoadExpandedPlayerWaveform(
         selectedPlayerTheme = selectedPlayerTheme,
@@ -215,9 +219,14 @@ fun ExpandedPlayerThemeHost(
             val geometry = resolveClassicWheelMorphGeometry(
                 playerMorphState.progress, endpointBounds
             )
+            val sharedGeometry = resolveClassicWheelSharedGeometry(
+                playerMorphState.progress, classicMorphBounds
+            )
             ClassicWheelPlayerMorph(
                 progress = playerMorphState.progress,
                 geometry = geometry,
+                sharedGeometry = sharedGeometry,
+                currentSong = currentSong,
                 tokens = tokens
             ) { screenAlpha, wheelAlpha, controlsActive -> ClassicWheelExpandedPlayer(
                 currentSong = currentSong,
@@ -241,7 +250,15 @@ fun ExpandedPlayerThemeHost(
                 tokens = tokens,
                 screenAlpha = screenAlpha,
                 wheelAlpha = wheelAlpha,
-                wheelInputEnabled = controlsActive
+                wheelInputEnabled = controlsActive,
+                morphBounds = classicMorphBounds,
+                sharedContentVisible = sharedGeometry == null
+                ,onMorphDragStart = {
+                    playerMorphState.beginDragWithRange(classicWheelMorphTravelDistance(endpointBounds))
+                }
+                ,onMorphDragBy = playerMorphState::dragBy
+                ,onMorphDragEnd = playerMorphState::endDrag
+                ,onMorphDragCancel = playerMorphState::cancelDrag
             ) }
         }
 

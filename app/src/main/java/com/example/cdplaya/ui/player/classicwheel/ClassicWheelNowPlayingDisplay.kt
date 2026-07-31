@@ -33,6 +33,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -65,6 +69,8 @@ fun ClassicWheelNowPlayingDisplay(
     onRepeatClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit
+    ,morphBounds: ClassicWheelMorphBounds? = null
+    ,sharedContentVisible: Boolean = true
 ) {
     Column(
         modifier = Modifier
@@ -87,7 +93,9 @@ fun ClassicWheelNowPlayingDisplay(
                 modifier = Modifier
                     .weight(0.95f)
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(3.dp)),
+                    .clip(RoundedCornerShape(3.dp))
+                    .onGloballyPositioned { morphBounds?.updateExpandedArtwork(it.boundsInRoot()) }
+                    .sharedClassicContentVisibility(sharedContentVisible),
                 contentScale = ContentScale.Crop,
                 error = painterResource(android.R.drawable.ic_media_play),
                 placeholder = painterResource(android.R.drawable.ic_media_play)
@@ -103,7 +111,10 @@ fun ClassicWheelNowPlayingDisplay(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .onGloballyPositioned { morphBounds?.updateExpandedTitle(it.boundsInRoot()) }
+                        .sharedClassicContentVisibility(sharedContentVisible)
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -114,7 +125,10 @@ fun ClassicWheelNowPlayingDisplay(
                     color = ClassicWheelColors.screenText,
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .onGloballyPositioned { morphBounds?.updateExpandedArtist(it.boundsInRoot()) }
+                        .sharedClassicContentVisibility(sharedContentVisible)
                 )
 
                 Text(
@@ -234,6 +248,9 @@ fun ClassicWheelNowPlayingDisplay(
         }
     }
 }
+
+private fun Modifier.sharedClassicContentVisibility(visible: Boolean): Modifier = if (visible) this else
+    graphicsLayer { alpha = 0f }.clearAndSetSemantics { }
 
 @Composable
 private fun ClassicWheelProgress(

@@ -1,6 +1,10 @@
 package com.example.cdplaya.ui.player.classicwheel
 
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.ui.player.PlayerBoundsMeasurement
 import com.example.cdplaya.ui.player.PlayerEndpointBounds
@@ -30,6 +34,26 @@ internal fun playerMorphRendererFor(theme: PlayerTheme): PlayerMorphRenderer = w
 
 internal data class ClassicWheelMorphGeometry(val shell: Rect)
 
+@Stable
+class ClassicWheelMorphBounds {
+    var miniArtwork by mutableStateOf<Rect?>(null); private set
+    var miniTitle by mutableStateOf<Rect?>(null); private set
+    var miniArtist by mutableStateOf<Rect?>(null); private set
+    var expandedArtwork by mutableStateOf<Rect?>(null); private set
+    var expandedTitle by mutableStateOf<Rect?>(null); private set
+    var expandedArtist by mutableStateOf<Rect?>(null); private set
+    fun updateMiniArtwork(value: Rect) { miniArtwork = miniArtwork.keepValid(value) }
+    fun updateMiniTitle(value: Rect) { miniTitle = miniTitle.keepValid(value) }
+    fun updateMiniArtist(value: Rect) { miniArtist = miniArtist.keepValid(value) }
+    fun updateExpandedArtwork(value: Rect) { expandedArtwork = expandedArtwork.keepValid(value) }
+    fun updateExpandedTitle(value: Rect) { expandedTitle = expandedTitle.keepValid(value) }
+    fun updateExpandedArtist(value: Rect) { expandedArtist = expandedArtist.keepValid(value) }
+}
+
+internal data class ClassicWheelSharedGeometry(
+    val artwork: Rect, val title: Rect, val artist: Rect
+)
+
 internal fun resolveClassicWheelMorphGeometry(
     progress: Float,
     endpointBounds: PlayerEndpointBounds
@@ -38,6 +62,19 @@ internal fun resolveClassicWheelMorphGeometry(
     val expanded = (endpointBounds.expanded as? PlayerBoundsMeasurement.Measured)?.bounds
     if (!mini.isValidClassicWheelRect() || !expanded.isValidClassicWheelRect()) return null
     return ClassicWheelMorphGeometry(interpolateMorphRect(mini!!, expanded!!, progress))
+}
+
+internal fun resolveClassicWheelSharedGeometry(
+    progress: Float, bounds: ClassicWheelMorphBounds
+): ClassicWheelSharedGeometry? {
+    if (!bounds.miniArtwork.isValidClassicWheelRect() || !bounds.expandedArtwork.isValidClassicWheelRect() ||
+        !bounds.miniTitle.isValidClassicWheelRect() || !bounds.expandedTitle.isValidClassicWheelRect() ||
+        !bounds.miniArtist.isValidClassicWheelRect() || !bounds.expandedArtist.isValidClassicWheelRect()) return null
+    return ClassicWheelSharedGeometry(
+        interpolateMorphRect(bounds.miniArtwork!!, bounds.expandedArtwork!!, progress),
+        interpolateMorphRect(bounds.miniTitle!!, bounds.expandedTitle!!, progress),
+        interpolateMorphRect(bounds.miniArtist!!, bounds.expandedArtist!!, progress)
+    )
 }
 
 internal fun classicWheelMorphTravelDistance(endpointBounds: PlayerEndpointBounds): Float {
@@ -67,3 +104,9 @@ internal fun classicWheelExpandedControlsActive(progress: Float): Boolean =
 private fun Rect?.isValidClassicWheelRect(): Boolean = this != null &&
     left.isFinite() && top.isFinite() && right.isFinite() && bottom.isFinite() &&
     width > 0f && height > 0f
+
+private fun Rect?.keepValid(next: Rect): Rect? = if (!next.isValidClassicWheelRect()) this else {
+    val previous = this
+    if (previous == null || abs(previous.left-next.left) > .5f || abs(previous.top-next.top) > .5f ||
+        abs(previous.right-next.right) > .5f || abs(previous.bottom-next.bottom) > .5f) next else previous
+}

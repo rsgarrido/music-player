@@ -16,6 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,6 +34,7 @@ fun ClassicWheelMiniPlayer(
     tokens: PlayerThemeTokens,
     morphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
     morphOwnsVisuals: Boolean = false,
+    morphBounds: ClassicWheelMorphBounds? = null,
     modifier: Modifier = Modifier
 ) {
     val wheelColor = tokens.accentColor
@@ -51,8 +55,9 @@ fun ClassicWheelMiniPlayer(
             MiniPlayerArtwork(
                 song = displayedState.currentSong,
                 modifier = Modifier
-                    .size(44.dp)
+                .size(44.dp)
                     .clip(RoundedCornerShape(8.dp))
+                    .onGloballyPositioned { morphBounds?.updateMiniArtwork(it.boundsInRoot()) }
             )
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -62,14 +67,16 @@ fun ClassicWheelMiniPlayer(
                     color = tokens.displayTextColor,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.onGloballyPositioned { morphBounds?.updateMiniTitle(it.boundsInRoot()) }
                 )
                 Text(
                     text = displayedState.currentSong.miniArtist,
                     style = MaterialTheme.typography.bodySmall,
                     color = tokens.displayTextColor.copy(alpha = 0.72f),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.onGloballyPositioned { morphBounds?.updateMiniArtist(it.boundsInRoot()) }
                 )
             }
             MiniPlayerPlayPauseButton(
