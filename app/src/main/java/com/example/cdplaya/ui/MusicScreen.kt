@@ -63,6 +63,7 @@ import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelMorphGeomet
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import com.example.cdplaya.ui.player.retrorack.resolveRetroRackMorphGeometry
 import com.example.cdplaya.ui.player.retrorack.retroRackMorphTravelDistance
+import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
 import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelSharedGeometry
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
@@ -443,6 +444,7 @@ internal fun MusicScreen(
         ) { playerEndpointBounds ->
         val defaultMorphBounds = remember { DefaultPlayerMorphBounds() }
         val classicMorphBounds = remember { ClassicWheelMorphBounds() }
+        val retroRackMorphBounds = remember { RetroRackMorphBounds() }
         val defaultMorphGeometry = resolveDefaultPlayerMorphGeometry(
             progress = playerMorphState.progress,
             endpointBounds = playerEndpointBounds,
@@ -854,6 +856,7 @@ internal fun MusicScreen(
                 onMiniPlayerBoundsChanged = playerEndpointBounds::updateMini,
                 defaultMorphBounds = defaultMorphBounds,
                 classicMorphBounds = classicMorphBounds,
+                retroRackMorphBounds = retroRackMorphBounds,
                 defaultMorphCallbacks = when (selectedPlayerTheme) {
                     PlayerTheme.DEFAULT -> defaultMiniMorphCallbacks
                     PlayerTheme.CLASSIC_WHEEL -> classicMiniMorphCallbacks
@@ -994,6 +997,7 @@ internal fun MusicScreen(
                 playerEndpointBounds = playerEndpointBounds,
                 defaultMorphBounds = defaultMorphBounds,
                 classicMorphBounds = classicMorphBounds,
+                retroRackMorphBounds = retroRackMorphBounds,
                 songs = songs,
                 onSongClick = onSongClick
             )

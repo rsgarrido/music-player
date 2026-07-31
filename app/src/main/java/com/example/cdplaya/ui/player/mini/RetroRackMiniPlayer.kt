@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,6 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,6 +39,7 @@ fun RetroRackMiniPlayer(
     tokens: PlayerThemeTokens,
     morphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
     morphOwnsVisuals: Boolean = false,
+    morphBounds: RetroRackMorphBounds? = null,
     modifier: Modifier = Modifier
 ) {
     val panelColor = tokens.shellColor
@@ -51,12 +56,16 @@ fun RetroRackMiniPlayer(
         defaultMorphCallbacks = morphCallbacks
     ) { displayedState ->
         Row(verticalAlignment = Alignment.CenterVertically) {
-            MiniPlayerArtwork(
-                song = displayedState.currentSong,
+            Box(
                 modifier = Modifier
                     .size(42.dp)
                     .clip(RoundedCornerShape(3.dp))
-            )
+                    .onGloballyPositioned { morphBounds?.updateMiniArtwork(it.boundsInRoot()) }
+            ) {
+                if (!morphOwnsVisuals) {
+                    MiniPlayerArtwork(song = displayedState.currentSong, modifier = Modifier.fillMaxSize())
+                }
+            }
             Spacer(modifier = Modifier.width(7.dp))
             Column(
                 modifier = Modifier
@@ -74,6 +83,7 @@ fun RetroRackMiniPlayer(
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
+                    ,modifier = Modifier.onGloballyPositioned { morphBounds?.updateMiniTitle(it.boundsInRoot()) }
                 )
                 Text(
                     text = displayedState.currentSong.miniArtist.uppercase(Locale.ROOT),
@@ -82,23 +92,32 @@ fun RetroRackMiniPlayer(
                     fontFamily = FontFamily.Monospace,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
+                    ,modifier = Modifier.onGloballyPositioned { morphBounds?.updateMiniArtist(it.boundsInRoot()) }
                 )
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(
-                            normalizedMiniPlayerProgress(
-                                displayedState.currentPosition,
-                                displayedState.duration
-                            )
-                        )
+                        .fillMaxWidth()
                         .height(2.dp)
-                        .background(meterColor)
-                )
+                        .onGloballyPositioned { morphBounds?.updateMiniProgress(it.boundsInRoot()) }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(
+                                normalizedMiniPlayerProgress(
+                                    displayedState.currentPosition,
+                                    displayedState.duration
+                                )
+                            )
+                            .height(2.dp)
+                            .background(meterColor)
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(6.dp))
             MiniPlayerPlayPauseButton(
                 isPlaying = displayedState.isPlaying,
                 onClick = callbacks.onPlayPauseClick,
+                modifier = Modifier.onGloballyPositioned { morphBounds?.updateMiniPlay(it.boundsInRoot()) },
                 iconTint = tokens.displayTextColor,
                 decoration = {
                     Box(

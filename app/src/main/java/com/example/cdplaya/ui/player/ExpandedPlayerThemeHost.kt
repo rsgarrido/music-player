@@ -36,6 +36,10 @@ import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackPlayerMorph
 import com.example.cdplaya.ui.player.retrorack.resolveRetroRackMorphGeometry
 import com.example.cdplaya.ui.player.retrorack.shouldRunRetroRackExpandedWork
+import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
+import com.example.cdplaya.ui.player.retrorack.resolveRetroRackSharedGeometry
+import com.example.cdplaya.ui.player.retrorack.retroRackSharedOwner
+import com.example.cdplaya.ui.player.retrorack.retroRackMorphTravelDistance
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.PlayerEndpointBounds
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorph
@@ -80,7 +84,8 @@ fun ExpandedPlayerThemeHost(
     onSongClick: (Song, List<Song>) -> Unit,
     endpointBounds: PlayerEndpointBounds,
     defaultMorphBounds: DefaultPlayerMorphBounds,
-    classicMorphBounds: ClassicWheelMorphBounds
+    classicMorphBounds: ClassicWheelMorphBounds,
+    retroRackMorphBounds: RetroRackMorphBounds
 ) {
     val shouldLoadWaveform = shouldLoadExpandedPlayerWaveform(
         selectedPlayerTheme = selectedPlayerTheme,
@@ -269,7 +274,19 @@ fun ExpandedPlayerThemeHost(
 
         PlayerTheme.RETRO_RACK -> {
             val geometry = resolveRetroRackMorphGeometry(playerMorphState.progress, endpointBounds)
-            RetroRackPlayerMorph(progress = playerMorphState.progress, geometry = geometry) { deckReveal, spectrumReveal, queueReveal, controlsReveal, inputEnabled ->
+            val sharedGeometry = resolveRetroRackSharedGeometry(playerMorphState.progress, retroRackMorphBounds)
+            val sharedOwner = retroRackSharedOwner(playerMorphState.progress, sharedGeometry != null)
+            RetroRackPlayerMorph(
+                progress = playerMorphState.progress,
+                geometry = geometry,
+                sharedGeometry = sharedGeometry,
+                currentSong = currentSong,
+                isPlaying = isPlaying,
+                currentPosition = currentPosition,
+                duration = duration,
+                onPlayPauseClick = onPlayPauseClick,
+                tokens = tokens
+            ) { deckReveal, spectrumReveal, queueReveal, controlsReveal, inputEnabled ->
             RetroRackExpandedPlayer(
                 currentSong = currentSong,
                 waveformData = waveformData,
@@ -296,7 +313,15 @@ fun ExpandedPlayerThemeHost(
                 spectrumReveal = spectrumReveal,
                 queueReveal = queueReveal,
                 controlsReveal = controlsReveal,
-                inputEnabled = inputEnabled
+                inputEnabled = inputEnabled,
+                morphBounds = retroRackMorphBounds,
+                sharedOwner = sharedOwner,
+                onMorphDragStart = {
+                    playerMorphState.beginDragWithRange(retroRackMorphTravelDistance(endpointBounds))
+                },
+                onMorphDragBy = playerMorphState::dragBy,
+                onMorphDragEnd = playerMorphState::endDrag,
+                onMorphDragCancel = playerMorphState::cancelDrag
             ) }
         }
 

@@ -1,6 +1,10 @@
 package com.example.cdplaya.ui.player.retrorack
 
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.example.cdplaya.ui.player.PlayerBoundsMeasurement
 import com.example.cdplaya.ui.player.PlayerEndpointBounds
 import com.example.cdplaya.ui.player.modern.interpolateMorphRect
@@ -24,6 +28,55 @@ internal object RetroRackMorphSpec {
 }
 
 internal data class RetroRackMorphGeometry(val shell: Rect)
+
+@Stable class RetroRackMorphBounds {
+    var miniArtwork by mutableStateOf<Rect?>(null); private set
+    var miniTitle by mutableStateOf<Rect?>(null); private set
+    var miniArtist by mutableStateOf<Rect?>(null); private set
+    var miniProgress by mutableStateOf<Rect?>(null); private set
+    var miniPlay by mutableStateOf<Rect?>(null); private set
+    var expandedArtwork by mutableStateOf<Rect?>(null); private set
+    var expandedTitle by mutableStateOf<Rect?>(null); private set
+    var expandedArtist by mutableStateOf<Rect?>(null); private set
+    var expandedProgress by mutableStateOf<Rect?>(null); private set
+    var expandedPlay by mutableStateOf<Rect?>(null); private set
+    fun updateMiniArtwork(v: Rect) { miniArtwork = miniArtwork.keep(v) }
+    fun updateMiniTitle(v: Rect) { miniTitle = miniTitle.keep(v) }
+    fun updateMiniArtist(v: Rect) { miniArtist = miniArtist.keep(v) }
+    fun updateMiniProgress(v: Rect) { miniProgress = miniProgress.keep(v) }
+    fun updateMiniPlay(v: Rect) { miniPlay = miniPlay.keep(v) }
+    fun updateExpandedArtwork(v: Rect) { expandedArtwork = expandedArtwork.keep(v) }
+    fun updateExpandedTitle(v: Rect) { expandedTitle = expandedTitle.keep(v) }
+    fun updateExpandedArtist(v: Rect) { expandedArtist = expandedArtist.keep(v) }
+    fun updateExpandedProgress(v: Rect) { expandedProgress = expandedProgress.keep(v) }
+    fun updateExpandedPlay(v: Rect) { expandedPlay = expandedPlay.keep(v) }
+}
+internal data class RetroRackSharedGeometry(
+    val artwork: Rect, val title: Rect, val artist: Rect, val progress: Rect, val play: Rect
+)
+internal fun resolveRetroRackSharedGeometry(p: Float, b: RetroRackMorphBounds): RetroRackSharedGeometry? {
+    val all = listOf(b.miniArtwork, b.miniTitle, b.miniArtist, b.miniProgress, b.miniPlay,
+        b.expandedArtwork, b.expandedTitle, b.expandedArtist, b.expandedProgress, b.expandedPlay)
+    if (all.any { !it.isValidRackRect() }) return null
+    return RetroRackSharedGeometry(
+        interpolateMorphRect(b.miniArtwork!!, b.expandedArtwork!!, p),
+        interpolateMorphRect(b.miniTitle!!, b.expandedTitle!!, p),
+        interpolateMorphRect(b.miniArtist!!, b.expandedArtist!!, p),
+        interpolateMorphRect(b.miniProgress!!, b.expandedProgress!!, p),
+        interpolateMorphRect(b.miniPlay!!, b.expandedPlay!!, p)
+    )
+}
+
+enum class RetroRackSharedOwner { MINI, TRANSITION, EXPANDED }
+internal fun retroRackSharedOwner(progress: Float, geometryReady: Boolean) = when {
+    progress <= 0f || !geometryReady -> RetroRackSharedOwner.MINI
+    progress >= 1f -> RetroRackSharedOwner.EXPANDED
+    else -> RetroRackSharedOwner.TRANSITION
+}
+
+internal enum class RetroRackGestureRegion { SAFE_HEADER, BUTTON, SEEK, QUEUE, SPECTRUM }
+internal fun retroRackCanStartCollapse(region: RetroRackGestureRegion): Boolean =
+    region == RetroRackGestureRegion.SAFE_HEADER
 
 internal fun resolveRetroRackMorphGeometry(
     progress: Float, endpointBounds: PlayerEndpointBounds
@@ -50,3 +103,4 @@ internal fun shouldRunRetroRackExpandedWork(progress: Float) = progress >= Retro
 
 private fun Rect?.isValidRackRect() = this != null && left.isFinite() && top.isFinite() &&
     right.isFinite() && bottom.isFinite() && width > 0f && height > 0f
+private fun Rect?.keep(v: Rect): Rect? = if (!v.isValidRackRect()) this else if (this == null || abs(left-v.left)>.5f || abs(top-v.top)>.5f || abs(right-v.right)>.5f || abs(bottom-v.bottom)>.5f) v else this

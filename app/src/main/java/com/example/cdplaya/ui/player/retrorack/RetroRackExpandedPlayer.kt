@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
@@ -54,6 +55,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import coil.compose.AsyncImage
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
@@ -68,6 +74,7 @@ import com.example.cdplaya.performance.tracePerformance
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.playerEndpointInput
 import kotlin.math.sin
+import kotlin.math.abs
 
 @Composable
 fun RetroRackExpandedPlayer(
@@ -96,7 +103,13 @@ fun RetroRackExpandedPlayer(
     spectrumReveal: Float = 1f,
     queueReveal: Float = 1f,
     controlsReveal: Float = 1f,
-    inputEnabled: Boolean = true
+    inputEnabled: Boolean = true,
+    morphBounds: RetroRackMorphBounds? = null,
+    sharedOwner: RetroRackSharedOwner = RetroRackSharedOwner.EXPANDED,
+    onMorphDragStart: () -> Unit = {},
+    onMorphDragBy: (Float) -> Unit = {},
+    onMorphDragEnd: (Float) -> Unit = {},
+    onMorphDragCancel: () -> Unit = {}
 ) {
     val palette = remember(tokens) { RetroRackPalette.from(tokens) }
     val playbackContext = listOfNotNull(currentSong) + upcomingSongs
@@ -122,6 +135,9 @@ fun RetroRackExpandedPlayer(
             album = currentSong?.album
         )
     }
+    val safeHeaderGesture = Modifier.retroRackSafeCollapseGesture(
+        onMorphDragStart, onMorphDragBy, onMorphDragEnd, onMorphDragCancel
+    )
 
     CompositionLocalProvider(LocalRetroRackPalette provides palette) {
     Column(
@@ -137,12 +153,14 @@ fun RetroRackExpandedPlayer(
         RackModule(
             title = "CDPLAYA // MAIN DECK",
             modifier = Modifier.height(mainDeckHeight).graphicsLayer { alpha = deckReveal },
+            titleModifier = safeHeaderGesture,
             trailingAction = {
                 RackIconButton(
                     icon = Icons.Filled.Close,
                     label = "CLOSE",
                     compact = true,
-                    onClick = onCollapseClick
+                    onClick = onCollapseClick,
+                    modifier = Modifier.playerEndpointInput(inputEnabled)
                 )
             }
         ) {
@@ -164,12 +182,15 @@ fun RetroRackExpandedPlayer(
                 compact = compact,
                 controlsReveal = controlsReveal,
                 inputEnabled = inputEnabled
+                ,morphBounds = morphBounds
+                ,sharedOwner = sharedOwner
             )
         }
 
         RackModule(
             title = "SPECTRUM MONITOR // VISUAL",
             modifier = Modifier.height(if (compact) 72.dp else 88.dp).graphicsLayer { alpha = spectrumReveal; scaleY = .92f + .08f * spectrumReveal },
+            titleModifier = safeHeaderGesture,
             trailingAction = {
                 RackIndicator(color = visualProfile.accent)
             }
@@ -188,13 +209,15 @@ fun RetroRackExpandedPlayer(
         RackModule(
             title = "PLAYBACK RACK // ${playbackContext.size.toString().padStart(2, '0')} TRACKS",
             modifier = Modifier.weight(1f).graphicsLayer { alpha = queueReveal; scaleY = .9f + .1f * queueReveal },
+            titleModifier = safeHeaderGesture,
             trailingAction = {
                 RackIconButton(
                     icon = Icons.Filled.List,
                     label = "QUEUE",
                     active = true,
                     compact = true,
-                    onClick = onOpenUpNextClick
+                    onClick = onOpenUpNextClick,
+                    modifier = Modifier.playerEndpointInput(inputEnabled && queueReveal > .99f)
                 )
             }
         ) {
@@ -228,7 +251,9 @@ private fun MainDeck(
     onToggleFavoriteClick: (Song) -> Unit,
     compact: Boolean,
     controlsReveal: Float,
-    inputEnabled: Boolean
+    inputEnabled: Boolean,
+    morphBounds: RetroRackMorphBounds?,
+    sharedOwner: RetroRackSharedOwner
 ) {
     val fontScale = LocalDensity.current.fontScale
     val displayHeight = when {
@@ -250,15 +275,22 @@ private fun MainDeck(
                 .height(displayHeight),
             horizontalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            AsyncImage(
-                model = currentSong?.albumArtUri,
-                contentDescription = "Current album artwork",
+            Box(
                 modifier = Modifier
                     .size(displayHeight)
                     .background(DisplayBlack)
                     .rackBevel()
                     .padding(2.dp)
-            )
+                    .onGloballyPositioned { morphBounds?.updateExpandedArtwork(it.boundsInRoot()) }
+            ) {
+                if (sharedOwner == RetroRackSharedOwner.EXPANDED) {
+                    AsyncImage(
+                        model = currentSong?.albumArtUri,
+                        contentDescription = "Current album artwork",
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+            }
 
             Column(
                 modifier = Modifier
@@ -276,7 +308,10 @@ private fun MainDeck(
                     fontSize = if (compact) 12.sp else 13.sp,
                     lineHeight = if (compact) 14.sp else 15.sp,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .onGloballyPositioned { morphBounds?.updateExpandedTitle(it.boundsInRoot()) }
+                        .sharedEndpointVisual(sharedOwner == RetroRackSharedOwner.EXPANDED)
                 )
                 Text(
                     text = currentSong?.artist?.uppercase().orEmpty(),
@@ -285,7 +320,10 @@ private fun MainDeck(
                     fontSize = 9.sp,
                     lineHeight = 11.sp,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .onGloballyPositioned { morphBounds?.updateExpandedArtist(it.boundsInRoot()) }
+                        .sharedEndpointVisual(sharedOwner == RetroRackSharedOwner.EXPANDED)
                 )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -323,6 +361,8 @@ private fun MainDeck(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(20.dp)
+                .onGloballyPositioned { morphBounds?.updateExpandedProgress(it.boundsInRoot()) }
+                .sharedEndpointVisual(sharedOwner == RetroRackSharedOwner.EXPANDED)
         )
 
         Row(
@@ -349,7 +389,10 @@ private fun MainDeck(
                 label = if (isPlaying) "PAUSE" else "PLAY",
                 active = true,
                 compact = compact,
-                onClick = onPlayPauseClick
+                onClick = onPlayPauseClick,
+                modifier = Modifier
+                    .onGloballyPositioned { morphBounds?.updateExpandedPlay(it.boundsInRoot()) }
+                    .sharedEndpointVisual(sharedOwner == RetroRackSharedOwner.EXPANDED)
             )
             RackIconButton(
                 icon = Icons.Filled.KeyboardArrowRight,
@@ -531,6 +574,7 @@ private fun RackPlaylist(
 private fun RackModule(
     title: String,
     modifier: Modifier = Modifier,
+    titleModifier: Modifier = Modifier,
     trailingAction: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit
 ) {
@@ -567,6 +611,7 @@ private fun RackModule(
                 modifier = Modifier
                     .weight(1f)
                     .padding(start = 5.dp)
+                    .then(titleModifier)
             )
             trailingAction?.invoke()
         }
@@ -582,12 +627,13 @@ private fun RackIconButton(
     label: String,
     active: Boolean = false,
     compact: Boolean = false,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
     Column(
-        modifier = Modifier
+        modifier = modifier
             .sizeIn(
                 minWidth = if (compact) 36.dp else 40.dp,
                 minHeight = if (compact) 30.dp else 34.dp
@@ -623,6 +669,35 @@ private fun RackIconButton(
             maxLines = 1
         )
     }
+}
+
+private fun Modifier.sharedEndpointVisual(visible: Boolean): Modifier =
+    if (visible) this else graphicsLayer { alpha = 0f }
+        .clearAndSetSemantics { }
+        .playerEndpointInput(false)
+
+private fun Modifier.retroRackSafeCollapseGesture(
+    onStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onEnd: (Float) -> Unit,
+    onCancel: () -> Unit
+): Modifier = pointerInput(onStart, onDrag, onEnd, onCancel) {
+    var totalX = 0f
+    var totalY = 0f
+    var owns = false
+    val velocity = VelocityTracker()
+    detectDragGestures(
+        onDragStart = { totalX = 0f; totalY = 0f; owns = false; velocity.resetTracking() },
+        onDrag = { change, amount ->
+            totalX += amount.x
+            totalY += amount.y
+            velocity.addPosition(change.uptimeMillis, change.position)
+            if (!owns && abs(totalY) > abs(totalX)) { owns = true; onStart() }
+            if (owns) { change.consume(); onDrag(amount.y) }
+        },
+        onDragEnd = { if (owns) onEnd(velocity.calculateVelocity().y) },
+        onDragCancel = { if (owns) onCancel() }
+    )
 }
 
 @Composable
