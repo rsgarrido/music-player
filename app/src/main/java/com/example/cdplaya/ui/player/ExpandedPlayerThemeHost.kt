@@ -31,7 +31,25 @@ import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.player.modern.selectNearbyWaveformSongs
 import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassettePlayerMorph
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteMorphBounds
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteMorphSpec
+import com.example.cdplaya.ui.player.pocketcassette.resolvePocketCassetteMorphGeometry
+import com.example.cdplaya.ui.player.pocketcassette.resolvePocketCassetteSharedGeometry
+import com.example.cdplaya.ui.player.pocketcassette.pocketCassetteSharedOwner
+import com.example.cdplaya.ui.player.pocketcassette.pocketCassetteMorphTravelDistance
+import com.example.cdplaya.ui.player.pocketcassette.pocketCassetteDistanceThreshold
+import com.example.cdplaya.ui.player.pocketcassette.shouldRunPocketCassetteExpandedWork
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
+import com.example.cdplaya.ui.player.pocketflip.PocketFlipPlayerMorph
+import com.example.cdplaya.ui.player.pocketflip.PocketFlipMorphBounds
+import com.example.cdplaya.ui.player.pocketflip.PocketFlipMorphSpec
+import com.example.cdplaya.ui.player.pocketflip.resolvePocketFlipMorphGeometry
+import com.example.cdplaya.ui.player.pocketflip.resolvePocketFlipSharedGeometry
+import com.example.cdplaya.ui.player.pocketflip.pocketFlipSharedOwner
+import com.example.cdplaya.ui.player.pocketflip.pocketFlipMorphTravelDistance
+import com.example.cdplaya.ui.player.pocketflip.pocketFlipDistanceThreshold
+import com.example.cdplaya.ui.player.pocketflip.shouldRunPocketFlipExpandedWork
 import com.example.cdplaya.ui.player.retrorack.RetroRackExpandedPlayer
 import com.example.cdplaya.ui.player.retrorack.RetroRackPlayerMorph
 import com.example.cdplaya.ui.player.retrorack.resolveRetroRackMorphGeometry
@@ -87,15 +105,18 @@ fun ExpandedPlayerThemeHost(
     endpointBounds: PlayerEndpointBounds,
     defaultMorphBounds: DefaultPlayerMorphBounds,
     classicMorphBounds: ClassicWheelMorphBounds,
-    retroRackMorphBounds: RetroRackMorphBounds
+    retroRackMorphBounds: RetroRackMorphBounds,
+    pocketFlipMorphBounds: PocketFlipMorphBounds,
+    pocketCassetteMorphBounds: PocketCassetteMorphBounds
 ) {
     val shouldLoadWaveform = shouldLoadExpandedPlayerWaveform(
         selectedPlayerTheme = selectedPlayerTheme,
         modernSeekbarStyle = modernSeekbarStyle
-    ) && (
-            selectedPlayerTheme != PlayerTheme.DEFAULT ||
-                    shouldRunDefaultExpandedWork(playerMorphState.progress)
-            )
+    ) && when (selectedPlayerTheme) {
+        PlayerTheme.DEFAULT -> shouldRunDefaultExpandedWork(playerMorphState.progress)
+        PlayerTheme.POCKET_FLIP -> shouldRunPocketFlipExpandedWork(playerMorphState.progress)
+        else -> true
+    }
     val shouldPrefetchWaveforms = selectedPlayerTheme == PlayerTheme.DEFAULT &&
             modernSeekbarStyle.usesWaveformData
     val nearbyWaveformSongs = remember(
@@ -162,39 +183,213 @@ fun ExpandedPlayerThemeHost(
             }
             .then(sharedGestureModifier)
     ) {
-    when (selectedPlayerTheme) {
-        PlayerTheme.DEFAULT -> {
-            if (currentSong != null) {
-                val modernStyle = ModernPlayerDefaults.style()
-                val geometry = resolveDefaultPlayerMorphGeometry(
-                    progress = playerMorphState.progress,
-                    endpointBounds = endpointBounds,
-                    elementBounds = defaultMorphBounds
-                )
-                val carouselPresentation =
-                    rememberModernArtworkCarouselPresentation(
-                        currentSong = currentSong,
-                        previousPreviewSong = previousPreviewSong,
-                        nextPreviewSong = nextPreviewSong,
-                        onPreviousClick = onPreviousClick,
-                        onNextClick = onNextClick
+        when (selectedPlayerTheme) {
+            PlayerTheme.DEFAULT -> {
+                if (currentSong != null) {
+                    val modernStyle = ModernPlayerDefaults.style()
+                    val geometry = resolveDefaultPlayerMorphGeometry(
+                        progress = playerMorphState.progress,
+                        endpointBounds = endpointBounds,
+                        elementBounds = defaultMorphBounds
                     )
-                DefaultPlayerMorph(
+                    val carouselPresentation =
+                        rememberModernArtworkCarouselPresentation(
+                            currentSong = currentSong,
+                            previousPreviewSong = previousPreviewSong,
+                            nextPreviewSong = nextPreviewSong,
+                            onPreviousClick = onPreviousClick,
+                            onNextClick = onNextClick
+                        )
+                    DefaultPlayerMorph(
+                        progress = playerMorphState.progress,
+                        geometry = geometry,
+                        carouselPresentation = carouselPresentation,
+                        artworkTransitionStyle = modernArtworkTransitionStyle,
+                        isPlaying = isPlaying,
+                        onPlayPauseClick = onPlayPauseClick,
+                        style = modernStyle
+                    ) { visualState ->
+                        ModernExpandedPlayer(
+                            currentSong = currentSong,
+                            previousPreviewSong = previousPreviewSong,
+                            nextPreviewSong = nextPreviewSong,
+                            artworkTransitionStyle = modernArtworkTransitionStyle,
+                            seekbarStyle = modernSeekbarStyle,
+                            waveformData = waveformData,
+                            isPlaying = isPlaying,
+                            isShuffleEnabled = isShuffleEnabled,
+                            repeatMode = repeatMode,
+                            currentPosition = currentPosition,
+                            duration = duration,
+                            isCurrentSongFavorite = isCurrentSongFavorite,
+                            onPlayPauseClick = onPlayPauseClick,
+                            onPreviousClick = onPreviousClick,
+                            onNextClick = onNextClick,
+                            onSeekChange = onSeekChange,
+                            onShuffleClick = onShuffleClick,
+                            onRepeatClick = onRepeatClick,
+                            onCollapseClick = onCollapseClick,
+                            playerMorphState = playerMorphState,
+                            lyricsTransitionState = lyricsTransitionState,
+                            onOpenUpNextClick = onOpenUpNextClick,
+                            onToggleFavoriteClick = onToggleFavoriteClick,
+                            style = modernStyle,
+                            defaultMorphBounds = defaultMorphBounds,
+                            defaultMorphVisualState = visualState,
+                            carouselPresentation = carouselPresentation,
+                            defaultMorphDragRangePx = defaultMorphTravelDistance(
+                                endpointBounds = endpointBounds,
+                                elementBounds = defaultMorphBounds
+                            )
+                        )
+                    }
+                }
+            }
+
+            PlayerTheme.CLASSIC_WHEEL -> {
+                val geometry = resolveClassicWheelMorphGeometry(
+                    playerMorphState.progress, endpointBounds
+                )
+                val sharedGeometry = resolveClassicWheelSharedGeometry(
+                    playerMorphState.progress, classicMorphBounds
+                )
+                ClassicWheelPlayerMorph(
                     progress = playerMorphState.progress,
                     geometry = geometry,
-                    carouselPresentation = carouselPresentation,
-                    artworkTransitionStyle = modernArtworkTransitionStyle,
+                    sharedGeometry = sharedGeometry,
+                    currentSong = currentSong,
                     isPlaying = isPlaying,
+                    tokens = tokens
+                ) { screenAlpha, wheelAlpha, controlsActive -> ClassicWheelExpandedPlayer(
+                    currentSong = currentSong,
+                    isPlaying = isPlaying,
+                    isShuffleEnabled = isShuffleEnabled,
+                    repeatMode = repeatMode,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    isCurrentSongFavorite = isCurrentSongFavorite,
                     onPlayPauseClick = onPlayPauseClick,
-                    style = modernStyle
-                ) { visualState ->
-                    ModernExpandedPlayer(
+                    onPreviousClick = onPreviousClick,
+                    onNextClick = onNextClick,
+                    onSeekChange = onSeekChange,
+                    onShuffleClick = onShuffleClick,
+                    onRepeatClick = onRepeatClick,
+                    onCollapseClick = onCollapseClick,
+                    onOpenUpNextClick = onOpenUpNextClick,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    songs = songs,
+                    onSongClick = onSongClick,
+                    tokens = tokens,
+                    screenAlpha = screenAlpha,
+                    wheelAlpha = wheelAlpha,
+                    wheelInputEnabled = controlsActive,
+                    morphBounds = classicMorphBounds,
+                    sharedContentVisible = sharedGeometry == null
+                    ,onMorphDragStart = {
+                        playerMorphState.beginDragWithRange(classicWheelMorphTravelDistance(endpointBounds))
+                    }
+                    ,onMorphDragBy = playerMorphState::dragBy
+                    ,onMorphDragEnd = playerMorphState::endDrag
+                    ,onMorphDragCancel = playerMorphState::cancelDrag
+                    ,wheelPlayControlAlpha = if (controlsActive) 1f else 0f
+                ) }
+            }
+
+            PlayerTheme.RETRO_RACK -> {
+                val geometry = resolveRetroRackMorphGeometry(playerMorphState.progress, endpointBounds)
+                val sharedGeometry = resolveRetroRackSharedGeometry(playerMorphState.progress, retroRackMorphBounds)
+                val sharedOwner = retroRackSharedOwner(playerMorphState.progress, sharedGeometry != null)
+                RetroRackPlayerMorph(
+                    progress = playerMorphState.progress,
+                    geometry = geometry,
+                    sharedGeometry = sharedGeometry,
+                    currentSong = currentSong,
+                    isPlaying = isPlaying,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    onPlayPauseClick = onPlayPauseClick,
+                    tokens = tokens
+                ) { deckReveal, spectrumReveal, queueReveal, controlsReveal, inputEnabled ->
+                    RetroRackExpandedPlayer(
                         currentSong = currentSong,
-                        previousPreviewSong = previousPreviewSong,
-                        nextPreviewSong = nextPreviewSong,
-                        artworkTransitionStyle = modernArtworkTransitionStyle,
-                        seekbarStyle = modernSeekbarStyle,
                         waveformData = waveformData,
+                        isVisualizerWorkAllowed = isVisualizerWorkAllowed && shouldRunRetroRackExpandedWork(playerMorphState.progress),
+                        isPlaying = isPlaying,
+                        isShuffleEnabled = isShuffleEnabled,
+                        repeatMode = repeatMode,
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        isCurrentSongFavorite = isCurrentSongFavorite,
+                        upcomingSongs = upcomingSongs,
+                        onPlayPauseClick = onPlayPauseClick,
+                        onPreviousClick = onPreviousClick,
+                        onNextClick = onNextClick,
+                        onSeekChange = onSeekChange,
+                        onShuffleClick = onShuffleClick,
+                        onRepeatClick = onRepeatClick,
+                        onCollapseClick = onCollapseClick,
+                        onOpenUpNextClick = onOpenUpNextClick,
+                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        onSongClick = onSongClick,
+                        tokens = tokens,
+                        deckReveal = deckReveal,
+                        spectrumReveal = spectrumReveal,
+                        queueReveal = queueReveal,
+                        controlsReveal = controlsReveal,
+                        inputEnabled = inputEnabled,
+                        morphBounds = retroRackMorphBounds,
+                        sharedOwner = sharedOwner,
+                        onMorphDragStart = {
+                            val travel = retroRackMorphTravelDistance(endpointBounds)
+                            playerMorphState.beginDragWithRange(
+                                progressRangePx = travel,
+                                distanceThresholdPx = retroRackDistanceThreshold(travel)
+                            )
+                        },
+                        onMorphDragBy = playerMorphState::dragBy,
+                        onMorphDragEnd = { velocity ->
+                            playerMorphState.endDragWithVelocityThreshold(
+                                velocity,
+                                RetroRackMorphSpec.collapseVelocityThresholdPxPerSecond
+                            )
+                        },
+                        onMorphDragCancel = playerMorphState::cancelDrag
+                    ) }
+            }
+
+            PlayerTheme.POCKET_FLIP -> {
+                val geometry = resolvePocketFlipMorphGeometry(
+                    progress = playerMorphState.progress,
+                    endpointBounds = endpointBounds
+                )
+                val sharedGeometry = resolvePocketFlipSharedGeometry(
+                    progress = playerMorphState.progress,
+                    bounds = pocketFlipMorphBounds
+                )
+                val sharedOwner = pocketFlipSharedOwner(
+                    progress = playerMorphState.progress,
+                    geometryReady = sharedGeometry != null
+                )
+                val collapseGestureEnabled =
+                    playerMorphState.progress >= PocketFlipMorphSpec.collapseGestureAt ||
+                            playerMorphState.isDragging
+
+                PocketFlipPlayerMorph(
+                    progress = playerMorphState.progress,
+                    geometry = geometry,
+                    sharedGeometry = sharedGeometry,
+                    currentSong = currentSong,
+                    isPlaying = isPlaying,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    onPlayPauseClick = onPlayPauseClick,
+                    tokens = tokens
+                ) { displayReveal, hingeReveal, controlsReveal, inputEnabled ->
+                    PocketFlipExpandedPlayer(
+                        currentSong = currentSong,
+                        waveformData = waveformData,
+                        isVisualizerWorkAllowed = isVisualizerWorkAllowed &&
+                                shouldRunPocketFlipExpandedWork(playerMorphState.progress),
                         isPlaying = isPlaying,
                         isShuffleEnabled = isShuffleEnabled,
                         repeatMode = repeatMode,
@@ -208,181 +403,114 @@ fun ExpandedPlayerThemeHost(
                         onShuffleClick = onShuffleClick,
                         onRepeatClick = onRepeatClick,
                         onCollapseClick = onCollapseClick,
-                        playerMorphState = playerMorphState,
-                        lyricsTransitionState = lyricsTransitionState,
                         onOpenUpNextClick = onOpenUpNextClick,
                         onToggleFavoriteClick = onToggleFavoriteClick,
-                        style = modernStyle,
-                        defaultMorphBounds = defaultMorphBounds,
-                        defaultMorphVisualState = visualState,
-                        carouselPresentation = carouselPresentation,
-                        defaultMorphDragRangePx = defaultMorphTravelDistance(
-                            endpointBounds = endpointBounds,
-                            elementBounds = defaultMorphBounds
-                        )
+                        tokens = tokens,
+                        renderShell = false,
+                        displayReveal = displayReveal,
+                        hingeReveal = hingeReveal,
+                        controlsReveal = controlsReveal,
+                        inputEnabled = inputEnabled,
+                        collapseGestureEnabled = collapseGestureEnabled,
+                        morphBounds = pocketFlipMorphBounds,
+                        sharedOwner = sharedOwner,
+                        onMorphDragStart = {
+                            val travel = pocketFlipMorphTravelDistance(endpointBounds)
+                            playerMorphState.beginDragWithRange(
+                                progressRangePx = travel,
+                                distanceThresholdPx = pocketFlipDistanceThreshold(travel)
+                            )
+                        },
+                        onMorphDragBy = playerMorphState::dragBy,
+                        onMorphDragEnd = { velocity ->
+                            playerMorphState.endDragWithVelocityThreshold(
+                                velocityY = velocity,
+                                velocityThresholdPxPerSecond =
+                                    PocketFlipMorphSpec.collapseVelocityThresholdPxPerSecond
+                            )
+                        },
+                        onMorphDragCancel = playerMorphState::cancelDrag
                     )
                 }
             }
-        }
 
-        PlayerTheme.CLASSIC_WHEEL -> {
-            val geometry = resolveClassicWheelMorphGeometry(
-                playerMorphState.progress, endpointBounds
-            )
-            val sharedGeometry = resolveClassicWheelSharedGeometry(
-                playerMorphState.progress, classicMorphBounds
-            )
-            ClassicWheelPlayerMorph(
-                progress = playerMorphState.progress,
-                geometry = geometry,
-                sharedGeometry = sharedGeometry,
-                currentSong = currentSong,
-                isPlaying = isPlaying,
-                tokens = tokens
-            ) { screenAlpha, wheelAlpha, controlsActive -> ClassicWheelExpandedPlayer(
-                currentSong = currentSong,
-                isPlaying = isPlaying,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
-                isCurrentSongFavorite = isCurrentSongFavorite,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onCollapseClick = onCollapseClick,
-                onOpenUpNextClick = onOpenUpNextClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                songs = songs,
-                onSongClick = onSongClick,
-                tokens = tokens,
-                screenAlpha = screenAlpha,
-                wheelAlpha = wheelAlpha,
-                wheelInputEnabled = controlsActive,
-                morphBounds = classicMorphBounds,
-                sharedContentVisible = sharedGeometry == null
-                ,onMorphDragStart = {
-                    playerMorphState.beginDragWithRange(classicWheelMorphTravelDistance(endpointBounds))
+            PlayerTheme.POCKET_CASSETTE -> {
+                val geometry = resolvePocketCassetteMorphGeometry(
+                    progress = playerMorphState.progress,
+                    endpointBounds = endpointBounds
+                )
+                val sharedGeometry = resolvePocketCassetteSharedGeometry(
+                    progress = playerMorphState.progress,
+                    bounds = pocketCassetteMorphBounds
+                )
+                val sharedOwner = pocketCassetteSharedOwner(
+                    progress = playerMorphState.progress,
+                    geometryReady = sharedGeometry != null
+                )
+                val collapseGestureEnabled =
+                    playerMorphState.progress >= PocketCassetteMorphSpec.collapseGestureAt ||
+                            playerMorphState.isDragging
+
+                PocketCassettePlayerMorph(
+                    progress = playerMorphState.progress,
+                    geometry = geometry,
+                    sharedGeometry = sharedGeometry,
+                    currentSong = currentSong,
+                    isPlaying = isPlaying,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    onPlayPauseClick = onPlayPauseClick,
+                    tokens = tokens
+                ) { headerReveal, windowReveal, mechanismReveal, controlsReveal, inputEnabled ->
+                    PocketCassetteExpandedPlayer(
+                        currentSong = currentSong,
+                        isVisualizerWorkAllowed = isVisualizerWorkAllowed &&
+                                shouldRunPocketCassetteExpandedWork(playerMorphState.progress),
+                        isPlaying = isPlaying,
+                        isShuffleEnabled = isShuffleEnabled,
+                        repeatMode = repeatMode,
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        isCurrentSongFavorite = isCurrentSongFavorite,
+                        onPlayPauseClick = onPlayPauseClick,
+                        onPreviousClick = onPreviousClick,
+                        onNextClick = onNextClick,
+                        onSeekChange = onSeekChange,
+                        onShuffleClick = onShuffleClick,
+                        onRepeatClick = onRepeatClick,
+                        onCollapseClick = onCollapseClick,
+                        onOpenUpNextClick = onOpenUpNextClick,
+                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        tokens = tokens,
+                        renderShell = false,
+                        headerReveal = headerReveal,
+                        windowReveal = windowReveal,
+                        mechanismReveal = mechanismReveal,
+                        controlsReveal = controlsReveal,
+                        inputEnabled = inputEnabled,
+                        collapseGestureEnabled = collapseGestureEnabled,
+                        morphBounds = pocketCassetteMorphBounds,
+                        sharedOwner = sharedOwner,
+                        onMorphDragStart = {
+                            val travel = pocketCassetteMorphTravelDistance(endpointBounds)
+                            playerMorphState.beginDragWithRange(
+                                progressRangePx = travel,
+                                distanceThresholdPx = pocketCassetteDistanceThreshold(travel)
+                            )
+                        },
+                        onMorphDragBy = playerMorphState::dragBy,
+                        onMorphDragEnd = { velocity ->
+                            playerMorphState.endDragWithVelocityThreshold(
+                                velocityY = velocity,
+                                velocityThresholdPxPerSecond =
+                                    PocketCassetteMorphSpec.collapseVelocityThresholdPxPerSecond
+                            )
+                        },
+                        onMorphDragCancel = playerMorphState::cancelDrag
+                    )
                 }
-                ,onMorphDragBy = playerMorphState::dragBy
-                ,onMorphDragEnd = playerMorphState::endDrag
-                ,onMorphDragCancel = playerMorphState::cancelDrag
-                ,wheelPlayControlAlpha = if (controlsActive) 1f else 0f
-            ) }
-        }
+            }
 
-        PlayerTheme.RETRO_RACK -> {
-            val geometry = resolveRetroRackMorphGeometry(playerMorphState.progress, endpointBounds)
-            val sharedGeometry = resolveRetroRackSharedGeometry(playerMorphState.progress, retroRackMorphBounds)
-            val sharedOwner = retroRackSharedOwner(playerMorphState.progress, sharedGeometry != null)
-            RetroRackPlayerMorph(
-                progress = playerMorphState.progress,
-                geometry = geometry,
-                sharedGeometry = sharedGeometry,
-                currentSong = currentSong,
-                isPlaying = isPlaying,
-                currentPosition = currentPosition,
-                duration = duration,
-                onPlayPauseClick = onPlayPauseClick,
-                tokens = tokens
-            ) { deckReveal, spectrumReveal, queueReveal, controlsReveal, inputEnabled ->
-            RetroRackExpandedPlayer(
-                currentSong = currentSong,
-                waveformData = waveformData,
-                isVisualizerWorkAllowed = isVisualizerWorkAllowed && shouldRunRetroRackExpandedWork(playerMorphState.progress),
-                isPlaying = isPlaying,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
-                isCurrentSongFavorite = isCurrentSongFavorite,
-                upcomingSongs = upcomingSongs,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onCollapseClick = onCollapseClick,
-                onOpenUpNextClick = onOpenUpNextClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                onSongClick = onSongClick,
-                tokens = tokens,
-                deckReveal = deckReveal,
-                spectrumReveal = spectrumReveal,
-                queueReveal = queueReveal,
-                controlsReveal = controlsReveal,
-                inputEnabled = inputEnabled,
-                morphBounds = retroRackMorphBounds,
-                sharedOwner = sharedOwner,
-                onMorphDragStart = {
-                    val travel = retroRackMorphTravelDistance(endpointBounds)
-                    playerMorphState.beginDragWithRange(
-                        progressRangePx = travel,
-                        distanceThresholdPx = retroRackDistanceThreshold(travel)
-                    )
-                },
-                onMorphDragBy = playerMorphState::dragBy,
-                onMorphDragEnd = { velocity ->
-                    playerMorphState.endDragWithVelocityThreshold(
-                        velocity,
-                        RetroRackMorphSpec.collapseVelocityThresholdPxPerSecond
-                    )
-                },
-                onMorphDragCancel = playerMorphState::cancelDrag
-            ) }
         }
-
-        PlayerTheme.POCKET_FLIP -> {
-            PocketFlipExpandedPlayer(
-                currentSong = currentSong,
-                waveformData = waveformData,
-                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
-                isPlaying = isPlaying,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
-                isCurrentSongFavorite = isCurrentSongFavorite,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onCollapseClick = onCollapseClick,
-                onOpenUpNextClick = onOpenUpNextClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                tokens = tokens
-            )
-        }
-
-        PlayerTheme.POCKET_CASSETTE -> {
-            PocketCassetteExpandedPlayer(
-                currentSong = currentSong,
-                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
-                isPlaying = isPlaying,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
-                isCurrentSongFavorite = isCurrentSongFavorite,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onCollapseClick = onCollapseClick,
-                onOpenUpNextClick = onOpenUpNextClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                tokens = tokens
-            )
-        }
-
-    }
     }
 }

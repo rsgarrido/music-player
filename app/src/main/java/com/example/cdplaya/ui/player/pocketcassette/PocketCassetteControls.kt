@@ -50,9 +50,13 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.setProgress
@@ -87,7 +91,11 @@ internal fun PocketCassetteControls(
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     compact: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    controlsReveal: Float = 1f,
+    inputEnabled: Boolean = true,
+    morphBounds: PocketCassetteMorphBounds? = null,
+    sharedOwner: PocketCassetteSharedOwner = PocketCassetteSharedOwner.EXPANDED
 ) {
     var rewindTarget by remember(currentSong?.id) { mutableIntStateOf(currentPosition) }
     var forwardTarget by remember(currentSong?.id) { mutableIntStateOf(currentPosition) }
@@ -98,14 +106,20 @@ internal fun PocketCassetteControls(
     }
 
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer { alpha = controlsReveal.coerceIn(0f, 1f) }
+            .then(if (inputEnabled) Modifier else Modifier.clearAndSetSemantics { }),
         verticalArrangement = Arrangement.spacedBy(if (compact) 7.dp else 10.dp)
     ) {
         PocketCassetteSeekSlot(
             currentPosition = currentPosition,
             duration = duration,
             onSeekChange = onSeekChange,
-            compact = compact
+            compact = compact,
+            enabled = inputEnabled && sharedOwner == PocketCassetteSharedOwner.EXPANDED,
+            morphBounds = morphBounds,
+            sharedOwner = sharedOwner
         )
 
         Row(
@@ -126,6 +140,7 @@ internal fun PocketCassetteControls(
                 },
                 longClickLabel = "Seek backward while held",
                 compact = compact,
+                enabled = inputEnabled,
                 modifier = Modifier.weight(1f)
             )
             PocketCassetteMechanicalButton(
@@ -135,6 +150,11 @@ internal fun PocketCassetteControls(
                 onClick = onPlayPauseClick,
                 compact = compact,
                 accent = true,
+                enabled = inputEnabled && sharedOwner == PocketCassetteSharedOwner.EXPANDED,
+                visualAlpha = if (sharedOwner == PocketCassetteSharedOwner.EXPANDED) 1f else 0f,
+                onBoundsChanged = morphBounds?.let { bounds ->
+                    { rect -> bounds.updateExpandedPlay(rect) }
+                },
                 modifier = Modifier.weight(1.12f)
             )
             PocketCassetteMechanicalButton(
@@ -151,6 +171,7 @@ internal fun PocketCassetteControls(
                 },
                 longClickLabel = "Seek forward while held",
                 compact = compact,
+                enabled = inputEnabled,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -164,6 +185,7 @@ internal fun PocketCassetteControls(
                 label = "MIX",
                 contentDescription = if (isShuffleEnabled) "Disable shuffle" else "Enable shuffle",
                 active = isShuffleEnabled,
+                enabled = inputEnabled,
                 onClick = onShuffleClick,
                 modifier = Modifier.weight(1f)
             )
@@ -180,6 +202,7 @@ internal fun PocketCassetteControls(
                     RepeatMode.ONE -> "Disable repeat"
                 },
                 active = repeatMode != RepeatMode.OFF,
+                enabled = inputEnabled,
                 onClick = onRepeatClick,
                 modifier = Modifier.weight(1f)
             )
@@ -192,7 +215,7 @@ internal fun PocketCassetteControls(
                     "Add to favorites"
                 },
                 active = isCurrentSongFavorite,
-                enabled = currentSong != null,
+                enabled = inputEnabled && currentSong != null,
                 onClick = { currentSong?.let(onToggleFavoriteClick) },
                 modifier = Modifier.weight(1f)
             )
@@ -200,6 +223,7 @@ internal fun PocketCassetteControls(
                 icon = Icons.AutoMirrored.Filled.List,
                 label = "QUEUE",
                 contentDescription = "Open up next queue",
+                enabled = inputEnabled,
                 onClick = onOpenUpNextClick,
                 modifier = Modifier.weight(1f)
             )
@@ -216,6 +240,9 @@ private fun PocketCassetteMechanicalButton(
     compact: Boolean,
     modifier: Modifier = Modifier,
     accent: Boolean = false,
+    enabled: Boolean = true,
+    visualAlpha: Float = 1f,
+    onBoundsChanged: ((androidx.compose.ui.geometry.Rect) -> Unit)? = null,
     onLongPressStart: (() -> Unit)? = null,
     onLongPressRepeat: (() -> Unit)? = null,
     longClickLabel: String? = null
@@ -241,6 +268,10 @@ private fun PocketCassetteMechanicalButton(
     Box(
         modifier = modifier
             .height(if (compact) 58.dp else 68.dp)
+            .onGloballyPositioned { coordinates ->
+                onBoundsChanged?.invoke(coordinates.boundsInRoot())
+            }
+            .graphicsLayer { alpha = visualAlpha.coerceIn(0f, 1f) }
             .offset {
                 IntOffset(x = 0, y = if (isPressed) 2.dp.roundToPx() else 0)
             }
@@ -257,6 +288,7 @@ private fun PocketCassetteMechanicalButton(
             .pocketCassetteBevel(radius = 5.dp, pressed = isPressed)
             .combinedClickable(
                 interactionSource = interactionSource,
+                enabled = enabled,
                 indication = null,
                 role = Role.Button,
                 onClickLabel = contentDescription,
@@ -270,7 +302,8 @@ private fun PocketCassetteMechanicalButton(
                     null
                 },
                 onClick = onClick
-            ),
+            )
+            .then(if (visualAlpha > 0f) Modifier else Modifier.clearAndSetSemantics { }),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -355,7 +388,10 @@ private fun PocketCassetteSeekSlot(
     currentPosition: Int,
     duration: Int,
     onSeekChange: (Int) -> Unit,
-    compact: Boolean
+    compact: Boolean,
+    enabled: Boolean,
+    morphBounds: PocketCassetteMorphBounds?,
+    sharedOwner: PocketCassetteSharedOwner
 ) {
     val colors = PocketCassetteColors
     val safeDuration = duration.coerceAtLeast(1)
@@ -393,42 +429,62 @@ private fun PocketCassetteSeekSlot(
             )
         }
 
+        val seekInputModifier = if (enabled) {
+            Modifier.pointerInput(safeDuration) {
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+
+                    fun seekTo(x: Float) {
+                        val fraction = (x / size.width.toFloat()).coerceIn(0f, 1f)
+                        onSeekChange((fraction * safeDuration).toInt())
+                    }
+
+                    seekTo(down.position.x)
+                    var pressed = true
+                    while (pressed) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        pressed = change.pressed
+                        if (pressed) {
+                            seekTo(change.position.x)
+                            change.consume()
+                        }
+                    }
+                }
+            }
+        } else {
+            Modifier
+        }
+
+        val seekSemanticsModifier = if (
+            sharedOwner == PocketCassetteSharedOwner.EXPANDED && enabled
+        ) {
+            Modifier.semantics {
+                progressBarRangeInfo = ProgressBarRangeInfo(
+                    current = safePosition.toFloat(),
+                    range = 0f..safeDuration.toFloat()
+                )
+                setProgress { target ->
+                    onSeekChange(target.coerceIn(0f, safeDuration.toFloat()).toInt())
+                    true
+                }
+            }
+        } else {
+            Modifier.clearAndSetSemantics { }
+        }
+
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(if (compact) 38.dp else 44.dp)
-                .semantics {
-                    progressBarRangeInfo = ProgressBarRangeInfo(
-                        current = safePosition.toFloat(),
-                        range = 0f..safeDuration.toFloat()
-                    )
-                    setProgress { target ->
-                        onSeekChange(target.coerceIn(0f, safeDuration.toFloat()).toInt())
-                        true
-                    }
+                .onGloballyPositioned { coordinates ->
+                    morphBounds?.updateExpandedProgress(coordinates.boundsInRoot())
                 }
-                .pointerInput(safeDuration) {
-                    awaitEachGesture {
-                        val down = awaitFirstDown(requireUnconsumed = false)
-
-                        fun seekTo(x: Float) {
-                            val fraction = (x / size.width.toFloat()).coerceIn(0f, 1f)
-                            onSeekChange((fraction * safeDuration).toInt())
-                        }
-
-                        seekTo(down.position.x)
-                        var pressed = true
-                        while (pressed) {
-                            val event = awaitPointerEvent()
-                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                            pressed = change.pressed
-                            if (pressed) {
-                                seekTo(change.position.x)
-                                change.consume()
-                            }
-                        }
-                    }
+                .graphicsLayer {
+                    alpha = if (sharedOwner == PocketCassetteSharedOwner.EXPANDED) 1f else 0f
                 }
+                .then(seekInputModifier)
+                .then(seekSemanticsModifier)
         ) {
             val slotHeight = if (compact) 13.dp.toPx() else 15.dp.toPx()
             val slotTop = (size.height - slotHeight) / 2f

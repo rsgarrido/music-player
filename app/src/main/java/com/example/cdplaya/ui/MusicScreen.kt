@@ -64,6 +64,14 @@ import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import com.example.cdplaya.ui.player.retrorack.resolveRetroRackMorphGeometry
 import com.example.cdplaya.ui.player.retrorack.retroRackMorphTravelDistance
 import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
+import com.example.cdplaya.ui.player.pocketflip.PocketFlipMorphBounds
+import com.example.cdplaya.ui.player.pocketflip.resolvePocketFlipMorphGeometry
+import com.example.cdplaya.ui.player.pocketflip.resolvePocketFlipSharedGeometry
+import com.example.cdplaya.ui.player.pocketflip.pocketFlipMorphTravelDistance
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteMorphBounds
+import com.example.cdplaya.ui.player.pocketcassette.resolvePocketCassetteMorphGeometry
+import com.example.cdplaya.ui.player.pocketcassette.resolvePocketCassetteSharedGeometry
+import com.example.cdplaya.ui.player.pocketcassette.pocketCassetteMorphTravelDistance
 import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelSharedGeometry
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
@@ -442,566 +450,624 @@ internal fun MusicScreen(
                 .fillMaxSize()
                 .appShellBackground()
         ) { playerEndpointBounds ->
-        val defaultMorphBounds = remember { DefaultPlayerMorphBounds() }
-        val classicMorphBounds = remember { ClassicWheelMorphBounds() }
-        val retroRackMorphBounds = remember { RetroRackMorphBounds() }
-        val defaultMorphGeometry = resolveDefaultPlayerMorphGeometry(
-            progress = playerMorphState.progress,
-            endpointBounds = playerEndpointBounds,
-            elementBounds = defaultMorphBounds
-        )
-        val defaultMorphOwnsVisuals =
-            selectedPlayerTheme == PlayerTheme.DEFAULT &&
-                    defaultMorphMetadataOwner(
-                        isMorphActive = !playerMorphState.isCollapsedAndIdle,
-                        geometryReady = defaultMorphGeometry != null
-                    ) == DefaultMorphMetadataOwner.Morph
-        val classicWheelMorphOwnsVisuals =
-            selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL &&
+            val defaultMorphBounds = remember { DefaultPlayerMorphBounds() }
+            val classicMorphBounds = remember { ClassicWheelMorphBounds() }
+            val retroRackMorphBounds = remember { RetroRackMorphBounds() }
+            val pocketFlipMorphBounds = remember { PocketFlipMorphBounds() }
+            val pocketCassetteMorphBounds = remember { PocketCassetteMorphBounds() }
+            val defaultMorphGeometry = resolveDefaultPlayerMorphGeometry(
+                progress = playerMorphState.progress,
+                endpointBounds = playerEndpointBounds,
+                elementBounds = defaultMorphBounds
+            )
+            val defaultMorphOwnsVisuals =
+                selectedPlayerTheme == PlayerTheme.DEFAULT &&
+                        defaultMorphMetadataOwner(
+                            isMorphActive = !playerMorphState.isCollapsedAndIdle,
+                            geometryReady = defaultMorphGeometry != null
+                        ) == DefaultMorphMetadataOwner.Morph
+            val classicWheelMorphOwnsVisuals =
+                selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL &&
+                        !playerMorphState.isCollapsedAndIdle &&
+                        resolveClassicWheelMorphGeometry(
+                            playerMorphState.progress,
+                            playerEndpointBounds
+                        ) != null && resolveClassicWheelSharedGeometry(
+                    playerMorphState.progress,
+                    classicMorphBounds
+                ) != null
+            val retroRackMorphOwnsVisuals = selectedPlayerTheme == PlayerTheme.RETRO_RACK &&
                     !playerMorphState.isCollapsedAndIdle &&
-                    resolveClassicWheelMorphGeometry(
-                        playerMorphState.progress,
-                        playerEndpointBounds
-                    ) != null && resolveClassicWheelSharedGeometry(
-                        playerMorphState.progress,
-                        classicMorphBounds
-                    ) != null
-        val retroRackMorphOwnsVisuals = selectedPlayerTheme == PlayerTheme.RETRO_RACK &&
-                !playerMorphState.isCollapsedAndIdle &&
-                resolveRetroRackMorphGeometry(playerMorphState.progress, playerEndpointBounds) != null
-        val classicMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
-            DefaultMiniPlayerMorphCallbacks(
-                onDragStart = {
-                    playerMorphState.beginDragWithRange(
-                        classicWheelMorphTravelDistance(playerEndpointBounds)
-                    )
-                },
-                onDragBy = playerMorphState::dragBy,
-                onDragEnd = playerMorphState::endDrag,
-                onDragCancel = playerMorphState::cancelDrag
-            )
-        }
-        val retroRackMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
-            DefaultMiniPlayerMorphCallbacks(
-                onDragStart = { playerMorphState.beginDragWithRange(retroRackMorphTravelDistance(playerEndpointBounds)) },
-                onDragBy = playerMorphState::dragBy,
-                onDragEnd = playerMorphState::endDrag,
-                onDragCancel = playerMorphState::cancelDrag
-            )
-        }
-        val defaultMiniMorphCallbacks = remember(
-            playerMorphState,
-            playerEndpointBounds
-        ) {
-            DefaultMiniPlayerMorphCallbacks(
-                onDragStart = {
-                    val miniBounds = defaultMorphBounds.miniSurface ?: (
-                            playerEndpointBounds.mini as?
-                                    PlayerBoundsMeasurement.Measured
-                            )?.bounds
-                    val expandedBounds = (
-                            playerEndpointBounds.expanded as?
-                                    PlayerBoundsMeasurement.Measured
-                            )?.bounds
-                    val travelDistance = if (miniBounds != null &&
-                        expandedBounds != null
-                    ) {
-                        abs(miniBounds.top - expandedBounds.top)
-                    } else {
-                        DefaultMorphMinimumDragRangePx
-                    }
-                    playerMorphState.beginDragWithRange(
-                        progressRangePx = travelDistance.coerceAtLeast(
-                            DefaultMorphMinimumDragRangePx
+                    resolveRetroRackMorphGeometry(playerMorphState.progress, playerEndpointBounds) != null
+            val pocketFlipMorphOwnsVisuals =
+                selectedPlayerTheme == PlayerTheme.POCKET_FLIP &&
+                        !playerMorphState.isCollapsedAndIdle &&
+                        resolvePocketFlipMorphGeometry(
+                            playerMorphState.progress,
+                            playerEndpointBounds
+                        ) != null &&
+                        resolvePocketFlipSharedGeometry(
+                            playerMorphState.progress,
+                            pocketFlipMorphBounds
+                        ) != null
+            val pocketCassetteMorphOwnsVisuals =
+                selectedPlayerTheme == PlayerTheme.POCKET_CASSETTE &&
+                        !playerMorphState.isCollapsedAndIdle &&
+                        resolvePocketCassetteMorphGeometry(
+                            playerMorphState.progress,
+                            playerEndpointBounds
+                        ) != null &&
+                        resolvePocketCassetteSharedGeometry(
+                            playerMorphState.progress,
+                            pocketCassetteMorphBounds
+                        ) != null
+            val classicMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
+                DefaultMiniPlayerMorphCallbacks(
+                    onDragStart = {
+                        playerMorphState.beginDragWithRange(
+                            classicWheelMorphTravelDistance(playerEndpointBounds)
                         )
-                    )
-                },
-                onDragBy = playerMorphState::dragBy,
-                onDragEnd = playerMorphState::endDrag,
-                onDragCancel = playerMorphState::cancelDrag
-            )
-        }
-        val selectedSongForTagEdit = songPendingTagEdit
-        val shouldShowBottomMiniPlayer = currentSong != null &&
-                !isFolderScreenVisible &&
-                !isDiagnosticsScreenVisible &&
-                !isEqualizerScreenVisible &&
-                !isSettingsScreenVisible &&
-                selectedSongForTagEdit == null
-        val shouldShowBottomNavigation = !isPlayerExpanded &&
-                !isFolderScreenVisible &&
-                !isDiagnosticsScreenVisible &&
-                !isEqualizerScreenVisible &&
-                !isSettingsScreenVisible &&
-                 selectedSongForTagEdit == null
-        LaunchedEffect(shouldShowBottomMiniPlayer) {
-            if (!shouldShowBottomMiniPlayer) {
-                playerEndpointBounds.markMiniStale()
+                    },
+                    onDragBy = playerMorphState::dragBy,
+                    onDragEnd = playerMorphState::endDrag,
+                    onDragCancel = playerMorphState::cancelDrag
+                )
             }
-        }
-        LaunchedEffect(selectedPlayerTheme) {
-            playerEndpointBounds.markMiniStale()
-            defaultMorphBounds.clearExpanded()
-        }
-        val navigationBarInset = WindowInsets.navigationBars
-            .asPaddingValues()
-            .calculateBottomPadding()
-        val bottomContentPadding = navigationBarInset +
-                (if (shouldShowBottomNavigation) AppBottomNavigationHeight else 0.dp) +
-                when {
-                    !shouldShowBottomMiniPlayer -> 24.dp
-                    isSleepTimerActive -> 176.dp
-                    else -> 96.dp
+            val retroRackMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
+                DefaultMiniPlayerMorphCallbacks(
+                    onDragStart = { playerMorphState.beginDragWithRange(retroRackMorphTravelDistance(playerEndpointBounds)) },
+                    onDragBy = playerMorphState::dragBy,
+                    onDragEnd = playerMorphState::endDrag,
+                    onDragCancel = playerMorphState::cancelDrag
+                )
+            }
+            val pocketFlipMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
+                DefaultMiniPlayerMorphCallbacks(
+                    onDragStart = {
+                        playerMorphState.beginDragWithRange(
+                            pocketFlipMorphTravelDistance(playerEndpointBounds)
+                        )
+                    },
+                    onDragBy = playerMorphState::dragBy,
+                    onDragEnd = playerMorphState::endDrag,
+                    onDragCancel = playerMorphState::cancelDrag
+                )
+            }
+            val pocketCassetteMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
+                DefaultMiniPlayerMorphCallbacks(
+                    onDragStart = {
+                        playerMorphState.beginDragWithRange(
+                            pocketCassetteMorphTravelDistance(playerEndpointBounds)
+                        )
+                    },
+                    onDragBy = playerMorphState::dragBy,
+                    onDragEnd = playerMorphState::endDrag,
+                    onDragCancel = playerMorphState::cancelDrag
+                )
+            }
+            val defaultMiniMorphCallbacks = remember(
+                playerMorphState,
+                playerEndpointBounds
+            ) {
+                DefaultMiniPlayerMorphCallbacks(
+                    onDragStart = {
+                        val miniBounds = defaultMorphBounds.miniSurface ?: (
+                                playerEndpointBounds.mini as?
+                                        PlayerBoundsMeasurement.Measured
+                                )?.bounds
+                        val expandedBounds = (
+                                playerEndpointBounds.expanded as?
+                                        PlayerBoundsMeasurement.Measured
+                                )?.bounds
+                        val travelDistance = if (miniBounds != null &&
+                            expandedBounds != null
+                        ) {
+                            abs(miniBounds.top - expandedBounds.top)
+                        } else {
+                            DefaultMorphMinimumDragRangePx
+                        }
+                        playerMorphState.beginDragWithRange(
+                            progressRangePx = travelDistance.coerceAtLeast(
+                                DefaultMorphMinimumDragRangePx
+                            )
+                        )
+                    },
+                    onDragBy = playerMorphState::dragBy,
+                    onDragEnd = playerMorphState::endDrag,
+                    onDragCancel = playerMorphState::cancelDrag
+                )
+            }
+            val selectedSongForTagEdit = songPendingTagEdit
+            val shouldShowBottomMiniPlayer = currentSong != null &&
+                    !isFolderScreenVisible &&
+                    !isDiagnosticsScreenVisible &&
+                    !isEqualizerScreenVisible &&
+                    !isSettingsScreenVisible &&
+                    selectedSongForTagEdit == null
+            val shouldShowBottomNavigation = !isPlayerExpanded &&
+                    !isFolderScreenVisible &&
+                    !isDiagnosticsScreenVisible &&
+                    !isEqualizerScreenVisible &&
+                    !isSettingsScreenVisible &&
+                    selectedSongForTagEdit == null
+            LaunchedEffect(shouldShowBottomMiniPlayer) {
+                if (!shouldShowBottomMiniPlayer) {
+                    playerEndpointBounds.markMiniStale()
+                }
+            }
+            LaunchedEffect(selectedPlayerTheme) {
+                playerEndpointBounds.markMiniStale()
+                defaultMorphBounds.clearExpanded()
+            }
+            val navigationBarInset = WindowInsets.navigationBars
+                .asPaddingValues()
+                .calculateBottomPadding()
+            val bottomContentPadding = navigationBarInset +
+                    (if (shouldShowBottomNavigation) AppBottomNavigationHeight else 0.dp) +
+                    when {
+                        !shouldShowBottomMiniPlayer -> 24.dp
+                        isSleepTimerActive -> 176.dp
+                        else -> 96.dp
+                    }
+
+            if (selectedSongForTagEdit != null) {
+                val initialEditableTags = remember(
+                    selectedSongForTagEdit.id,
+                    selectedSongForTagEdit.filePath
+                ) {
+                    onReadEditableSongTags(selectedSongForTagEdit)
                 }
 
-        if (selectedSongForTagEdit != null) {
-            val initialEditableTags = remember(
-                selectedSongForTagEdit.id,
-                selectedSongForTagEdit.filePath
-            ) {
-                onReadEditableSongTags(selectedSongForTagEdit)
-            }
+                val unsupportedTagEditingMessage = remember(
+                    selectedSongForTagEdit.id,
+                    selectedSongForTagEdit.filePath
+                ) {
+                    onGetUnsupportedTagEditingMessage(selectedSongForTagEdit)
+                }
 
-            val unsupportedTagEditingMessage = remember(
-                selectedSongForTagEdit.id,
-                selectedSongForTagEdit.filePath
-            ) {
-                onGetUnsupportedTagEditingMessage(selectedSongForTagEdit)
-            }
-
-            TagEditorScreen(
-                song = selectedSongForTagEdit,
-                initialTags = initialEditableTags,
-                isSaving = isTagSaveInProgress,
-                unsupportedMessage = unsupportedTagEditingMessage,
-                isCurrentSong = currentSong?.id == selectedSongForTagEdit.id,
-                selectedArtworkUri = selectedArtworkUriForTagEdit,
-                onChangeArtworkClick = {
-                    artworkPickerLauncher.launch("image/*")
-                },
-                onBackClick = {
-                    requestCloseTagEditor()
-                },
-                onSaveClick = { editedTags ->
-                    tagEditorActions.saveTags(
-                        selectedSongForTagEdit,
-                        editedTags,
-                        selectedArtworkUriForTagEdit
-                    )
-                },
-                onUnsavedChangesChanged = { hasChanges ->
-                    hasUnsavedTagChanges = hasChanges
-                },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .navigationBarsPadding()
-            )
-        } else {
-            MusicScreenBody(
-                songs = songs,
-                mediaAccessState = mediaAccessState,
-                isLibraryLoading = isLibraryLoading,
-                libraryErrorMessage = libraryErrorMessage,
-                onRequestAudioAccess = onRequestAudioAccess,
-                onRequestArtworkAccess = onRequestArtworkAccess,
-                onOpenAppSettings = onOpenAppSettings,
-                currentSong = currentSong,
-                isPlayerConnected = isPlayerConnected,
-                previousHistoryCount = previousHistoryCount,
-                forwardHistoryCount = forwardHistoryCount,
-                isPlaying = isPlaying,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                playbackProgressUiState = playbackProgressUiState,
-                queuedSongs = queuedSongs,
-                upcomingSongs = upcomingSongs,
-                libraryFolders = libraryFolders,
-                folderSelectionMode = folderSelectionMode,
-                selectedLibraryFolders = selectedLibraryFolders,
-                favoriteMembershipKeys = favoriteMembershipKeys,
-                unresolvedFavoriteCount = unresolvedFavoriteCount,
-                unresolvedPlaylistRowCount = unresolvedPlaylistRowCount,
-                unresolvedListeningHistoryCount = unresolvedListeningHistoryCount,
-                playlists = playlists,
-                selectedPlaylistName = selectedPlaylistName,
-                selectedPlaylistSongs = selectedPlaylistSongs,
-                mainDestination = mainDestination,
-                selectedLibraryTab = selectedLibraryTab,
-                selectedArtistName = selectedArtistName,
-                selectedAlbumFolderPath = selectedAlbumFolderPath,
-                selectedPlaylistId = selectedPlaylistId,
-                searchQuery = searchQuery,
-                selectedSongSortOption = selectedSongSortOption,
-                selectedArtistSortOption = selectedArtistSortOption,
-                selectedAlbumSortOption = selectedAlbumSortOption,
-                selectedFavoriteSortOption = selectedFavoriteSortOption,
-                recentlyAddedSongIds = recentlyAddedSongIds,
-                isPlayerExpanded = isPlayerExpanded,
-                isFolderScreenVisible = isFolderScreenVisible,
-                isSettingsScreenVisible = isSettingsScreenVisible,
-                isDiagnosticsScreenVisible = isDiagnosticsScreenVisible,
-                isEqualizerScreenVisible =
-                    isEqualizerScreenVisible,
-                queueSnackbarActions = queueSnackbarActions,
-                onSettingsClick = {
-                    isSettingsScreenVisible = true
-                },
-                onOpenLibrary = { tab ->
-                    selectedLibraryTab = tab
-                    selectedArtistName = null
-                    selectedAlbumFolderPath = null
-                    selectedPlaylistId = null
-                    searchQuery = ""
-                    mainDestination = MainDestination.LIBRARY
-                },
-                onFolderBackClick = {
-                    isFolderScreenVisible = false
-                    isSettingsScreenVisible = true
-                },
-                onSettingsBackClick = {
-                    isSettingsScreenVisible = false
-                },
-                onDiagnosticsClick = {
-                    isSettingsScreenVisible = false
-                    isDiagnosticsScreenVisible = true
-                },
-                onDiagnosticsBackClick = {
-                    isDiagnosticsScreenVisible = false
-                    isSettingsScreenVisible = true
-                },
-                onEqualizerClick = {
-                    isSettingsScreenVisible = false
-                    isEqualizerScreenVisible = true
-                },
-                onEqualizerBackClick = {
-                    equalizerActions.onBack()
-                    isEqualizerScreenVisible = false
-                    isSettingsScreenVisible = true
-                },
-                onLibraryFoldersClick = {
-                    isSettingsScreenVisible = false
-                    isFolderScreenVisible = true
-                },
-                onExportBackupClick = onExportBackupClick,
-                onRestoreBackupClick = onRestoreBackupClick,
-                onLibraryFolderToggle = onLibraryFolderToggle,
-                onSelectAllLibraryFolders = onSelectAllLibraryFolders,
-                onClearSelectedLibraryFolders = onClearSelectedLibraryFolders,
-                onSearchQueryChange = { query ->
-                    searchQuery = query
-                },
-                onSongSortOptionSelected = { option ->
-                    selectedSongSortOption = option
-                },
-                onArtistSortOptionSelected = { option ->
-                    selectedArtistSortOption = option
-                },
-                onAlbumSortOptionSelected = { option ->
-                    selectedAlbumSortOption = option
-                },
-                onFavoriteSortOptionSelected = { option ->
-                    selectedFavoriteSortOption = option
-                },
-                onExpandPlayerClick = {
-                    playerMorphState.expand()
-                },
-                onMiniPlayerUpNextClick = {
-                    selectedLibraryTab = LibraryTab.QUEUE
-                    selectedArtistName = null
-                    selectedAlbumFolderPath = null
-                    selectedPlaylistId = null
-                    mainDestination = MainDestination.LIBRARY
-                },
-                onSongClick = { song, playbackContext ->
-                    recordPlaybackLaunchContext()
-                    onSongClick(song, playbackContext)
-                },
-                onPlaySongsClick = { playbackContext, shuffle ->
-                    recordPlaybackLaunchContext()
-                    onPlaySongsClick(playbackContext, shuffle)
-                },
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                onAddToPlaylistClick = { song ->
-                    songPendingPlaylistAdd = song
-                },
-                onAddSongsToPlaylistClick = { songs ->
-                    songsPendingPlaylistAdd = songs
-                },
-                onArtistSelected = { artistName ->
-                    selectedArtistName = artistName
-                },
-                onBackFromArtist = {
-                    selectedArtistName = null
-                },
-                onAlbumSelected = { albumFolderPath ->
-                    selectedAlbumFolderPath = albumFolderPath
-                },
-                onBackFromAlbum = {
-                    selectedAlbumFolderPath = null
-                },
-                onBackFromQueue = {
-                    selectedLibraryTab = LibraryTab.SONGS
-                    mainDestination = MainDestination.LIBRARY
-                },
-                onRemoveFromQueueClick = onRemoveFromQueueClick,
-                onMoveQueueItemUpClick = onMoveQueueItemUpClick,
-                onMoveQueueItemDownClick = onMoveQueueItemDownClick,
-                onClearQueueClick = onClearQueueClick,
-                onCreatePlaylistClick = {
-                    isCreatePlaylistDialogVisible = true
-                },
-                onRenamePlaylistClick = onRenamePlaylistClick,
-                onPlaylistClick = { playlist ->
-                    selectedPlaylistId = playlist.playlistId
-                    onPlaylistSelected(playlist)
-                },
-                onDeletePlaylistClick = onDeletePlaylistClick,
-                onExportPlaylistClick = onExportPlaylistClick,
-                onImportPlaylistClick = onImportPlaylistClick,
-                onBackFromPlaylist = {
-                    selectedPlaylistId = null
-                },
-                onRemovePlaylistSongClick = { playlistSong ->
-                    playlistSnackbarActions.removePlaylistSong(playlistSong)
-                },
-                onMovePlaylistSongUpClick = onMovePlaylistSongUpClick,
-                onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
-                onEditSongTagsClick = { song ->
-                    isTagSaveInProgress = false
-                    hasUnsavedTagChanges = false
-                    isDiscardTagChangesDialogVisible = false
-                    selectedArtworkUriForTagEdit = null
-                    songPendingTagEdit = song
-                },
-                isSleepTimerActive = isSleepTimerActive,
-                sleepTimerDisplayText = sleepTimerDisplayText,
-                onSleepTimerClick = {
-                    isSleepTimerDialogVisible = true
-                },
-                recentlyPlayedSongs = recentlyPlayedSongs,
-                recentlyAddedLibrarySongs = recentlyAddedLibrarySongs,
-                mostPlayedSongs = mostPlayedSongs,
-                selectedPlayerTheme = selectedPlayerTheme,
-                selectedPlayerThemeTokens = selectedPlayerThemeTokens,
-                onPlayerThemeSelected = onPlayerThemeSelected,
-                onUpdatePlayerThemeTokenOverride = onUpdatePlayerThemeTokenOverride,
-                onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
-                selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
-                onModernArtworkTransitionStyleSelected = onModernArtworkTransitionStyleSelected,
-                selectedModernSeekbarStyle = selectedModernSeekbarStyle,
-                onModernSeekbarStyleSelected = onModernSeekbarStyleSelected,
-                selectedReplayGainMode = selectedReplayGainMode,
-                onReplayGainModeSelected = onReplayGainModeSelected,
-                selectedAudioOffloadPreference = selectedAudioOffloadPreference,
-                onAudioOffloadPreferenceSelected = onAudioOffloadPreferenceSelected,
-                audioOutputUiState = audioOutputUiState,
-                equalizerScreenState =
-                    equalizerScreenState,
-                equalizerActions = equalizerActions.copy(
-                    onBack = {
+                TagEditorScreen(
+                    song = selectedSongForTagEdit,
+                    initialTags = initialEditableTags,
+                    isSaving = isTagSaveInProgress,
+                    unsupportedMessage = unsupportedTagEditingMessage,
+                    isCurrentSong = currentSong?.id == selectedSongForTagEdit.id,
+                    selectedArtworkUri = selectedArtworkUriForTagEdit,
+                    onChangeArtworkClick = {
+                        artworkPickerLauncher.launch("image/*")
+                    },
+                    onBackClick = {
+                        requestCloseTagEditor()
+                    },
+                    onSaveClick = { editedTags ->
+                        tagEditorActions.saveTags(
+                            selectedSongForTagEdit,
+                            editedTags,
+                            selectedArtworkUriForTagEdit
+                        )
+                    },
+                    onUnsavedChangesChanged = { hasChanges ->
+                        hasUnsavedTagChanges = hasChanges
+                    },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
+                )
+            } else {
+                MusicScreenBody(
+                    songs = songs,
+                    mediaAccessState = mediaAccessState,
+                    isLibraryLoading = isLibraryLoading,
+                    libraryErrorMessage = libraryErrorMessage,
+                    onRequestAudioAccess = onRequestAudioAccess,
+                    onRequestArtworkAccess = onRequestArtworkAccess,
+                    onOpenAppSettings = onOpenAppSettings,
+                    currentSong = currentSong,
+                    isPlayerConnected = isPlayerConnected,
+                    previousHistoryCount = previousHistoryCount,
+                    forwardHistoryCount = forwardHistoryCount,
+                    isPlaying = isPlaying,
+                    isShuffleEnabled = isShuffleEnabled,
+                    repeatMode = repeatMode,
+                    playbackProgressUiState = playbackProgressUiState,
+                    queuedSongs = queuedSongs,
+                    upcomingSongs = upcomingSongs,
+                    libraryFolders = libraryFolders,
+                    folderSelectionMode = folderSelectionMode,
+                    selectedLibraryFolders = selectedLibraryFolders,
+                    favoriteMembershipKeys = favoriteMembershipKeys,
+                    unresolvedFavoriteCount = unresolvedFavoriteCount,
+                    unresolvedPlaylistRowCount = unresolvedPlaylistRowCount,
+                    unresolvedListeningHistoryCount = unresolvedListeningHistoryCount,
+                    playlists = playlists,
+                    selectedPlaylistName = selectedPlaylistName,
+                    selectedPlaylistSongs = selectedPlaylistSongs,
+                    mainDestination = mainDestination,
+                    selectedLibraryTab = selectedLibraryTab,
+                    selectedArtistName = selectedArtistName,
+                    selectedAlbumFolderPath = selectedAlbumFolderPath,
+                    selectedPlaylistId = selectedPlaylistId,
+                    searchQuery = searchQuery,
+                    selectedSongSortOption = selectedSongSortOption,
+                    selectedArtistSortOption = selectedArtistSortOption,
+                    selectedAlbumSortOption = selectedAlbumSortOption,
+                    selectedFavoriteSortOption = selectedFavoriteSortOption,
+                    recentlyAddedSongIds = recentlyAddedSongIds,
+                    isPlayerExpanded = isPlayerExpanded,
+                    isFolderScreenVisible = isFolderScreenVisible,
+                    isSettingsScreenVisible = isSettingsScreenVisible,
+                    isDiagnosticsScreenVisible = isDiagnosticsScreenVisible,
+                    isEqualizerScreenVisible =
+                        isEqualizerScreenVisible,
+                    queueSnackbarActions = queueSnackbarActions,
+                    onSettingsClick = {
+                        isSettingsScreenVisible = true
+                    },
+                    onOpenLibrary = { tab ->
+                        selectedLibraryTab = tab
+                        selectedArtistName = null
+                        selectedAlbumFolderPath = null
+                        selectedPlaylistId = null
+                        searchQuery = ""
+                        mainDestination = MainDestination.LIBRARY
+                    },
+                    onFolderBackClick = {
+                        isFolderScreenVisible = false
+                        isSettingsScreenVisible = true
+                    },
+                    onSettingsBackClick = {
+                        isSettingsScreenVisible = false
+                    },
+                    onDiagnosticsClick = {
+                        isSettingsScreenVisible = false
+                        isDiagnosticsScreenVisible = true
+                    },
+                    onDiagnosticsBackClick = {
+                        isDiagnosticsScreenVisible = false
+                        isSettingsScreenVisible = true
+                    },
+                    onEqualizerClick = {
+                        isSettingsScreenVisible = false
+                        isEqualizerScreenVisible = true
+                    },
+                    onEqualizerBackClick = {
                         equalizerActions.onBack()
                         isEqualizerScreenVisible = false
                         isSettingsScreenVisible = true
-                    }
-                ),
-                libraryAppearanceUiState = libraryAppearanceUiState,
-                onLibraryViewOptionSelected = onLibraryViewOptionSelected,
-                bottomContentPadding = bottomContentPadding,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-
-        if (shouldShowBottomMiniPlayer) {
-            PlaybackProgress(playbackProgressUiState) { progress ->
-            MiniPlayerSection(
-                currentSong = currentSong,
-                isPlaying = isPlaying,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                currentPosition = progress.currentPosition,
-                duration = progress.duration,
-                selectedPlayerTheme = selectedPlayerTheme,
-                selectedPlayerThemeTokens = selectedPlayerThemeTokens,
-                playerMorphState = playerMorphState,
-                favoriteMembershipKeys = favoriteMembershipKeys,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onExpandClick = {
-                    playerMorphState.expand()
-                },
-                onOpenUpNextClick = {
-                    selectedLibraryTab = LibraryTab.QUEUE
-                    selectedArtistName = null
-                    selectedAlbumFolderPath = null
-                    selectedPlaylistId = null
-                    mainDestination = MainDestination.LIBRARY
-                },
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                isSleepTimerActive = isSleepTimerActive,
-                sleepTimerDisplayText = sleepTimerDisplayText,
-                onSleepTimerClick = {
-                    isSleepTimerDialogVisible = true
-                },
-                onMiniPlayerBoundsChanged = playerEndpointBounds::updateMini,
-                defaultMorphBounds = defaultMorphBounds,
-                classicMorphBounds = classicMorphBounds,
-                retroRackMorphBounds = retroRackMorphBounds,
-                defaultMorphCallbacks = when (selectedPlayerTheme) {
-                    PlayerTheme.DEFAULT -> defaultMiniMorphCallbacks
-                    PlayerTheme.CLASSIC_WHEEL -> classicMiniMorphCallbacks
-                    PlayerTheme.RETRO_RACK -> retroRackMiniMorphCallbacks
-                    else -> null
-                },
-                morphOwnsVisuals = defaultMorphOwnsVisuals || classicWheelMorphOwnsVisuals || retroRackMorphOwnsVisuals,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = AppBottomNavigationHeight)
-                    .playerEndpointInput(playerMorphState.isCollapsedAndIdle)
-            )
-            }
-        }
-
-        if (shouldShowBottomNavigation) {
-            AppBottomNavigation(
-                selectedDestination = mainDestination,
-                onDestinationSelected = { destination ->
-                    selectedArtistName = null
-                    selectedAlbumFolderPath = null
-                    selectedPlaylistId = null
-                    if (destination == MainDestination.SEARCH) {
+                    },
+                    onLibraryFoldersClick = {
+                        isSettingsScreenVisible = false
+                        isFolderScreenVisible = true
+                    },
+                    onExportBackupClick = onExportBackupClick,
+                    onRestoreBackupClick = onRestoreBackupClick,
+                    onLibraryFolderToggle = onLibraryFolderToggle,
+                    onSelectAllLibraryFolders = onSelectAllLibraryFolders,
+                    onClearSelectedLibraryFolders = onClearSelectedLibraryFolders,
+                    onSearchQueryChange = { query ->
+                        searchQuery = query
+                    },
+                    onSongSortOptionSelected = { option ->
+                        selectedSongSortOption = option
+                    },
+                    onArtistSortOptionSelected = { option ->
+                        selectedArtistSortOption = option
+                    },
+                    onAlbumSortOptionSelected = { option ->
+                        selectedAlbumSortOption = option
+                    },
+                    onFavoriteSortOptionSelected = { option ->
+                        selectedFavoriteSortOption = option
+                    },
+                    onExpandPlayerClick = {
+                        playerMorphState.expand()
+                    },
+                    onMiniPlayerUpNextClick = {
+                        selectedLibraryTab = LibraryTab.QUEUE
+                        selectedArtistName = null
+                        selectedAlbumFolderPath = null
+                        selectedPlaylistId = null
+                        mainDestination = MainDestination.LIBRARY
+                    },
+                    onSongClick = { song, playbackContext ->
+                        recordPlaybackLaunchContext()
+                        onSongClick(song, playbackContext)
+                    },
+                    onPlaySongsClick = { playbackContext, shuffle ->
+                        recordPlaybackLaunchContext()
+                        onPlaySongsClick(playbackContext, shuffle)
+                    },
+                    onPlayPauseClick = onPlayPauseClick,
+                    onPreviousClick = onPreviousClick,
+                    onNextClick = onNextClick,
+                    onSeekChange = onSeekChange,
+                    onShuffleClick = onShuffleClick,
+                    onRepeatClick = onRepeatClick,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    onAddToPlaylistClick = { song ->
+                        songPendingPlaylistAdd = song
+                    },
+                    onAddSongsToPlaylistClick = { songs ->
+                        songsPendingPlaylistAdd = songs
+                    },
+                    onArtistSelected = { artistName ->
+                        selectedArtistName = artistName
+                    },
+                    onBackFromArtist = {
+                        selectedArtistName = null
+                    },
+                    onAlbumSelected = { albumFolderPath ->
+                        selectedAlbumFolderPath = albumFolderPath
+                    },
+                    onBackFromAlbum = {
+                        selectedAlbumFolderPath = null
+                    },
+                    onBackFromQueue = {
                         selectedLibraryTab = LibraryTab.SONGS
-                    }
-                    if (destination != MainDestination.SEARCH) {
-                        searchQuery = ""
-                    }
-                    mainDestination = destination
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-            )
-        }
+                        mainDestination = MainDestination.LIBRARY
+                    },
+                    onRemoveFromQueueClick = onRemoveFromQueueClick,
+                    onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+                    onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+                    onClearQueueClick = onClearQueueClick,
+                    onCreatePlaylistClick = {
+                        isCreatePlaylistDialogVisible = true
+                    },
+                    onRenamePlaylistClick = onRenamePlaylistClick,
+                    onPlaylistClick = { playlist ->
+                        selectedPlaylistId = playlist.playlistId
+                        onPlaylistSelected(playlist)
+                    },
+                    onDeletePlaylistClick = onDeletePlaylistClick,
+                    onExportPlaylistClick = onExportPlaylistClick,
+                    onImportPlaylistClick = onImportPlaylistClick,
+                    onBackFromPlaylist = {
+                        selectedPlaylistId = null
+                    },
+                    onRemovePlaylistSongClick = { playlistSong ->
+                        playlistSnackbarActions.removePlaylistSong(playlistSong)
+                    },
+                    onMovePlaylistSongUpClick = onMovePlaylistSongUpClick,
+                    onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
+                    onEditSongTagsClick = { song ->
+                        isTagSaveInProgress = false
+                        hasUnsavedTagChanges = false
+                        isDiscardTagChangesDialogVisible = false
+                        selectedArtworkUriForTagEdit = null
+                        songPendingTagEdit = song
+                    },
+                    isSleepTimerActive = isSleepTimerActive,
+                    sleepTimerDisplayText = sleepTimerDisplayText,
+                    onSleepTimerClick = {
+                        isSleepTimerDialogVisible = true
+                    },
+                    recentlyPlayedSongs = recentlyPlayedSongs,
+                    recentlyAddedLibrarySongs = recentlyAddedLibrarySongs,
+                    mostPlayedSongs = mostPlayedSongs,
+                    selectedPlayerTheme = selectedPlayerTheme,
+                    selectedPlayerThemeTokens = selectedPlayerThemeTokens,
+                    onPlayerThemeSelected = onPlayerThemeSelected,
+                    onUpdatePlayerThemeTokenOverride = onUpdatePlayerThemeTokenOverride,
+                    onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
+                    selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
+                    onModernArtworkTransitionStyleSelected = onModernArtworkTransitionStyleSelected,
+                    selectedModernSeekbarStyle = selectedModernSeekbarStyle,
+                    onModernSeekbarStyleSelected = onModernSeekbarStyleSelected,
+                    selectedReplayGainMode = selectedReplayGainMode,
+                    onReplayGainModeSelected = onReplayGainModeSelected,
+                    selectedAudioOffloadPreference = selectedAudioOffloadPreference,
+                    onAudioOffloadPreferenceSelected = onAudioOffloadPreferenceSelected,
+                    audioOutputUiState = audioOutputUiState,
+                    equalizerScreenState =
+                        equalizerScreenState,
+                    equalizerActions = equalizerActions.copy(
+                        onBack = {
+                            equalizerActions.onBack()
+                            isEqualizerScreenVisible = false
+                            isSettingsScreenVisible = true
+                        }
+                    ),
+                    libraryAppearanceUiState = libraryAppearanceUiState,
+                    onLibraryViewOptionSelected = onLibraryViewOptionSelected,
+                    bottomContentPadding = bottomContentPadding,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
 
-        if (isDiscardTagChangesDialogVisible) {
-            DiscardTagChangesDialog(
-                onDismiss = {
-                    isDiscardTagChangesDialogVisible = false
-                },
-                onConfirmDiscardClick = {
-                    isDiscardTagChangesDialogVisible = false
-                    hasUnsavedTagChanges = false
-                    selectedArtworkUriForTagEdit = null
-                    songPendingTagEdit = null
+            if (shouldShowBottomMiniPlayer) {
+                PlaybackProgress(playbackProgressUiState) { progress ->
+                    MiniPlayerSection(
+                        currentSong = currentSong,
+                        isPlaying = isPlaying,
+                        isShuffleEnabled = isShuffleEnabled,
+                        repeatMode = repeatMode,
+                        currentPosition = progress.currentPosition,
+                        duration = progress.duration,
+                        selectedPlayerTheme = selectedPlayerTheme,
+                        selectedPlayerThemeTokens = selectedPlayerThemeTokens,
+                        playerMorphState = playerMorphState,
+                        favoriteMembershipKeys = favoriteMembershipKeys,
+                        onPlayPauseClick = onPlayPauseClick,
+                        onPreviousClick = onPreviousClick,
+                        onNextClick = onNextClick,
+                        onSeekChange = onSeekChange,
+                        onShuffleClick = onShuffleClick,
+                        onRepeatClick = onRepeatClick,
+                        onExpandClick = {
+                            playerMorphState.expand()
+                        },
+                        onOpenUpNextClick = {
+                            selectedLibraryTab = LibraryTab.QUEUE
+                            selectedArtistName = null
+                            selectedAlbumFolderPath = null
+                            selectedPlaylistId = null
+                            mainDestination = MainDestination.LIBRARY
+                        },
+                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        isSleepTimerActive = isSleepTimerActive,
+                        sleepTimerDisplayText = sleepTimerDisplayText,
+                        onSleepTimerClick = {
+                            isSleepTimerDialogVisible = true
+                        },
+                        onMiniPlayerBoundsChanged = playerEndpointBounds::updateMini,
+                        defaultMorphBounds = defaultMorphBounds,
+                        classicMorphBounds = classicMorphBounds,
+                        retroRackMorphBounds = retroRackMorphBounds,
+                        pocketFlipMorphBounds = pocketFlipMorphBounds,
+                        pocketCassetteMorphBounds = pocketCassetteMorphBounds,
+                        defaultMorphCallbacks = when (selectedPlayerTheme) {
+                            PlayerTheme.DEFAULT -> defaultMiniMorphCallbacks
+                            PlayerTheme.CLASSIC_WHEEL -> classicMiniMorphCallbacks
+                            PlayerTheme.RETRO_RACK -> retroRackMiniMorphCallbacks
+                            PlayerTheme.POCKET_FLIP -> pocketFlipMiniMorphCallbacks
+                            PlayerTheme.POCKET_CASSETTE -> pocketCassetteMiniMorphCallbacks
+                            else -> null
+                        },
+                        morphOwnsVisuals = defaultMorphOwnsVisuals ||
+                                classicWheelMorphOwnsVisuals ||
+                                retroRackMorphOwnsVisuals ||
+                                pocketFlipMorphOwnsVisuals ||
+                                pocketCassetteMorphOwnsVisuals,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .navigationBarsPadding()
+                            .padding(bottom = AppBottomNavigationHeight)
+                            .playerEndpointInput(playerMorphState.isCollapsedAndIdle)
+                    )
                 }
-            )
-        }
+            }
 
-        if (selectedSongForTagEdit == null) {
-            MusicScreenOverlays(
-                playerMorphState = playerMorphState,
-                isLyricsVisible = isLyricsVisible,
-                lyricsTransitionState = lyricsTransitionState,
-                currentSong = currentSong,
-                previousPreviewSong = previousPreviewSong,
-                nextPreviewSong = nextPreviewSong,
-                isPlaying = isPlaying,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                playbackProgressUiState = playbackProgressUiState,
-                favoriteMembershipKeys = favoriteMembershipKeys,
-                isExpandedUpNextSheetVisible = isExpandedUpNextSheetVisible,
-                queuedSongs = queuedSongs,
-                upcomingSongs = upcomingSongs,
-                isCreatePlaylistDialogVisible = isCreatePlaylistDialogVisible,
-                songPendingPlaylistAdd = songPendingPlaylistAdd,
-                playlists = playlists,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                lyricsPlaybackUiState = lyricsPlaybackUiState,
-                onSuspendLyricsAutoFollow = onSuspendLyricsAutoFollow,
-                onReturnLyricsToCurrentLine = onReturnLyricsToCurrentLine,
-                onRescanLyrics = onRescanLyrics,
-                onOpenLyricsSettings = {
-                    lyricsTransitionState.snapToExpanded()
-                    playerMorphState.collapse()
-                    isSettingsScreenVisible = true
-                },
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onCollapseExpandedPlayer = {
-                    playerMorphState.collapse()
-                    restorePlaybackLaunchContext()
-                },
-                onShowExpandedUpNextSheet = {
-                    isExpandedUpNextSheetVisible = true
-                },
-                onShowExpandedSleepTimer = {
-                    isSleepTimerDialogVisible = true
-                },
-                onShowExpandedMore = {
-                    playerMorphState.collapse()
-                    restorePlaybackLaunchContext()
-                    isSettingsScreenVisible = true
-                },
-                onDismissExpandedUpNextSheet = {
-                    isExpandedUpNextSheetVisible = false
-                },
-                onRemoveFromQueueClick = onRemoveFromQueueClick,
-                onMoveQueueItemUpClick = onMoveQueueItemUpClick,
-                onMoveQueueItemDownClick = onMoveQueueItemDownClick,
-                onClearQueueClick = onClearQueueClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                onDismissCreatePlaylistDialog = {
-                    isCreatePlaylistDialogVisible = false
-                },
-                onCreatePlaylistClick = onCreatePlaylistClick,
-                onDismissAddToPlaylistDialog = {
-                    songPendingPlaylistAdd = null
-                },
-                songsPendingPlaylistAdd = songsPendingPlaylistAdd,
-                onDismissBulkAddToPlaylistDialog = {
-                    songsPendingPlaylistAdd = emptyList()
-                },
-                onAddSongToPlaylistClick = { playlist, song ->
-                    playlistSnackbarActions.addSongToPlaylist(playlist, song)
-                },
-                onAddSongsToPlaylistClick = { playlist, songs ->
-                    playlistSnackbarActions.addSongsToPlaylist(playlist, songs)
-                },
-                isSleepTimerDialogVisible = isSleepTimerDialogVisible,
-                isSleepTimerActive = isSleepTimerActive,
-                sleepTimerDisplayText = sleepTimerDisplayText,
-                onStartSleepTimerClick = onStartSleepTimerClick,
-                onCancelSleepTimerClick = onCancelSleepTimerClick,
-                onDismissSleepTimerDialog = {
-                    isSleepTimerDialogVisible = false
-                },
-                selectedPlayerTheme = selectedPlayerTheme,
-                selectedPlayerThemeTokens = selectedPlayerThemeTokens,
-                selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
-                selectedModernSeekbarStyle = selectedModernSeekbarStyle,
-                playerEndpointBounds = playerEndpointBounds,
-                defaultMorphBounds = defaultMorphBounds,
-                classicMorphBounds = classicMorphBounds,
-                retroRackMorphBounds = retroRackMorphBounds,
-                songs = songs,
-                onSongClick = onSongClick
-            )
-        }
+            if (shouldShowBottomNavigation) {
+                AppBottomNavigation(
+                    selectedDestination = mainDestination,
+                    onDestinationSelected = { destination ->
+                        selectedArtistName = null
+                        selectedAlbumFolderPath = null
+                        selectedPlaylistId = null
+                        if (destination == MainDestination.SEARCH) {
+                            selectedLibraryTab = LibraryTab.SONGS
+                        }
+                        if (destination != MainDestination.SEARCH) {
+                            searchQuery = ""
+                        }
+                        mainDestination = destination
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                )
+            }
+
+            if (isDiscardTagChangesDialogVisible) {
+                DiscardTagChangesDialog(
+                    onDismiss = {
+                        isDiscardTagChangesDialogVisible = false
+                    },
+                    onConfirmDiscardClick = {
+                        isDiscardTagChangesDialogVisible = false
+                        hasUnsavedTagChanges = false
+                        selectedArtworkUriForTagEdit = null
+                        songPendingTagEdit = null
+                    }
+                )
+            }
+
+            if (selectedSongForTagEdit == null) {
+                MusicScreenOverlays(
+                    playerMorphState = playerMorphState,
+                    isLyricsVisible = isLyricsVisible,
+                    lyricsTransitionState = lyricsTransitionState,
+                    currentSong = currentSong,
+                    previousPreviewSong = previousPreviewSong,
+                    nextPreviewSong = nextPreviewSong,
+                    isPlaying = isPlaying,
+                    isShuffleEnabled = isShuffleEnabled,
+                    repeatMode = repeatMode,
+                    playbackProgressUiState = playbackProgressUiState,
+                    favoriteMembershipKeys = favoriteMembershipKeys,
+                    isExpandedUpNextSheetVisible = isExpandedUpNextSheetVisible,
+                    queuedSongs = queuedSongs,
+                    upcomingSongs = upcomingSongs,
+                    isCreatePlaylistDialogVisible = isCreatePlaylistDialogVisible,
+                    songPendingPlaylistAdd = songPendingPlaylistAdd,
+                    playlists = playlists,
+                    onPlayPauseClick = onPlayPauseClick,
+                    onPreviousClick = onPreviousClick,
+                    onNextClick = onNextClick,
+                    onSeekChange = onSeekChange,
+                    lyricsPlaybackUiState = lyricsPlaybackUiState,
+                    onSuspendLyricsAutoFollow = onSuspendLyricsAutoFollow,
+                    onReturnLyricsToCurrentLine = onReturnLyricsToCurrentLine,
+                    onRescanLyrics = onRescanLyrics,
+                    onOpenLyricsSettings = {
+                        lyricsTransitionState.snapToExpanded()
+                        playerMorphState.collapse()
+                        isSettingsScreenVisible = true
+                    },
+                    onShuffleClick = onShuffleClick,
+                    onRepeatClick = onRepeatClick,
+                    onCollapseExpandedPlayer = {
+                        playerMorphState.collapse()
+                        restorePlaybackLaunchContext()
+                    },
+                    onShowExpandedUpNextSheet = {
+                        isExpandedUpNextSheetVisible = true
+                    },
+                    onShowExpandedSleepTimer = {
+                        isSleepTimerDialogVisible = true
+                    },
+                    onShowExpandedMore = {
+                        playerMorphState.collapse()
+                        restorePlaybackLaunchContext()
+                        isSettingsScreenVisible = true
+                    },
+                    onDismissExpandedUpNextSheet = {
+                        isExpandedUpNextSheetVisible = false
+                    },
+                    onRemoveFromQueueClick = onRemoveFromQueueClick,
+                    onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+                    onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+                    onClearQueueClick = onClearQueueClick,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    onDismissCreatePlaylistDialog = {
+                        isCreatePlaylistDialogVisible = false
+                    },
+                    onCreatePlaylistClick = onCreatePlaylistClick,
+                    onDismissAddToPlaylistDialog = {
+                        songPendingPlaylistAdd = null
+                    },
+                    songsPendingPlaylistAdd = songsPendingPlaylistAdd,
+                    onDismissBulkAddToPlaylistDialog = {
+                        songsPendingPlaylistAdd = emptyList()
+                    },
+                    onAddSongToPlaylistClick = { playlist, song ->
+                        playlistSnackbarActions.addSongToPlaylist(playlist, song)
+                    },
+                    onAddSongsToPlaylistClick = { playlist, songs ->
+                        playlistSnackbarActions.addSongsToPlaylist(playlist, songs)
+                    },
+                    isSleepTimerDialogVisible = isSleepTimerDialogVisible,
+                    isSleepTimerActive = isSleepTimerActive,
+                    sleepTimerDisplayText = sleepTimerDisplayText,
+                    onStartSleepTimerClick = onStartSleepTimerClick,
+                    onCancelSleepTimerClick = onCancelSleepTimerClick,
+                    onDismissSleepTimerDialog = {
+                        isSleepTimerDialogVisible = false
+                    },
+                    selectedPlayerTheme = selectedPlayerTheme,
+                    selectedPlayerThemeTokens = selectedPlayerThemeTokens,
+                    selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
+                    selectedModernSeekbarStyle = selectedModernSeekbarStyle,
+                    playerEndpointBounds = playerEndpointBounds,
+                    defaultMorphBounds = defaultMorphBounds,
+                    classicMorphBounds = classicMorphBounds,
+                    retroRackMorphBounds = retroRackMorphBounds,
+                    pocketFlipMorphBounds = pocketFlipMorphBounds,
+                    pocketCassetteMorphBounds = pocketCassetteMorphBounds,
+                    songs = songs,
+                    onSongClick = onSongClick
+                )
+            }
         }
     }
 }
