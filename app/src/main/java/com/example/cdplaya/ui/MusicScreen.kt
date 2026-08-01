@@ -3,6 +3,7 @@ package com.example.cdplaya.ui
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -85,6 +87,7 @@ import com.example.cdplaya.ui.tageditor.DiscardTagChangesDialog
 import com.example.cdplaya.ui.tageditor.TagEditorScreen
 import com.example.cdplaya.ui.tageditor.rememberTagEditorActions
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import com.example.cdplaya.mediaaccess.MediaAccessState
 import com.example.cdplaya.lyrics.LyricsPlaybackUiState
 import kotlin.math.abs
@@ -209,6 +212,8 @@ internal fun MusicScreen(
     var selectedFavoriteSortOption by navigationState.selectedFavoriteSortOption
 
     val overlayState = rememberMusicOverlayState()
+    val settingsScrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
     val playerMorphState = overlayState.playerMorphState
     val isPlayerExpanded = playerMorphState.isExpandedOrTransitioning
     var isLyricsVisible by rememberSaveable { mutableStateOf(false) }
@@ -297,6 +302,13 @@ internal fun MusicScreen(
             songPendingTagEdit = null
             hasUnsavedTagChanges = false
             selectedArtworkUriForTagEdit = null
+        }
+    }
+
+    fun closeSettings() {
+        isSettingsScreenVisible = false
+        coroutineScope.launch {
+            settingsScrollState.scrollTo(0)
         }
     }
 
@@ -418,7 +430,7 @@ internal fun MusicScreen(
             }
 
             isSettingsScreenVisible -> {
-                isSettingsScreenVisible = false
+                closeSettings()
             }
 
             selectedArtistName != null -> {
@@ -716,7 +728,7 @@ internal fun MusicScreen(
                         isSettingsScreenVisible = true
                     },
                     onSettingsBackClick = {
-                        isSettingsScreenVisible = false
+                        closeSettings()
                     },
                     onDiagnosticsClick = {
                         isSettingsScreenVisible = false
@@ -869,6 +881,7 @@ internal fun MusicScreen(
                     ),
                     libraryAppearanceUiState = libraryAppearanceUiState,
                     onLibraryViewOptionSelected = onLibraryViewOptionSelected,
+                    settingsScrollState = settingsScrollState,
                     bottomContentPadding = bottomContentPadding,
                     modifier = Modifier.fillMaxSize()
                 )
