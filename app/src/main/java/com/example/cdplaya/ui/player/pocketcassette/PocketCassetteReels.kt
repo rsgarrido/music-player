@@ -25,7 +25,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,7 +54,12 @@ internal fun PocketCassetteWindow(
     currentPosition: Int,
     duration: Int,
     compact: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    windowReveal: Float = 1f,
+    mechanismReveal: Float = 1f,
+    morphBounds: PocketCassetteMorphBounds? = null,
+    sharedOwner: PocketCassetteSharedOwner = PocketCassetteSharedOwner.EXPANDED,
+    collapseDragModifier: Modifier = Modifier
 ) {
     val colors = PocketCassetteColors
     val playbackProgress = if (duration > 0) {
@@ -63,6 +72,8 @@ internal fun PocketCassetteWindow(
     Box(
         modifier = modifier
             .fillMaxWidth()
+            .graphicsLayer { alpha = windowReveal.coerceIn(0f, 1f) }
+            .then(collapseDragModifier)
             .pocketCassetteBluePanelFinish(10.dp)
             .padding(if (compact) 10.dp else 14.dp)
     ) {
@@ -110,17 +121,28 @@ internal fun PocketCassetteWindow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .onGloballyPositioned { coordinates ->
+                        morphBounds?.updateExpandedArtwork(coordinates.boundsInRoot())
+                    }
                     .clip(RoundedCornerShape(7.dp))
-                    .background(PocketCassetteColors.window)
+                    .background(
+                        if (sharedOwner == PocketCassetteSharedOwner.EXPANDED) {
+                            PocketCassetteColors.window
+                        } else {
+                            Color.Transparent
+                        }
+                    )
             ) {
-                AsyncImage(
-                    model = currentSong?.albumArtUri,
-                    contentDescription = "Album artwork cassette label",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(2.dp)
-                )
+                if (sharedOwner == PocketCassetteSharedOwner.EXPANDED) {
+                    AsyncImage(
+                        model = currentSong?.albumArtUri,
+                        contentDescription = "Album artwork cassette label",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(2.dp)
+                    )
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -135,6 +157,7 @@ internal fun PocketCassetteWindow(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(bottom = trackLabelHeight)
+                        .graphicsLayer { alpha = mechanismReveal.coerceIn(0f, 1f) }
                 )
 
                 PocketCassetteTrackLabel(
@@ -142,6 +165,8 @@ internal fun PocketCassetteWindow(
                     currentPosition = currentPosition,
                     duration = duration,
                     compact = compact,
+                    morphBounds = morphBounds,
+                    sharedOwner = sharedOwner,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .height(trackLabelHeight)
@@ -181,89 +206,89 @@ private fun PocketCassetteMechanism(
     )
     Canvas(modifier = modifier) {
         tracePerformance(PerformanceTraceNames.POCKET_CASSETTE_DRAW) {
-        VisualizerPerformanceCounters.onDraw()
-        val rotation = phase.value * 360f
-        val leftCenter = Offset(size.width * 0.29f, size.height * 0.44f)
-        val rightCenter = Offset(size.width * 0.71f, size.height * 0.44f)
-        val radius = min(size.width * 0.155f, size.height * if (compact) 0.27f else 0.25f)
-            .coerceAtLeast(22.dp.toPx())
-        val rollerY = (size.height * 0.88f).coerceAtLeast(leftCenter.y + radius * 0.95f)
-        val rollerRadius = radius * 0.13f
-        val emptyTapeRadius = radius * 0.42f
-        val fullTapeRadius = radius * 0.89f
-        val leftTapeRadius = fullTapeRadius -
-                (fullTapeRadius - emptyTapeRadius) * playbackProgress
-        val rightTapeRadius = emptyTapeRadius +
-                (fullTapeRadius - emptyTapeRadius) * playbackProgress
+            VisualizerPerformanceCounters.onDraw()
+            val rotation = phase.value * 360f
+            val leftCenter = Offset(size.width * 0.29f, size.height * 0.44f)
+            val rightCenter = Offset(size.width * 0.71f, size.height * 0.44f)
+            val radius = min(size.width * 0.155f, size.height * if (compact) 0.27f else 0.25f)
+                .coerceAtLeast(22.dp.toPx())
+            val rollerY = (size.height * 0.88f).coerceAtLeast(leftCenter.y + radius * 0.95f)
+            val rollerRadius = radius * 0.13f
+            val emptyTapeRadius = radius * 0.42f
+            val fullTapeRadius = radius * 0.89f
+            val leftTapeRadius = fullTapeRadius -
+                    (fullTapeRadius - emptyTapeRadius) * playbackProgress
+            val rightTapeRadius = emptyTapeRadius +
+                    (fullTapeRadius - emptyTapeRadius) * playbackProgress
 
-        drawLine(
-            color = colors.tape,
-            start = Offset(
-                leftCenter.x - leftTapeRadius * 0.88f,
-                leftCenter.y + leftTapeRadius * 0.58f
-            ),
-            end = Offset(leftCenter.x - radius * 0.32f, rollerY),
-            strokeWidth = 3.dp.toPx()
-        )
-        drawLine(
-            color = colors.tape,
-            start = Offset(leftCenter.x - radius * 0.32f, rollerY),
-            end = Offset(rightCenter.x + radius * 0.32f, rollerY),
-            strokeWidth = 3.dp.toPx()
-        )
-        drawLine(
-            color = colors.tape,
-            start = Offset(rightCenter.x + radius * 0.32f, rollerY),
-            end = Offset(
-                rightCenter.x + rightTapeRadius * 0.88f,
-                rightCenter.y + rightTapeRadius * 0.58f
-            ),
-            strokeWidth = 3.dp.toPx()
-        )
+            drawLine(
+                color = colors.tape,
+                start = Offset(
+                    leftCenter.x - leftTapeRadius * 0.88f,
+                    leftCenter.y + leftTapeRadius * 0.58f
+                ),
+                end = Offset(leftCenter.x - radius * 0.32f, rollerY),
+                strokeWidth = 3.dp.toPx()
+            )
+            drawLine(
+                color = colors.tape,
+                start = Offset(leftCenter.x - radius * 0.32f, rollerY),
+                end = Offset(rightCenter.x + radius * 0.32f, rollerY),
+                strokeWidth = 3.dp.toPx()
+            )
+            drawLine(
+                color = colors.tape,
+                start = Offset(rightCenter.x + radius * 0.32f, rollerY),
+                end = Offset(
+                    rightCenter.x + rightTapeRadius * 0.88f,
+                    rightCenter.y + rightTapeRadius * 0.58f
+                ),
+                strokeWidth = 3.dp.toPx()
+            )
 
-        fun drawRoller(rollerCenter: Offset) {
-            drawCircle(
+            fun drawRoller(rollerCenter: Offset) {
+                drawCircle(
+                    color = colors.reelHub,
+                    radius = rollerRadius,
+                    center = rollerCenter
+                )
+                drawCircle(
+                    color = colors.reel,
+                    radius = rollerRadius,
+                    center = rollerCenter,
+                    style = Stroke(width = 1.dp.toPx())
+                )
+            }
+            drawRoller(Offset(leftCenter.x - radius * 0.28f, rollerY))
+            drawRoller(Offset(rightCenter.x + radius * 0.28f, rollerY))
+
+            drawReel(
+                center = leftCenter,
+                radius = radius,
+                tapeRadius = leftTapeRadius,
+                rotation = rotation,
+                colors = colors
+            )
+            drawReel(
+                center = rightCenter,
+                radius = radius,
+                tapeRadius = rightTapeRadius,
+                rotation = rotation,
+                colors = colors
+            )
+
+            val headWidth = radius * 0.52f
+            drawRect(
                 color = colors.reelHub,
-                radius = rollerRadius,
-                center = rollerCenter
+                topLeft = Offset(size.width / 2f - headWidth / 2f, rollerY - radius * 0.08f),
+                size = Size(headWidth, radius * 0.18f)
             )
-            drawCircle(
-                color = colors.reel,
-                radius = rollerRadius,
-                center = rollerCenter,
-                style = Stroke(width = 1.dp.toPx())
+            drawLine(
+                color = colors.orange.copy(alpha = 0.72f),
+                start = Offset(size.width / 2f - headWidth * 0.35f, rollerY + radius * 0.02f),
+                end = Offset(size.width / 2f + headWidth * 0.35f, rollerY + radius * 0.02f),
+                strokeWidth = 1.dp.toPx()
             )
-        }
-        drawRoller(Offset(leftCenter.x - radius * 0.28f, rollerY))
-        drawRoller(Offset(rightCenter.x + radius * 0.28f, rollerY))
-
-        drawReel(
-            center = leftCenter,
-            radius = radius,
-            tapeRadius = leftTapeRadius,
-            rotation = rotation,
-            colors = colors
-        )
-        drawReel(
-            center = rightCenter,
-            radius = radius,
-            tapeRadius = rightTapeRadius,
-            rotation = rotation,
-            colors = colors
-        )
-
-        val headWidth = radius * 0.52f
-        drawRect(
-            color = colors.reelHub,
-            topLeft = Offset(size.width / 2f - headWidth / 2f, rollerY - radius * 0.08f),
-            size = Size(headWidth, radius * 0.18f)
-        )
-        drawLine(
-            color = colors.orange.copy(alpha = 0.72f),
-            start = Offset(size.width / 2f - headWidth * 0.35f, rollerY + radius * 0.02f),
-            end = Offset(size.width / 2f + headWidth * 0.35f, rollerY + radius * 0.02f),
-            strokeWidth = 1.dp.toPx()
-        )
         }
     }
 }
@@ -340,6 +365,8 @@ private fun PocketCassetteTrackLabel(
     currentPosition: Int,
     duration: Int,
     compact: Boolean,
+    morphBounds: PocketCassetteMorphBounds? = null,
+    sharedOwner: PocketCassetteSharedOwner = PocketCassetteSharedOwner.EXPANDED,
     modifier: Modifier = Modifier
 ) {
     val colors = PocketCassetteColors
@@ -370,7 +397,19 @@ private fun PocketCassetteTrackLabel(
             fontSize = if (compact) 11.sp else 13.sp,
             lineHeight = if (compact) 13.sp else 15.sp,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { coordinates ->
+                    morphBounds?.updateExpandedTitle(coordinates.boundsInRoot())
+                }
+                .graphicsLayer {
+                    alpha = if (sharedOwner == PocketCassetteSharedOwner.EXPANDED) 1f else 0f
+                }
+                .then(
+                    if (sharedOwner == PocketCassetteSharedOwner.EXPANDED) Modifier
+                    else Modifier.clearAndSetSemantics { }
+                )
         )
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             androidx.compose.material3.Text(
@@ -380,7 +419,18 @@ private fun PocketCassetteTrackLabel(
                 fontSize = if (compact) 8.sp else 9.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .onGloballyPositioned { coordinates ->
+                        morphBounds?.updateExpandedArtist(coordinates.boundsInRoot())
+                    }
+                    .graphicsLayer {
+                        alpha = if (sharedOwner == PocketCassetteSharedOwner.EXPANDED) 1f else 0f
+                    }
+                    .then(
+                        if (sharedOwner == PocketCassetteSharedOwner.EXPANDED) Modifier
+                        else Modifier.clearAndSetSemantics { }
+                    )
             )
             androidx.compose.material3.Text(
                 text = "${formatPocketCassetteTime(currentPosition)} / ${formatPocketCassetteTime(duration)}",

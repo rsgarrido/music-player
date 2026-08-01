@@ -31,6 +31,15 @@ import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.player.modern.selectNearbyWaveformSongs
 import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteExpandedPlayer
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassettePlayerMorph
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteMorphBounds
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteMorphSpec
+import com.example.cdplaya.ui.player.pocketcassette.resolvePocketCassetteMorphGeometry
+import com.example.cdplaya.ui.player.pocketcassette.resolvePocketCassetteSharedGeometry
+import com.example.cdplaya.ui.player.pocketcassette.pocketCassetteSharedOwner
+import com.example.cdplaya.ui.player.pocketcassette.pocketCassetteMorphTravelDistance
+import com.example.cdplaya.ui.player.pocketcassette.pocketCassetteDistanceThreshold
+import com.example.cdplaya.ui.player.pocketcassette.shouldRunPocketCassetteExpandedWork
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipExpandedPlayer
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipPlayerMorph
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipMorphBounds
@@ -97,7 +106,8 @@ fun ExpandedPlayerThemeHost(
     defaultMorphBounds: DefaultPlayerMorphBounds,
     classicMorphBounds: ClassicWheelMorphBounds,
     retroRackMorphBounds: RetroRackMorphBounds,
-    pocketFlipMorphBounds: PocketFlipMorphBounds
+    pocketFlipMorphBounds: PocketFlipMorphBounds,
+    pocketCassetteMorphBounds: PocketCassetteMorphBounds
 ) {
     val shouldLoadWaveform = shouldLoadExpandedPlayerWaveform(
         selectedPlayerTheme = selectedPlayerTheme,
@@ -425,26 +435,80 @@ fun ExpandedPlayerThemeHost(
             }
 
             PlayerTheme.POCKET_CASSETTE -> {
-                PocketCassetteExpandedPlayer(
+                val geometry = resolvePocketCassetteMorphGeometry(
+                    progress = playerMorphState.progress,
+                    endpointBounds = endpointBounds
+                )
+                val sharedGeometry = resolvePocketCassetteSharedGeometry(
+                    progress = playerMorphState.progress,
+                    bounds = pocketCassetteMorphBounds
+                )
+                val sharedOwner = pocketCassetteSharedOwner(
+                    progress = playerMorphState.progress,
+                    geometryReady = sharedGeometry != null
+                )
+                val collapseGestureEnabled =
+                    playerMorphState.progress >= PocketCassetteMorphSpec.collapseGestureAt ||
+                            playerMorphState.isDragging
+
+                PocketCassettePlayerMorph(
+                    progress = playerMorphState.progress,
+                    geometry = geometry,
+                    sharedGeometry = sharedGeometry,
                     currentSong = currentSong,
-                    isVisualizerWorkAllowed = isVisualizerWorkAllowed,
                     isPlaying = isPlaying,
-                    isShuffleEnabled = isShuffleEnabled,
-                    repeatMode = repeatMode,
                     currentPosition = currentPosition,
                     duration = duration,
-                    isCurrentSongFavorite = isCurrentSongFavorite,
                     onPlayPauseClick = onPlayPauseClick,
-                    onPreviousClick = onPreviousClick,
-                    onNextClick = onNextClick,
-                    onSeekChange = onSeekChange,
-                    onShuffleClick = onShuffleClick,
-                    onRepeatClick = onRepeatClick,
-                    onCollapseClick = onCollapseClick,
-                    onOpenUpNextClick = onOpenUpNextClick,
-                    onToggleFavoriteClick = onToggleFavoriteClick,
                     tokens = tokens
-                )
+                ) { headerReveal, windowReveal, mechanismReveal, controlsReveal, inputEnabled ->
+                    PocketCassetteExpandedPlayer(
+                        currentSong = currentSong,
+                        isVisualizerWorkAllowed = isVisualizerWorkAllowed &&
+                                shouldRunPocketCassetteExpandedWork(playerMorphState.progress),
+                        isPlaying = isPlaying,
+                        isShuffleEnabled = isShuffleEnabled,
+                        repeatMode = repeatMode,
+                        currentPosition = currentPosition,
+                        duration = duration,
+                        isCurrentSongFavorite = isCurrentSongFavorite,
+                        onPlayPauseClick = onPlayPauseClick,
+                        onPreviousClick = onPreviousClick,
+                        onNextClick = onNextClick,
+                        onSeekChange = onSeekChange,
+                        onShuffleClick = onShuffleClick,
+                        onRepeatClick = onRepeatClick,
+                        onCollapseClick = onCollapseClick,
+                        onOpenUpNextClick = onOpenUpNextClick,
+                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        tokens = tokens,
+                        renderShell = false,
+                        headerReveal = headerReveal,
+                        windowReveal = windowReveal,
+                        mechanismReveal = mechanismReveal,
+                        controlsReveal = controlsReveal,
+                        inputEnabled = inputEnabled,
+                        collapseGestureEnabled = collapseGestureEnabled,
+                        morphBounds = pocketCassetteMorphBounds,
+                        sharedOwner = sharedOwner,
+                        onMorphDragStart = {
+                            val travel = pocketCassetteMorphTravelDistance(endpointBounds)
+                            playerMorphState.beginDragWithRange(
+                                progressRangePx = travel,
+                                distanceThresholdPx = pocketCassetteDistanceThreshold(travel)
+                            )
+                        },
+                        onMorphDragBy = playerMorphState::dragBy,
+                        onMorphDragEnd = { velocity ->
+                            playerMorphState.endDragWithVelocityThreshold(
+                                velocityY = velocity,
+                                velocityThresholdPxPerSecond =
+                                    PocketCassetteMorphSpec.collapseVelocityThresholdPxPerSecond
+                            )
+                        },
+                        onMorphDragCancel = playerMorphState::cancelDrag
+                    )
+                }
             }
 
         }

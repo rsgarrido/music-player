@@ -3,6 +3,9 @@ package com.example.cdplaya.ui.player.pocketcassette
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitVerticalTouchSlopOrCancellation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -30,12 +33,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.player.RepeatMode
@@ -60,64 +67,100 @@ fun PocketCassetteExpandedPlayer(
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
-    tokens: PlayerThemeTokens = PocketCassetteDefaultTokens
+    tokens: PlayerThemeTokens = PocketCassetteDefaultTokens,
+    renderShell: Boolean = true,
+    headerReveal: Float = 1f,
+    windowReveal: Float = 1f,
+    mechanismReveal: Float = 1f,
+    controlsReveal: Float = 1f,
+    inputEnabled: Boolean = true,
+    collapseGestureEnabled: Boolean = false,
+    morphBounds: PocketCassetteMorphBounds? = null,
+    sharedOwner: PocketCassetteSharedOwner = PocketCassetteSharedOwner.EXPANDED,
+    onMorphDragStart: () -> Unit = {},
+    onMorphDragBy: (Float) -> Unit = {},
+    onMorphDragEnd: (Float) -> Unit = {},
+    onMorphDragCancel: () -> Unit = {}
 ) {
     val palette = remember(tokens) { PocketCassettePalette.from(tokens) }
-    CompositionLocalProvider(LocalPocketCassettePalette provides palette) {
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .pocketCassetteShellFinish()
-    ) {
-        val compact = maxHeight < 700.dp || maxWidth < 360.dp
+    val safeCollapseDragModifier = Modifier.pocketCassetteDownwardCollapseGesture(
+        enabled = collapseGestureEnabled,
+        onDragStart = onMorphDragStart,
+        onDragBy = onMorphDragBy,
+        onDragEnd = onMorphDragEnd,
+        onDragCancel = onMorphDragCancel
+    )
 
-        Column(
+    CompositionLocalProvider(LocalPocketCassettePalette provides palette) {
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    horizontal = if (compact) 9.dp else 14.dp,
-                    vertical = if (compact) 7.dp else 12.dp
-                ),
-            verticalArrangement = Arrangement.spacedBy(if (compact) 7.dp else 10.dp)
+                .then(if (renderShell) Modifier.pocketCassetteShellFinish() else Modifier)
         ) {
-            PocketCassetteDeviceHeader(
-                isPlaying = isPlaying,
-                onCollapseClick = onCollapseClick,
-                compact = compact
-            )
+            val compact = maxHeight < 700.dp || maxWidth < 360.dp
 
-            PocketCassetteWindow(
-                currentSong = currentSong,
-                isPlaying = isPlaying,
-                isVisualizerWorkAllowed = isVisualizerWorkAllowed,
-                currentPosition = currentPosition,
-                duration = duration,
-                compact = compact,
-                modifier = Modifier.weight(1f)
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        horizontal = if (compact) 9.dp else 14.dp,
+                        vertical = if (compact) 7.dp else 12.dp
+                    ),
+                verticalArrangement = Arrangement.spacedBy(if (compact) 7.dp else 10.dp)
+            ) {
+                PocketCassetteDeviceHeader(
+                    isPlaying = isPlaying,
+                    onCollapseClick = onCollapseClick,
+                    compact = compact,
+                    inputEnabled = inputEnabled,
+                    headerReveal = headerReveal,
+                    safeDragModifier = safeCollapseDragModifier
+                )
 
-            PocketCassetteControls(
-                currentSong = currentSong,
-                isPlaying = isPlaying,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                currentPosition = currentPosition,
-                duration = duration,
-                isCurrentSongFavorite = isCurrentSongFavorite,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onOpenUpNextClick = onOpenUpNextClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                compact = compact
-            )
+                PocketCassetteWindow(
+                    currentSong = currentSong,
+                    isPlaying = isPlaying,
+                    isVisualizerWorkAllowed = isVisualizerWorkAllowed,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    compact = compact,
+                    modifier = Modifier.weight(1f),
+                    windowReveal = windowReveal,
+                    mechanismReveal = mechanismReveal,
+                    morphBounds = morphBounds,
+                    sharedOwner = sharedOwner,
+                    collapseDragModifier = safeCollapseDragModifier
+                )
 
-            PocketCassetteLowerSeam(compact = compact)
+                PocketCassetteControls(
+                    currentSong = currentSong,
+                    isPlaying = isPlaying,
+                    isShuffleEnabled = isShuffleEnabled,
+                    repeatMode = repeatMode,
+                    currentPosition = currentPosition,
+                    duration = duration,
+                    isCurrentSongFavorite = isCurrentSongFavorite,
+                    onPlayPauseClick = onPlayPauseClick,
+                    onPreviousClick = onPreviousClick,
+                    onNextClick = onNextClick,
+                    onSeekChange = onSeekChange,
+                    onShuffleClick = onShuffleClick,
+                    onRepeatClick = onRepeatClick,
+                    onOpenUpNextClick = onOpenUpNextClick,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    compact = compact,
+                    controlsReveal = controlsReveal,
+                    inputEnabled = inputEnabled,
+                    morphBounds = morphBounds,
+                    sharedOwner = sharedOwner
+                )
+
+                PocketCassetteLowerSeam(
+                    compact = compact,
+                    modifier = safeCollapseDragModifier
+                )
+            }
         }
-    }
     }
 }
 
@@ -125,18 +168,23 @@ fun PocketCassetteExpandedPlayer(
 private fun PocketCassetteDeviceHeader(
     isPlaying: Boolean,
     onCollapseClick: () -> Unit,
-    compact: Boolean
+    compact: Boolean,
+    inputEnabled: Boolean,
+    headerReveal: Float,
+    safeDragModifier: Modifier
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(if (compact) 48.dp else 54.dp),
+            .height(if (compact) 48.dp else 54.dp)
+            .graphicsLayer { alpha = headerReveal.coerceIn(0f, 1f) },
         verticalAlignment = Alignment.CenterVertically
     ) {
         PocketCassetteScrew(size = if (compact) 10.dp else 12.dp)
         Column(
             modifier = Modifier
                 .weight(1f)
+                .then(safeDragModifier)
                 .padding(start = if (compact) 7.dp else 10.dp),
             verticalArrangement = Arrangement.Center
         ) {
@@ -167,6 +215,7 @@ private fun PocketCassetteDeviceHeader(
         PocketCassetteCloseButton(
             onClick = onCollapseClick,
             compact = compact,
+            enabled = inputEnabled,
             modifier = Modifier.padding(start = if (compact) 6.dp else 8.dp)
         )
     }
@@ -233,6 +282,7 @@ private fun PocketCassetteBattery(compact: Boolean) {
 private fun PocketCassetteCloseButton(
     onClick: () -> Unit,
     compact: Boolean,
+    enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -252,6 +302,7 @@ private fun PocketCassetteCloseButton(
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
+                enabled = enabled,
                 role = Role.Button,
                 onClickLabel = "Collapse player",
                 onClick = onClick
@@ -268,10 +319,13 @@ private fun PocketCassetteCloseButton(
 }
 
 @Composable
-private fun PocketCassetteLowerSeam(compact: Boolean) {
+private fun PocketCassetteLowerSeam(
+    compact: Boolean,
+    modifier: Modifier = Modifier
+) {
     val colors = PocketCassetteColors
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         PocketCassetteScrew(size = if (compact) 9.dp else 10.dp)
@@ -305,5 +359,60 @@ private fun PocketCassetteLowerSeam(compact: Boolean) {
             size = if (compact) 9.dp else 10.dp,
             modifier = Modifier.padding(start = 6.dp)
         )
+    }
+}
+
+/**
+ * Claims only downward vertical drags. Upward intent remains available to the parent lyrics gesture;
+ * after a downward collapse drag starts, the same gesture may reverse upward before release.
+ */
+private fun Modifier.pocketCassetteDownwardCollapseGesture(
+    enabled: Boolean,
+    onDragStart: () -> Unit,
+    onDragBy: (Float) -> Unit,
+    onDragEnd: (Float) -> Unit,
+    onDragCancel: () -> Unit
+): Modifier {
+    if (!enabled) return this
+
+    return pointerInput(enabled, onDragStart, onDragBy, onDragEnd, onDragCancel) {
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false)
+            val velocityTracker = VelocityTracker().apply {
+                addPosition(down.uptimeMillis, down.position)
+            }
+            var started = false
+
+            val slopChange = awaitVerticalTouchSlopOrCancellation(down.id) { change, overSlop ->
+                if (overSlop > 0f) {
+                    started = true
+                    change.consume()
+                    velocityTracker.addPosition(change.uptimeMillis, change.position)
+                    onDragStart()
+                    onDragBy(overSlop)
+                }
+            }
+
+            if (!started || slopChange == null) {
+                if (started) onDragCancel()
+                return@awaitEachGesture
+            }
+
+            var active = true
+            while (active) {
+                val event = awaitPointerEvent()
+                val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                velocityTracker.addPosition(change.uptimeMillis, change.position)
+                val deltaY = change.positionChange().y
+
+                if (deltaY != 0f) {
+                    change.consume()
+                    onDragBy(deltaY)
+                }
+                active = change.pressed
+            }
+
+            onDragEnd(velocityTracker.calculateVelocity().y)
+        }
     }
 }

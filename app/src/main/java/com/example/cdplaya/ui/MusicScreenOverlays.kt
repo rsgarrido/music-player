@@ -28,6 +28,7 @@ import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipMorphBounds
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteMorphBounds
 import com.example.cdplaya.ui.player.lyricsVisualAlpha
 import com.example.cdplaya.ui.player.playerVisualAlpha
 import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
@@ -108,7 +109,8 @@ fun MusicScreenOverlays(
     defaultMorphBounds: DefaultPlayerMorphBounds,
     classicMorphBounds: ClassicWheelMorphBounds,
     retroRackMorphBounds: RetroRackMorphBounds,
-    pocketFlipMorphBounds: PocketFlipMorphBounds
+    pocketFlipMorphBounds: PocketFlipMorphBounds,
+    pocketCassetteMorphBounds: PocketCassetteMorphBounds
 ) {
     val isPlayerExpanded = playerMorphState.shouldComposeExpanded
 
@@ -180,7 +182,8 @@ fun MusicScreenOverlays(
                     defaultMorphBounds = defaultMorphBounds,
                     classicMorphBounds = classicMorphBounds,
                     retroRackMorphBounds = retroRackMorphBounds,
-                    pocketFlipMorphBounds = pocketFlipMorphBounds
+                    pocketFlipMorphBounds = pocketFlipMorphBounds,
+                    pocketCassetteMorphBounds = pocketCassetteMorphBounds
                 )
             }
         }

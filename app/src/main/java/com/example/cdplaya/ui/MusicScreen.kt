@@ -68,6 +68,10 @@ import com.example.cdplaya.ui.player.pocketflip.PocketFlipMorphBounds
 import com.example.cdplaya.ui.player.pocketflip.resolvePocketFlipMorphGeometry
 import com.example.cdplaya.ui.player.pocketflip.resolvePocketFlipSharedGeometry
 import com.example.cdplaya.ui.player.pocketflip.pocketFlipMorphTravelDistance
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteMorphBounds
+import com.example.cdplaya.ui.player.pocketcassette.resolvePocketCassetteMorphGeometry
+import com.example.cdplaya.ui.player.pocketcassette.resolvePocketCassetteSharedGeometry
+import com.example.cdplaya.ui.player.pocketcassette.pocketCassetteMorphTravelDistance
 import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelSharedGeometry
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
@@ -450,6 +454,7 @@ internal fun MusicScreen(
             val classicMorphBounds = remember { ClassicWheelMorphBounds() }
             val retroRackMorphBounds = remember { RetroRackMorphBounds() }
             val pocketFlipMorphBounds = remember { PocketFlipMorphBounds() }
+            val pocketCassetteMorphBounds = remember { PocketCassetteMorphBounds() }
             val defaultMorphGeometry = resolveDefaultPlayerMorphGeometry(
                 progress = playerMorphState.progress,
                 endpointBounds = playerEndpointBounds,
@@ -485,6 +490,17 @@ internal fun MusicScreen(
                             playerMorphState.progress,
                             pocketFlipMorphBounds
                         ) != null
+            val pocketCassetteMorphOwnsVisuals =
+                selectedPlayerTheme == PlayerTheme.POCKET_CASSETTE &&
+                        !playerMorphState.isCollapsedAndIdle &&
+                        resolvePocketCassetteMorphGeometry(
+                            playerMorphState.progress,
+                            playerEndpointBounds
+                        ) != null &&
+                        resolvePocketCassetteSharedGeometry(
+                            playerMorphState.progress,
+                            pocketCassetteMorphBounds
+                        ) != null
             val classicMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
                 DefaultMiniPlayerMorphCallbacks(
                     onDragStart = {
@@ -510,6 +526,18 @@ internal fun MusicScreen(
                     onDragStart = {
                         playerMorphState.beginDragWithRange(
                             pocketFlipMorphTravelDistance(playerEndpointBounds)
+                        )
+                    },
+                    onDragBy = playerMorphState::dragBy,
+                    onDragEnd = playerMorphState::endDrag,
+                    onDragCancel = playerMorphState::cancelDrag
+                )
+            }
+            val pocketCassetteMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
+                DefaultMiniPlayerMorphCallbacks(
+                    onDragStart = {
+                        playerMorphState.beginDragWithRange(
+                            pocketCassetteMorphTravelDistance(playerEndpointBounds)
                         )
                     },
                     onDragBy = playerMorphState::dragBy,
@@ -886,17 +914,20 @@ internal fun MusicScreen(
                         classicMorphBounds = classicMorphBounds,
                         retroRackMorphBounds = retroRackMorphBounds,
                         pocketFlipMorphBounds = pocketFlipMorphBounds,
+                        pocketCassetteMorphBounds = pocketCassetteMorphBounds,
                         defaultMorphCallbacks = when (selectedPlayerTheme) {
                             PlayerTheme.DEFAULT -> defaultMiniMorphCallbacks
                             PlayerTheme.CLASSIC_WHEEL -> classicMiniMorphCallbacks
                             PlayerTheme.RETRO_RACK -> retroRackMiniMorphCallbacks
                             PlayerTheme.POCKET_FLIP -> pocketFlipMiniMorphCallbacks
+                            PlayerTheme.POCKET_CASSETTE -> pocketCassetteMiniMorphCallbacks
                             else -> null
                         },
                         morphOwnsVisuals = defaultMorphOwnsVisuals ||
                                 classicWheelMorphOwnsVisuals ||
                                 retroRackMorphOwnsVisuals ||
-                                pocketFlipMorphOwnsVisuals,
+                                pocketFlipMorphOwnsVisuals ||
+                                pocketCassetteMorphOwnsVisuals,
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .navigationBarsPadding()
@@ -1032,6 +1063,7 @@ internal fun MusicScreen(
                     classicMorphBounds = classicMorphBounds,
                     retroRackMorphBounds = retroRackMorphBounds,
                     pocketFlipMorphBounds = pocketFlipMorphBounds,
+                    pocketCassetteMorphBounds = pocketCassetteMorphBounds,
                     songs = songs,
                     onSongClick = onSongClick
                 )

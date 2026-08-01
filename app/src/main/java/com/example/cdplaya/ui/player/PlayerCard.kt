@@ -20,6 +20,7 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
 import com.example.cdplaya.ui.player.pocketflip.PocketFlipMorphBounds
+import com.example.cdplaya.ui.player.pocketcassette.PocketCassetteMorphBounds
 
 @Composable
 fun PlayerCard(
@@ -51,6 +52,7 @@ fun PlayerCard(
     classicMorphBounds: ClassicWheelMorphBounds? = null,
     retroRackMorphBounds: RetroRackMorphBounds? = null,
     pocketFlipMorphBounds: PocketFlipMorphBounds? = null,
+    pocketCassetteMorphBounds: PocketCassetteMorphBounds? = null,
     defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
     morphOwnsVisuals: Boolean = false,
 ) {
@@ -112,6 +114,7 @@ fun PlayerCard(
             classicMorphBounds = classicMorphBounds,
             retroRackMorphBounds = retroRackMorphBounds,
             pocketFlipMorphBounds = pocketFlipMorphBounds,
+            pocketCassetteMorphBounds = pocketCassetteMorphBounds,
             defaultMorphCallbacks = defaultMorphCallbacks,
             morphOwnsVisuals = morphOwnsVisuals,
             modifier = modifier
