@@ -27,6 +27,7 @@ import com.example.cdplaya.ui.player.PlayerEndpointBounds
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
+import com.example.cdplaya.ui.player.pocketflip.PocketFlipMorphBounds
 import com.example.cdplaya.ui.player.lyricsVisualAlpha
 import com.example.cdplaya.ui.player.playerVisualAlpha
 import com.example.cdplaya.ui.player.ImmersiveSystemBarsEffect
@@ -106,7 +107,8 @@ fun MusicScreenOverlays(
     playerEndpointBounds: PlayerEndpointBounds,
     defaultMorphBounds: DefaultPlayerMorphBounds,
     classicMorphBounds: ClassicWheelMorphBounds,
-    retroRackMorphBounds: RetroRackMorphBounds
+    retroRackMorphBounds: RetroRackMorphBounds,
+    pocketFlipMorphBounds: PocketFlipMorphBounds
 ) {
     val isPlayerExpanded = playerMorphState.shouldComposeExpanded
 
@@ -138,47 +140,48 @@ fun MusicScreenOverlays(
                 .blockPlayerInput(lyricsTransitionState.lyricsOwnsInput)
         ) {
             PlaybackProgress(playbackProgressUiState) { progress ->
-            ExpandedPlayerThemeHost(
-                selectedPlayerTheme = selectedPlayerTheme,
-                tokens = selectedPlayerThemeTokens,
-                modernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
-                modernSeekbarStyle = selectedModernSeekbarStyle,
-                isVisualizerWorkAllowed = !isLyricsVisible &&
-                    !isExpandedUpNextSheetVisible &&
-                    !isSleepTimerDialogVisible &&
-                    !isCreatePlaylistDialogVisible &&
-                    songPendingPlaylistAdd == null &&
-                    songsPendingPlaylistAdd.isEmpty(),
-                currentSong = currentSong,
-                previousPreviewSong = previousPreviewSong,
-                nextPreviewSong = nextPreviewSong,
-                isPlaying = isPlaying,
-                isShuffleEnabled = isShuffleEnabled,
-                repeatMode = repeatMode,
-                currentPosition = progress.currentPosition,
-                duration = progress.duration,
-                isCurrentSongFavorite = currentSong.membershipKey() in favoriteMembershipKeys,
-                onPlayPauseClick = onPlayPauseClick,
-                onPreviousClick = onPreviousClick,
-                onNextClick = onNextClick,
-                onSeekChange = onSeekChange,
-                onShuffleClick = onShuffleClick,
-                onRepeatClick = onRepeatClick,
-                onCollapseClick = onCollapseExpandedPlayer,
-                playerMorphState = playerMorphState,
-                lyricsTransitionState = lyricsTransitionState,
-                onOpenUpNextClick = onShowExpandedUpNextSheet,
-                onOpenSleepTimerClick = onShowExpandedSleepTimer,
-                onOpenMoreClick = onShowExpandedMore,
-                onToggleFavoriteClick = onToggleFavoriteClick,
-                songs = songs,
-                upcomingSongs = upcomingSongs,
-                onSongClick = onSongClick,
-                endpointBounds = playerEndpointBounds,
-                defaultMorphBounds = defaultMorphBounds,
-                classicMorphBounds = classicMorphBounds,
-                retroRackMorphBounds = retroRackMorphBounds
-            )
+                ExpandedPlayerThemeHost(
+                    selectedPlayerTheme = selectedPlayerTheme,
+                    tokens = selectedPlayerThemeTokens,
+                    modernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
+                    modernSeekbarStyle = selectedModernSeekbarStyle,
+                    isVisualizerWorkAllowed = !isLyricsVisible &&
+                            !isExpandedUpNextSheetVisible &&
+                            !isSleepTimerDialogVisible &&
+                            !isCreatePlaylistDialogVisible &&
+                            songPendingPlaylistAdd == null &&
+                            songsPendingPlaylistAdd.isEmpty(),
+                    currentSong = currentSong,
+                    previousPreviewSong = previousPreviewSong,
+                    nextPreviewSong = nextPreviewSong,
+                    isPlaying = isPlaying,
+                    isShuffleEnabled = isShuffleEnabled,
+                    repeatMode = repeatMode,
+                    currentPosition = progress.currentPosition,
+                    duration = progress.duration,
+                    isCurrentSongFavorite = currentSong.membershipKey() in favoriteMembershipKeys,
+                    onPlayPauseClick = onPlayPauseClick,
+                    onPreviousClick = onPreviousClick,
+                    onNextClick = onNextClick,
+                    onSeekChange = onSeekChange,
+                    onShuffleClick = onShuffleClick,
+                    onRepeatClick = onRepeatClick,
+                    onCollapseClick = onCollapseExpandedPlayer,
+                    playerMorphState = playerMorphState,
+                    lyricsTransitionState = lyricsTransitionState,
+                    onOpenUpNextClick = onShowExpandedUpNextSheet,
+                    onOpenSleepTimerClick = onShowExpandedSleepTimer,
+                    onOpenMoreClick = onShowExpandedMore,
+                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    songs = songs,
+                    upcomingSongs = upcomingSongs,
+                    onSongClick = onSongClick,
+                    endpointBounds = playerEndpointBounds,
+                    defaultMorphBounds = defaultMorphBounds,
+                    classicMorphBounds = classicMorphBounds,
+                    retroRackMorphBounds = retroRackMorphBounds,
+                    pocketFlipMorphBounds = pocketFlipMorphBounds
+                )
             }
         }
     }

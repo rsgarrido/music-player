@@ -39,9 +39,13 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -69,10 +73,18 @@ internal fun PocketFlipControlHalf(
     onCollapseClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     compact: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    controlsReveal: Float = 1f,
+    inputEnabled: Boolean = true,
+    morphBounds: PocketFlipMorphBounds? = null,
+    sharedOwner: PocketFlipSharedOwner = PocketFlipSharedOwner.EXPANDED,
+    deckDetailsDragModifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .graphicsLayer { alpha = controlsReveal.coerceIn(0f, 1f) }
+            .then(if (inputEnabled) Modifier else Modifier.clearAndSetSemantics { }),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
@@ -89,7 +101,8 @@ internal fun PocketFlipControlHalf(
                 onNextClick = onNextClick,
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
-                compact = compact
+                compact = compact,
+                inputEnabled = inputEnabled
             )
 
             PocketFlipActionCluster(
@@ -98,11 +111,17 @@ internal fun PocketFlipControlHalf(
                 isCurrentSongFavorite = isCurrentSongFavorite,
                 onPlayPauseClick = onPlayPauseClick,
                 onToggleFavoriteClick = onToggleFavoriteClick,
-                compact = compact
+                compact = compact,
+                inputEnabled = inputEnabled,
+                morphBounds = morphBounds,
+                sharedOwner = sharedOwner
             )
         }
 
-        PocketFlipDeckDetails(compact = compact)
+        PocketFlipDeckDetails(
+            compact = compact,
+            modifier = deckDetailsDragModifier
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -113,14 +132,16 @@ internal fun PocketFlipControlHalf(
                 label = "QUEUE",
                 contentDescription = "Open up next queue",
                 onClick = onOpenUpNextClick,
-                compact = compact
+                compact = compact,
+                enabled = inputEnabled
             )
             Spacer(modifier = Modifier.width(if (compact) 12.dp else 18.dp))
             PocketFlipUtilitySwitch(
                 label = "CLOSE",
                 contentDescription = "Collapse player",
                 onClick = onCollapseClick,
-                compact = compact
+                compact = compact,
+                enabled = inputEnabled
             )
         }
     }
@@ -134,7 +155,8 @@ private fun PocketFlipDirectionPad(
     onNextClick: () -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
-    compact: Boolean
+    compact: Boolean,
+    inputEnabled: Boolean
 ) {
     val padSize = if (compact) 136.dp else 150.dp
     val hitSize = if (compact) 52.dp else 58.dp
@@ -151,6 +173,7 @@ private fun PocketFlipDirectionPad(
             active = isShuffleEnabled,
             size = hitSize,
             onClick = onShuffleClick,
+            enabled = inputEnabled,
             modifier = Modifier.align(Alignment.TopCenter)
         )
         PocketFlipPadHitTarget(
@@ -158,6 +181,7 @@ private fun PocketFlipDirectionPad(
             contentDescription = "Previous track",
             size = hitSize,
             onClick = onPreviousClick,
+            enabled = inputEnabled,
             modifier = Modifier.align(Alignment.CenterStart)
         )
         PocketFlipPadHitTarget(
@@ -165,6 +189,7 @@ private fun PocketFlipDirectionPad(
             contentDescription = "Next track",
             size = hitSize,
             onClick = onNextClick,
+            enabled = inputEnabled,
             modifier = Modifier.align(Alignment.CenterEnd)
         )
         PocketFlipPadHitTarget(
@@ -177,6 +202,7 @@ private fun PocketFlipDirectionPad(
             active = repeatMode != RepeatMode.OFF,
             size = hitSize,
             onClick = onRepeatClick,
+            enabled = inputEnabled,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
@@ -251,7 +277,8 @@ private fun PocketFlipPadHitTarget(
     size: Dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    active: Boolean = false
+    active: Boolean = false,
+    enabled: Boolean = true
 ) {
     val colors = PocketFlipColors
     val interactionSource = remember { MutableInteractionSource() }
@@ -268,8 +295,9 @@ private fun PocketFlipPadHitTarget(
                 interactionSource = interactionSource,
                 indication = null,
                 role = Role.Button,
+                enabled = enabled,
                 onClick = onClick
-        ),
+            ),
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
@@ -319,7 +347,10 @@ private fun PocketFlipActionCluster(
     isCurrentSongFavorite: Boolean,
     onPlayPauseClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
-    compact: Boolean
+    compact: Boolean,
+    inputEnabled: Boolean,
+    morphBounds: PocketFlipMorphBounds?,
+    sharedOwner: PocketFlipSharedOwner
 ) {
     Box(
         modifier = Modifier.size(
@@ -350,7 +381,12 @@ private fun PocketFlipActionCluster(
                 markCount = 1,
                 contentDescription = if (isPlaying) "Pause" else "Play",
                 faceSize = if (compact) 48.dp else 52.dp,
-                onClick = onPlayPauseClick
+                onClick = onPlayPauseClick,
+                enabled = inputEnabled && sharedOwner == PocketFlipSharedOwner.EXPANDED,
+                visualAlpha = if (sharedOwner == PocketFlipSharedOwner.EXPANDED) 1f else 0f,
+                modifier = Modifier.onGloballyPositioned { coordinates ->
+                    morphBounds?.updateExpandedPlay(coordinates.boundsInRoot())
+                }
             )
             PocketFlipRoundAction(
                 icon = if (isCurrentSongFavorite) {
@@ -366,6 +402,7 @@ private fun PocketFlipActionCluster(
                 },
                 faceSize = if (compact) 48.dp else 52.dp,
                 active = isCurrentSongFavorite,
+                enabled = inputEnabled,
                 onClick = { currentSong?.let(onToggleFavoriteClick) }
             )
         }
@@ -380,7 +417,9 @@ private fun PocketFlipRoundAction(
     faceSize: Dp,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    active: Boolean = false
+    active: Boolean = false,
+    enabled: Boolean = true,
+    visualAlpha: Float = 1f
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -391,7 +430,10 @@ private fun PocketFlipRoundAction(
     }
 
     Column(
-        modifier = modifier.width(faceSize + 16.dp),
+        modifier = modifier
+            .width(faceSize + 16.dp)
+            .graphicsLayer { alpha = visualAlpha.coerceIn(0f, 1f) }
+            .then(if (visualAlpha > 0f) Modifier else Modifier.clearAndSetSemantics { }),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Box(
@@ -405,6 +447,7 @@ private fun PocketFlipRoundAction(
                     interactionSource = interactionSource,
                     indication = null,
                     role = Role.Button,
+                    enabled = enabled,
                     onClick = onClick
                 ),
             contentAlignment = Alignment.Center
@@ -450,9 +493,12 @@ private fun PocketFlipRoundAction(
 }
 
 @Composable
-private fun PocketFlipDeckDetails(compact: Boolean) {
+private fun PocketFlipDeckDetails(
+    compact: Boolean,
+    modifier: Modifier = Modifier
+) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(if (compact) 24.dp else 28.dp)
             .padding(horizontal = if (compact) 4.dp else 8.dp),
@@ -471,7 +517,8 @@ private fun PocketFlipUtilitySwitch(
     label: String,
     contentDescription: String,
     onClick: () -> Unit,
-    compact: Boolean
+    compact: Boolean,
+    enabled: Boolean
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -488,6 +535,7 @@ private fun PocketFlipUtilitySwitch(
                 interactionSource = interactionSource,
                 indication = null,
                 role = Role.Button,
+                enabled = enabled,
                 onClick = onClick
             ),
         horizontalAlignment = Alignment.CenterHorizontally,

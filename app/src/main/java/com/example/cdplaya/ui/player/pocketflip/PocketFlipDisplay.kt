@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -32,7 +33,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
@@ -55,7 +59,12 @@ internal fun PocketFlipDisplayHalf(
     duration: Int,
     onSeekChange: (Int) -> Unit,
     compact: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    displayReveal: Float = 1f,
+    inputEnabled: Boolean = true,
+    morphBounds: PocketFlipMorphBounds? = null,
+    sharedOwner: PocketFlipSharedOwner = PocketFlipSharedOwner.EXPANDED,
+    collapseDragModifier: Modifier = Modifier
 ) {
     val bezelRadius = if (compact) 18.dp else 22.dp
     val screenRadius = if (compact) 6.dp else 8.dp
@@ -63,17 +72,24 @@ internal fun PocketFlipDisplayHalf(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .graphicsLayer { alpha = displayReveal.coerceIn(0f, 1f) }
+            .then(if (inputEnabled) Modifier else Modifier.clearAndSetSemantics { })
             .clip(RoundedCornerShape(bezelRadius))
             .pocketFlipBezelFinish(bezelRadius)
             .padding(if (compact) 10.dp else 14.dp),
         verticalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 8.dp)
     ) {
-        PocketFlipDisplayHeader(isPlaying = isPlaying, compact = compact)
+        PocketFlipDisplayHeader(
+            isPlaying = isPlaying,
+            compact = compact,
+            modifier = collapseDragModifier
+        )
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
+                .then(collapseDragModifier)
                 .clip(RoundedCornerShape(screenRadius))
                 .background(PocketFlipColors.display)
                 .pocketFlipLcdFrameFinish(screenRadius)
@@ -94,13 +110,25 @@ internal fun PocketFlipDisplayHalf(
                     PocketFlipArtwork(
                         song = currentSong,
                         compact = compact,
-                        modifier = Modifier.size(if (compact) 104.dp else 116.dp)
+                        renderContent = sharedOwner == PocketFlipSharedOwner.EXPANDED,
+                        modifier = Modifier
+                            .size(if (compact) 104.dp else 116.dp)
+                            .onGloballyPositioned { coordinates ->
+                                morphBounds?.updateExpandedArtwork(coordinates.boundsInRoot())
+                            }
                     )
 
                     PocketFlipMetadata(
                         currentSong = currentSong,
                         isPlaying = isPlaying,
                         compact = compact,
+                        renderSharedContent = sharedOwner == PocketFlipSharedOwner.EXPANDED,
+                        titleModifier = Modifier.onGloballyPositioned { coordinates ->
+                            morphBounds?.updateExpandedTitle(coordinates.boundsInRoot())
+                        },
+                        artistModifier = Modifier.onGloballyPositioned { coordinates ->
+                            morphBounds?.updateExpandedArtist(coordinates.boundsInRoot())
+                        },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -124,7 +152,12 @@ internal fun PocketFlipDisplayHalf(
             currentPosition = currentPosition,
             duration = duration,
             onSeekChange = onSeekChange,
-            compact = compact
+            compact = compact,
+            inputEnabled = inputEnabled && sharedOwner == PocketFlipSharedOwner.EXPANDED,
+            trackVisible = sharedOwner == PocketFlipSharedOwner.EXPANDED,
+            trackModifier = Modifier.onGloballyPositioned { coordinates ->
+                morphBounds?.updateExpandedProgress(coordinates.boundsInRoot())
+            }
         )
     }
 }
@@ -132,10 +165,11 @@ internal fun PocketFlipDisplayHalf(
 @Composable
 private fun PocketFlipDisplayHeader(
     isPlaying: Boolean,
-    compact: Boolean
+    compact: Boolean,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         PocketFlipBezelScrew()
@@ -241,6 +275,7 @@ private fun PocketFlipBezelScrew(reverseSlot: Boolean = false) {
 private fun PocketFlipArtwork(
     song: Song?,
     compact: Boolean,
+    renderContent: Boolean,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -250,7 +285,7 @@ private fun PocketFlipArtwork(
             .pocketFlipArtworkFrameFinish(),
         contentAlignment = Alignment.Center
     ) {
-        if (song?.albumArtUri != null) {
+        if (renderContent && song?.albumArtUri != null) {
             AsyncImage(
                 model = song.albumArtUri,
                 contentDescription = "Current album artwork",
@@ -264,7 +299,7 @@ private fun PocketFlipArtwork(
                     .matchParentSize()
                     .padding(if (compact) 4.dp else 5.dp)
             )
-        } else {
+        } else if (renderContent) {
             Icon(
                 imageVector = Icons.Filled.Album,
                 contentDescription = null,
@@ -280,6 +315,9 @@ private fun PocketFlipMetadata(
     currentSong: Song?,
     isPlaying: Boolean,
     compact: Boolean,
+    renderSharedContent: Boolean,
+    titleModifier: Modifier = Modifier,
+    artistModifier: Modifier = Modifier,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -308,7 +346,10 @@ private fun PocketFlipMetadata(
                 fontSize = if (compact) 13.sp else 14.sp,
                 lineHeight = if (compact) 16.sp else 17.sp,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = titleModifier
+                    .graphicsLayer { alpha = if (renderSharedContent) 1f else 0f }
+                    .then(if (renderSharedContent) Modifier else Modifier.clearAndSetSemantics { })
             )
             Spacer(modifier = Modifier.height(if (compact) 2.dp else 3.dp))
             Text(
@@ -317,7 +358,10 @@ private fun PocketFlipMetadata(
                 fontFamily = FontFamily.Monospace,
                 fontSize = if (compact) 9.sp else 10.sp,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = artistModifier
+                    .graphicsLayer { alpha = if (renderSharedContent) 1f else 0f }
+                    .then(if (renderSharedContent) Modifier else Modifier.clearAndSetSemantics { })
             )
             Text(
                 text = currentSong?.album?.ifBlank { "Unknown album" } ?: "",
@@ -337,7 +381,10 @@ private fun PocketFlipSeekBar(
     currentPosition: Int,
     duration: Int,
     onSeekChange: (Int) -> Unit,
-    compact: Boolean
+    compact: Boolean,
+    inputEnabled: Boolean,
+    trackVisible: Boolean,
+    trackModifier: Modifier = Modifier
 ) {
     val colors = PocketFlipColors
     val safeDuration = duration.coerceAtLeast(1)
@@ -346,20 +393,30 @@ private fun PocketFlipSeekBar(
 
     Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
         Canvas(
-            modifier = Modifier
+            modifier = trackModifier
                 .fillMaxWidth()
                 .height(if (compact) 38.dp else 42.dp)
-                .semantics {
-                    progressBarRangeInfo = ProgressBarRangeInfo(
-                        current = safePosition.toFloat(),
-                        range = 0f..safeDuration.toFloat()
-                    )
-                    setProgress { target ->
-                        onSeekChange(target.coerceIn(0f, safeDuration.toFloat()).toInt())
-                        true
+                .graphicsLayer { alpha = if (trackVisible) 1f else 0f }
+                .then(
+                    if (inputEnabled) {
+                        Modifier.semantics {
+                            progressBarRangeInfo = ProgressBarRangeInfo(
+                                current = safePosition.toFloat(),
+                                range = 0f..safeDuration.toFloat()
+                            )
+                            setProgress { target ->
+                                onSeekChange(
+                                    target.coerceIn(0f, safeDuration.toFloat()).toInt()
+                                )
+                                true
+                            }
+                        }
+                    } else {
+                        Modifier.clearAndSetSemantics { }
                     }
-                }
-                .pointerInput(safeDuration) {
+                )
+                .pointerInput(safeDuration, inputEnabled) {
+                    if (!inputEnabled) return@pointerInput
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
                         fun seekTo(x: Float) {

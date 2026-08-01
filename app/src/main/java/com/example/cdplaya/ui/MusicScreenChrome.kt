@@ -36,6 +36,7 @@ import com.example.cdplaya.ui.player.PlayerMorphState
 import com.example.cdplaya.ui.player.modern.DefaultPlayerMorphBounds
 import com.example.cdplaya.ui.player.classicwheel.ClassicWheelMorphBounds
 import com.example.cdplaya.ui.player.retrorack.RetroRackMorphBounds
+import com.example.cdplaya.ui.player.pocketflip.PocketFlipMorphBounds
 import com.example.cdplaya.ui.player.mini.DefaultMiniPlayerMorphCallbacks
 import com.example.cdplaya.ui.player.SleepTimerStatusBanner
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
@@ -166,6 +167,7 @@ fun MiniPlayerSection(
     defaultMorphBounds: DefaultPlayerMorphBounds? = null,
     classicMorphBounds: ClassicWheelMorphBounds? = null,
     retroRackMorphBounds: RetroRackMorphBounds? = null,
+    pocketFlipMorphBounds: PocketFlipMorphBounds? = null,
     defaultMorphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
     morphOwnsVisuals: Boolean = false
 ) {
@@ -204,6 +206,7 @@ fun MiniPlayerSection(
             defaultMorphBounds = defaultMorphBounds,
             classicMorphBounds = classicMorphBounds,
             retroRackMorphBounds = retroRackMorphBounds,
+            pocketFlipMorphBounds = pocketFlipMorphBounds,
             defaultMorphCallbacks = defaultMorphCallbacks,
             morphOwnsVisuals = morphOwnsVisuals
         )
