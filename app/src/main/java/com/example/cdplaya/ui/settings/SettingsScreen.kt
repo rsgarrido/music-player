@@ -113,13 +113,6 @@ fun SettingsScreen(
                     style = AppShellTypography.ScreenTitle,
                     color = MaterialTheme.colorScheme.onBackground
                 )
-
-                Text(
-                    text = "Library, playback, appearance, and app tools",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
             }
         }
 
@@ -164,14 +157,6 @@ fun SettingsScreen(
                 onClick = onEqualizerClick,
                 emphasizeSummary = true,
                 navigationContentDescription = "Open equalizer settings"
-            )
-
-            SettingsDivider()
-
-            SettingsRow(
-                title = "Playback controls",
-                summary = "Use the player card, notification, or Up Next screen.",
-                icon = AppShellIcons.Deck
             )
 
             SettingsDivider()
