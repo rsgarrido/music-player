@@ -1,25 +1,26 @@
 package com.example.cdplaya.ui.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,12 +30,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.R
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
+import com.example.cdplaya.ui.AppShellIcons
+import com.example.cdplaya.ui.AppShellTypography
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
@@ -69,34 +71,17 @@ fun SettingsScreen(
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
     selectedAudioOffloadPreference: AudioOffloadPreference,
     onAudioOffloadPreferenceSelected: (AudioOffloadPreference) -> Unit,
+    scrollState: ScrollState = rememberScrollState(),
     modifier: Modifier = Modifier
 ) {
-    var isPlayerThemeDialogVisible by remember {
-        mutableStateOf(false)
-    }
-
-    var isReplayGainDialogVisible by remember {
-        mutableStateOf(false)
-    }
-
-    var isAudioOffloadDialogVisible by remember {
-        mutableStateOf(false)
-    }
-
-    var isThemeCustomizationDialogVisible by remember {
-        mutableStateOf(false)
-    }
-
-    var isArtworkTransitionDialogVisible by remember {
-        mutableStateOf(false)
-    }
-
-    var isSeekbarStyleDialogVisible by remember {
-        mutableStateOf(false)
-    }
+    var isPlayerThemeDialogVisible by remember { mutableStateOf(false) }
+    var isReplayGainDialogVisible by remember { mutableStateOf(false) }
+    var isAudioOffloadDialogVisible by remember { mutableStateOf(false) }
+    var isThemeCustomizationDialogVisible by remember { mutableStateOf(false) }
+    var isArtworkTransitionDialogVisible by remember { mutableStateOf(false) }
+    var isSeekbarStyleDialogVisible by remember { mutableStateOf(false) }
 
     val themeCustomizationOptions = selectedPlayerTheme.customizationOptions()
-
     val folderSelectionText = if (selectedFolderCount == 0) {
         "All folders • $availableFolderCount available"
     } else {
@@ -106,12 +91,13 @@ fun SettingsScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(scrollState)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(start = 8.dp, top = 10.dp, end = 20.dp, bottom = 22.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBackClick) {
@@ -121,580 +107,490 @@ fun SettingsScreen(
                 )
             }
 
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.titleLarge
+            Column(modifier = Modifier.padding(start = 4.dp)) {
+                Text(
+                    text = "Settings",
+                    style = AppShellTypography.ScreenTitle,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+            }
+        }
+
+        SettingsSection(
+            title = "Library",
+            description = "Choose what CDPlaya scans and review your current collection.",
+            icon = AppShellIcons.AlbumStack
+        ) {
+            SettingsRow(
+                title = "Library folders",
+                summary = folderSelectionText,
+                icon = AppShellIcons.Folder,
+                onClick = onLibraryFoldersClick,
+                emphasizeSummary = true,
+                navigationContentDescription = "Open library folders"
+            )
+
+            SettingsDivider()
+
+            SettingsRow(
+                title = "Songs",
+                summary = "$totalSongCount song(s) in your current library",
+                icon = AppShellIcons.MusicNote
             )
         }
 
-        SettingsSectionTitle(text = "Library")
-
-        ListItem(
-            headlineContent = {
-                Text(text = "Library folders")
-            },
-            supportingContent = {
-                Text(text = folderSelectionText)
-            },
-            trailingContent = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Open library folders"
-                )
-            },
-            modifier = Modifier.clickable {
-                onLibraryFoldersClick()
-            }
-        )
-
-        ListItem(
-            headlineContent = {
-                Text(text = "Songs")
-            },
-            supportingContent = {
-                Text(text = "$totalSongCount song(s) in your current library")
-            }
-        )
+        SettingsSectionSpacer()
 
         LyricsFolderSettings()
 
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
+        SettingsSectionSpacer()
 
-        SettingsSectionTitle(text = "Backup and Restore")
+        SettingsSection(
+            title = "Playback & audio",
+            description = "Control sound processing, loudness, timing, and power use.",
+            icon = AppShellIcons.Equalizer
+        ) {
+            SettingsRow(
+                title = "Equalizer",
+                summary = equalizerSummary,
+                icon = AppShellIcons.Equalizer,
+                onClick = onEqualizerClick,
+                emphasizeSummary = true,
+                navigationContentDescription = "Open equalizer settings"
+            )
 
-        ListItem(
-            headlineContent = {
-                Text(text = "Export Backup")
-            },
-            supportingContent = {
-                Text(text = "Save favorites, playlists, history, and preferences as JSON.")
-            },
-            trailingContent = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Export backup"
+            SettingsDivider()
+
+            SettingsRow(
+                title = "ReplayGain",
+                summary = selectedReplayGainMode.displayName,
+                icon = AppShellIcons.Gauge,
+                onClick = { isReplayGainDialogVisible = true },
+                emphasizeSummary = true,
+                navigationContentDescription = "Open ReplayGain settings"
+            )
+
+            SettingsDivider()
+
+            SettingsRow(
+                title = "Audio offload",
+                summary = selectedAudioOffloadPreference.displayName,
+                icon = AppShellIcons.AudioRoute,
+                onClick = { isAudioOffloadDialogVisible = true },
+                emphasizeSummary = true,
+                navigationContentDescription = "Open audio offload settings"
+            )
+
+            SettingsDivider()
+
+            SettingsRow(
+                title = "Sleep Timer",
+                summary = if (isSleepTimerActive) {
+                    sleepTimerDisplayText
+                } else {
+                    "Pause playback after a set time"
+                },
+                icon = AppShellIcons.Timer,
+                onClick = onSleepTimerClick,
+                emphasizeSummary = isSleepTimerActive,
+                navigationContentDescription = "Open sleep timer"
+            )
+
+            SettingsDivider()
+
+            SettingsFooterNote(
+                text = "Audio offload may reduce power use during long background playback. " +
+                        "CDPlaya falls back to normal decoded playback when offload is unavailable " +
+                        "or incompatible with an active audio feature."
+            )
+        }
+
+        SettingsSectionSpacer()
+
+        SettingsSection(
+            title = "Player & appearance",
+            description = "Choose the player identity, motion, controls, and theme colors.",
+            icon = AppShellIcons.Palette
+        ) {
+            SettingsRow(
+                title = "Player Theme",
+                summary = selectedPlayerTheme.displayName,
+                icon = AppShellIcons.Deck,
+                onClick = { isPlayerThemeDialogVisible = true },
+                emphasizeSummary = true,
+                navigationContentDescription = "Choose player theme"
+            )
+
+            if (selectedPlayerTheme == PlayerTheme.DEFAULT) {
+                SettingsDivider()
+
+                SettingsRow(
+                    title = "Artwork transition style",
+                    summary = selectedModernArtworkTransitionStyle.displayName,
+                    icon = AppShellIcons.Transition,
+                    onClick = { isArtworkTransitionDialogVisible = true },
+                    emphasizeSummary = true,
+                    navigationContentDescription = "Choose artwork transition style"
                 )
-            },
-            modifier = Modifier.clickable {
-                onExportBackupClick()
+
+                SettingsDivider()
+
+                SettingsRow(
+                    title = "Modern player seekbar style",
+                    summary = selectedModernSeekbarStyle.displayName,
+                    icon = AppShellIcons.Seekbar,
+                    onClick = { isSeekbarStyleDialogVisible = true },
+                    emphasizeSummary = true,
+                    navigationContentDescription = "Choose modern player seekbar style"
+                )
             }
-        )
 
-        ListItem(
-            headlineContent = {
-                Text(text = "Restore Backup")
-            },
-            supportingContent = {
-                Text(text = "Replace app data from a CDPlaya backup JSON file.")
-            },
-            trailingContent = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Restore backup"
+            if (themeCustomizationOptions.isNotEmpty()) {
+                SettingsDivider()
+
+                SettingsRow(
+                    title = "Customize theme colors",
+                    summary = "Choose preset colors for ${selectedPlayerTheme.displayName}",
+                    icon = AppShellIcons.Palette,
+                    onClick = { isThemeCustomizationDialogVisible = true },
+                    navigationContentDescription = "Customize theme colors"
                 )
-            },
-            modifier = Modifier.clickable {
-                onRestoreBackupClick()
             }
-        )
+        }
 
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
+        SettingsSectionSpacer()
 
-        SettingsSectionTitle(text = stringResource(R.string.settings_support))
+        SettingsSection(
+            title = "Data & support",
+            description = "Protect app data and inspect playback or device information.",
+            icon = AppShellIcons.Diagnostics
+        ) {
+            SettingsRow(
+                title = "Export Backup",
+                summary = "Save favorites, playlists, history, and preferences as JSON.",
+                icon = AppShellIcons.Export,
+                onClick = onExportBackupClick,
+                navigationContentDescription = "Export backup"
+            )
 
-        ListItem(
-            headlineContent = { Text(text = stringResource(R.string.settings_diagnostics)) },
-            supportingContent = {
-                Text(text = stringResource(R.string.settings_diagnostics_summary))
+            SettingsDivider()
+
+            SettingsRow(
+                title = "Restore Backup",
+                summary = "Replace app data from a CDPlaya backup JSON file.",
+                icon = AppShellIcons.Restore,
+                onClick = onRestoreBackupClick,
+                navigationContentDescription = "Restore backup"
+            )
+
+            SettingsDivider()
+
+            SettingsRow(
+                title = stringResource(R.string.settings_diagnostics),
+                summary = stringResource(R.string.settings_diagnostics_summary),
+                icon = AppShellIcons.Diagnostics,
+                onClick = onDiagnosticsClick,
+                navigationContentDescription = stringResource(R.string.settings_open_diagnostics)
+            )
+        }
+
+        SettingsSectionSpacer()
+
+        SettingsSection(
+            title = "About",
+            description = "CDPlaya information and project identity.",
+            icon = AppShellIcons.Info
+        ) {
+            SettingsRow(
+                title = "CDPlaya",
+                summary = "A local music player for your personal library.",
+                icon = AppShellIcons.Info
+            )
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+    }
+
+    if (isReplayGainDialogVisible) {
+        AlertDialog(
+            onDismissRequest = {
+                isReplayGainDialogVisible = false
             },
-            trailingContent = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = stringResource(R.string.settings_open_diagnostics)
-                )
-            },
-            modifier = Modifier.clickable(onClick = onDiagnosticsClick)
-        )
-
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
-
-        SettingsSectionTitle(text = "Playback")
-
-        ListItem(
-            headlineContent = {
-                Text(text = "Equalizer")
-            },
-            supportingContent = {
-                Text(text = equalizerSummary)
-            },
-            trailingContent = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Open equalizer settings"
-                )
-            },
-            modifier = Modifier.clickable(onClick = onEqualizerClick)
-        )
-
-        ListItem(
-            headlineContent = {
-                Text(text = "Playback controls")
-            },
-            supportingContent = {
-                Text(text = "Use the player card, notification, or Up Next screen.")
-            }
-        )
-
-        ListItem(
-            headlineContent = {
+            title = {
                 Text(text = "ReplayGain")
             },
-            supportingContent = {
-                Text(text = selectedReplayGainMode.displayName)
-            },
-            trailingContent = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Open ReplayGain settings"
-                )
-            },
-            modifier = Modifier.clickable {
-                isReplayGainDialogVisible = true
-            }
-        )
-
-        ListItem(
-            headlineContent = {
-                Text(text = "Audio offload")
-            },
-            supportingContent = {
-                Text(
-                    text = "${selectedAudioOffloadPreference.displayName}. " +
-                        "Automatic uses offload only when the device, route, file, " +
-                        "and required playback behavior support it. Unsupported playback " +
-                        "falls back normally."
-                )
-            },
-            trailingContent = {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = "Open audio offload settings"
-                )
-            },
-            modifier = Modifier.clickable {
-                isAudioOffloadDialogVisible = true
-            }
-        )
-
-        Text(
-            text = "Offload may reduce power use during long background playback. " +
-                "Some future audio effects may require normal decoded playback.",
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-        )
-
-        ListItem(
-            headlineContent = {
-                Text(text = "Sleep Timer")
-            },
-            supportingContent = {
-                Text(
-                    text = if (isSleepTimerActive) {
-                        sleepTimerDisplayText
-                    } else {
-                        "Pause playback after a set time"
-                    }
-                )
-            },
-            modifier = Modifier.clickable {
-                onSleepTimerClick()
-            }
-        )
-
-        ListItem(
-            headlineContent = {
-                Text(text = "Player Theme")
-            },
-            supportingContent = {
-                Text(text = selectedPlayerTheme.displayName)
-            },
-            modifier = Modifier.clickable {
-                isPlayerThemeDialogVisible = true
-            }
-        )
-
-        if (selectedPlayerTheme == PlayerTheme.DEFAULT) {
-            ListItem(
-                headlineContent = {
-                    Text(text = "Artwork transition style")
-                },
-                supportingContent = {
-                    Text(text = selectedModernArtworkTransitionStyle.displayName)
-                },
-                trailingContent = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Choose artwork transition style"
-                    )
-                },
-                modifier = Modifier.clickable {
-                    isArtworkTransitionDialogVisible = true
-                }
-            )
-
-            ListItem(
-                headlineContent = {
-                    Text(text = "Modern player seekbar style")
-                },
-                supportingContent = {
-                    Text(text = selectedModernSeekbarStyle.displayName)
-                },
-                trailingContent = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Choose modern player seekbar style"
-                    )
-                },
-                modifier = Modifier.clickable {
-                    isSeekbarStyleDialogVisible = true
-                }
-            )
-        }
-
-        if (themeCustomizationOptions.isNotEmpty()) {
-            ListItem(
-                headlineContent = {
-                    Text(text = "Customize theme colors")
-                },
-                supportingContent = {
-                    Text(text = "Choose preset colors for ${selectedPlayerTheme.displayName}")
-                },
-                trailingContent = {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Customize theme colors"
-                    )
-                },
-                modifier = Modifier.clickable {
-                    isThemeCustomizationDialogVisible = true
-                }
-            )
-        }
-
-        if (isReplayGainDialogVisible) {
-            AlertDialog(
-                onDismissRequest = {
-                    isReplayGainDialogVisible = false
-                },
-                title = {
-                    Text(text = "ReplayGain")
-                },
-                text = {
-                    Column {
-                        ReplayGainMode.values().forEach { replayGainMode ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onReplayGainModeSelected(replayGainMode)
-                                        isReplayGainDialogVisible = false
-                                    }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = selectedReplayGainMode == replayGainMode,
-                                    onClick = {
-                                        onReplayGainModeSelected(replayGainMode)
-                                        isReplayGainDialogVisible = false
-                                    }
-                                )
-
-                                Column(
-                                    modifier = Modifier.padding(start = 4.dp)
-                                ) {
-                                    Text(text = replayGainMode.displayName)
-
-                                    Text(
-                                        text = replayGainMode.description,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
+            text = {
+                Column {
+                    ReplayGainMode.values().forEach { replayGainMode ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onReplayGainModeSelected(replayGainMode)
+                                    isReplayGainDialogVisible = false
                                 }
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            isReplayGainDialogVisible = false
-                        }
-                    ) {
-                        Text(text = "Close")
-                    }
-                }
-            )
-        }
-
-        if (isAudioOffloadDialogVisible) {
-            AlertDialog(
-                onDismissRequest = {
-                    isAudioOffloadDialogVisible = false
-                },
-                title = {
-                    Text(text = "Audio offload")
-                },
-                text = {
-                    Column {
-                        AudioOffloadPreference.entries.forEach { preference ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onAudioOffloadPreferenceSelected(preference)
-                                        isAudioOffloadDialogVisible = false
-                                    }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = selectedAudioOffloadPreference == preference,
-                                    onClick = {
-                                        onAudioOffloadPreferenceSelected(preference)
-                                        isAudioOffloadDialogVisible = false
-                                    }
-                                )
-                                Column(modifier = Modifier.padding(start = 4.dp)) {
-                                    Text(text = preference.displayName)
-                                    Text(
-                                        text = if (preference == AudioOffloadPreference.AUTOMATIC) {
-                                            "Use offload when compatible and otherwise play normally."
-                                        } else {
-                                            "Use normal decoded playback."
-                                        },
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedReplayGainMode == replayGainMode,
+                                onClick = {
+                                    onReplayGainModeSelected(replayGainMode)
+                                    isReplayGainDialogVisible = false
                                 }
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { isAudioOffloadDialogVisible = false }) {
-                        Text(text = "Close")
-                    }
-                }
-            )
-        }
+                            )
 
-        if (
-            isArtworkTransitionDialogVisible &&
-            selectedPlayerTheme == PlayerTheme.DEFAULT
-        ) {
-            AlertDialog(
-                onDismissRequest = {
-                    isArtworkTransitionDialogVisible = false
-                },
-                title = {
-                    Text(text = "Artwork transition style")
-                },
-                text = {
-                    Column {
-                        ModernArtworkTransitionStyle.values().forEach { transitionStyle ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onModernArtworkTransitionStyleSelected(transitionStyle)
-                                        isArtworkTransitionDialogVisible = false
-                                    }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier.padding(start = 4.dp)
                             ) {
-                                RadioButton(
-                                    selected = selectedModernArtworkTransitionStyle == transitionStyle,
-                                    onClick = {
-                                        onModernArtworkTransitionStyleSelected(transitionStyle)
-                                        isArtworkTransitionDialogVisible = false
-                                    }
+                                Text(text = replayGainMode.displayName)
+
+                                Text(
+                                    text = replayGainMode.description,
+                                    style = MaterialTheme.typography.bodySmall
                                 )
-
-                                Column(
-                                    modifier = Modifier.padding(start = 4.dp)
-                                ) {
-                                    Text(text = transitionStyle.displayName)
-
-                                    Text(
-                                        text = transitionStyle.description,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
                             }
                         }
                     }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            isArtworkTransitionDialogVisible = false
-                        }
-                    ) {
-                        Text(text = "Close")
-                    }
                 }
-            )
-        }
-
-        if (
-            isSeekbarStyleDialogVisible &&
-            selectedPlayerTheme == PlayerTheme.DEFAULT
-        ) {
-            AlertDialog(
-                onDismissRequest = {
-                    isSeekbarStyleDialogVisible = false
-                },
-                title = {
-                    Text(text = "Modern player seekbar style")
-                },
-                text = {
-                    Column {
-                        ModernSeekbarStyle.values().forEach { seekbarStyle ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onModernSeekbarStyleSelected(seekbarStyle)
-                                        isSeekbarStyleDialogVisible = false
-                                    }
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = selectedModernSeekbarStyle == seekbarStyle,
-                                    onClick = {
-                                        onModernSeekbarStyleSelected(seekbarStyle)
-                                        isSeekbarStyleDialogVisible = false
-                                    }
-                                )
-
-                                Column(
-                                    modifier = Modifier.padding(start = 4.dp)
-                                ) {
-                                    Text(text = seekbarStyle.displayName)
-
-                                    Text(
-                                        text = seekbarStyle.description,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            isSeekbarStyleDialogVisible = false
-                        }
-                    ) {
-                        Text(text = "Close")
-                    }
-                }
-            )
-        }
-
-        if (isPlayerThemeDialogVisible) {
-            AlertDialog(
-                onDismissRequest = {
-                    isPlayerThemeDialogVisible = false
-                },
-                title = {
-                    Text(text = "Player Theme")
-                },
-                text = {
-                    Column {
-                        PlayerTheme.values().forEach { playerTheme ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onPlayerThemeSelected(playerTheme)
-                                        isPlayerThemeDialogVisible = false
-                                    },
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = selectedPlayerTheme == playerTheme,
-                                    onClick = {
-                                        onPlayerThemeSelected(playerTheme)
-                                        isPlayerThemeDialogVisible = false
-                                    }
-                                )
-
-                                Text(text = playerTheme.displayName)
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            isPlayerThemeDialogVisible = false
-                        }
-                    ) {
-                        Text(text = "Close")
-                    }
-                }
-            )
-        }
-
-        if (isThemeCustomizationDialogVisible && themeCustomizationOptions.isNotEmpty()) {
-            ThemeColorCustomizationDialog(
-                playerTheme = selectedPlayerTheme,
-                tokens = selectedPlayerThemeTokens,
-                onColorSelected = { field, color ->
-                    onUpdatePlayerThemeTokenOverride(selectedPlayerTheme, field, color)
-                },
-                onReset = {
-                    onResetPlayerThemeTokenOverrides(selectedPlayerTheme)
-                },
-                onDismiss = {
-                    isThemeCustomizationDialogVisible = false
-                }
-            )
-        }
-
-        HorizontalDivider(
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
-
-        SettingsSectionTitle(text = "About")
-
-        ListItem(
-            headlineContent = {
-                Text(text = "CDPlaya")
             },
-            supportingContent = {
-                Text(text = "A local music player for your personal library.")
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        isReplayGainDialogVisible = false
+                    }
+                ) {
+                    Text(text = "Close")
+                }
             }
         )
     }
-}
 
-@Composable
-private fun SettingsSectionTitle(
-    text: String
-) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-    )
+    if (isAudioOffloadDialogVisible) {
+        AlertDialog(
+            onDismissRequest = {
+                isAudioOffloadDialogVisible = false
+            },
+            title = {
+                Text(text = "Audio offload")
+            },
+            text = {
+                Column {
+                    AudioOffloadPreference.entries.forEach { preference ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onAudioOffloadPreferenceSelected(preference)
+                                    isAudioOffloadDialogVisible = false
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedAudioOffloadPreference == preference,
+                                onClick = {
+                                    onAudioOffloadPreferenceSelected(preference)
+                                    isAudioOffloadDialogVisible = false
+                                }
+                            )
+                            Column(modifier = Modifier.padding(start = 4.dp)) {
+                                Text(text = preference.displayName)
+                                Text(
+                                    text = if (preference == AudioOffloadPreference.AUTOMATIC) {
+                                        "Use offload when compatible and otherwise play normally."
+                                    } else {
+                                        "Use normal decoded playback."
+                                    },
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { isAudioOffloadDialogVisible = false }) {
+                    Text(text = "Close")
+                }
+            }
+        )
+    }
+
+    if (
+        isArtworkTransitionDialogVisible &&
+        selectedPlayerTheme == PlayerTheme.DEFAULT
+    ) {
+        AlertDialog(
+            onDismissRequest = {
+                isArtworkTransitionDialogVisible = false
+            },
+            title = {
+                Text(text = "Artwork transition style")
+            },
+            text = {
+                Column {
+                    ModernArtworkTransitionStyle.values().forEach { transitionStyle ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onModernArtworkTransitionStyleSelected(transitionStyle)
+                                    isArtworkTransitionDialogVisible = false
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedModernArtworkTransitionStyle == transitionStyle,
+                                onClick = {
+                                    onModernArtworkTransitionStyleSelected(transitionStyle)
+                                    isArtworkTransitionDialogVisible = false
+                                }
+                            )
+
+                            Column(
+                                modifier = Modifier.padding(start = 4.dp)
+                            ) {
+                                Text(text = transitionStyle.displayName)
+
+                                Text(
+                                    text = transitionStyle.description,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        isArtworkTransitionDialogVisible = false
+                    }
+                ) {
+                    Text(text = "Close")
+                }
+            }
+        )
+    }
+
+    if (
+        isSeekbarStyleDialogVisible &&
+        selectedPlayerTheme == PlayerTheme.DEFAULT
+    ) {
+        AlertDialog(
+            onDismissRequest = {
+                isSeekbarStyleDialogVisible = false
+            },
+            title = {
+                Text(text = "Modern player seekbar style")
+            },
+            text = {
+                Column {
+                    ModernSeekbarStyle.values().forEach { seekbarStyle ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onModernSeekbarStyleSelected(seekbarStyle)
+                                    isSeekbarStyleDialogVisible = false
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedModernSeekbarStyle == seekbarStyle,
+                                onClick = {
+                                    onModernSeekbarStyleSelected(seekbarStyle)
+                                    isSeekbarStyleDialogVisible = false
+                                }
+                            )
+
+                            Column(
+                                modifier = Modifier.padding(start = 4.dp)
+                            ) {
+                                Text(text = seekbarStyle.displayName)
+
+                                Text(
+                                    text = seekbarStyle.description,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        isSeekbarStyleDialogVisible = false
+                    }
+                ) {
+                    Text(text = "Close")
+                }
+            }
+        )
+    }
+
+    if (isPlayerThemeDialogVisible) {
+        AlertDialog(
+            onDismissRequest = {
+                isPlayerThemeDialogVisible = false
+            },
+            title = {
+                Text(text = "Player Theme")
+            },
+            text = {
+                Column {
+                    PlayerTheme.values().forEach { playerTheme ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onPlayerThemeSelected(playerTheme)
+                                    isPlayerThemeDialogVisible = false
+                                },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedPlayerTheme == playerTheme,
+                                onClick = {
+                                    onPlayerThemeSelected(playerTheme)
+                                    isPlayerThemeDialogVisible = false
+                                }
+                            )
+
+                            Text(text = playerTheme.displayName)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        isPlayerThemeDialogVisible = false
+                    }
+                ) {
+                    Text(text = "Close")
+                }
+            }
+        )
+    }
+
+    if (isThemeCustomizationDialogVisible && themeCustomizationOptions.isNotEmpty()) {
+        ThemeColorCustomizationDialog(
+            playerTheme = selectedPlayerTheme,
+            tokens = selectedPlayerThemeTokens,
+            onColorSelected = { field, color ->
+                onUpdatePlayerThemeTokenOverride(selectedPlayerTheme, field, color)
+            },
+            onReset = {
+                onResetPlayerThemeTokenOverrides(selectedPlayerTheme)
+            },
+            onDismiss = {
+                isThemeCustomizationDialogVisible = false
+            }
+        )
+    }
 }
