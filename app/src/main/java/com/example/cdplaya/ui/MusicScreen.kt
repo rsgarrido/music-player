@@ -78,6 +78,7 @@ import com.example.cdplaya.ui.player.classicwheel.resolveClassicWheelSharedGeome
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
+import com.example.cdplaya.ui.state.LibraryRefreshSummary
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewOption
 import com.example.cdplaya.ui.equalizer.EqualizerScreenState
@@ -98,6 +99,8 @@ internal fun MusicScreen(
     songs: List<Song>,
     mediaAccessState: MediaAccessState,
     isLibraryLoading: Boolean,
+    isLibraryRefreshing: Boolean,
+    lastLibraryRefreshSummary: LibraryRefreshSummary?,
     libraryErrorMessage: String?,
     onRequestAudioAccess: () -> Unit,
     onRequestArtworkAccess: () -> Unit,
@@ -144,6 +147,8 @@ internal fun MusicScreen(
     libraryFolders: List<LibraryFolder>,
     folderSelectionMode: FolderSelectionMode,
     selectedLibraryFolders: Set<String>,
+    excludedLibraryFolders: Set<String>,
+    onScanLibraryClick: () -> Unit,
     onLibraryFolderToggle: (String) -> Unit,
     onSelectAllLibraryFolders: () -> Unit,
     onClearSelectedLibraryFolders: () -> Unit,
@@ -670,6 +675,8 @@ internal fun MusicScreen(
                     songs = songs,
                     mediaAccessState = mediaAccessState,
                     isLibraryLoading = isLibraryLoading,
+                    isLibraryRefreshing = isLibraryRefreshing,
+                    lastLibraryRefreshSummary = lastLibraryRefreshSummary,
                     libraryErrorMessage = libraryErrorMessage,
                     onRequestAudioAccess = onRequestAudioAccess,
                     onRequestArtworkAccess = onRequestArtworkAccess,
@@ -687,6 +694,7 @@ internal fun MusicScreen(
                     libraryFolders = libraryFolders,
                     folderSelectionMode = folderSelectionMode,
                     selectedLibraryFolders = selectedLibraryFolders,
+                    excludedLibraryFolders = excludedLibraryFolders,
                     favoriteMembershipKeys = favoriteMembershipKeys,
                     unresolvedFavoriteCount = unresolvedFavoriteCount,
                     unresolvedPlaylistRowCount = unresolvedPlaylistRowCount,
@@ -753,6 +761,7 @@ internal fun MusicScreen(
                     },
                     onExportBackupClick = onExportBackupClick,
                     onRestoreBackupClick = onRestoreBackupClick,
+                    onScanLibraryClick = onScanLibraryClick,
                     onLibraryFolderToggle = onLibraryFolderToggle,
                     onSelectAllLibraryFolders = onSelectAllLibraryFolders,
                     onClearSelectedLibraryFolders = onClearSelectedLibraryFolders,

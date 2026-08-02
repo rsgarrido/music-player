@@ -29,18 +29,18 @@ internal fun MusicRoute(
     val libraryUiState by musicViewModel.libraryUiState.collectAsStateWithLifecycle()
     val sleepTimerUiState by musicViewModel.sleepTimerUiState.collectAsStateWithLifecycle()
     val playerAppearanceUiState by
-        musicViewModel.playerAppearanceUiState.collectAsStateWithLifecycle()
+    musicViewModel.playerAppearanceUiState.collectAsStateWithLifecycle()
     val libraryAppearanceUiState by
-        musicViewModel.libraryAppearanceUiState.collectAsStateWithLifecycle()
+    musicViewModel.libraryAppearanceUiState.collectAsStateWithLifecycle()
     val audioOffloadPreference by
-        musicViewModel.audioOffloadPreference.collectAsStateWithLifecycle()
+    musicViewModel.audioOffloadPreference.collectAsStateWithLifecycle()
     val audioOutputUiState by
-        musicViewModel.audioOutputUiState.collectAsStateWithLifecycle()
+    musicViewModel.audioOutputUiState.collectAsStateWithLifecycle()
     val equalizerScreenState by
-        musicViewModel.equalizerScreenState
-            .collectAsStateWithLifecycle()
+    musicViewModel.equalizerScreenState
+        .collectAsStateWithLifecycle()
     val lyricsPlaybackUiState by
-        musicViewModel.lyricsPlaybackUiState.collectAsStateWithLifecycle()
+    musicViewModel.lyricsPlaybackUiState.collectAsStateWithLifecycle()
     if (!playerAppearanceUiState.isLoaded || !libraryAppearanceUiState.isLoaded) return
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
@@ -78,6 +78,8 @@ internal fun MusicRoute(
         mostPlayedSongs = libraryUiState.mostPlayedSongs,
         mediaAccessState = mediaAccessState,
         isLibraryLoading = libraryUiState.isLoading,
+        isLibraryRefreshing = libraryUiState.isRefreshing,
+        lastLibraryRefreshSummary = libraryUiState.lastRefreshSummary,
         libraryErrorMessage = libraryUiState.errorMessage,
         onRequestAudioAccess = onRequestAudioAccess,
         onRequestArtworkAccess = onRequestArtworkAccess,
@@ -100,6 +102,7 @@ internal fun MusicRoute(
         libraryFolders = libraryUiState.folders,
         folderSelectionMode = libraryUiState.folderSelectionMode,
         selectedLibraryFolders = libraryUiState.selectedFolders,
+        excludedLibraryFolders = libraryUiState.excludedFolders,
         favoriteMembershipKeys = libraryUiState.favoriteMembershipKeys,
         unresolvedFavoriteCount = libraryUiState.unresolvedFavoriteCount,
         unresolvedPlaylistRowCount = libraryUiState.unresolvedPlaylistRowCount,
@@ -177,6 +180,7 @@ internal fun MusicRoute(
         onUndoAddSongsToQueueClick = { songs ->
             musicViewModel.removeLastMatchingSongsFromQueue(songs)
         },
+        onScanLibraryClick = musicViewModel::scanLibrary,
         onLibraryFolderToggle = { folderPath ->
             musicViewModel.toggleLibraryFolder(folderPath)
         },
@@ -284,7 +288,7 @@ internal fun MusicRoute(
                 musicViewModel::cancelEqualizerPreampPreview,
             onAutomaticHeadroomChanged =
                 musicViewModel::
-                    setEqualizerAutomaticHeadroomEnabled,
+                setEqualizerAutomaticHeadroomEnabled,
             onLimiterEnabledChanged =
                 musicViewModel::setLimiterEnabled,
             onPreviewLimiterCeiling =
@@ -293,7 +297,7 @@ internal fun MusicRoute(
                 musicViewModel::commitLimiterCeiling,
             onCancelLimiterCeilingPreview =
                 musicViewModel::
-                    cancelLimiterCeilingPreview,
+                cancelLimiterCeilingPreview,
             onResetLimiterMeters =
                 musicViewModel::resetLimiterMeters,
             onApplyBuiltInPreset =
@@ -350,14 +354,14 @@ internal fun MusicRoute(
                 musicViewModel::updateEqualizerImportPreview,
             onReplaceWithImportedProfile =
                 musicViewModel::
-                    replaceWithImportedEqualizerProfile,
+                replaceWithImportedEqualizerProfile,
             onSaveImportedProfile =
                 musicViewModel::saveImportedEqualizerProfile,
             onResetToFlat =
                 musicViewModel::resetEqualizerToFlat,
             onComparisonBypassedChanged =
                 musicViewModel::
-                    setEqualizerComparisonBypassed
+                setEqualizerComparisonBypassed
         ),
         onReadEditableSongTags = musicViewModel::readEditableSongTags,
         onGetUnsupportedTagEditingMessage = musicViewModel::getUnsupportedTagEditingMessage,

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,11 +33,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.R
+import com.example.cdplaya.data.FolderSelectionMode
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.ui.AppShellIcons
 import com.example.cdplaya.ui.AppShellTypography
+import com.example.cdplaya.ui.state.LibraryRefreshSummary
 import com.example.cdplaya.ui.player.modern.ModernArtworkTransitionStyle
 import com.example.cdplaya.ui.player.modern.ModernSeekbarStyle
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
@@ -47,9 +50,15 @@ import com.example.cdplaya.ui.player.theme.customizationOptions
 fun SettingsScreen(
     totalSongCount: Int,
     availableFolderCount: Int,
+    folderSelectionMode: FolderSelectionMode,
     selectedFolderCount: Int,
+    excludedFolderCount: Int,
+    isLibraryRefreshing: Boolean,
+    lastLibraryRefreshSummary: LibraryRefreshSummary?,
+    libraryErrorMessage: String?,
     onBackClick: () -> Unit,
     onLibraryFoldersClick: () -> Unit,
+    onScanLibraryClick: () -> Unit,
     onExportBackupClick: () -> Unit,
     onRestoreBackupClick: () -> Unit,
     onDiagnosticsClick: () -> Unit,
@@ -82,10 +91,23 @@ fun SettingsScreen(
     var isSeekbarStyleDialogVisible by remember { mutableStateOf(false) }
 
     val themeCustomizationOptions = selectedPlayerTheme.customizationOptions()
-    val folderSelectionText = if (selectedFolderCount == 0) {
-        "All folders • $availableFolderCount available"
-    } else {
-        "$selectedFolderCount selected • $availableFolderCount available"
+    val folderSelectionText = when {
+        folderSelectionMode == FolderSelectionMode.ALL && excludedFolderCount == 0 ->
+            "All folder trees • $availableFolderCount source(s)"
+        folderSelectionMode == FolderSelectionMode.ALL ->
+            "All except $excludedFolderCount excluded • $availableFolderCount source(s)"
+        selectedFolderCount == 0 ->
+            "No folders selected • $availableFolderCount source(s)"
+        excludedFolderCount == 0 ->
+            "$selectedFolderCount folder root(s) selected"
+        else ->
+            "$selectedFolderCount selected • $excludedFolderCount excluded"
+    }
+    val libraryScanSummary = when {
+        isLibraryRefreshing -> "Scanning for added, changed, moved, or removed music…"
+        libraryErrorMessage != null -> libraryErrorMessage
+        lastLibraryRefreshSummary != null -> lastLibraryRefreshSummary.settingsSummary()
+        else -> "Check the device library without restarting CDPlaya"
     }
 
     Column(
@@ -118,7 +140,7 @@ fun SettingsScreen(
 
         SettingsSection(
             title = "Library",
-            description = "Choose what CDPlaya scans and review your current collection.",
+            description = "Choose what CDPlaya includes and refresh your current collection.",
             icon = AppShellIcons.AlbumStack
         ) {
             SettingsRow(
@@ -128,6 +150,20 @@ fun SettingsScreen(
                 onClick = onLibraryFoldersClick,
                 emphasizeSummary = true,
                 navigationContentDescription = "Open library folders"
+            )
+
+            SettingsDivider()
+
+            SettingsRow(
+                title = if (isLibraryRefreshing) "Scanning library" else "Scan library",
+                summary = libraryScanSummary,
+                icon = Icons.Filled.Refresh,
+                onClick = {
+                    if (!isLibraryRefreshing) onScanLibraryClick()
+                },
+                emphasizeSummary = isLibraryRefreshing ||
+                        libraryErrorMessage != null ||
+                        lastLibraryRefreshSummary != null
             )
 
             SettingsDivider()
@@ -592,5 +628,22 @@ fun SettingsScreen(
                 isThemeCustomizationDialogVisible = false
             }
         )
+    }
+}
+
+private fun LibraryRefreshSummary.settingsSummary(): String {
+    if (!successfulCompleteScan) {
+        return "Scan was incomplete • kept the existing library"
+    }
+    val changes = buildList {
+        if (addedCount > 0) add("$addedCount added")
+        if (updatedCount > 0) add("$updatedCount updated")
+        if (movedCount > 0) add("$movedCount moved")
+        if (removedCount > 0) add("$removedCount removed")
+    }
+    return if (changes.isEmpty()) {
+        "No library changes found"
+    } else {
+        changes.joinToString(" • ")
     }
 }

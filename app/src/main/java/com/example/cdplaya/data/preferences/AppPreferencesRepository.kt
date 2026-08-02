@@ -158,11 +158,11 @@ class AppPreferencesRepository private constructor(
     ) = edit { preferences ->
         val updated = decodeAppPreferences(preferences)
             .equalizerPreferences.withCurve(
-            preampDb = preampDb,
-            automaticHeadroomEnabled =
-                automaticHeadroomEnabled,
-            bandGainsDb = bandGainsDb
-        )
+                preampDb = preampDb,
+                automaticHeadroomEnabled =
+                    automaticHeadroomEnabled,
+                bandGainsDb = bandGainsDb
+            )
         preferences.writeEqualizerPreferences(updated)
     }
 
@@ -248,7 +248,7 @@ class AppPreferencesRepository private constructor(
                 )
             }
             val presets = currentParametric.userPresets +
-                listOfNotNull(createdPreset)
+                    listOfNotNull(createdPreset)
             val parametric = if (apply) {
                 source.copy(userPresets = presets)
             } else {
@@ -377,7 +377,7 @@ class AppPreferencesRepository private constructor(
 
     suspend fun setLibraryFolderSelection(selection: FolderSelection) = edit {
         it[Keys.folderSelectionMode] = selection.mode.name
-        it[Keys.selectedLibraryFolders] = selection.customFolders.toSet()
+        it[Keys.selectedLibraryFolders] = selection.toStoredFolders()
     }
 
     @Deprecated("Use setLibraryFolderSelection so an empty custom selection is unambiguous.")
@@ -484,44 +484,44 @@ internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState
         storedFolders = storedFolders
     )
     return AppPreferencesState(
-    selectedPlayerTheme = PlayerTheme.fromId(preferences[Keys.selectedPlayerTheme]),
-    playerThemeTokenOverrides = PlayerTheme.entries.associateWith { emptyOverrides() }
-        .mapValues { (theme, _) ->
-            PlayerThemeTokenOverrides(
-                shellColor = preferences.color(theme, Keys.SHELL),
-                accentColor = preferences.color(theme, Keys.ACCENT),
-                displayBackgroundColor = preferences.color(theme, Keys.DISPLAY_BACKGROUND),
-                displayTextColor = preferences.color(theme, Keys.DISPLAY_TEXT),
-                secondaryAccentColor = preferences.color(theme, Keys.SECONDARY_ACCENT)
-            )
-        }
-        .filterValues { it != emptyOverrides() },
-    modernArtworkTransitionStyle = ModernArtworkTransitionStyle.fromStorageValue(
-        preferences[Keys.modernArtworkTransitionStyle]
-    ),
-    modernSeekbarStyle = ModernSeekbarStyle.fromStorageValue(preferences[Keys.modernSeekbarStyle]),
-    replayGainMode = runCatching {
-        ReplayGainMode.valueOf(preferences[Keys.replayGainMode].orEmpty())
-    }.getOrDefault(ReplayGainMode.OFF),
-    audioOffloadPreference = AudioOffloadPreference.fromStorageValue(
-        preferences[Keys.audioOffloadPreference]
-    ),
-    equalizerPreferences = decodeEqualizerPreferences(preferences),
-    folderSelectionMode = folderSelection.mode,
-    selectedLibraryFolders = folderSelection.customFolders,
-    songsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.songsViewMode]),
-    albumsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.albumsViewMode]),
-    artistsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.artistsViewMode]),
-    songsGridColumnCount = LibraryGridColumns.normalize(
-        preferences[Keys.songsGridColumns] ?: LibraryGridColumns.DEFAULT
-    ),
-    albumsGridColumnCount = LibraryGridColumns.normalize(
-        preferences[Keys.albumsGridColumns] ?: LibraryGridColumns.DEFAULT
-    ),
-    artistsGridColumnCount = LibraryGridColumns.normalize(
-        preferences[Keys.artistsGridColumns] ?: LibraryGridColumns.DEFAULT
-    ),
-    isLoaded = true
+        selectedPlayerTheme = PlayerTheme.fromId(preferences[Keys.selectedPlayerTheme]),
+        playerThemeTokenOverrides = PlayerTheme.entries.associateWith { emptyOverrides() }
+            .mapValues { (theme, _) ->
+                PlayerThemeTokenOverrides(
+                    shellColor = preferences.color(theme, Keys.SHELL),
+                    accentColor = preferences.color(theme, Keys.ACCENT),
+                    displayBackgroundColor = preferences.color(theme, Keys.DISPLAY_BACKGROUND),
+                    displayTextColor = preferences.color(theme, Keys.DISPLAY_TEXT),
+                    secondaryAccentColor = preferences.color(theme, Keys.SECONDARY_ACCENT)
+                )
+            }
+            .filterValues { it != emptyOverrides() },
+        modernArtworkTransitionStyle = ModernArtworkTransitionStyle.fromStorageValue(
+            preferences[Keys.modernArtworkTransitionStyle]
+        ),
+        modernSeekbarStyle = ModernSeekbarStyle.fromStorageValue(preferences[Keys.modernSeekbarStyle]),
+        replayGainMode = runCatching {
+            ReplayGainMode.valueOf(preferences[Keys.replayGainMode].orEmpty())
+        }.getOrDefault(ReplayGainMode.OFF),
+        audioOffloadPreference = AudioOffloadPreference.fromStorageValue(
+            preferences[Keys.audioOffloadPreference]
+        ),
+        equalizerPreferences = decodeEqualizerPreferences(preferences),
+        folderSelectionMode = folderSelection.mode,
+        selectedLibraryFolders = folderSelection.toStoredFolders(),
+        songsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.songsViewMode]),
+        albumsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.albumsViewMode]),
+        artistsViewMode = LibraryViewMode.fromStorageValue(preferences[Keys.artistsViewMode]),
+        songsGridColumnCount = LibraryGridColumns.normalize(
+            preferences[Keys.songsGridColumns] ?: LibraryGridColumns.DEFAULT
+        ),
+        albumsGridColumnCount = LibraryGridColumns.normalize(
+            preferences[Keys.albumsGridColumns] ?: LibraryGridColumns.DEFAULT
+        ),
+        artistsGridColumnCount = LibraryGridColumns.normalize(
+            preferences[Keys.artistsGridColumns] ?: LibraryGridColumns.DEFAULT
+        ),
+        isLoaded = true
     )
 }
 
@@ -611,8 +611,8 @@ private fun decodeUserEqualizerPresets(
 ): List<UserEqualizerPreset> {
     val decoded = runCatching {
         equalizerJson.decodeFromString<
-            List<StoredUserEqualizerPreset>
-        >(encoded)
+                List<StoredUserEqualizerPreset>
+                >(encoded)
     }.getOrDefault(emptyList())
     val names = mutableSetOf<String>()
     val ids = mutableSetOf<String>()
@@ -632,9 +632,9 @@ private fun decodeUserEqualizerPresets(
         }.getOrNull()
     }.filter { preset ->
         preset.name.lowercase() !in
-            GraphicEqualizerPresets.builtInNamesLowercase &&
-            ids.add(preset.id) &&
-            names.add(preset.name.lowercase())
+                GraphicEqualizerPresets.builtInNamesLowercase &&
+                ids.add(preset.id) &&
+                names.add(preset.name.lowercase())
     }
 }
 
