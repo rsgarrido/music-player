@@ -44,6 +44,7 @@ import com.example.cdplaya.performance.tracePerformance
 import com.example.cdplaya.mediaaccess.LibraryPermissionGate
 import com.example.cdplaya.ui.state.LibraryUiState
 import com.example.cdplaya.ui.state.libraryUiState
+import com.example.cdplaya.ui.state.toUiSummary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -127,12 +128,13 @@ class LibraryController(
             updateState {
                 copy(
                     folderSelectionMode = field.mode,
-                    selectedFolders = field.effectiveFolders(folders.map { it.path })
+                    selectedFolders = field.customFolders,
+                    excludedFolders = field.excludedFolders
                 )
             }
         }
     private val selectedLibraryFolders: Set<String>
-        get() = folderSelection.effectiveFolders(libraryFolders.map { it.path })
+        get() = folderSelection.customFolders
     private var favoriteMembershipKeys: Set<String>
         get() = _uiState.value.favoriteMembershipKeys
         set(value) = updateState { copy(favoriteMembershipKeys = value.toSet()) }
@@ -186,9 +188,9 @@ class LibraryController(
     fun loadSongs() {
         launchProtectedRefresh { scanToken ->
             val savedPreferences = appPreferencesRepository.awaitLoadedState()
-            val savedSelection = FolderSelection(
-                mode = savedPreferences.folderSelectionMode,
-                customFolders = savedPreferences.selectedLibraryFolders
+            val savedSelection = FolderSelection.fromStored(
+                storedMode = savedPreferences.folderSelectionMode.name,
+                storedFolders = savedPreferences.selectedLibraryFolders
             )
             tracePerformance(PerformanceTraceNames.PREFERENCES_READY) { Unit }
             folderSelection = savedSelection
@@ -230,6 +232,20 @@ class LibraryController(
                 scanFreshLibraryAndUpdateCache(
                     folderSelection = folderSelection,
                     forceArtworkRefreshIds = idsToRefresh,
+                    scanToken = scanToken
+                )
+            }
+            if (permissionGate.isCurrent(scanToken)) {
+                publishLibraryData(libraryData, reconcilePlayback = true)
+            }
+        }
+    }
+
+    fun scanLibrary() {
+        launchProtectedRefresh { scanToken ->
+            val libraryData = withContext(Dispatchers.IO) {
+                scanFreshLibraryAndUpdateCache(
+                    folderSelection = folderSelection,
                     scanToken = scanToken
                 )
             }
@@ -291,7 +307,7 @@ class LibraryController(
                     editedTags = editedTags
                 )
                 favoritesRepository.getFavoriteMembershipKeys() to
-                    playlistsRepository.getPlaylists()
+                        playlistsRepository.getPlaylists()
             }
             val updatedFavoriteMembershipKeys = updatedUserData.first
             val updatedPlaylists = updatedUserData.second
@@ -565,7 +581,7 @@ class LibraryController(
             }
             val mappedHistory = withContext(Dispatchers.Default) {
                 mapListeningHistoryEntriesToSongs(historyData.first) to
-                    mapListeningHistoryEntriesToSongs(historyData.second)
+                        mapListeningHistoryEntriesToSongs(historyData.second)
             }
 
             recentlyPlayedSongs = mappedHistory.first
@@ -577,9 +593,9 @@ class LibraryController(
         val restoredData = withContext(Dispatchers.IO) {
             BackupRestoredUserData(
                 folderSelection = appPreferencesRepository.awaitLoadedState().let { preferences ->
-                    FolderSelection(
-                        mode = preferences.folderSelectionMode,
-                        customFolders = preferences.selectedLibraryFolders
+                    FolderSelection.fromStored(
+                        storedMode = preferences.folderSelectionMode.name,
+                        storedFolders = preferences.selectedLibraryFolders
                     )
                 },
                 favoriteMembershipKeys = favoritesRepository.getFavoriteMembershipKeys(),
@@ -588,17 +604,14 @@ class LibraryController(
                 mostPlayed = listeningHistoryRepository.getMostPlayed()
             )
         }
-        val resolvedFolderSelection = if (
-            restoredData.folderSelection.mode == FolderSelectionMode.ALL
-        ) {
-            restoredData.folderSelection
-        } else {
-            restoredData.folderSelection.copy(
-                customFolders = resolveRestoredFolderSelections(
-                    restoredData.folderSelection.customFolders
-                )
+        val resolvedFolderSelection = restoredData.folderSelection.copy(
+            customFolders = resolveRestoredFolderSelections(
+                restoredData.folderSelection.customFolders
+            ),
+            excludedFolders = resolveRestoredFolderSelections(
+                restoredData.folderSelection.excludedFolders
             )
-        }
+        )
         if (resolvedFolderSelection != restoredData.folderSelection) {
             appPreferencesRepository.setLibraryFolderSelection(resolvedFolderSelection)
         }
@@ -611,7 +624,7 @@ class LibraryController(
         selectedPlaylistSongs = emptyList()
         val mappedHistory = withContext(Dispatchers.Default) {
             mapListeningHistoryEntriesToSongs(restoredData.recentlyPlayed) to
-                mapListeningHistoryEntriesToSongs(restoredData.mostPlayed)
+                    mapListeningHistoryEntriesToSongs(restoredData.mostPlayed)
         }
         recentlyPlayedSongs = mappedHistory.first
         mostPlayedSongs = mappedHistory.second
@@ -639,6 +652,7 @@ class LibraryController(
                         reconcilePlayback = true
                     )
                 }
+                return@launchProtectedRefresh
             }
 
             val freshLibraryData = withContext(Dispatchers.IO) {
@@ -704,7 +718,17 @@ class LibraryController(
         reconcilePlayback: Boolean,
         traceName: String = PerformanceTraceNames.LIBRARY_PUBLICATION
     ) {
-        if (!publicationTracker.shouldPublish(libraryData)) return
+        if (!publicationTracker.shouldPublish(libraryData)) {
+            updateState {
+                copy(
+                    lastRefreshSummary = lastLibraryRefreshResult?.toUiSummary(),
+                    isLoading = false,
+                    isRefreshing = false,
+                    errorMessage = null
+                )
+            }
+            return
+        }
         val indexStartedAt = SystemClock.elapsedRealtime()
         val indexedSnapshot = withContext(Dispatchers.Default) {
             tracePerformance(PerformanceTraceNames.LIBRARY_INDEX_CONSTRUCTION) {
@@ -718,8 +742,8 @@ class LibraryController(
         }
         debugLibraryTiming(
             "final-library-index elapsedMs=${SystemClock.elapsedRealtime() - indexStartedAt} " +
-                "referenceSongs=${libraryData.referenceSongs.size} " +
-                "visibleSongs=${libraryData.songs.size}"
+                    "referenceSongs=${libraryData.referenceSongs.size} " +
+                    "visibleSongs=${libraryData.songs.size}"
         )
         publishLibrarySnapshot(libraryData, reconcilePlayback, indexedSnapshot, traceName)
     }
@@ -739,9 +763,8 @@ class LibraryController(
                 songs = publishedSongs,
                 folders = libraryData.libraryFolders,
                 folderSelectionMode = folderSelection.mode,
-                selectedFolders = folderSelection.effectiveFolders(
-                    libraryData.libraryFolders.map { it.path }
-                ),
+                selectedFolders = folderSelection.customFolders,
+                excludedFolders = folderSelection.excludedFolders,
                 favoriteMembershipKeys = current.favoriteMembershipKeys,
                 playlists = current.playlists,
                 selectedPlaylistName = current.selectedPlaylistName,
@@ -782,7 +805,7 @@ class LibraryController(
             val cachedSongs = libraryCacheRepository.getAllCachedSongs()
             debugLibraryTiming(
                 "cache-read elapsedMs=${SystemClock.elapsedRealtime() - cacheReadStartedAt} " +
-                    "songs=${cachedSongs.size} scan=$scanNumber"
+                        "songs=${cachedSongs.size} scan=$scanNumber"
             )
             val startedAt = SystemClock.elapsedRealtime()
             val refreshResult = tracePerformance(PerformanceTraceNames.LIBRARY_ENRICHMENT) {
@@ -798,11 +821,11 @@ class LibraryController(
                 Log.d(
                     "LibraryRefresh",
                     "elapsedMs=${SystemClock.elapsedRealtime() - startedAt} " +
-                        "reused=${refreshResult.reusedCount} added=${refreshResult.addedCount} " +
-                        "updated=${refreshResult.updatedCount} moved=${refreshResult.movedCount} " +
-                        "removed=${refreshResult.removedCount} enriched=${refreshResult.enrichmentCount} " +
-                        "artworkRepairs=${refreshResult.artworkRepairCount} " +
-                        "complete=${refreshResult.successfulCompleteScan}"
+                            "reused=${refreshResult.reusedCount} added=${refreshResult.addedCount} " +
+                            "updated=${refreshResult.updatedCount} moved=${refreshResult.movedCount} " +
+                            "removed=${refreshResult.removedCount} enriched=${refreshResult.enrichmentCount} " +
+                            "artworkRepairs=${refreshResult.artworkRepairCount} " +
+                            "complete=${refreshResult.successfulCompleteScan}"
                 )
             }
 
@@ -811,7 +834,7 @@ class LibraryController(
                 libraryCacheRepository.replaceCachedSongs(refreshResult.songs)
                 debugLibraryTiming(
                     "cache-write elapsedMs=${SystemClock.elapsedRealtime() - cacheWriteStartedAt} " +
-                        "songs=${refreshResult.songs.size} scan=$scanNumber"
+                            "songs=${refreshResult.songs.size} scan=$scanNumber"
                 )
             } else {
                 debugLibraryTiming("cache-write elapsedMs=0 songs=0 scan=$scanNumber skipped=true")
@@ -823,12 +846,12 @@ class LibraryController(
             )
             debugLibraryTiming(
                 "folder-discovery elapsedMs=" +
-                    "${SystemClock.elapsedRealtime() - folderDiscoveryStartedAt} " +
-                    "folders=${libraryData.libraryFolders.size} scan=$scanNumber"
+                        "${SystemClock.elapsedRealtime() - folderDiscoveryStartedAt} " +
+                        "folders=${libraryData.libraryFolders.size} scan=$scanNumber"
             )
             debugLibraryTiming(
                 "scan-complete elapsedMs=${SystemClock.elapsedRealtime() - startedAt} " +
-                    "scan=$scanNumber token=$scanToken"
+                        "scan=$scanNumber token=$scanToken"
             )
             libraryData
         }
@@ -841,15 +864,15 @@ class LibraryController(
         val cachedSongs = libraryCacheRepository.getAllCachedSongs()
         debugLibraryTiming(
             "cache-publication-read elapsedMs=" +
-                "${SystemClock.elapsedRealtime() - cacheReadStartedAt} songs=${cachedSongs.size}"
+                    "${SystemClock.elapsedRealtime() - cacheReadStartedAt} songs=${cachedSongs.size}"
         )
         val cachePreparationStartedAt = SystemClock.elapsedRealtime()
         val publicationSongs = MusicRepository(applicationContext)
             .prepareCachedSongsForPublication(cachedSongs)
         debugLibraryTiming(
             "cache-publication-prepare elapsedMs=" +
-                "${SystemClock.elapsedRealtime() - cachePreparationStartedAt} " +
-                "songs=${publicationSongs.size}"
+                    "${SystemClock.elapsedRealtime() - cachePreparationStartedAt} " +
+                    "songs=${publicationSongs.size}"
         )
         com.example.cdplaya.data.buildMusicLibraryData(
             allSongs = publicationSongs,
@@ -921,11 +944,11 @@ class LibraryController(
                     mostPlayed = mappedResults.second,
                     selectedPlaylistSongs = mappedResults.third,
                     unresolvedFavorites = plan.favorites.result.unresolvedCount +
-                        plan.favorites.result.ambiguousCount,
+                            plan.favorites.result.ambiguousCount,
                     unresolvedPlaylistRows = plan.playlists.result.unresolvedCount +
-                        plan.playlists.result.ambiguousCount,
+                            plan.playlists.result.ambiguousCount,
                     unresolvedHistoryRows = plan.history.result.unresolvedCount +
-                        plan.history.result.ambiguousCount,
+                            plan.history.result.ambiguousCount,
                     inspectedRows = plan.inspectedRowCount,
                     writes = plan.writeCount,
                     favoriteInspected = plan.favorites.result.inspectedCount,
@@ -953,11 +976,11 @@ class LibraryController(
                 Log.d(
                     "SongReferenceReconciliation",
                     "generation=$generation publish=$libraryPublishCount indexBuilds=1 active=1 " +
-                        "favorites=${reconciled.favoriteInspected}/${reconciled.favoriteWrites} " +
-                        "playlists=${reconciled.playlistInspected}/${reconciled.playlistWrites} " +
-                        "history=${reconciled.historyInspected}/${reconciled.historyWrites} " +
-                        "total=${reconciled.inspectedRows}/${reconciled.writes} " +
-                        "elapsedMs=${SystemClock.elapsedRealtime() - startedAt}"
+                            "favorites=${reconciled.favoriteInspected}/${reconciled.favoriteWrites} " +
+                            "playlists=${reconciled.playlistInspected}/${reconciled.playlistWrites} " +
+                            "history=${reconciled.historyInspected}/${reconciled.historyWrites} " +
+                            "total=${reconciled.inspectedRows}/${reconciled.writes} " +
+                            "elapsedMs=${SystemClock.elapsedRealtime() - startedAt}"
                 )
             }
         }
@@ -1009,7 +1032,7 @@ class LibraryController(
             val matches = available.filter { candidate ->
                 val normalizedCandidate = candidate.replace('\\', '/').trimEnd('/')
                 normalizedCandidate.equals(token, ignoreCase = true) ||
-                    normalizedCandidate.endsWith("/$token", ignoreCase = true)
+                        normalizedCandidate.endsWith("/$token", ignoreCase = true)
             }
             matches.singleOrNull()
         }

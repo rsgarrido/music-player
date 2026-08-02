@@ -473,7 +473,7 @@ class MusicViewModel(
 
     internal fun updateEqualizerImportPreview(
         transform: (EqualizerImportPreviewState) ->
-            EqualizerImportPreviewState
+        EqualizerImportPreviewState
     ) {
         equalizerUiController.updateImportPreview(transform)
     }
@@ -502,6 +502,10 @@ class MusicViewModel(
 
     fun refreshArtwork() {
         libraryController.refreshArtwork()
+    }
+
+    fun scanLibrary() {
+        libraryController.scanLibrary()
     }
 
     fun savePlayerState() {

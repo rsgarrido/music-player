@@ -63,6 +63,7 @@ import com.example.cdplaya.ui.settings.DiagnosticsScreen
 import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
+import com.example.cdplaya.ui.state.LibraryRefreshSummary
 import com.example.cdplaya.ui.state.gridColumnCountFor
 import com.example.cdplaya.ui.state.modeFor
 import com.example.cdplaya.ui.library.LibraryViewCategory
@@ -75,6 +76,8 @@ internal fun MusicScreenBody(
     songs: List<Song>,
     mediaAccessState: MediaAccessState,
     isLibraryLoading: Boolean,
+    isLibraryRefreshing: Boolean,
+    lastLibraryRefreshSummary: LibraryRefreshSummary?,
     libraryErrorMessage: String?,
     onRequestAudioAccess: () -> Unit,
     onRequestArtworkAccess: () -> Unit,
@@ -92,6 +95,7 @@ internal fun MusicScreenBody(
     libraryFolders: List<LibraryFolder>,
     folderSelectionMode: FolderSelectionMode,
     selectedLibraryFolders: Set<String>,
+    excludedLibraryFolders: Set<String>,
     favoriteMembershipKeys: Set<String>,
     unresolvedFavoriteCount: Int,
     unresolvedPlaylistRowCount: Int,
@@ -128,6 +132,7 @@ internal fun MusicScreenBody(
     onLibraryFoldersClick: () -> Unit,
     onExportBackupClick: () -> Unit,
     onRestoreBackupClick: () -> Unit,
+    onScanLibraryClick: () -> Unit,
     onLibraryFolderToggle: (String) -> Unit,
     onSelectAllLibraryFolders: () -> Unit,
     onClearSelectedLibraryFolders: () -> Unit,
@@ -206,6 +211,7 @@ internal fun MusicScreenBody(
                 libraryFolders = libraryFolders,
                 folderSelectionMode = folderSelectionMode,
                 selectedLibraryFolders = selectedLibraryFolders,
+                excludedLibraryFolders = excludedLibraryFolders,
                 onBackClick = onFolderBackClick,
                 onFolderToggle = onLibraryFolderToggle,
                 onSelectAllClick = onSelectAllLibraryFolders,
@@ -260,10 +266,16 @@ internal fun MusicScreenBody(
         isSettingsScreenVisible -> {
             SettingsScreen(
                 totalSongCount = songs.size,
-                availableFolderCount = libraryFolders.size,
+                availableFolderCount = libraryFolders.count { folder -> folder.parentPath == null },
+                folderSelectionMode = folderSelectionMode,
                 selectedFolderCount = selectedLibraryFolders.size,
+                excludedFolderCount = excludedLibraryFolders.size,
+                isLibraryRefreshing = isLibraryRefreshing,
+                lastLibraryRefreshSummary = lastLibraryRefreshSummary,
+                libraryErrorMessage = libraryErrorMessage,
                 onBackClick = onSettingsBackClick,
                 onLibraryFoldersClick = onLibraryFoldersClick,
+                onScanLibraryClick = onScanLibraryClick,
                 onExportBackupClick = onExportBackupClick,
                 onRestoreBackupClick = onRestoreBackupClick,
                 onDiagnosticsClick = onDiagnosticsClick,
