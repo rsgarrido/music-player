@@ -72,7 +72,7 @@ class LibrarySourceMetadataTest {
     }
 
     @Test
-    fun migrationFiveToEightPreservesCachedAndUserRowsWithSafeDefaults() {
+    fun migrationFiveToNinePreservesCachedAndUserRowsWithSafeDefaults() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val databaseName = "metadata-migration-${System.nanoTime()}.db"
         val configuration = SupportSQLiteOpenHelper.Configuration.builder(context)
@@ -137,7 +137,8 @@ class LibrarySourceMetadataTest {
             .addMigrations(
                 DatabaseProvider.MIGRATION_5_6,
                 DatabaseProvider.MIGRATION_6_7,
-                DatabaseProvider.MIGRATION_7_8
+                DatabaseProvider.MIGRATION_7_8,
+                DatabaseProvider.MIGRATION_8_9
             )
             .build()
         try {

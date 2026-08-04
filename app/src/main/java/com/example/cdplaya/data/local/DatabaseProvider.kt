@@ -1,9 +1,13 @@
 package com.example.cdplaya.data.local
 
 import android.content.Context
+import android.content.ContentValues
+import android.database.Cursor
+import android.database.sqlite.SQLiteDatabase
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.cdplaya.data.identityNormalized
 
 object DatabaseProvider {
 
@@ -24,7 +28,8 @@ object DatabaseProvider {
                     MIGRATION_4_5,
                     MIGRATION_5_6,
                     MIGRATION_6_7,
-                    MIGRATION_7_8
+                    MIGRATION_7_8,
+                    MIGRATION_8_9
                 )
                 .build()
                 .also { database ->
@@ -265,6 +270,222 @@ object DatabaseProvider {
                 "ALTER TABLE `cached_songs` ADD COLUMN `artworkEnrichmentVersion` INTEGER NOT NULL DEFAULT 0"
             )
         }
+    }
+
+    val MIGRATION_8_9 = object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            createListeningHistoryTables(db)
+            migrateLegacyListeningBaselines(db, migratedAt = System.currentTimeMillis())
+        }
+
+        private fun createListeningHistoryTables(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `listening_track_identities` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `titleSnapshot` TEXT NOT NULL,
+                    `artistSnapshot` TEXT NOT NULL,
+                    `albumSnapshot` TEXT NOT NULL,
+                    `albumArtistSnapshot` TEXT,
+                    `durationMsSnapshot` INTEGER,
+                    `normalizedTitle` TEXT NOT NULL,
+                    `normalizedArtist` TEXT NOT NULL,
+                    `normalizedAlbum` TEXT NOT NULL,
+                    `metadataKey` TEXT,
+                    `metadataKeyVersion` INTEGER NOT NULL,
+                    `createdAt` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_listening_track_identities_normalizedArtist_normalizedTitle_durationMsSnapshot` ON `listening_track_identities` (`normalizedArtist`, `normalizedTitle`, `durationMsSnapshot`)"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_listening_track_identities_normalizedAlbum` ON `listening_track_identities` (`normalizedAlbum`)"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_listening_track_identities_metadataKey` ON `listening_track_identities` (`metadataKey`)"
+            )
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `local_track_bindings` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `trackIdentityId` INTEGER NOT NULL,
+                    `referenceKey` TEXT NOT NULL,
+                    `mediaStoreId` INTEGER,
+                    `volumeName` TEXT,
+                    `contentUri` TEXT,
+                    `relativePath` TEXT,
+                    `displayName` TEXT,
+                    `absolutePath` TEXT,
+                    `fileSizeBytes` INTEGER,
+                    `dateModifiedEpochSeconds` INTEGER,
+                    `durationMsSnapshot` INTEGER,
+                    `legacyStableKey` TEXT,
+                    `portableKey` TEXT,
+                    `portableKeyVersion` INTEGER,
+                    `firstSeenAt` INTEGER NOT NULL,
+                    `lastSeenAt` INTEGER NOT NULL,
+                    `missingSince` INTEGER,
+                    FOREIGN KEY(`trackIdentityId`) REFERENCES `listening_track_identities`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_local_track_bindings_trackIdentityId` ON `local_track_bindings` (`trackIdentityId`)"
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_local_track_bindings_referenceKey` ON `local_track_bindings` (`referenceKey`)"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_local_track_bindings_volumeName_mediaStoreId` ON `local_track_bindings` (`volumeName`, `mediaStoreId`)"
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_local_track_bindings_portableKey` ON `local_track_bindings` (`portableKey`)"
+            )
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `listening_events` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `eventUuid` TEXT NOT NULL,
+                    `source` TEXT NOT NULL,
+                    `trackIdentityId` INTEGER NOT NULL,
+                    `localTrackBindingId` INTEGER,
+                    `playbackSessionId` TEXT,
+                    `startedAt` INTEGER NOT NULL,
+                    `endedAt` INTEGER NOT NULL,
+                    `listenedMs` INTEGER NOT NULL,
+                    `trackDurationMs` INTEGER,
+                    `qualifiedAsPlay` INTEGER NOT NULL,
+                    `qualificationReason` TEXT NOT NULL,
+                    `qualificationRuleVersion` INTEGER NOT NULL,
+                    `endReason` TEXT NOT NULL,
+                    `sourceEventKey` TEXT,
+                    `importBatchId` INTEGER,
+                    `createdAt` INTEGER NOT NULL,
+                    FOREIGN KEY(`trackIdentityId`) REFERENCES `listening_track_identities`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION,
+                    FOREIGN KEY(`localTrackBindingId`) REFERENCES `local_track_bindings`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL
+                )
+                """.trimIndent()
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_listening_events_eventUuid` ON `listening_events` (`eventUuid`)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_listening_events_playbackSessionId` ON `listening_events` (`playbackSessionId`)")
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_listening_events_source_sourceEventKey` ON `listening_events` (`source`, `sourceEventKey`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_listening_events_trackIdentityId_startedAt` ON `listening_events` (`trackIdentityId`, `startedAt`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_listening_events_localTrackBindingId` ON `listening_events` (`localTrackBindingId`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_listening_events_qualifiedAsPlay_startedAt` ON `listening_events` (`qualifiedAsPlay`, `startedAt`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_listening_events_source_startedAt` ON `listening_events` (`source`, `startedAt`)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS `index_listening_events_importBatchId` ON `listening_events` (`importBatchId`)")
+
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `legacy_listening_baselines` (
+                    `trackIdentityId` INTEGER NOT NULL,
+                    `historicalPlayCount` INTEGER NOT NULL,
+                    `firstKnownPlayedAt` INTEGER NOT NULL,
+                    `lastKnownPlayedAt` INTEGER NOT NULL,
+                    `legacyReferenceKey` TEXT NOT NULL,
+                    `migratedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`trackIdentityId`),
+                    FOREIGN KEY(`trackIdentityId`) REFERENCES `listening_track_identities`(`id`) ON UPDATE NO ACTION ON DELETE NO ACTION
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_legacy_listening_baselines_legacyReferenceKey` ON `legacy_listening_baselines` (`legacyReferenceKey`)"
+            )
+        }
+
+        private fun migrateLegacyListeningBaselines(
+            db: SupportSQLiteDatabase,
+            migratedAt: Long
+        ) {
+            db.query("SELECT * FROM `song_play_stats` ORDER BY `referenceKey`").use { cursor ->
+                while (cursor.moveToNext()) {
+                    val title = cursor.requiredString("title")
+                    val artist = cursor.requiredString("artist")
+                    val album = cursor.requiredString("album")
+                    val duration = cursor.requiredLong("duration")
+                    val portableKey = cursor.requiredString("portableKey").ifBlank { null }
+                    val identityId = db.insert(
+                        "listening_track_identities",
+                        SQLiteDatabase.CONFLICT_ABORT,
+                        ContentValues().apply {
+                            put("titleSnapshot", title)
+                            put("artistSnapshot", artist)
+                            put("albumSnapshot", album)
+                            put("albumArtistSnapshot", cursor.requiredString("albumArtist"))
+                            put("durationMsSnapshot", duration)
+                            put("normalizedTitle", title.identityNormalized())
+                            put("normalizedArtist", artist.identityNormalized())
+                            put("normalizedAlbum", album.identityNormalized())
+                            if (portableKey == null) putNull("metadataKey") else put("metadataKey", portableKey)
+                            put("metadataKeyVersion", cursor.requiredInt("portableKeyVersion"))
+                            put("createdAt", migratedAt)
+                            put("updatedAt", migratedAt)
+                        }
+                    )
+
+                    db.insert(
+                        "local_track_bindings",
+                        SQLiteDatabase.CONFLICT_ABORT,
+                        ContentValues().apply {
+                            put("trackIdentityId", identityId)
+                            put("referenceKey", cursor.requiredString("referenceKey"))
+                            cursor.putNullableLong(this, "mediaStoreId")
+                            putOptionalString("volumeName", cursor.requiredString("volumeName"))
+                            putOptionalString("contentUri", cursor.requiredString("contentUri"))
+                            putOptionalString("relativePath", cursor.requiredString("relativePath"))
+                            putOptionalString("displayName", cursor.requiredString("displayName"))
+                            putNull("absolutePath")
+                            put("fileSizeBytes", cursor.requiredLong("fileSizeBytes"))
+                            put("dateModifiedEpochSeconds", cursor.requiredLong("dateModifiedEpochSeconds"))
+                            put("durationMsSnapshot", duration)
+                            putOptionalString("legacyStableKey", cursor.requiredString("songKey"))
+                            if (portableKey == null) putNull("portableKey") else put("portableKey", portableKey)
+                            put("portableKeyVersion", cursor.requiredInt("portableKeyVersion"))
+                            put("firstSeenAt", migratedAt)
+                            put("lastSeenAt", migratedAt)
+                            putNull("missingSince")
+                        }
+                    )
+
+                    db.insert(
+                        "legacy_listening_baselines",
+                        SQLiteDatabase.CONFLICT_ABORT,
+                        ContentValues().apply {
+                            put("trackIdentityId", identityId)
+                            put("historicalPlayCount", cursor.requiredInt("playCount"))
+                            put("firstKnownPlayedAt", cursor.requiredLong("firstPlayedAt"))
+                            put("lastKnownPlayedAt", cursor.requiredLong("lastPlayedAt"))
+                            put("legacyReferenceKey", cursor.requiredString("referenceKey"))
+                            put("migratedAt", migratedAt)
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    private fun Cursor.requiredString(columnName: String): String =
+        getString(getColumnIndexOrThrow(columnName))
+
+    private fun Cursor.requiredLong(columnName: String): Long =
+        getLong(getColumnIndexOrThrow(columnName))
+
+    private fun Cursor.requiredInt(columnName: String): Int =
+        getInt(getColumnIndexOrThrow(columnName))
+
+    private fun Cursor.putNullableLong(values: ContentValues, columnName: String) {
+        val index = getColumnIndexOrThrow(columnName)
+        if (isNull(index)) values.putNull(columnName) else values.put(columnName, getLong(index))
+    }
+
+    private fun ContentValues.putOptionalString(columnName: String, value: String) {
+        if (value.isBlank()) putNull(columnName) else put(columnName, value)
     }
 
     private const val DATABASE_NAME = "cdplaya_database"
