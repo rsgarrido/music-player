@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import com.example.cdplaya.data.FolderSelectionMode
 import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.replaygain.ReplayGainMode
@@ -29,9 +30,15 @@ class EqualizerSettingsNavigationTest {
                 SettingsScreen(
                     totalSongCount = 1,
                     availableFolderCount = 1,
+                    folderSelectionMode = FolderSelectionMode.ALL,
                     selectedFolderCount = 0,
+                    excludedFolderCount = 0,
+                    isLibraryRefreshing = false,
+                    lastLibraryRefreshSummary = null,
+                    libraryErrorMessage = null,
                     onBackClick = {},
                     onLibraryFoldersClick = {},
+                    onScanLibraryClick = {},
                     onExportBackupClick = {},
                     onRestoreBackupClick = {},
                     onDiagnosticsClick = {},

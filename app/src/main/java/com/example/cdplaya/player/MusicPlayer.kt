@@ -4,7 +4,6 @@ import android.content.ComponentName
 import android.content.Context
 import androidx.core.content.ContextCompat
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -95,7 +94,7 @@ class MusicPlayer(private val context: Context) {
         currentSong = safePlaylist[startIndex]
 
         val mediaItems = safePlaylist.map { playlistSong ->
-            playlistSong.toMediaItem()
+            playlistSong.toPlayableMediaItem()
         }
 
         playerController.setMediaItems(
@@ -177,7 +176,7 @@ class MusicPlayer(private val context: Context) {
         }
 
         val upcomingMediaItems = upcomingSongs.map { song ->
-            song.toMediaItem()
+            song.toPlayableMediaItem()
         }
 
         playerController.replaceMediaItems(
@@ -196,7 +195,11 @@ class MusicPlayer(private val context: Context) {
         val playerController = controller ?: return
         val currentIndex = playerController.currentMediaItemIndex
         if (currentIndex < 0) return
-        val updatedItem = song.toMediaItem()
+        val existingItem = playerController.getMediaItemAt(currentIndex)
+        val updatedItem = song.toPlayableMediaItem(
+            itemInstanceId = existingItem.listeningEvidence()?.itemInstanceId
+                ?: java.util.UUID.randomUUID().toString()
+        )
         if (playerController.getMediaItemAt(currentIndex) == updatedItem) return
         playerController.replaceMediaItem(currentIndex, updatedItem)
     }
@@ -243,21 +246,6 @@ class MusicPlayer(private val context: Context) {
         controller = null
     }
 
-    private fun Song.toMediaItem(): MediaItem {
-        val metadata = MediaMetadata.Builder()
-            .setTitle(title)
-            .setArtist(artist)
-            .setAlbumTitle(album)
-            .setArtworkUri(albumArtUri)
-            .build()
-
-        return MediaItem.Builder()
-            .setMediaId(id.toString())
-            .setUri(uri)
-            .setMediaMetadata(metadata)
-            .build()
-    }
-
     fun updatePlaylistKeepingCurrent(
         currentSong: Song?,
         playlist: List<Song>,
@@ -283,7 +271,7 @@ class MusicPlayer(private val context: Context) {
         this.currentSong = safePlaylist[startIndex]
 
         val mediaItems = safePlaylist.map { playlistSong ->
-            playlistSong.toMediaItem()
+            playlistSong.toPlayableMediaItem()
         }
 
         playerController.shuffleModeEnabled = false

@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.SongReferenceResolution
 import com.example.cdplaya.data.SongReferenceResolver
@@ -35,7 +34,6 @@ class PlaybackController(
 ) {
     private val musicPlayer = MusicPlayer(context)
     private val playerStateStorage = PlayerStateStorage(context)
-    private val playbackHistoryRecorder = PlaybackHistoryRecorder(coroutineScope)
     private val playbackQueueManager = PlaybackQueueManager()
     private val playbackNavigationHistory = PlaybackNavigationHistory()
     private val upcomingPlaylistBuilder = UpcomingPlaylistBuilder()
@@ -125,13 +123,6 @@ class PlaybackController(
 
                 currentPosition = updatedPosition
                 duration = musicPlayer.getDuration()
-
-                playbackHistoryRecorder.onProgressUpdated(
-                    currentSong = currentSong,
-                    isPlaying = isPlaying,
-                    updatedPosition = updatedPosition,
-                    duration = duration
-                )
 
                 val nowMillis = SystemClock.elapsedRealtime()
                 if (checkpointPolicy.shouldCheckpoint(isPlaying, nowMillis)) {
@@ -350,7 +341,6 @@ class PlaybackController(
     fun seekTo(position: Int) {
         musicPlayer.seekTo(position)
         currentPosition = position
-        playbackHistoryRecorder.onSeek(position)
         savePlayerState()
     }
 
@@ -487,14 +477,6 @@ class PlaybackController(
         PlaybackLibraryBridge.unregister(this)
     }
 
-    fun setListeningHistoryRepository(repository: ListeningHistoryRepository) {
-        playbackHistoryRecorder.setListeningHistoryRepository(repository)
-    }
-
-    fun setOnListeningHistoryChanged(listener: () -> Unit) {
-        playbackHistoryRecorder.setOnListeningHistoryChanged(listener)
-    }
-
     private fun restorePlayerState() {
         val savedSongId = playerStateStorage.getCurrentSongId() ?: return
 
@@ -523,7 +505,6 @@ class PlaybackController(
         duration = restoredSong.duration.coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
         currentPosition = playerStateStorage.getCurrentPosition().coerceIn(0, duration)
         isPlaying = false
-        playbackHistoryRecorder.resetForNewSong()
 
         isShuffleEnabled = playerStateStorage.isShuffleEnabled()
         repeatMode = playerStateStorage.getRepeatMode()
@@ -726,7 +707,6 @@ class PlaybackController(
         }
 
         currentSong = newSong
-        playbackHistoryRecorder.resetForNewSong()
         currentPosition = musicPlayer.getCurrentPosition()
         duration = newSong.duration.toInt()
         isPlaying = musicPlayer.isPlaying()
@@ -785,7 +765,6 @@ class PlaybackController(
         playlist: List<Song>
     ) {
         currentSong = song
-        playbackHistoryRecorder.resetForNewSong()
         isPlaying = true
         currentPosition = 0
         duration = song.duration.toInt()

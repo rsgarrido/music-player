@@ -10,6 +10,7 @@ data class AppBackup(
     val favorites: List<BackupFavoriteSong> = emptyList(),
     val playlists: List<BackupPlaylist> = emptyList(),
     val listeningHistory: List<BackupListeningHistoryEntry> = emptyList(),
+    val canonicalListeningHistory: BackupListeningHistoryV2? = null,
     val preferences: BackupPreferences = BackupPreferences()
 )
 
@@ -130,6 +131,101 @@ data class BackupListeningHistoryEntry(
     val firstPlayedAt: Long,
     val lastPlayedAt: Long,
     val reference: BackupSongReference? = null
+)
+
+@Serializable
+data class BackupListeningHistoryV2(
+    val formatVersion: Int = CURRENT_FORMAT_VERSION,
+    val identities: List<BackupListeningTrackIdentity> = emptyList(),
+    val bindings: List<BackupLocalTrackBinding> = emptyList(),
+    val baselines: List<BackupLegacyListeningBaseline> = emptyList(),
+    val events: List<BackupListeningEvent> = emptyList(),
+    val summary: BackupListeningHistorySummary = BackupListeningHistorySummary()
+) {
+    companion object {
+        const val CURRENT_FORMAT_VERSION = 1
+    }
+}
+
+@Serializable
+data class BackupListeningTrackIdentity(
+    val backupIdentityId: Long,
+    val titleSnapshot: String,
+    val artistSnapshot: String,
+    val albumSnapshot: String,
+    val albumArtistSnapshot: String?,
+    val durationMsSnapshot: Long?,
+    val normalizedTitle: String,
+    val normalizedArtist: String,
+    val normalizedAlbum: String,
+    val metadataKey: String?,
+    val metadataKeyVersion: Int,
+    val createdAt: Long,
+    val updatedAt: Long
+)
+
+@Serializable
+data class BackupLocalTrackBinding(
+    val backupBindingId: Long,
+    val trackIdentityBackupId: Long,
+    val referenceKey: String,
+    val mediaStoreId: Long?,
+    val volumeName: String?,
+    val contentUri: String?,
+    val relativePath: String?,
+    val displayName: String?,
+    val absolutePath: String?,
+    val fileSizeBytes: Long?,
+    val dateModifiedEpochSeconds: Long?,
+    val durationMsSnapshot: Long?,
+    val legacyStableKey: String?,
+    val portableKey: String?,
+    val portableKeyVersion: Int?,
+    val firstSeenAt: Long,
+    val lastSeenAt: Long,
+    val missingSince: Long?
+)
+
+@Serializable
+data class BackupLegacyListeningBaseline(
+    val trackIdentityBackupId: Long,
+    val historicalPlayCount: Int,
+    val firstKnownPlayedAt: Long,
+    val lastKnownPlayedAt: Long,
+    val legacyReferenceKey: String,
+    val migratedAt: Long
+)
+
+@Serializable
+data class BackupListeningEvent(
+    val eventUuid: String,
+    val source: String,
+    val trackIdentityBackupId: Long,
+    val localTrackBindingBackupId: Long?,
+    val playbackSessionId: String?,
+    val startedAt: Long,
+    val endedAt: Long,
+    val listenedMs: Long,
+    val trackDurationMs: Long?,
+    val qualifiedAsPlay: Boolean,
+    val qualificationReason: String,
+    val qualificationRuleVersion: Int,
+    val endReason: String,
+    val sourceEventKey: String?,
+    val importBatchId: Long?,
+    val createdAt: Long
+)
+
+@Serializable
+data class BackupListeningHistorySummary(
+    val identityCount: Long = 0,
+    val bindingCount: Long = 0,
+    val baselineCount: Long = 0,
+    val eventCount: Long = 0,
+    val qualifiedEventCount: Long = 0,
+    val nonQualifiedEventCount: Long = 0,
+    val earliestDetailedEventAt: Long? = null,
+    val latestDetailedEventAt: Long? = null
 )
 
 @Serializable

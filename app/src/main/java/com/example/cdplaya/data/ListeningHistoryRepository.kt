@@ -3,7 +3,6 @@ package com.example.cdplaya.data
 import com.example.cdplaya.data.backup.BackupListeningHistoryEntry
 import com.example.cdplaya.data.backup.BackupSongReference
 import com.example.cdplaya.data.backup.restoredReferenceKey
-import com.example.cdplaya.data.backup.toBackupSongReference
 import com.example.cdplaya.data.backup.toSongReference
 import com.example.cdplaya.data.local.SongPlayStatsDao
 import com.example.cdplaya.data.local.SongPlayStatsEntity
@@ -13,48 +12,11 @@ import kotlin.math.min
 class ListeningHistoryRepository(
     private val songPlayStatsDao: SongPlayStatsDao
 ) {
-    suspend fun getRecentlyPlayed(): List<ListeningHistoryEntry> =
-        songPlayStatsDao.getRecentlyPlayed().map { it.toListeningHistoryEntry() }
-
-    suspend fun getMostPlayed(): List<ListeningHistoryEntry> =
-        songPlayStatsDao.getMostPlayed().map { it.toListeningHistoryEntry() }
-
-    suspend fun getListeningHistoryForBackup(): List<BackupListeningHistoryEntry> {
-        return songPlayStatsDao.getRecentlyPlayed().map { stats ->
-            BackupListeningHistoryEntry(
-                songKey = stats.songKey,
-                title = stats.title,
-                artist = stats.artist,
-                album = stats.album,
-                duration = stats.duration,
-                playCount = stats.playCount,
-                firstPlayedAt = stats.firstPlayedAt,
-                lastPlayedAt = stats.lastPlayedAt,
-                reference = stats.toSongReference().toBackupSongReference()
-            )
-        }
-    }
-
     suspend fun restoreListeningHistoryFromBackup(
         listeningHistory: List<BackupListeningHistoryEntry>
     ) {
         songPlayStatsDao.deleteAllStats()
         songPlayStatsDao.insertOrReplaceStats(listeningHistory.map { it.toLegacyEntity() })
-    }
-
-    suspend fun recordSongPlay(song: Song) {
-        val referenceKey = song.membershipKey()
-        val now = System.currentTimeMillis()
-        val existingStats = songPlayStatsDao.getStatsByReferenceKey(referenceKey)
-        val updatedStats = if (existingStats == null) {
-            newStats(song, referenceKey, now)
-        } else {
-            existingStats.withSongReference(song).copy(
-                playCount = existingStats.playCount + 1,
-                lastPlayedAt = now
-            )
-        }
-        songPlayStatsDao.insertOrReplaceStats(updatedStats)
     }
 
     suspend fun updateSongReferenceAfterTagEdit(
@@ -115,42 +77,6 @@ class ListeningHistoryRepository(
         }
     }
 
-    private fun SongPlayStatsEntity.toListeningHistoryEntry() = ListeningHistoryEntry(
-        songKey = songKey,
-        title = title,
-        artist = artist,
-        album = album,
-        duration = duration,
-        playCount = playCount,
-        firstPlayedAt = firstPlayedAt,
-        lastPlayedAt = lastPlayedAt,
-        reference = toSongReference()
-    )
-}
-
-private fun newStats(song: Song, referenceKey: String, now: Long): SongPlayStatsEntity {
-    val reference = song.toSongReference()
-    return SongPlayStatsEntity(
-        referenceKey = referenceKey,
-        songKey = reference.legacyStableKey,
-        title = reference.title,
-        artist = reference.artist,
-        album = reference.album,
-        duration = reference.duration,
-        playCount = 1,
-        firstPlayedAt = now,
-        lastPlayedAt = now,
-        mediaStoreId = reference.mediaStoreId,
-        volumeName = reference.volumeName,
-        contentUri = reference.contentUri,
-        relativePath = reference.relativePath,
-        displayName = reference.displayName,
-        fileSizeBytes = reference.fileSizeBytes,
-        dateModifiedEpochSeconds = reference.dateModifiedEpochSeconds,
-        albumArtist = reference.albumArtist,
-        portableKey = reference.portableKey,
-        portableKeyVersion = reference.portableKeyVersion
-    )
 }
 
 private fun BackupListeningHistoryEntry.toLegacyEntity(): SongPlayStatsEntity {

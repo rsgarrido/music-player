@@ -1,0 +1,306 @@
+package com.example.cdplaya.data.local
+
+import androidx.sqlite.db.SimpleSQLiteQuery
+import androidx.sqlite.db.SupportSQLiteQuery
+
+data class ListeningStatsQuerySpec(
+    val startInclusive: Long?,
+    val endExclusive: Long?,
+    val sourceStorageValues: List<String>,
+    val includeLegacyBaseline: Boolean
+) {
+    init {
+        require((startInclusive == null) == (endExclusive == null))
+        require(startInclusive == null || startInclusive < requireNotNull(endExclusive))
+        require(sourceStorageValues.isNotEmpty())
+    }
+}
+
+object ListeningStatsQueries {
+    fun overview(spec: ListeningStatsQuerySpec): SupportSQLiteQuery {
+        val filtered = filteredEvents(spec)
+        val includeLegacy = if (spec.includeLegacyBaseline) 1 else 0
+        val sql = """
+            WITH detailed AS (
+                SELECT
+                    COUNT(*) AS detailedEventCount,
+                    COALESCE(SUM(listenedMs), 0) AS detailedListeningMs,
+                    COALESCE(SUM(CASE WHEN qualifiedAsPlay = 1 THEN 1 ELSE 0 END), 0) AS detailedQualifiedPlayCount,
+                    COALESCE(SUM(CASE WHEN endReason = 'natural_end' THEN 1 ELSE 0 END), 0) AS naturalCompletionCount,
+                    COALESCE(SUM(CASE WHEN qualifiedAsPlay = 0 THEN 1 ELSE 0 END), 0) AS nonQualifiedAttemptCount,
+                    MIN(startedAt) AS firstDetailedEventAt,
+                    MAX(startedAt) AS latestDetailedEventAt,
+                    MIN(CASE WHEN qualifiedAsPlay = 1 THEN startedAt END) AS firstQualifiedAt,
+                    MAX(CASE WHEN qualifiedAsPlay = 1 THEN startedAt END) AS latestQualifiedAt
+                FROM listening_events
+                WHERE ${filtered.whereClause}
+            ), baseline AS (
+                SELECT
+                    COALESCE(SUM(historicalPlayCount), 0) AS legacyPlayCount,
+                    MIN(firstKnownPlayedAt) AS firstLegacyAt,
+                    MAX(lastKnownPlayedAt) AS latestLegacyAt,
+                    COUNT(*) AS legacyIdentityCount
+                FROM legacy_listening_baselines
+            )
+            SELECT
+                CASE WHEN $includeLegacy = 1 THEN baseline.legacyPlayCount ELSE 0 END AS legacyPlayCount,
+                detailed.detailedQualifiedPlayCount,
+                detailed.detailedListeningMs,
+                detailed.naturalCompletionCount,
+                detailed.nonQualifiedAttemptCount,
+                detailed.detailedEventCount,
+                detailed.firstDetailedEventAt,
+                detailed.latestDetailedEventAt,
+                ${combinedTime("CASE WHEN $includeLegacy = 1 THEN baseline.firstLegacyAt END", "detailed.firstQualifiedAt", earliest = true)} AS firstKnownPlayAt,
+                ${combinedTime("CASE WHEN $includeLegacy = 1 THEN baseline.latestLegacyAt END", "detailed.latestQualifiedAt", earliest = false)} AS latestKnownPlayAt,
+                CASE WHEN $includeLegacy = 1 THEN baseline.legacyIdentityCount ELSE 0 END AS legacyIdentityCount
+            FROM detailed CROSS JOIN baseline
+        """.trimIndent()
+        return SimpleSQLiteQuery(sql, filtered.args.toTypedArray())
+    }
+
+    fun tracks(
+        spec: ListeningStatsQuerySpec,
+        orderByListeningTime: Boolean,
+        qualifiedOnly: Boolean,
+        limit: Int
+    ): SupportSQLiteQuery {
+        require(limit > 0)
+        val cte = trackStatsCte(spec, includePreferredBinding = true)
+        val total = "(track_stats.legacyPlayCount + track_stats.detailedQualifiedPlayCount)"
+        val order = if (orderByListeningTime) {
+            "track_stats.detailedListeningMs DESC, $total DESC, COALESCE(track_stats.latestKnownPlayAt, -9223372036854775808) DESC, track_stats.trackIdentityId ASC"
+        } else {
+            "$total DESC, COALESCE(track_stats.latestKnownPlayAt, -9223372036854775808) DESC, track_stats.trackIdentityId ASC"
+        }
+        val qualifiedPredicate = if (qualifiedOnly) "WHERE $total > 0" else ""
+        val sql = """
+            ${cte.sql}
+            SELECT * FROM track_stats
+            $qualifiedPredicate
+            ORDER BY $order
+            LIMIT $limit
+        """.trimIndent()
+        return SimpleSQLiteQuery(sql, cte.args.toTypedArray())
+    }
+
+    fun recentlyPlayed(spec: ListeningStatsQuerySpec, limit: Int): SupportSQLiteQuery {
+        require(limit > 0)
+        val cte = trackStatsCte(spec, includePreferredBinding = true)
+        val total = "(track_stats.legacyPlayCount + track_stats.detailedQualifiedPlayCount)"
+        val sql = """
+            ${cte.sql}
+            SELECT * FROM track_stats
+            WHERE $total > 0 AND track_stats.latestKnownPlayAt IS NOT NULL
+            ORDER BY track_stats.latestKnownPlayAt DESC, track_stats.trackIdentityId ASC
+            LIMIT $limit
+        """.trimIndent()
+        return SimpleSQLiteQuery(sql, cte.args.toTypedArray())
+    }
+
+    fun albums(spec: ListeningStatsQuerySpec, limit: Int): SupportSQLiteQuery {
+        require(limit > 0)
+        val cte = trackStatsCte(spec, includePreferredBinding = false)
+        val albumArtistKey = "COALESCE(NULLIF(LOWER(TRIM(track_stats.albumArtistSnapshot)), ''), NULLIF(track_stats.normalizedArtist, ''), '<unknown-artist>')"
+        val albumKey = "COALESCE(NULLIF(track_stats.normalizedAlbum, ''), '<unknown-album>')"
+        val groupingKey = "($albumArtistKey || '|' || $albumKey)"
+        val total = "SUM(track_stats.legacyPlayCount) + SUM(track_stats.detailedQualifiedPlayCount)"
+        val sql = """
+            ${cte.sql}
+            SELECT
+                $groupingKey AS groupingKey,
+                COALESCE(MIN(NULLIF(TRIM(track_stats.albumSnapshot), '')), 'Unknown Album') AS displayAlbum,
+                COALESCE(MIN(NULLIF(TRIM(track_stats.albumArtistSnapshot), '')), MIN(NULLIF(TRIM(track_stats.artistSnapshot), '')), 'Unknown Artist') AS displayAlbumArtist,
+                SUM(track_stats.legacyPlayCount) AS legacyPlayCount,
+                SUM(track_stats.detailedQualifiedPlayCount) AS detailedQualifiedPlayCount,
+                SUM(track_stats.detailedListeningMs) AS detailedListeningMs,
+                SUM(track_stats.naturalCompletionCount) AS naturalCompletionCount,
+                COUNT(*) AS trackCount,
+                MAX(track_stats.latestKnownPlayAt) AS latestKnownPlayAt
+            FROM track_stats
+            GROUP BY $groupingKey
+            HAVING $total > 0
+            ORDER BY $total DESC, COALESCE(MAX(track_stats.latestKnownPlayAt), -9223372036854775808) DESC, groupingKey ASC
+            LIMIT $limit
+        """.trimIndent()
+        return SimpleSQLiteQuery(sql, cte.args.toTypedArray())
+    }
+
+    fun artists(spec: ListeningStatsQuerySpec, limit: Int): SupportSQLiteQuery {
+        require(limit > 0)
+        val cte = trackStatsCte(spec, includePreferredBinding = false)
+        val artistKey = "COALESCE(NULLIF(track_stats.normalizedArtist, ''), '<unknown-artist>')"
+        val albumKey = "COALESCE(NULLIF(track_stats.normalizedAlbum, ''), '<unknown-album>')"
+        val total = "SUM(track_stats.legacyPlayCount) + SUM(track_stats.detailedQualifiedPlayCount)"
+        val sql = """
+            ${cte.sql}
+            SELECT
+                $artistKey AS groupingKey,
+                COALESCE(MIN(NULLIF(TRIM(track_stats.artistSnapshot), '')), 'Unknown Artist') AS displayArtist,
+                SUM(track_stats.legacyPlayCount) AS legacyPlayCount,
+                SUM(track_stats.detailedQualifiedPlayCount) AS detailedQualifiedPlayCount,
+                SUM(track_stats.detailedListeningMs) AS detailedListeningMs,
+                SUM(track_stats.naturalCompletionCount) AS naturalCompletionCount,
+                COUNT(*) AS distinctTrackCount,
+                COUNT(DISTINCT $albumKey) AS distinctAlbumCount,
+                MAX(track_stats.latestKnownPlayAt) AS latestKnownPlayAt
+            FROM track_stats
+            GROUP BY $artistKey
+            HAVING $total > 0
+            ORDER BY $total DESC, COALESCE(MAX(track_stats.latestKnownPlayAt), -9223372036854775808) DESC, groupingKey ASC
+            LIMIT $limit
+        """.trimIndent()
+        return SimpleSQLiteQuery(sql, cte.args.toTypedArray())
+    }
+
+    fun recentEvents(spec: ListeningStatsQuerySpec, limit: Int): SupportSQLiteQuery {
+        require(limit > 0)
+        val filtered = filteredEvents(spec, alias = "e")
+        val sql = """
+            SELECT
+                e.eventUuid,
+                e.trackIdentityId,
+                i.titleSnapshot,
+                i.artistSnapshot,
+                i.albumSnapshot,
+                e.source,
+                e.startedAt,
+                e.endedAt,
+                e.listenedMs,
+                e.qualifiedAsPlay,
+                e.qualificationReason,
+                e.endReason,
+                e.playbackSessionId
+            FROM listening_events e
+            JOIN listening_track_identities i ON i.id = e.trackIdentityId
+            WHERE ${filtered.whereClause}
+            ORDER BY e.startedAt DESC, e.id DESC
+            LIMIT $limit
+        """.trimIndent()
+        return SimpleSQLiteQuery(sql, filtered.args.toTypedArray())
+    }
+
+    private fun trackStatsCte(
+        spec: ListeningStatsQuerySpec,
+        includePreferredBinding: Boolean
+    ): SqlAndArgs {
+        val filtered = filteredEvents(spec, alias = "e")
+        val legacyCount = if (spec.includeLegacyBaseline) "COALESCE(b.historicalPlayCount, 0)" else "0"
+        val legacyFirst = if (spec.includeLegacyBaseline) "b.firstKnownPlayedAt" else "NULL"
+        val legacyLatest = if (spec.includeLegacyBaseline) "b.lastKnownPlayedAt" else "NULL"
+        val bindingCte = if (includePreferredBinding) {
+            """,
+            preferred_binding AS (
+                SELECT candidate.*
+                FROM local_track_bindings candidate
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM local_track_bindings preferred
+                    WHERE preferred.trackIdentityId = candidate.trackIdentityId
+                      AND (
+                        (candidate.missingSince IS NOT NULL AND preferred.missingSince IS NULL)
+                        OR (
+                            (candidate.missingSince IS NULL) = (preferred.missingSince IS NULL)
+                            AND (
+                                preferred.lastSeenAt > candidate.lastSeenAt
+                                OR (preferred.lastSeenAt = candidate.lastSeenAt AND preferred.id < candidate.id)
+                            )
+                        )
+                      )
+                )
+            )"""
+        } else ""
+        val bindingColumns = if (includePreferredBinding) {
+            """
+                pb.id AS localTrackBindingId,
+                pb.referenceKey,
+                pb.mediaStoreId,
+                pb.volumeName,
+                pb.contentUri,
+                pb.relativePath,
+                pb.displayName,
+                pb.fileSizeBytes,
+                pb.dateModifiedEpochSeconds,
+                pb.durationMsSnapshot AS bindingDurationMsSnapshot,
+                pb.legacyStableKey,
+                pb.portableKey,
+                pb.portableKeyVersion,
+                pb.missingSince,
+            """.trimIndent()
+        } else ""
+        val bindingJoin = if (includePreferredBinding) {
+            "LEFT JOIN preferred_binding pb ON pb.trackIdentityId = i.id"
+        } else ""
+        val sql = """
+            WITH detailed AS (
+                SELECT
+                    e.trackIdentityId,
+                    COUNT(*) AS detailedEventCount,
+                    COALESCE(SUM(e.listenedMs), 0) AS detailedListeningMs,
+                    COALESCE(SUM(CASE WHEN e.qualifiedAsPlay = 1 THEN 1 ELSE 0 END), 0) AS detailedQualifiedPlayCount,
+                    COALESCE(SUM(CASE WHEN e.endReason = 'natural_end' THEN 1 ELSE 0 END), 0) AS naturalCompletionCount,
+                    COALESCE(SUM(CASE WHEN e.qualifiedAsPlay = 0 THEN 1 ELSE 0 END), 0) AS nonQualifiedAttemptCount,
+                    MIN(CASE WHEN e.qualifiedAsPlay = 1 THEN e.startedAt END) AS firstQualifiedAt,
+                    MAX(CASE WHEN e.qualifiedAsPlay = 1 THEN e.startedAt END) AS latestQualifiedAt,
+                    MAX(e.startedAt) AS latestDetailedEventAt
+                FROM listening_events e
+                WHERE ${filtered.whereClause}
+                GROUP BY e.trackIdentityId
+            )$bindingCte,
+            track_stats AS (
+                SELECT
+                    i.id AS trackIdentityId,
+                    i.titleSnapshot,
+                    i.artistSnapshot,
+                    i.albumSnapshot,
+                    i.albumArtistSnapshot,
+                    i.durationMsSnapshot,
+                    i.normalizedArtist,
+                    i.normalizedAlbum,
+                    $bindingColumns
+                    $legacyCount AS legacyPlayCount,
+                    COALESCE(d.detailedQualifiedPlayCount, 0) AS detailedQualifiedPlayCount,
+                    COALESCE(d.detailedListeningMs, 0) AS detailedListeningMs,
+                    COALESCE(d.detailedEventCount, 0) AS detailedEventCount,
+                    COALESCE(d.naturalCompletionCount, 0) AS naturalCompletionCount,
+                    COALESCE(d.nonQualifiedAttemptCount, 0) AS nonQualifiedAttemptCount,
+                    ${combinedTime(legacyFirst, "d.firstQualifiedAt", earliest = true)} AS firstKnownPlayAt,
+                    ${combinedTime(legacyLatest, "d.latestQualifiedAt", earliest = false)} AS latestKnownPlayAt,
+                    d.latestDetailedEventAt
+                FROM listening_track_identities i
+                LEFT JOIN detailed d ON d.trackIdentityId = i.id
+                LEFT JOIN legacy_listening_baselines b ON b.trackIdentityId = i.id
+                $bindingJoin
+                WHERE d.trackIdentityId IS NOT NULL
+                   OR (${if (spec.includeLegacyBaseline) 1 else 0} = 1 AND b.trackIdentityId IS NOT NULL)
+            )
+        """.trimIndent()
+        return SqlAndArgs(sql, filtered.args)
+    }
+
+    private fun filteredEvents(spec: ListeningStatsQuerySpec, alias: String? = null): SqlAndArgs {
+        val prefix = alias?.let { "$it." }.orEmpty()
+        val clauses = mutableListOf<String>()
+        val args = mutableListOf<Any>()
+        val placeholders = spec.sourceStorageValues.joinToString(",") { "?" }
+        clauses += "${prefix}source IN ($placeholders)"
+        args.addAll(spec.sourceStorageValues)
+        spec.startInclusive?.let {
+            clauses += "${prefix}startedAt >= ?"
+            args += it
+        }
+        spec.endExclusive?.let {
+            clauses += "${prefix}startedAt < ?"
+            args += it
+        }
+        return SqlAndArgs(clauses.joinToString(" AND "), args)
+    }
+
+    private fun combinedTime(legacy: String, detailed: String, earliest: Boolean): String {
+        val comparison = if (earliest) "$legacy <= $detailed" else "$legacy >= $detailed"
+        return "CASE WHEN $legacy IS NULL THEN $detailed WHEN $detailed IS NULL THEN $legacy WHEN $comparison THEN $legacy ELSE $detailed END"
+    }
+
+    private data class SqlAndArgs(val sql: String, val args: List<Any>) {
+        val whereClause: String get() = sql
+    }
+}

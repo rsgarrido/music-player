@@ -1,0 +1,210 @@
+package com.example.cdplaya.data.backup
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Test
+
+class ListeningHistoryBackupValidatorTest {
+    @Test
+    fun completeFixture_roundTripsEnumsOrderingAndSummary() {
+        val fixture = validHistory()
+        val decoded = AppBackupJson.decodeBackup(
+            AppBackupJson.encodeBackup(
+                AppBackup(createdAt = 1L, canonicalListeningHistory = fixture)
+            )
+        ).canonicalListeningHistory!!
+
+        assertEquals(fixture, decoded)
+        assertEquals(3L, decoded.summary.identityCount)
+        assertEquals(2L, decoded.summary.bindingCount)
+        assertEquals(1L, decoded.summary.baselineCount)
+        assertEquals(4L, decoded.summary.eventCount)
+        assertEquals(2L, decoded.summary.qualifiedEventCount)
+        assertEquals(2L, decoded.summary.nonQualifiedEventCount)
+        assertEquals(100L, decoded.summary.earliestDetailedEventAt)
+        assertEquals(400L, decoded.summary.latestDetailedEventAt)
+        assertEquals(
+            listOf("cdplaya", "spotify_import", "lastfm_import", "cdplaya"),
+            decoded.events.map { it.source }
+        )
+    }
+
+    @Test
+    fun v6AggregateHistory_becomesSeparateBaselinesWithoutSyntheticEvents() {
+        val decoded = AppBackupJson.decodeBackup(
+            """
+            {
+              "schemaVersion": 6,
+              "createdAt": 999,
+              "listeningHistory": [
+                {"songKey":"one","title":"Same","artist":"Artist","album":"Album","duration":1000,"playCount":3,"firstPlayedAt":10,"lastPlayedAt":30},
+                {"songKey":"two","title":"Same","artist":"Artist","album":"Album","duration":1000,"playCount":4,"firstPlayedAt":20,"lastPlayedAt":40}
+              ]
+            }
+            """.trimIndent()
+        )
+        val history = decoded.canonicalListeningHistory!!
+
+        assertEquals(7, decoded.schemaVersion)
+        assertEquals(2, history.identities.size)
+        assertEquals(2, history.bindings.size)
+        assertEquals(listOf(3, 4), history.baselines.map { it.historicalPlayCount })
+        assertEquals(listOf(10L, 20L), history.baselines.map { it.firstKnownPlayedAt })
+        assertEquals(listOf(30L, 40L), history.baselines.map { it.lastKnownPlayedAt })
+        assertTrue(history.events.isEmpty())
+        assertTrue(history.identities[0].backupIdentityId != history.identities[1].backupIdentityId)
+        assertTrue(history.bindings[0].referenceKey != history.bindings[1].referenceKey)
+    }
+
+    @Test
+    fun version7CanonicalSection_isNotRebuiltFromLegacyCompatibilityRows() {
+        val canonical = validHistory()
+        val legacy = BackupListeningHistoryEntry(
+            songKey = "stale",
+            title = "Stale",
+            artist = "Artist",
+            album = "Album",
+            duration = 1_000,
+            playCount = 999,
+            firstPlayedAt = 1,
+            lastPlayedAt = 2
+        )
+        val decoded = AppBackupJson.decodeBackup(
+            AppBackupJson.encodeBackup(
+                AppBackup(
+                    createdAt = 1,
+                    listeningHistory = listOf(legacy),
+                    canonicalListeningHistory = canonical
+                )
+            )
+        )
+
+        assertEquals(canonical, decoded.canonicalListeningHistory)
+        assertEquals(listOf(legacy), decoded.listeningHistory)
+    }
+
+    @Test
+    fun validator_rejectsEveryRequiredStructuralFailure() {
+        val valid = validHistory()
+        val mutations = listOf<Pair<String, (BackupListeningHistoryV2) -> BackupListeningHistoryV2>>(
+            "format" to { it.copy(formatVersion = 2) },
+            "identity" to { it.copy(identities = it.identities + it.identities.first()) },
+            "binding id" to { it.copy(bindings = it.bindings + it.bindings.first()) },
+            "binding identity" to { it.replaceBinding(0) { b -> b.copy(trackIdentityBackupId = 99) } },
+            "baseline identity" to { it.replaceBaseline { b -> b.copy(trackIdentityBackupId = 99) } },
+            "event identity" to { it.replaceEvent(0) { e -> e.copy(trackIdentityBackupId = 99) } },
+            "event binding" to { it.replaceEvent(0) { e -> e.copy(localTrackBindingBackupId = 99) } },
+            "binding ownership" to {
+                it.replaceEvent(0) { e -> e.copy(trackIdentityBackupId = 3) }
+            },
+            "event UUID" to { it.replaceEvent(1) { e -> e.copy(eventUuid = it.events[0].eventUuid) } },
+            "session" to {
+                it.replaceEvent(1) { e -> e.copy(playbackSessionId = it.events[0].playbackSessionId) }
+            },
+            "source key" to {
+                it.replaceEvent(3) { e ->
+                    e.copy(source = it.events[0].source, sourceEventKey = it.events[0].sourceEventKey)
+                }
+            },
+            "listened" to { it.replaceEvent(0) { e -> e.copy(listenedMs = -1) } },
+            "timestamps" to { it.replaceEvent(0) { e -> e.copy(endedAt = e.startedAt - 1) } },
+            "source enum" to { it.replaceEvent(0) { e -> e.copy(source = "future") } },
+            "qualification enum" to {
+                it.replaceEvent(0) { e -> e.copy(qualificationReason = "future") }
+            },
+            "end enum" to { it.replaceEvent(0) { e -> e.copy(endReason = "future") } },
+            "rule" to { it.replaceEvent(0) { e -> e.copy(qualificationRuleVersion = 0) } },
+            "play count" to { it.replaceBaseline { b -> b.copy(historicalPlayCount = 0) } },
+            "summary" to { it.copy(summary = it.summary.copy(eventCount = 99)) }
+        )
+
+        mutations.forEach { (label, mutate) ->
+            expectInvalid(label) { ListeningHistoryBackupValidator.validate(mutate(valid)) }
+        }
+    }
+
+    private fun validHistory(): BackupListeningHistoryV2 {
+        val identities = listOf(
+            identity(1, "Baseline only"),
+            identity(2, "Detailed only"),
+            identity(3, "Unicode — “same” 🎵")
+        )
+        val bindings = listOf(
+            binding(10, 2, "reference:one", missingSince = null),
+            binding(11, 2, "reference:missing", missingSince = 90)
+        )
+        val baselines = listOf(
+            BackupLegacyListeningBaseline(1, 7, 1, 90, "legacy:one", 99)
+        )
+        val events = listOf(
+            event("uuid-1", 2, 100, "cdplaya", 10, true, "natural_end", "natural_end", "session-1", "source-1"),
+            event("uuid-2", 2, 200, "spotify_import", 11, false, "none", "transition", null, "source-1"),
+            event("uuid-3", 3, 300, "lastfm_import", null, true, "time_threshold", "stopped", "session-3", null),
+            event("uuid-4", 3, 400, "cdplaya", null, false, "none", "error", null, "source-4", listenedMs = 2_000, duration = 1_000)
+        )
+        return BackupListeningHistoryV2(
+            identities = identities,
+            bindings = bindings,
+            baselines = baselines,
+            events = events
+        ).let { it.copy(summary = it.recordsSummary()) }
+    }
+
+    private fun identity(id: Long, title: String) = BackupListeningTrackIdentity(
+        id, title, "Artist", "Album", null, 1_000, title.lowercase(), "artist", "album",
+        "metadata:$id", 1, 1, 2
+    )
+
+    private fun binding(id: Long, identityId: Long, key: String, missingSince: Long?) =
+        BackupLocalTrackBinding(
+            id, identityId, key, id, "external", "content://$id", "Music/", "song-$id.flac",
+            "/private/song-$id.flac", 42, 7, 1_000, "legacy-$id", "portable-$id", 1,
+            1, 2, missingSince
+        )
+
+    private fun event(
+        uuid: String,
+        identityId: Long,
+        startedAt: Long,
+        source: String,
+        bindingId: Long?,
+        qualified: Boolean,
+        qualification: String,
+        endReason: String,
+        session: String?,
+        sourceKey: String?,
+        listenedMs: Long = 500,
+        duration: Long? = 1_000
+    ) = BackupListeningEvent(
+        uuid, source, identityId, bindingId, session, startedAt, startedAt + 10, listenedMs,
+        duration, qualified, qualification, 1, endReason, sourceKey, null, startedAt + 20
+    )
+
+    private fun BackupListeningHistoryV2.replaceEvent(
+        index: Int,
+        transform: (BackupListeningEvent) -> BackupListeningEvent
+    ) = copy(events = events.mapIndexed { eventIndex, event ->
+        if (eventIndex == index) transform(event) else event
+    })
+
+    private fun BackupListeningHistoryV2.replaceBinding(
+        index: Int,
+        transform: (BackupLocalTrackBinding) -> BackupLocalTrackBinding
+    ) = copy(bindings = bindings.mapIndexed { bindingIndex, binding ->
+        if (bindingIndex == index) transform(binding) else binding
+    })
+
+    private fun BackupListeningHistoryV2.replaceBaseline(
+        transform: (BackupLegacyListeningBaseline) -> BackupLegacyListeningBaseline
+    ) = copy(baselines = baselines.map(transform))
+
+    private fun expectInvalid(label: String, block: () -> Unit) {
+        try {
+            block()
+            fail("Expected invalid backup for $label")
+        } catch (_: IllegalArgumentException) {
+            // Expected.
+        }
+    }
+}
