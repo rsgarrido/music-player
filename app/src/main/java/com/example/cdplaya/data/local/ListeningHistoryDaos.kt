@@ -40,6 +40,9 @@ interface ListeningEventDao {
     @Insert
     suspend fun insert(event: ListeningEventEntity): Long
 
+    @Insert
+    suspend fun insert(events: List<ListeningEventEntity>): List<Long>
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertIgnoringConflict(event: ListeningEventEntity): Long
 

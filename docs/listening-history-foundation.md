@@ -57,6 +57,97 @@ Active sessions are in memory only. Graceful service destruction is finalized an
 outstanding insert is drained asynchronously, but abrupt process death can lose the
 unfinished attempt. There are no periodic checkpoints or process-death recovery yet.
 
+## Baseline-plus-event statistics queries
+
+`ListeningStatsRepository` is the independent statistics/query boundary for future
+history screens and reports. It is not connected to `LibraryController`, Compose,
+Recently Played, or Most Played yet. All aggregation is performed by SQLite; repository
+mapping only converts bounded aggregate rows into domain models.
+
+### Counts, time, and timestamps
+
+For a historical track identity, all-time play count is the frozen
+`legacy_listening_baselines.historicalPlayCount` plus the number of detailed events whose
+stored `qualifiedAsPlay` value is true. Qualification is never recalculated. Domain
+models expose total, legacy, and detailed counts separately.
+
+Confirmed listening time is the sum of `listening_events.listenedMs` for every finalized
+attempt, including non-qualified attempts. Legacy counts contribute no duration because
+the old aggregate rows did not record it; duration is neither inferred nor estimated.
+Natural completions are detailed events whose persisted `endReason` is `NATURAL_END`.
+Non-qualified attempts are detailed events whose stored `qualifiedAsPlay` value is
+false.
+
+Detailed events are classified and ordered by `startedAt`. This is the timestamp of the
+recorded playback attempt, is consistent across every statistics query, and matches the
+existing `(source, startedAt)`, `(qualifiedAsPlay, startedAt)`, and
+`(trackIdentityId, startedAt)` indices. First/latest known qualified play is the
+minimum/maximum of qualified detailed `startedAt` and the legacy baseline's first/last
+known timestamp. Non-qualified attempts do not move Recently Played.
+
+### Date ranges and source provenance
+
+Detailed ranges are half-open epoch-millisecond intervals:
+`[startInclusive, endExclusive)`. Callers resolve day, month, year, timezone, or custom
+calendar boundaries before calling the repository; SQL does no device-local calendar
+calculation. Ranged results are detailed-only because legacy plays cannot be allocated
+to a day, month, or year.
+
+A null source selection means all detailed sources. Any explicit detailed-source filter
+applies only to events and excludes the legacy baseline even if legacy inclusion was
+requested. In particular, neither a CDPlaya nor an import filter claims provenance for
+legacy counts. Legacy inclusion is effective only for unfiltered all-time queries; no
+`LEGACY` event source was added.
+
+### Track, album, and artist grouping
+
+Track statistics group strictly by `listening_track_identities.id`. MediaStore IDs,
+bindings, titles, and normalized metadata never merge historical identities. Each track
+row includes one deterministic preferred binding: an available binding before a missing
+one, then newest `lastSeenAt`, then lowest binding ID. An identity without a binding is
+still returned.
+
+Album reporting is a grouping only. Its key is normalized album artist plus normalized
+album; when album artist is absent it conservatively falls back to normalized track
+artist. Blank values use explicit unknown keys. A compilation with a consistent album
+artist such as `Various Artists` groups together; compilations without consistent album
+artist may remain split by track artist. Artist reporting groups by normalized track
+artist and never changes song-level artist metadata. Distinct track identities and
+normalized album keys determine track/album counts.
+
+When multiple display snapshots share a grouping key, SQL selects the lexicographically
+smallest nonblank display value. This is stable and deterministic across query runs;
+unknown groups receive `Unknown Album` or `Unknown Artist`.
+
+### Projections and recent attempts
+
+The replacement-capable Recently Played projection contains one row per identity with a
+qualified legacy or detailed play, ordered by latest known qualified play descending and
+then identity ID ascending. The Most Played projection orders by combined play count
+descending, latest known qualified play descending, and identity ID ascending. Both
+retain unresolved historical identities and exact binding/reference evidence; neither
+is wired to production UI filtering yet.
+
+Recent detailed events are separate from Recently Played. They include qualified and
+non-qualified stops, transitions, errors, and natural completions, support source and
+date filters, and order by `startedAt` descending then event row ID descending. Baseline
+counts are never fabricated as events.
+
+### SQL performance and transitional limitation
+
+Overview, track, album, artist, projections, and recent-event results use CTE aggregation,
+joins, SQL grouping, deterministic ordering, and explicit limits. They do not load the
+event table into Kotlin and do not issue per-track binding queries. Existing version-9
+indices cover source/date filtering, qualified/date filtering, track/date grouping, and
+binding selection, so no schema version or new index is required for this layer.
+
+The version-9 baseline is a frozen copy of history present during migration. The old
+UI-side recorder continues changing `song_play_stats`, but those later writes are not
+mirrored into the baseline and are deliberately not added as a third statistics source.
+Until the controlled cutover session, production Recently Played and Most Played still
+read `song_play_stats`, the old recorder remains active, and the existing backup format
+remains unchanged.
+
 ## Pure listening-session recorder (qualification rule v1)
 
 `ListeningSessionRecorder` remains a pure Kotlin state machine for one native CDPlaya
@@ -139,6 +230,6 @@ Room boundary; the recorder itself neither constructs nor inserts Room entities.
 ### Deferred work
 
 Active-session persistence, periodic checkpoints, process-death recovery, combined
-baseline-plus-event statistics queries, Recently Played/Most Played migration,
-statistics UI, backup expansion, imports and matching, ratings, Wrapped, and smart
-playlists remain deferred.
+Recently Played/Most Played production migration, old-recorder removal, statistics UI
+and charts, backup expansion, imports and matching, ratings, Wrapped, smart playlists,
+and shareable reports remain deferred.
