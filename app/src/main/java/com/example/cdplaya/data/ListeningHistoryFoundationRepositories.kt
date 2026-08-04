@@ -1,5 +1,8 @@
 package com.example.cdplaya.data
 
+import androidx.room.withTransaction
+import com.example.cdplaya.data.listening.FinalizedListeningEventDraft
+import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.LegacyListeningBaselineDao
 import com.example.cdplaya.data.local.LegacyListeningBaselineEntity
 import com.example.cdplaya.data.local.ListeningEventDao
@@ -8,6 +11,7 @@ import com.example.cdplaya.data.local.ListeningTrackIdentityDao
 import com.example.cdplaya.data.local.ListeningTrackIdentityEntity
 import com.example.cdplaya.data.local.LocalTrackBindingDao
 import com.example.cdplaya.data.local.LocalTrackBindingEntity
+import com.example.cdplaya.data.local.toEntity
 
 class ListeningTrackIdentityRepository(
     private val identityDao: ListeningTrackIdentityDao,
@@ -30,6 +34,10 @@ class ListeningEventRepository(
 ) {
     suspend fun insert(event: ListeningEventEntity): Long = eventDao.insert(event)
 
+    /** Returns false when a uniqueness constraint proves this finalized attempt was already stored. */
+    suspend fun insertFinalizedDraft(draft: FinalizedListeningEventDraft): Boolean =
+        eventDao.insertIgnoringConflict(draft.toEntity()) != -1L
+
     suspend fun getByUuid(eventUuid: String): ListeningEventEntity? =
         eventDao.getByUuid(eventUuid)
 
@@ -37,6 +45,72 @@ class ListeningEventRepository(
         eventDao.getByPlaybackSessionId(playbackSessionId)
 
     suspend fun count(): Long = eventDao.count()
+}
+
+data class NativeListeningTrack(
+    val trackIdentityId: Long,
+    val localTrackBindingId: Long?
+)
+
+/**
+ * Resolves only an exact durable local reference key. Metadata is stored as a snapshot but is never
+ * used to merge two local bindings, so duplicate-looking files remain separate histories.
+ */
+class ListeningNativeTrackResolver(
+    private val database: AppDatabase,
+    private val nowMillis: () -> Long = System::currentTimeMillis
+) {
+    suspend fun resolveOrCreate(referenceKey: String, reference: SongReference): NativeListeningTrack {
+        require(referenceKey.isNotBlank()) { "Reference key cannot be blank" }
+        return database.withTransaction {
+            val bindingDao = database.localTrackBindingDao()
+            val existing = bindingDao.getByReferenceKey(referenceKey)
+            if (existing != null) {
+                return@withTransaction NativeListeningTrack(existing.trackIdentityId, existing.id)
+            }
+
+            val safeReference = reference.normalizedForPersistence()
+            val now = nowMillis()
+            val identityId = database.listeningTrackIdentityDao().insert(
+                ListeningTrackIdentityEntity(
+                    titleSnapshot = safeReference.title,
+                    artistSnapshot = safeReference.artist,
+                    albumSnapshot = safeReference.album,
+                    albumArtistSnapshot = safeReference.albumArtist.takeIf { it.isNotBlank() },
+                    durationMsSnapshot = safeReference.duration.takeIf { it > 0L },
+                    normalizedTitle = safeReference.title.identityNormalized(),
+                    normalizedArtist = safeReference.artist.identityNormalized(),
+                    normalizedAlbum = safeReference.album.identityNormalized(),
+                    metadataKey = safeReference.portableKey.takeIf { it.isNotBlank() },
+                    metadataKeyVersion = safeReference.portableKeyVersion,
+                    createdAt = now,
+                    updatedAt = now
+                )
+            )
+            val bindingId = bindingDao.insert(
+                LocalTrackBindingEntity(
+                    trackIdentityId = identityId,
+                    referenceKey = referenceKey,
+                    mediaStoreId = safeReference.mediaStoreId,
+                    volumeName = safeReference.volumeName.takeIf { it.isNotBlank() },
+                    contentUri = safeReference.contentUri.takeIf { it.isNotBlank() },
+                    relativePath = safeReference.relativePath.takeIf { it.isNotBlank() },
+                    displayName = safeReference.displayName.takeIf { it.isNotBlank() },
+                    absolutePath = null,
+                    fileSizeBytes = safeReference.fileSizeBytes.takeIf { it > 0L },
+                    dateModifiedEpochSeconds = safeReference.dateModifiedEpochSeconds.takeIf { it > 0L },
+                    durationMsSnapshot = safeReference.duration.takeIf { it > 0L },
+                    legacyStableKey = safeReference.legacyStableKey.takeIf { it.isNotBlank() },
+                    portableKey = safeReference.portableKey.takeIf { it.isNotBlank() },
+                    portableKeyVersion = safeReference.portableKeyVersion,
+                    firstSeenAt = now,
+                    lastSeenAt = now,
+                    missingSince = null
+                )
+            )
+            NativeListeningTrack(identityId, bindingId)
+        }
+    }
 }
 
 class LegacyListeningBaselineRepository(

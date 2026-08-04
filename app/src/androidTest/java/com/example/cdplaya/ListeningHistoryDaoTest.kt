@@ -122,6 +122,29 @@ class ListeningHistoryDaoTest {
     }
 
     @Test
+    fun finalizedEventConflictIgnoreIsIdempotentByPlaybackSession() = runBlocking {
+        val identityId = database.listeningTrackIdentityDao().insert(identity())
+        val first = database.listeningEventDao().insertIgnoringConflict(
+            event(
+                eventUuid = "native-event-1",
+                trackIdentityId = identityId,
+                playbackSessionId = "native-session-1"
+            )
+        )
+        val duplicate = database.listeningEventDao().insertIgnoringConflict(
+            event(
+                eventUuid = "native-event-2",
+                trackIdentityId = identityId,
+                playbackSessionId = "native-session-1"
+            )
+        )
+
+        assertTrue(first > 0L)
+        assertEquals(-1L, duplicate)
+        assertEquals(1L, database.listeningEventDao().count())
+    }
+
+    @Test
     fun negativeListeningTimeIsRejectedBeforePersistence() {
         assertThrows(IllegalArgumentException::class.java) {
             event(eventUuid = "negative", trackIdentityId = 1L, listenedMs = -1L)

@@ -2,6 +2,7 @@ package com.example.cdplaya.data.local
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 
 @Dao
@@ -38,6 +39,9 @@ interface LocalTrackBindingDao {
 interface ListeningEventDao {
     @Insert
     suspend fun insert(event: ListeningEventEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIgnoringConflict(event: ListeningEventEntity): Long
 
     @Query("SELECT * FROM listening_events WHERE eventUuid = :eventUuid LIMIT 1")
     suspend fun getByUuid(eventUuid: String): ListeningEventEntity?

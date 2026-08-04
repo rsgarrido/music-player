@@ -3,7 +3,8 @@
 Database version 9 adds durable historical track identities, local-track bindings,
 finalized listening events, and exact baselines for the aggregate history that existed
 before event storage. The current Recently Played and Most Played features continue to
-read `song_play_stats`; playback does not write detailed events yet.
+read `song_play_stats`. Native playback now also writes detailed finalized attempts to
+`listening_events` from the authoritative `PlaybackService` player.
 
 Migration 8→9 creates one identity, one local binding, and one legacy baseline for every
 existing `song_play_stats` row. It deliberately creates no synthetic listening events,
@@ -15,12 +16,52 @@ versioned backup format must add `listening_track_identities`, `local_track_bind
 `legacy_listening_baselines`, and `listening_events`. That later design must account for
 large event histories instead of silently adding them to the current JSON payload.
 
+## Service-owned native recording
+
+`PlaybackServiceListeningAdapter` is attached directly to the ExoPlayer owned by
+`PlaybackService`, so Compose, notification, Bluetooth/headset, MediaSession, Android
+Auto, automatic playlist, and repeat-one commands converge on the same callback stream.
+The adapter timestamps callbacks immediately, processes them through one coroutine
+consumer, and performs Room writes independently on an IO scope. A slow identity lookup
+does not lose initial playback time because the captured monotonic callback time is
+installed before each pure-recorder command.
+
+Playable `MediaItem`s carry centralized, validated extras containing a unique item
+instance ID, an exact durable local reference key, and immutable `SongReference`
+evidence. The service resolves an existing local binding only by the exact reference
+key. Otherwise it transactionally creates a new historical identity and binding;
+normalized metadata is a snapshot/index only and never a merge key. Missing or malformed
+extras cause that item to be skipped safely rather than guessed from its title.
+
+Sessions are created only on confirmed `isPlaying == true`, not on preload. Automatic
+and repeat transitions finalize the old attempt as `NATURAL_END`; repeat-one immediately
+gets a new playback session ID even though the item instance is unchanged. User/direct
+and current-item playlist replacement transitions use `TRANSITION`. Same-current-item
+queue edits do not end a session. `STATE_ENDED`, player error, `STATE_IDLE`/stop, and
+graceful service destruction map to natural end, error, and stopped finalization as
+appropriate. Only within-item Media3 seek and seek-adjustment discontinuities are sent
+to the recorder; automatic transition discontinuities are ignored.
+
+Finalized drafts are inserted with Room conflict-ignore semantics. Event UUID and
+playback-session unique indexes make callback duplication idempotent. Insert failures
+are logged without track metadata and never crash or block playback. Native events keep
+source `CDPLAYA`, null import fields, and never update `song_play_stats`.
+
+This is intentionally transitional: `PlaybackHistoryProgressTracker` and the
+`PlaybackController` aggregate recorder remain active, so `song_play_stats` still uses
+the previous UI-side threshold behavior while `listening_events` uses qualification rule
+v1. Recently Played and Most Played remain on the legacy aggregate queries until the
+later parity/projection session.
+
+Active sessions are in memory only. Graceful service destruction is finalized and its
+outstanding insert is drained asynchronously, but abrupt process death can lose the
+unfinished attempt. There are no periodic checkpoints or process-death recovery yet.
+
 ## Pure listening-session recorder (qualification rule v1)
 
-`ListeningSessionRecorder` is a pure Kotlin state machine for one native CDPlaya
-playback attempt. It is not connected to production playback yet. In particular,
-`PlaybackService`, Media3 callbacks, the existing aggregate `PlaybackHistoryRecorder`,
-Room writes, UI, and Android lifecycle components do not call it.
+`ListeningSessionRecorder` remains a pure Kotlin state machine for one native CDPlaya
+playback attempt. Android, Media3, Room, UI, and lifecycle dependencies remain outside
+its contract in the service adapter and repository boundaries.
 
 The recorder is constructed with a monotonic clock, a wall clock, and an event UUID
 generator. Its command API is:
@@ -95,11 +136,9 @@ UUID generation occurs only for successful finalization. Native drafts always us
 source `CDPLAYA` and leave import fields null. The separate `toEntity()` mapper is the
 Room boundary; the recorder itself neither constructs nor inserts Room entities.
 
-### Deferred integration
+### Deferred work
 
-A later service-adapter milestone must decide how Media3's `isPlaying`, discontinuity,
-completion, transition, error, stop, queue, repeat, notification, and Bluetooth signals
-map to these stable commands and end reasons. That adapter must explicitly finalize the
-old session before starting a new one. Active-session persistence, checkpoints,
-process-death recovery, statistics queries and UI, backup expansion, and imports also
-remain deferred.
+Active-session persistence, periodic checkpoints, process-death recovery, combined
+baseline-plus-event statistics queries, Recently Played/Most Played migration,
+statistics UI, backup expansion, imports and matching, ratings, Wrapped, and smart
+playlists remain deferred.

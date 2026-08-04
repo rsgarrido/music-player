@@ -16,6 +16,7 @@ import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DecoderReuseEvaluation
@@ -25,6 +26,9 @@ import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import com.example.cdplaya.MainActivity
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.ListeningEventRepository
+import com.example.cdplaya.data.ListeningNativeTrackResolver
+import com.example.cdplaya.data.local.DatabaseProvider
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.performance.PerformanceTraceNames
 import com.example.cdplaya.performance.tracePerformance
@@ -62,6 +66,7 @@ class PlaybackService : MediaLibraryService() {
     private val equalizerAudioProcessor = EqualizerAudioProcessor()
     private lateinit var player: ExoPlayer
     private lateinit var playerStateStorage: PlayerStateStorage
+    private lateinit var listeningAdapter: PlaybackServiceListeningAdapter
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private lateinit var appPreferencesRepository: AppPreferencesRepository
     private lateinit var audioManager: AudioManager
@@ -132,6 +137,48 @@ class PlaybackService : MediaLibraryService() {
         override fun onDeviceInfoChanged(deviceInfo: DeviceInfo) {
             isRemotePlayback = deviceInfo.playbackType == DeviceInfo.PLAYBACK_TYPE_REMOTE
             publishAudioRoute()
+        }
+    }
+
+    private val listeningPlayerListener = object : Player.Listener {
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            listeningAdapter.onIsPlayingChanged(player.currentMediaItem, isPlaying)
+        }
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            val mappedReason = when (reason) {
+                Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT -> ListeningMediaTransitionReason.REPEAT
+                Player.MEDIA_ITEM_TRANSITION_REASON_AUTO -> ListeningMediaTransitionReason.AUTOMATIC
+                Player.MEDIA_ITEM_TRANSITION_REASON_SEEK -> ListeningMediaTransitionReason.SEEK
+                Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED ->
+                    ListeningMediaTransitionReason.PLAYLIST_CHANGED
+                else -> return
+            }
+            listeningAdapter.onMediaItemTransition(mediaItem, mappedReason, player.isPlaying)
+        }
+
+        override fun onPositionDiscontinuity(
+            oldPosition: Player.PositionInfo,
+            newPosition: Player.PositionInfo,
+            reason: Int
+        ) {
+            val isWithinSameItem = oldPosition.mediaItemIndex == newPosition.mediaItemIndex
+            val isSeek = reason == Player.DISCONTINUITY_REASON_SEEK ||
+                reason == Player.DISCONTINUITY_REASON_SEEK_ADJUSTMENT
+            if (isWithinSameItem && isSeek) {
+                listeningAdapter.onPositionDiscontinuity(player.currentMediaItem)
+            }
+        }
+
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            when (playbackState) {
+                Player.STATE_ENDED -> listeningAdapter.onNaturalEnd(player.currentMediaItem)
+                Player.STATE_IDLE -> listeningAdapter.onStopped()
+            }
+        }
+
+        override fun onPlayerError(error: PlaybackException) {
+            listeningAdapter.onError()
         }
     }
 
@@ -267,8 +314,14 @@ class PlaybackService : MediaLibraryService() {
         appPreferencesRepository = AppPreferencesRepository.getInstance(this)
         audioManager = getSystemService(AudioManager::class.java)
         playerStateStorage = PlayerStateStorage(this)
+        val database = DatabaseProvider.getDatabase(this)
+        listeningAdapter = PlaybackServiceListeningAdapter(
+            trackResolver = ListeningNativeTrackResolver(database),
+            eventRepository = ListeningEventRepository(database.listeningEventDao())
+        )
         player.addListener(persistenceListener)
         player.addListener(advancedAudioPlayerListener)
+        player.addListener(listeningPlayerListener)
         player.addAnalyticsListener(advancedAudioAnalyticsListener)
         player.addAudioOffloadListener(audioOffloadListener)
         audioManager.registerAudioDeviceCallback(audioDeviceCallback, checkpointHandler)
@@ -303,6 +356,8 @@ class PlaybackService : MediaLibraryService() {
         saveServicePlaybackState()
         player.removeListener(persistenceListener)
         player.removeListener(advancedAudioPlayerListener)
+        player.removeListener(listeningPlayerListener)
+        listeningAdapter.closeGracefully()
         player.removeAnalyticsListener(advancedAudioAnalyticsListener)
         player.removeAudioOffloadListener(audioOffloadListener)
         audioManager.unregisterAudioDeviceCallback(audioDeviceCallback)
@@ -516,21 +571,6 @@ class PlaybackService : MediaLibraryService() {
         return MediaItem.Builder()
             .setMediaId(id)
             .setMediaMetadata(metadata)
-            .build()
-    }
-
-    private fun Song.toPlayableMediaItem(): MediaItem {
-        return MediaItem.Builder()
-            .setMediaId(id.toString())
-            .setUri(uri)
-            .setMediaMetadata(
-                MediaMetadata.Builder()
-                    .setTitle(title)
-                    .setArtist(artist)
-                    .setAlbumTitle(album)
-                    .setArtworkUri(albumArtUri)
-                    .build()
-            )
             .build()
     }
 
