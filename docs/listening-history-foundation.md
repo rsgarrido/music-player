@@ -11,13 +11,18 @@ existing `song_play_stats` row. It deliberately creates no synthetic listening e
 because the old aggregate count does not contain individual timestamps, listened
 durations, completion state, or qualification evidence.
 
-The manual JSON backup format remains unchanged in this session and still exports
-`song_play_stats`, not the complete version-9 history. It cannot reconstruct detailed
-events recorded after this cutover. Session 6 must add an explicitly versioned format
-covering `listening_track_identities`, `local_track_bindings`,
-`legacy_listening_baselines`, and `listening_events`, including a strategy for large
-event histories. This branch is not merge-ready or release-ready until that backup work
-is complete, and complete listening-history backup must not be promised before then.
+Manual JSON backup schema 7 contains the complete canonical version-9 history. Its
+independently versioned `canonicalListeningHistory` section has format version 1 and
+stores identities, bindings, baselines, finalized events, and a count/time-boundary
+summary. Database-generated identity and binding IDs are backup-local references only;
+restore inserts new rows and remaps every foreign-key reference. Stored normalization,
+event UUIDs, enum storage strings, session/source provenance, qualification facts and
+rule versions are preserved rather than recalculated.
+
+Schema 6 and older backups remain readable. Each old aggregate history row becomes its
+own identity, exact-evidence binding, and legacy baseline, even when metadata is
+identical. Counts and first/last timestamps are preserved and no detailed events or
+listening durations are fabricated.
 
 ## Service-owned native recording
 
@@ -183,10 +188,47 @@ while both branch-only recorders were temporarily active may therefore show smal
 or ordering differences after cutover; those aggregate test writes are intentionally
 ignored because folding them in could double count events and mix qualification rules.
 
-`song_play_stats` remains at database version 9 for migration verification, current
-backup compatibility, and development rollback inspection. Playback no longer mutates
-it, and production history screens no longer read it. Backup restore and legacy-reference
-maintenance may still update the table until Session 6 replaces the backup format.
+`song_play_stats` remains at database version 9 for migration verification, old-backup
+compatibility, legacy-reference maintenance, and development rollback inspection.
+Playback no longer mutates it, production history screens never read it, and schema-7
+export does not use it. A new schema-7 restore clears this noncanonical compatibility
+table. A migrated schema-6 restore may also restore its aggregate rows for legacy code,
+but canonical totals come only from the separately converted baselines and events, so
+the compatibility rows cannot double-count Recently Played or Most Played.
+
+## Manual backup and restore schema 7
+
+Canonical export reads identities by ID, bindings by identity then binding ID,
+baselines by identity, and events by start time then event row ID. All four reads occur
+in one Room read transaction, so finalized playback inserted during export is wholly
+before or after the captured history snapshot. Event cursors are read in pages of 1,000.
+The JSON encoder writes directly to the destination stream and uses compact JSON, so it
+does not allocate a second full serialized string. The in-memory `AppBackup` model still
+retains the collected records while serialization runs; database cursor and JSON-string
+memory are bounded, but the current serializer is not a record-at-a-time parser. Import
+batch IDs remain opaque nullable event provenance because no canonical import-batch
+table exists yet. The existing UI reports completion rather than per-page progress.
+
+Before restore mutates data, schema version, history format version, summary counts,
+references, ownership, durations, timestamps, play counts, enum strings, and every
+database uniqueness key are validated. Favorites, playlists, the compatibility table,
+and the four canonical history tables are then replaced inside one Room transaction.
+Canonical deletion order is events, baselines, bindings, identities; insertion order is
+identities, bindings, baselines, events. Identity and binding maps translate backup-local
+IDs to restored IDs, and baseline/event inserts use batches of 500. Any validation or
+database failure leaves all database-backed categories at their prior state. Preferences
+remain in their existing DataStore boundary and are applied after the Room commit.
+
+Room invalidation from the committed transaction refreshes production Recently Played
+and Most Played without an app restart, rescan, tab change, or artificial playback
+event. An active in-memory playback attempt is intentionally not serialized, stopped,
+or rewritten. If it finalizes after restore, the service inserts exactly one new event
+after the restored snapshot.
+
+Backups remain local to the user-selected document destination and add no upload or
+network behavior. Schema 7 may contain track metadata, timestamps, listening behavior,
+and local-reference evidence including paths and content URIs. Backup code does not log
+the JSON, metadata, paths, or event history; structural errors use privacy-safe messages.
 
 ## Pure listening-session recorder (qualification rule v1)
 
@@ -270,5 +312,5 @@ Room boundary; the recorder itself neither constructs nor inserts Room entities.
 ### Deferred work
 
 Active-session persistence, periodic checkpoints, process-death recovery, statistics UI
-and charts, backup expansion, imports and matching, ratings, Wrapped, smart playlists,
-and shareable reports remain deferred.
+and charts, Spotify/Last.fm imports and matching, ratings, Wrapped, smart playlists,
+cloud synchronization, and shareable reports remain deferred.

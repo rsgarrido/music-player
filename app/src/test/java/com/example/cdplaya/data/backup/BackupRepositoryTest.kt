@@ -23,6 +23,7 @@ class BackupRepositoryTest {
     private fun backupWithPlaylistSongCounts(vararg songCounts: Int): AppBackup {
         return AppBackup(
             createdAt = 123L,
+            canonicalListeningHistory = BackupListeningHistoryV2(),
             playlists = songCounts.mapIndexed { playlistIndex, songCount ->
                 BackupPlaylist(
                     name = "Playlist $playlistIndex",

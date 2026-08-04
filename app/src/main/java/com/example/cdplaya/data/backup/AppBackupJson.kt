@@ -1,5 +1,7 @@
 package com.example.cdplaya.data.backup
 
+import com.example.cdplaya.data.identityNormalized
+import com.example.cdplaya.data.portableMetadataKey
 import com.example.cdplaya.player.equalizer.GraphicEqualizerPresets
 import com.example.cdplaya.player.equalizer.EqualizerMode
 import com.example.cdplaya.player.equalizer.parametric.MAX_PARAMETRIC_FILTER_COUNT
@@ -7,21 +9,31 @@ import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerPreset
 import com.example.cdplaya.player.equalizer.parametric.ParametricEqualizerState
 import com.example.cdplaya.player.equalizer.parametric.ParametricFilter
 import com.example.cdplaya.player.equalizer.parametric.ParametricFilterType
+import java.io.InputStream
+import java.io.OutputStream
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromStream
+import kotlinx.serialization.json.encodeToStream
 
 object AppBackupJson {
-    const val CURRENT_SCHEMA_VERSION = 6
+    const val CURRENT_SCHEMA_VERSION = 7
     private const val OLDEST_SUPPORTED_SCHEMA_VERSION = 1
 
     private val json = Json {
-        prettyPrint = true
+        prettyPrint = false
         ignoreUnknownKeys = true
         encodeDefaults = true
     }
 
     fun encodeBackup(backup: AppBackup): String = json.encodeToString(backup.sanitizedForExport())
+
+    @OptIn(ExperimentalSerializationApi::class)
+    fun encodeBackup(backup: AppBackup, output: OutputStream) {
+        json.encodeToStream(backup.sanitizedForExport(), output)
+    }
 
     fun decodeBackup(jsonText: String): AppBackup {
         val backup = try {
@@ -30,6 +42,20 @@ object AppBackupJson {
             throw IllegalArgumentException("Invalid CDPlaya backup JSON.", exception)
         }
 
+        return migrateAndValidate(backup)
+    }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    fun decodeBackup(input: InputStream): AppBackup {
+        val backup = try {
+            json.decodeFromStream<AppBackup>(input)
+        } catch (exception: SerializationException) {
+            throw IllegalArgumentException("Invalid CDPlaya backup JSON.", exception)
+        }
+        return migrateAndValidate(backup)
+    }
+
+    private fun migrateAndValidate(backup: AppBackup): AppBackup {
         require(backup.schemaVersion in OLDEST_SUPPORTED_SCHEMA_VERSION..CURRENT_SCHEMA_VERSION) {
             "Unsupported CDPlaya backup schema version ${backup.schemaVersion}; " +
                 "supported versions are $OLDEST_SUPPORTED_SCHEMA_VERSION through " +
@@ -52,7 +78,14 @@ object AppBackupJson {
         if (migrated.schemaVersion == 5) {
             migrated = migrateV5ToV6(migrated)
         }
+        if (migrated.schemaVersion == 6) {
+            migrated = migrateV6ToV7(migrated)
+        }
         validateEqualizerBackup(migrated.preferences.equalizer)
+        val history = requireNotNull(migrated.canonicalListeningHistory) {
+            "CDPlaya backup schema 7 requires canonical listening history."
+        }
+        ListeningHistoryBackupValidator.validate(history)
         return migrated
     }
 
@@ -126,6 +159,78 @@ object AppBackupJson {
                 )
             )
         )
+
+    private fun migrateV6ToV7(backup: AppBackup): AppBackup {
+        val identities = mutableListOf<BackupListeningTrackIdentity>()
+        val bindings = mutableListOf<BackupLocalTrackBinding>()
+        val baselines = mutableListOf<BackupLegacyListeningBaseline>()
+        backup.listeningHistory.forEachIndexed { index, entry ->
+            val backupId = index.toLong() + 1L
+            val reference = entry.reference ?: entry.legacyReference()
+            val title = reference.title.ifBlank { entry.title }
+            val artist = reference.artist.ifBlank { entry.artist }
+            val album = reference.album.ifBlank { entry.album }
+            val duration = reference.duration.takeIf { it > 0L }
+                ?: entry.duration.takeIf { it > 0L }
+            val portableKey = reference.portableKey.takeIf { it.isNotBlank() }
+                ?: portableMetadataKey(title, artist, album, duration ?: 0L)
+            identities += BackupListeningTrackIdentity(
+                backupIdentityId = backupId,
+                titleSnapshot = title,
+                artistSnapshot = artist,
+                albumSnapshot = album,
+                albumArtistSnapshot = reference.albumArtist.takeIf { it.isNotBlank() },
+                durationMsSnapshot = duration,
+                normalizedTitle = title.identityNormalized(),
+                normalizedArtist = artist.identityNormalized(),
+                normalizedAlbum = album.identityNormalized(),
+                metadataKey = portableKey,
+                metadataKeyVersion = reference.portableKeyVersion.takeIf { it > 0 } ?: 1,
+                createdAt = backup.createdAt,
+                updatedAt = backup.createdAt
+            )
+            val uniqueReferenceKey = "backup:v6:$backupId:${reference.restoredReferenceKey()}"
+            bindings += BackupLocalTrackBinding(
+                backupBindingId = backupId,
+                trackIdentityBackupId = backupId,
+                referenceKey = uniqueReferenceKey,
+                mediaStoreId = null,
+                volumeName = null,
+                contentUri = null,
+                relativePath = reference.relativePath.takeIf { it.isNotBlank() },
+                displayName = reference.displayName.takeIf { it.isNotBlank() },
+                absolutePath = null,
+                fileSizeBytes = reference.fileSizeBytes.takeIf { it > 0L },
+                dateModifiedEpochSeconds = null,
+                durationMsSnapshot = duration,
+                legacyStableKey = reference.legacyStableKey.ifBlank { entry.songKey }
+                    .takeIf { it.isNotBlank() },
+                portableKey = portableKey,
+                portableKeyVersion = reference.portableKeyVersion.takeIf { it > 0 } ?: 1,
+                firstSeenAt = backup.createdAt,
+                lastSeenAt = backup.createdAt,
+                missingSince = backup.createdAt
+            )
+            baselines += BackupLegacyListeningBaseline(
+                trackIdentityBackupId = backupId,
+                historicalPlayCount = entry.playCount,
+                firstKnownPlayedAt = entry.firstPlayedAt,
+                lastKnownPlayedAt = entry.lastPlayedAt,
+                legacyReferenceKey = "backup:v6:baseline:$backupId:${reference.restoredReferenceKey()}",
+                migratedAt = backup.createdAt
+            )
+        }
+        val history = BackupListeningHistoryV2(
+            identities = identities,
+            bindings = bindings,
+            baselines = baselines,
+            events = emptyList()
+        ).let { it.copy(summary = it.recordsSummary()) }
+        return backup.copy(
+            schemaVersion = 7,
+            canonicalListeningHistory = history
+        )
+    }
 
     private fun validateEqualizerBackup(
         equalizer: BackupEqualizerPreferences
@@ -227,6 +332,8 @@ object AppBackupJson {
 }
 
 private fun AppBackup.sanitizedForExport(): AppBackup = copy(
+    canonicalListeningHistory = canonicalListeningHistory
+        ?: BackupListeningHistoryV2(),
     preferences = preferences.copy(
         selectedLibraryFolders = preferences.selectedLibraryFolders
             .map { it.toPortableFolderSelection() }

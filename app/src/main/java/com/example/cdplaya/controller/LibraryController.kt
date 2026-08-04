@@ -113,6 +113,7 @@ class LibraryController(
         favoritesRepository = favoritesRepository,
         playlistsRepository = playlistsRepository,
         listeningHistoryRepository = listeningHistoryRepository,
+        appDatabase = appDatabase,
         appPreferencesRepository = appPreferencesRepository
     )
 

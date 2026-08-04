@@ -15,6 +15,9 @@ interface ListeningTrackIdentityDao {
 
     @Query("SELECT * FROM listening_track_identities ORDER BY id")
     suspend fun getAll(): List<ListeningTrackIdentityEntity>
+
+    @Query("DELETE FROM listening_track_identities")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -33,6 +36,12 @@ interface LocalTrackBindingDao {
 
     @Query("DELETE FROM local_track_bindings WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("SELECT * FROM local_track_bindings ORDER BY trackIdentityId ASC, id ASC")
+    suspend fun getAllForBackup(): List<LocalTrackBindingEntity>
+
+    @Query("DELETE FROM local_track_bindings")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -54,12 +63,24 @@ interface ListeningEventDao {
 
     @Query("SELECT COUNT(*) FROM listening_events")
     suspend fun count(): Long
+
+    @Query(
+        "SELECT * FROM listening_events " +
+            "ORDER BY startedAt ASC, id ASC LIMIT :limit OFFSET :offset"
+    )
+    suspend fun getBackupPage(limit: Int, offset: Int): List<ListeningEventEntity>
+
+    @Query("DELETE FROM listening_events")
+    suspend fun deleteAll()
 }
 
 @Dao
 interface LegacyListeningBaselineDao {
     @Insert
     suspend fun insert(baseline: LegacyListeningBaselineEntity)
+
+    @Insert
+    suspend fun insert(baselines: List<LegacyListeningBaselineEntity>)
 
     @Query("SELECT * FROM legacy_listening_baselines WHERE trackIdentityId = :trackIdentityId")
     suspend fun getByTrackIdentityId(trackIdentityId: Long): LegacyListeningBaselineEntity?
@@ -69,4 +90,10 @@ interface LegacyListeningBaselineDao {
 
     @Query("SELECT COUNT(*) FROM legacy_listening_baselines")
     suspend fun count(): Long
+
+    @Query("SELECT * FROM legacy_listening_baselines ORDER BY trackIdentityId ASC")
+    suspend fun getAllForBackup(): List<LegacyListeningBaselineEntity>
+
+    @Query("DELETE FROM legacy_listening_baselines")
+    suspend fun deleteAll()
 }

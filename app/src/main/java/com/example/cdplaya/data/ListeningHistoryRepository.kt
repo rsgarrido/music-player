@@ -3,7 +3,6 @@ package com.example.cdplaya.data
 import com.example.cdplaya.data.backup.BackupListeningHistoryEntry
 import com.example.cdplaya.data.backup.BackupSongReference
 import com.example.cdplaya.data.backup.restoredReferenceKey
-import com.example.cdplaya.data.backup.toBackupSongReference
 import com.example.cdplaya.data.backup.toSongReference
 import com.example.cdplaya.data.local.SongPlayStatsDao
 import com.example.cdplaya.data.local.SongPlayStatsEntity
@@ -13,22 +12,6 @@ import kotlin.math.min
 class ListeningHistoryRepository(
     private val songPlayStatsDao: SongPlayStatsDao
 ) {
-    suspend fun getListeningHistoryForBackup(): List<BackupListeningHistoryEntry> {
-        return songPlayStatsDao.getRecentlyPlayed().map { stats ->
-            BackupListeningHistoryEntry(
-                songKey = stats.songKey,
-                title = stats.title,
-                artist = stats.artist,
-                album = stats.album,
-                duration = stats.duration,
-                playCount = stats.playCount,
-                firstPlayedAt = stats.firstPlayedAt,
-                lastPlayedAt = stats.lastPlayedAt,
-                reference = stats.toSongReference().toBackupSongReference()
-            )
-        }
-    }
-
     suspend fun restoreListeningHistoryFromBackup(
         listeningHistory: List<BackupListeningHistoryEntry>
     ) {

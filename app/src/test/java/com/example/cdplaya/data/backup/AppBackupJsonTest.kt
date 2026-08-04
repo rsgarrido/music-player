@@ -12,7 +12,7 @@ class AppBackupJsonTest {
     fun encodeBackup_includesCurrentSchemaVersion() {
         val encoded = AppBackupJson.encodeBackup(emptyBackup())
 
-        assertTrue(encoded.contains("\"schemaVersion\": 6"))
+        assertTrue(encoded.contains("\"schemaVersion\":7"))
     }
 
     @Test
@@ -24,6 +24,7 @@ class AppBackupJsonTest {
             "favorites",
             "playlists",
             "listeningHistory",
+            "canonicalListeningHistory",
             "preferences"
         ).forEach { key ->
             assertTrue("Missing JSON key: $key", encoded.contains("\"$key\""))
@@ -63,7 +64,7 @@ class AppBackupJsonTest {
     }
 
     @Test
-    fun decodeBackup_migratesV1PreferencesAndReferencesToV6() {
+    fun decodeBackup_migratesV1PreferencesReferencesAndHistoryToV7() {
         val decoded = AppBackupJson.decodeBackup(
             """
             {
@@ -78,7 +79,7 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(6, decoded.schemaVersion)
+        assertEquals(7, decoded.schemaVersion)
         assertEquals("slide", decoded.preferences.modernArtworkTransitionStyle)
         assertEquals("classic_bar", decoded.preferences.modernSeekbarStyle)
         assertEquals(emptyMap<String, BackupPlayerThemeTokenOverrides>(), decoded.preferences.playerThemeTokenOverrides)
@@ -157,7 +158,7 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(6, decoded.schemaVersion)
+        assertEquals(7, decoded.schemaVersion)
         assertEquals("old-key", decoded.favorites.single().reference?.legacyStableKey)
     }
 
@@ -165,11 +166,20 @@ class AppBackupJsonTest {
     fun decodeBackup_rejectsUnsupportedSchemaVersion() {
         val exception = expectIllegalArgumentException {
             AppBackupJson.decodeBackup(
-                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 7))
+                AppBackupJson.encodeBackup(emptyBackup().copy(schemaVersion = 8))
             )
         }
 
-        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 7"))
+        assertTrue(exception.message.orEmpty().contains("Unsupported CDPlaya backup schema version 8"))
+    }
+
+    @Test
+    fun decodeBackup_rejectsVersion7WithoutCanonicalHistorySection() {
+        val exception = expectIllegalArgumentException {
+            AppBackupJson.decodeBackup("{\"schemaVersion\":7,\"createdAt\":1}")
+        }
+
+        assertTrue(exception.message.orEmpty().contains("requires canonical listening history"))
     }
 
     @Test
@@ -243,7 +253,7 @@ class AppBackupJsonTest {
             """.trimIndent()
         )
 
-        assertEquals(6, decoded.schemaVersion)
+        assertEquals(7, decoded.schemaVersion)
         assertFalse(decoded.preferences.equalizer.limiterEnabled)
         assertEquals(
             -1.0,
@@ -459,7 +469,10 @@ class AppBackupJsonTest {
         assertEquals("Music/Rock", "/sdcard/Music/Rock".toPortableFolderSelection())
     }
 
-    private fun emptyBackup() = AppBackup(createdAt = 123L)
+    private fun emptyBackup() = AppBackup(
+        createdAt = 123L,
+        canonicalListeningHistory = BackupListeningHistoryV2()
+    )
 
     private fun expectIllegalArgumentException(block: () -> Unit): IllegalArgumentException {
         try {

@@ -2,6 +2,7 @@ package com.example.cdplaya.data.backup
 
 import android.content.Context
 import android.net.Uri
+import androidx.room.withTransaction
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.example.cdplaya.data.FavoritesRepository
@@ -12,6 +13,7 @@ import com.example.cdplaya.data.PlaylistsRepository
 import com.example.cdplaya.player.replaygain.ReplayGainMode
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.data.preferences.AppPreferencesState
+import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.player.audio.AudioOffloadPreference
 import com.example.cdplaya.player.equalizer.EqualizerPreferencesState
 import com.example.cdplaya.player.equalizer.EqualizerMode
@@ -30,8 +32,6 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokenField
 import com.example.cdplaya.ui.player.theme.PlayerThemeTokenOverrides
 import com.example.cdplaya.ui.player.theme.customizationOptions
 import java.io.IOException
-import java.io.InputStreamReader
-import java.io.OutputStreamWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -40,10 +40,12 @@ class BackupRepository(
     private val favoritesRepository: FavoritesRepository,
     private val playlistsRepository: PlaylistsRepository,
     private val listeningHistoryRepository: ListeningHistoryRepository,
+    private val appDatabase: AppDatabase,
     private val appPreferencesRepository: AppPreferencesRepository =
         AppPreferencesRepository.getInstance(context)
 ) {
     private val context = context.applicationContext ?: context
+    private val canonicalHistoryRepository = ListeningHistoryBackupRepository(appDatabase)
 
     suspend fun createBackup(): AppBackup = withContext(Dispatchers.IO) {
         val appPreferences = appPreferencesRepository.awaitLoadedState()
@@ -53,7 +55,8 @@ class BackupRepository(
             appName = APP_NAME,
             favorites = favoritesRepository.getFavoritesForBackup(),
             playlists = playlistsRepository.getPlaylistsForBackup(),
-            listeningHistory = listeningHistoryRepository.getListeningHistoryForBackup(),
+            listeningHistory = emptyList(),
+            canonicalListeningHistory = canonicalHistoryRepository.export(),
             preferences = BackupPreferences(
                 folderSelectionMode = appPreferences.folderSelectionMode.name,
                 selectedLibraryFolders = appPreferences.selectedLibraryFolders
@@ -82,12 +85,11 @@ class BackupRepository(
 
     suspend fun writeBackupToUri(uri: Uri): BackupExportResult = withContext(Dispatchers.IO) {
         val backup = createBackup()
-        val jsonText = AppBackupJson.encodeBackup(backup)
         val outputStream = context.contentResolver.openOutputStream(uri, "wt")
             ?: throw IOException("Unable to open backup destination.")
 
-        OutputStreamWriter(outputStream, Charsets.UTF_8).use { writer ->
-            writer.write(jsonText)
+        outputStream.use { stream ->
+            AppBackupJson.encodeBackup(backup, stream)
         }
 
         backup.toBackupExportResult()
@@ -96,11 +98,9 @@ class BackupRepository(
     suspend fun readBackupFromUri(uri: Uri): AppBackup = withContext(Dispatchers.IO) {
         val inputStream = context.contentResolver.openInputStream(uri)
             ?: throw IOException("Unable to open backup source.")
-        val jsonText = InputStreamReader(inputStream, Charsets.UTF_8).use { reader ->
-            reader.readText()
+        inputStream.use { stream ->
+            AppBackupJson.decodeBackup(stream)
         }
-
-        AppBackupJson.decodeBackup(jsonText)
     }
 
     fun summarizeRestore(backup: AppBackup): BackupRestoreSummary {
@@ -110,12 +110,18 @@ class BackupRepository(
     suspend fun restoreBackup(backup: AppBackup): BackupRestoreResult =
         withContext(Dispatchers.IO) {
             val summary = summarizeRestore(backup)
-
-            favoritesRepository.restoreFavoritesFromBackup(backup.favorites)
-            playlistsRepository.restorePlaylistsFromBackup(backup.playlists)
-            listeningHistoryRepository.restoreListeningHistoryFromBackup(
-                backup.listeningHistory
+            val validatedHistory = ListeningHistoryBackupValidator.validate(
+                backup.requiredCanonicalListeningHistory()
             )
+
+            appDatabase.withTransaction {
+                favoritesRepository.restoreFavoritesFromBackup(backup.favorites)
+                playlistsRepository.restorePlaylistsFromBackup(backup.playlists)
+                listeningHistoryRepository.restoreListeningHistoryFromBackup(
+                    backup.listeningHistory
+                )
+                canonicalHistoryRepository.restoreValidatedWithinTransaction(validatedHistory)
+            }
             restorePreferences(backup.preferences)
 
             BackupRestoreResult(
@@ -361,7 +367,8 @@ internal fun AppBackup.toBackupExportResult(): BackupExportResult {
         favoriteCount = favorites.size,
         playlistCount = playlists.size,
         playlistSongCount = playlists.sumOf { playlist -> playlist.songs.size },
-        listeningHistoryCount = listeningHistory.size
+        listeningHistoryCount = requiredCanonicalListeningHistory()
+            .summary.identityCount.toDisplayCount()
     )
 }
 
@@ -370,7 +377,15 @@ internal fun AppBackup.toBackupRestoreSummary(): BackupRestoreSummary {
         favoriteCount = favorites.size,
         playlistCount = playlists.size,
         playlistSongCount = playlists.sumOf { playlist -> playlist.songs.size },
-        listeningHistoryCount = listeningHistory.size,
+        listeningHistoryCount = requiredCanonicalListeningHistory()
+            .summary.identityCount.toDisplayCount(),
         selectedFolderCount = preferences.selectedLibraryFolders.size
     )
 }
+
+private fun Long.toDisplayCount(): Int = coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+
+private fun AppBackup.requiredCanonicalListeningHistory(): BackupListeningHistoryV2 =
+    requireNotNull(canonicalListeningHistory) {
+        "CDPlaya backup schema 7 requires canonical listening history."
+    }
