@@ -138,6 +138,70 @@ requested. In particular, neither a CDPlaya nor an import filter claims provenan
 legacy counts. Legacy inclusion is effective only for unfiltered all-time queries; no
 `LEGACY` event source was added.
 
+### Analytics ranges and trends
+
+The non-UI analytics foundation resolves calendar selections with an injected
+`java.time.Clock` and a provider that returns the current `ZoneId` for every request.
+It never caches the device zone. Today is the current local day; Last 7 Days includes
+today and the preceding six days; Last 30 Days includes today and the preceding 29
+days; This Month spans the first day of the current month to the first day of the next;
+and This Year spans local January 1 to the following January 1. All Time has no event
+date constraint. The default selection is Last 30 Days.
+
+Custom selections store `LocalDate` values. Their end date is inclusive at the
+selection boundary and resolves to the start of the following local day, producing the
+same `[startInclusive, endExclusive)` epoch contract used by every statistics query.
+A reversed custom range is rejected rather than swapped. Presets and custom dates are
+resolved again in the current zone on refresh, so a zone change alters epoch boundaries
+without changing a custom selection's calendar dates.
+
+All calendar boundaries use `LocalDate.atStartOfDay(zone)` and zoned calendar
+arithmetic. Today uses elapsed local-hour buckets and therefore has 23 buckets on a
+Los Angeles spring-forward day, 25 on a fall-back day, and 24 normally. Repeated fall
+hours remain separate chronological buckets with distinct offsets; a missing spring
+hour is not fabricated. Other preset policies are: local days for Last 7 Days, Last 30
+Days, and This Month; local months for This Year; local days for custom ranges of at
+most 90 inclusive days; local months through 36 calendar months; and local years for
+longer custom ranges. All Time aligns matching detailed-event bounds to local months
+when the covered interval is at most 36 months and to local years otherwise. No matching
+detailed events means an empty All Time trend. Extremely long year ranges use wider
+year steps so the complete interval remains represented without exceeding 400 buckets.
+
+Each trend bucket assigns an entire finalized attempt by its persisted `startedAt`,
+including an attempt that ends in a later day. Recorded time is `SUM(listenedMs)` for
+all detailed attempts; qualified plays count stored `qualifiedAsPlay = true`; total
+attempts count every finalized detailed event; and natural completions count persisted
+`NATURAL_END` reasons. Legacy aggregate plays are never placed into trend buckets and
+never receive estimated duration. An explicit source set filters overview, trend,
+rankings, and detailed bounds consistently and excludes legacy counts.
+
+Kotlin supplies validated, contiguous boundaries to one bounded SQLite `VALUES` CTE.
+Only integer bucket indices are SQL literals; both timestamps per bucket and explicit
+source storage strings are bound. The 400-bucket policy uses at most 803 bindings with
+the three currently defined sources, below the conservative 900-binding guard. A left
+join returns zero-valued rows for empty periods, and SQLite aggregates the event table
+without materializing events in Kotlin or issuing one query per bucket.
+
+One Room read transaction captures detailed bounds, overview, the complete trend,
+qualified-play rankings (10 tracks, 5 albums, and 5 artists), and legacy/detailed
+coverage facts. Date boundaries for finite selections are generated before the
+transaction; All Time boundaries are generated from the detailed bounds read inside
+that transaction so their event coverage is coherent. Mapping rows into immutable
+domain models happens after the transaction. Existing `(source, startedAt)`,
+`(qualifiedAsPlay, startedAt)`, and `(trackIdentityId, startedAt)` indexes remain in
+use, so this work adds no table, index, migration, or database-version change.
+
+`ListeningAnalyticsController` is inactive by default and owns no scope. Activation
+starts a fresh current-zone load and observes only the Room tables read by the snapshot;
+deactivation removes that observer, cancels in-flight work, and retains the last
+snapshot, selected range, and trend metric. Range changes publish the selection
+immediately, retain the previous snapshot while refreshing, cancel stale work, and use
+a request generation check before publication. Conflated invalidations refresh only the
+active selection. Initial and refresh failures expose retryable domain errors; refresh
+failure retains the last snapshot. Retry clears the error before loading. Switching
+between recorded listening time and qualified plays changes state only because every
+bucket already contains both metrics.
+
 ### Track, album, and artist grouping
 
 Track statistics group strictly by `listening_track_identities.id`. MediaStore IDs,
@@ -342,7 +406,8 @@ Room boundary; the recorder itself neither constructs nor inserts Room entities.
 
 ### Deferred work
 
-Active-session persistence, periodic checkpoints, process-death recovery, analytics
-ranges and queries, statistics UI and charts, rating UI and sorting/filtering,
-album/artist rating summaries, Spotify/Last.fm imports and matching, Wrapped, smart
-playlists, cloud synchronization, and shareable reports remain deferred.
+Active-session persistence, periodic checkpoints, process-death recovery, Statistics
+navigation, the Home analytics entry, overview cards, date-picker UI, chart rendering,
+ranked-list UI, rating UI and sorting/filtering, album/artist rating summaries,
+Spotify/Last.fm imports and matching, Wrapped, smart playlists, cloud synchronization,
+and shareable reports remain deferred.

@@ -1,5 +1,7 @@
 package com.example.cdplaya.data.local
 
+import com.example.cdplaya.data.AnalyticsBucketBoundary
+import com.example.cdplaya.data.ListeningAnalyticsBucketBuilder
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteQuery
 
@@ -17,6 +19,80 @@ data class ListeningStatsQuerySpec(
 }
 
 object ListeningStatsQueries {
+    fun detailedEventBounds(spec: ListeningStatsQuerySpec): SupportSQLiteQuery {
+        val filtered = filteredEvents(spec)
+        return SimpleSQLiteQuery(
+            """
+                SELECT
+                    MIN(startedAt) AS earliestStartedAt,
+                    MAX(startedAt) AS latestStartedAt
+                FROM listening_events
+                WHERE ${filtered.whereClause}
+            """.trimIndent(),
+            filtered.args.toTypedArray()
+        )
+    }
+
+    fun trend(
+        boundaries: List<AnalyticsBucketBoundary>,
+        sourceStorageValues: List<String>
+    ): SupportSQLiteQuery {
+        require(boundaries.size <= ListeningAnalyticsBucketBuilder.MAX_BUCKET_COUNT)
+        require(sourceStorageValues.isNotEmpty())
+        if (boundaries.isEmpty()) {
+            return SimpleSQLiteQuery(
+                """
+                    SELECT
+                        0 AS bucketIndex,
+                        0 AS startInclusive,
+                        1 AS endExclusive,
+                        0 AS listenedMs,
+                        0 AS qualifiedPlayCount,
+                        0 AS totalAttemptCount,
+                        0 AS naturalCompletionCount
+                    WHERE 0
+                """.trimIndent()
+            )
+        }
+        boundaries.forEachIndexed { index, boundary ->
+            require(boundary.index == index)
+            if (index > 0) require(boundaries[index - 1].endExclusive == boundary.startInclusive)
+        }
+        val values = boundaries.joinToString(",") { boundary ->
+            "(${boundary.index}, ?, ?)"
+        }
+        val sourcePlaceholders = sourceStorageValues.joinToString(",") { "?" }
+        val args = buildList<Any> {
+            boundaries.forEach { boundary ->
+                add(boundary.startInclusive)
+                add(boundary.endExclusive)
+            }
+            addAll(sourceStorageValues)
+        }
+        require(args.size <= MAX_TREND_QUERY_BINDINGS)
+        val sql = """
+            WITH buckets(bucketIndex, startInclusive, endExclusive) AS (
+                VALUES $values
+            )
+            SELECT
+                b.bucketIndex,
+                b.startInclusive,
+                b.endExclusive,
+                COALESCE(SUM(e.listenedMs), 0) AS listenedMs,
+                COALESCE(SUM(CASE WHEN e.qualifiedAsPlay = 1 THEN 1 ELSE 0 END), 0) AS qualifiedPlayCount,
+                COUNT(e.id) AS totalAttemptCount,
+                COALESCE(SUM(CASE WHEN e.endReason = 'natural_end' THEN 1 ELSE 0 END), 0) AS naturalCompletionCount
+            FROM buckets b
+            LEFT JOIN listening_events e
+              ON e.startedAt >= b.startInclusive
+             AND e.startedAt < b.endExclusive
+             AND e.source IN ($sourcePlaceholders)
+            GROUP BY b.bucketIndex, b.startInclusive, b.endExclusive
+            ORDER BY b.bucketIndex ASC
+        """.trimIndent()
+        return SimpleSQLiteQuery(sql, args.toTypedArray())
+    }
+
     fun overview(spec: ListeningStatsQuerySpec): SupportSQLiteQuery {
         val filtered = filteredEvents(spec)
         val includeLegacy = if (spec.includeLegacyBaseline) 1 else 0
@@ -303,4 +379,6 @@ object ListeningStatsQueries {
     private data class SqlAndArgs(val sql: String, val args: List<Any>) {
         val whereClause: String get() = sql
     }
+
+    private const val MAX_TREND_QUERY_BINDINGS = 900
 }

@@ -10,18 +10,20 @@ import com.example.cdplaya.data.local.ListeningSource
 import com.example.cdplaya.data.local.ListeningStatsDao
 import com.example.cdplaya.data.local.ListeningStatsQueries
 import com.example.cdplaya.data.local.ListeningStatsQuerySpec
+import com.example.cdplaya.data.local.ListeningTrendBucketRow
 import com.example.cdplaya.data.local.LocalTrackBindingEntity
 import com.example.cdplaya.data.local.RecentListeningEventRow
 import com.example.cdplaya.data.local.TrackListeningStatsRow
 import com.example.cdplaya.data.local.AppDatabase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 class ListeningStatsRepository(
     private val database: AppDatabase
-) {
+) : ListeningAnalyticsDataSource {
     private val dao: ListeningStatsDao = database.listeningStatsDao()
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -35,6 +37,79 @@ class ListeningStatsRepository(
         )
             .conflate()
             .mapLatest { loadProductionHistory() }
+
+    override fun observeAnalyticsInvalidations(): Flow<Unit> =
+        database.invalidationTracker.createFlow(
+            "listening_events",
+            "legacy_listening_baselines",
+            "listening_track_identities",
+            "local_track_bindings",
+            emitInitialState = true
+        )
+            .conflate()
+            .map { Unit }
+
+    override suspend fun getAnalyticsSnapshot(
+        resolvedRange: ResolvedAnalyticsRange,
+        sources: Set<ListeningSource>
+    ): ListeningAnalyticsSnapshot {
+        val explicitSources = sources.takeIf(Set<ListeningSource>::isNotEmpty)
+        val filter = ListeningStatsFilter(
+            dateRange = resolvedRange.eventRange,
+            sources = explicitSources,
+            includeLegacyBaseline = resolvedRange.canIncludeLegacyBaseline && explicitSources == null
+        )
+        val spec = filter.toSpec()
+        val finiteBoundaries = if (resolvedRange.isAllTime) {
+            null
+        } else {
+            ListeningAnalyticsBucketBuilder.build(resolvedRange)
+        }
+        val rows = database.withTransaction {
+            val boundsRow = dao.getDetailedEventBounds(ListeningStatsQueries.detailedEventBounds(spec))
+            val bounds = if (boundsRow.earliestStartedAt == null) {
+                null
+            } else {
+                DetailedListeningEventBounds(
+                    requireNotNull(boundsRow.earliestStartedAt),
+                    requireNotNull(boundsRow.latestStartedAt)
+                )
+            }
+            val boundaries = finiteBoundaries
+                ?: ListeningAnalyticsBucketBuilder.build(resolvedRange, bounds)
+            AnalyticsSnapshotRows(
+                overview = dao.getOverview(ListeningStatsQueries.overview(spec)),
+                trend = dao.getTrendBuckets(
+                    ListeningStatsQueries.trend(boundaries, spec.sourceStorageValues)
+                ),
+                boundaries = boundaries,
+                tracks = dao.getTrackStats(
+                    ListeningStatsQueries.tracks(spec, orderByListeningTime = false, qualifiedOnly = true, limit = TOP_TRACK_LIMIT)
+                ),
+                albums = dao.getAlbumStats(ListeningStatsQueries.albums(spec, TOP_ALBUM_LIMIT)),
+                artists = dao.getArtistStats(ListeningStatsQueries.artists(spec, TOP_ARTIST_LIMIT)),
+                bounds = bounds
+            )
+        }
+        val overview = rows.overview.toDomain()
+        return ListeningAnalyticsSnapshot(
+            resolvedRange = resolvedRange,
+            overview = overview,
+            trend = rows.trend.mapIndexed { index, row -> row.toDomain(rows.boundaries[index]) },
+            topTracks = rows.tracks.map(TrackListeningStatsRow::toDomain),
+            topAlbums = rows.albums.map(AlbumListeningStatsRow::toDomain),
+            topArtists = rows.artists.map(ArtistListeningStatsRow::toDomain),
+            coverage = ListeningAnalyticsCoverage(
+                selectionCanIncludeLegacyPlays = filter.effectiveIncludeLegacy,
+                hasLegacyPlays = overview.playCounts.legacyPlayCount > 0L,
+                legacyQualifiedPlayCount = overview.playCounts.legacyPlayCount,
+                detailedQualifiedPlayCount = overview.qualifiedDetailedPlayCount,
+                hasDetailedEvents = rows.bounds != null,
+                earliestDetailedEventAt = rows.bounds?.earliestStartedAt,
+                latestDetailedEventAt = rows.bounds?.latestStartedAt
+            )
+        )
+    }
 
     suspend fun getAllTimeOverview(
         sources: Set<ListeningSource>? = null,
@@ -180,7 +255,26 @@ class ListeningStatsRepository(
 
     private companion object {
         const val MAX_RESULT_LIMIT = 10_000
+        const val TOP_TRACK_LIMIT = 10
+        const val TOP_ALBUM_LIMIT = 5
+        const val TOP_ARTIST_LIMIT = 5
     }
+}
+
+private fun ListeningTrendBucketRow.toDomain(boundary: AnalyticsBucketBoundary): ListeningTrendBucket {
+    check(bucketIndex == boundary.index)
+    check(startInclusive == boundary.startInclusive)
+    check(endExclusive == boundary.endExclusive)
+    return ListeningTrendBucket(
+        index = bucketIndex,
+        startInclusive = startInclusive,
+        endExclusive = endExclusive,
+        granularity = boundary.granularity,
+        listenedMs = listenedMs,
+        qualifiedPlayCount = qualifiedPlayCount,
+        totalAttemptCount = totalAttemptCount,
+        naturalCompletionCount = naturalCompletionCount
+    )
 }
 
 private fun ListeningOverviewRow.toDomain(): ListeningOverview {
@@ -313,4 +407,14 @@ private data class ProductionHistoryRows(
     val recentlyPlayed: List<TrackListeningStatsRow>,
     val mostPlayed: List<TrackListeningStatsRow>,
     val bindings: List<LocalTrackBindingEntity>
+)
+
+private data class AnalyticsSnapshotRows(
+    val overview: ListeningOverviewRow,
+    val trend: List<ListeningTrendBucketRow>,
+    val boundaries: List<AnalyticsBucketBoundary>,
+    val tracks: List<TrackListeningStatsRow>,
+    val albums: List<AlbumListeningStatsRow>,
+    val artists: List<ArtistListeningStatsRow>,
+    val bounds: DetailedListeningEventBounds?
 )
