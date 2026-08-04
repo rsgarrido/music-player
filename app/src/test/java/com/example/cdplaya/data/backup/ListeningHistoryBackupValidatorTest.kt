@@ -46,7 +46,7 @@ class ListeningHistoryBackupValidatorTest {
         )
         val history = decoded.canonicalListeningHistory!!
 
-        assertEquals(7, decoded.schemaVersion)
+        assertEquals(8, decoded.schemaVersion)
         assertEquals(2, history.identities.size)
         assertEquals(2, history.bindings.size)
         assertEquals(listOf(3, 4), history.baselines.map { it.historicalPlayCount })

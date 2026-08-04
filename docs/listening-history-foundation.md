@@ -1,4 +1,4 @@
-# Native listening-history persistence foundation
+# Native listening-history and ratings persistence foundation
 
 Database version 9 adds durable historical track identities, local-track bindings,
 finalized listening events, and exact baselines for the aggregate history that existed
@@ -18,6 +18,37 @@ summary. Database-generated identity and binding IDs are backup-local references
 restore inserts new rows and remaps every foreign-key reference. Stored normalization,
 event UUIDs, enum storage strings, session/source provenance, qualification facts and
 rule versions are preserved rather than recalculated.
+
+## Song ratings v1 foundation
+
+Database version 10 adds `song_ratings`. A rating is an integer from 1 through 5 and
+belongs to `listening_track_identities.id`, not to a MediaStore ID, URI, path, binding,
+title, album, or artist. An unrated identity has no row; clearing a rating deletes its
+row. The first write sets both `ratedAt` and `updatedAt`, a changed value preserves
+`ratedAt` and advances `updatedAt`, and an equal value is a no-op. Clearing and rating
+again begins a new lifecycle. Rating history is not stored.
+
+Favorites remain completely independent: neither feature infers or changes the other.
+Metadata-identical identities can carry different ratings. A rating remains when a
+local binding or file disappears, while deleting the historical identity cascades to
+its rating. Rating a current song resolves its exact `Song.membershipKey()` binding and
+transactionally creates the normal identity/binding foundation when absent. Clearing
+uses exact lookup only and never creates an identity for an unknown song.
+
+Migration 9→10 only creates the rating table, its foreign key, and the rating index;
+it generates no ratings and preserves all existing data. Manual backup schema 8 adds a
+format-version-1 `songRatings` section whose entries reference canonical listening
+history backup identity IDs. Export is ordered by that identity reference. Restore
+validates all entries before mutation, inserts canonical identities first, and remaps
+rating references inside the same Room transaction. Duplicate references, missing
+identities, values outside 1–5, negative timestamps, reversed timestamps, and unknown
+rating sub-formats are rejected. Schema 7 and older backups migrate with zero ratings;
+favorites and aggregate history never become ratings. `song_play_stats` remains outside
+rating export and restore.
+
+This is a non-UI foundation. No Compose control, action-sheet entry, row display,
+sorting/filtering, or Statistics screen is connected. Album and artist ratings remain
+derived summaries for later work, not independently editable records.
 
 Schema 6 and older backups remain readable. Each old aggregate history row becomes its
 own identity, exact-evidence binding, and legacy baseline, even when metadata is
@@ -311,6 +342,7 @@ Room boundary; the recorder itself neither constructs nor inserts Room entities.
 
 ### Deferred work
 
-Active-session persistence, periodic checkpoints, process-death recovery, statistics UI
-and charts, Spotify/Last.fm imports and matching, ratings, Wrapped, smart playlists,
-cloud synchronization, and shareable reports remain deferred.
+Active-session persistence, periodic checkpoints, process-death recovery, analytics
+ranges and queries, statistics UI and charts, rating UI and sorting/filtering,
+album/artist rating summaries, Spotify/Last.fm imports and matching, Wrapped, smart
+playlists, cloud synchronization, and shareable reports remain deferred.
