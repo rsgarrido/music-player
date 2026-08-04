@@ -1,6 +1,7 @@
 package com.example.cdplaya.data.local
 
 import androidx.room.Dao
+import androidx.room.Query
 import androidx.room.RawQuery
 import androidx.sqlite.db.SupportSQLiteQuery
 
@@ -34,6 +35,10 @@ data class TrackListeningStatsRow(
     val displayName: String?,
     val fileSizeBytes: Long?,
     val dateModifiedEpochSeconds: Long?,
+    val bindingDurationMsSnapshot: Long?,
+    val legacyStableKey: String?,
+    val portableKey: String?,
+    val portableKeyVersion: Int?,
     val missingSince: Long?,
     val legacyPlayCount: Long,
     val detailedQualifiedPlayCount: Long,
@@ -102,4 +107,15 @@ interface ListeningStatsDao {
 
     @RawQuery
     suspend fun getRecentEvents(query: SupportSQLiteQuery): List<RecentListeningEventRow>
+
+    @Query(
+        """
+        SELECT * FROM local_track_bindings
+        ORDER BY trackIdentityId ASC,
+            CASE WHEN missingSince IS NULL THEN 0 ELSE 1 END ASC,
+            lastSeenAt DESC,
+            id ASC
+        """
+    )
+    suspend fun getAllBindingsForProjectionResolution(): List<LocalTrackBindingEntity>
 }

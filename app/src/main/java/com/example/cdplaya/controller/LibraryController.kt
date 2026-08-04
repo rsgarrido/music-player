@@ -11,8 +11,8 @@ import com.example.cdplaya.data.FavoritesRepository
 import com.example.cdplaya.data.FolderSelection
 import com.example.cdplaya.data.FolderSelectionMode
 import com.example.cdplaya.data.LibraryFolder
-import com.example.cdplaya.data.ListeningHistoryEntry
 import com.example.cdplaya.data.ListeningHistoryRepository
+import com.example.cdplaya.data.ListeningStatsRepository
 import com.example.cdplaya.data.LibraryCacheRepository
 import com.example.cdplaya.data.MusicLibraryData
 import com.example.cdplaya.data.MediaLibraryAccessException
@@ -91,6 +91,7 @@ class LibraryController(
     private val listeningHistoryRepository = ListeningHistoryRepository(
         appDatabase.songPlayStatsDao()
     )
+    private val listeningStatsRepository = ListeningStatsRepository(appDatabase)
     private val libraryCacheRepository = LibraryCacheRepository(appDatabase.cachedSongDao())
     private val playlistFileRepository = PlaylistFileRepository(applicationContext)
     private var refreshJob: Job? = null
@@ -98,6 +99,9 @@ class LibraryController(
     private val reconciliationCoordinator = ReconciliationGenerationCoordinator()
     private var songReferenceIndex: SongReferenceIndex = SongReferenceIndex.EMPTY
     private var visibleSongMembershipKeys: Set<String> = emptySet()
+    private val historyLibrarySnapshot = MutableStateFlow(
+        IndexedLibrarySnapshot(SongReferenceIndex.EMPTY, emptySet())
+    )
     private var libraryPublishCount = 0L
     private var libraryScanCount = 0L
     private val publicationTracker = LibraryPublicationTracker()
@@ -147,15 +151,24 @@ class LibraryController(
     private var selectedPlaylistSongs: List<PlaylistSong>
         get() = _uiState.value.selectedPlaylistSongs
         set(value) = updateState { copy(selectedPlaylistSongs = value.toList()) }
-    private var recentlyPlayedSongs: List<Song>
-        get() = _uiState.value.recentlyPlayedSongs
-        set(value) = updateState { copy(recentlyPlayedSongs = value.toList()) }
-    private var mostPlayedSongs: List<Song>
-        get() = _uiState.value.mostPlayedSongs
-        set(value) = updateState { copy(mostPlayedSongs = value.toList()) }
-
     private inline fun updateState(transform: LibraryUiState.() -> LibraryUiState) {
         _uiState.update { current -> current.transform() }
+    }
+
+    init {
+        coroutineScope.launch {
+            collectProductionListeningHistory(
+                history = listeningStatsRepository.observeProductionHistory(),
+                library = historyLibrarySnapshot
+            ) { resolved ->
+                    _uiState.update { current ->
+                        current.copy(
+                            recentlyPlayedSongs = resolved.recentlyPlayed.toList(),
+                            mostPlayedSongs = resolved.mostPlayed.toList()
+                        )
+                    }
+                }
+        }
     }
 
     fun loadSavedUserData() {
@@ -170,6 +183,12 @@ class LibraryController(
             refreshJob?.cancel()
             reconciliationJob?.cancel()
             publicationTracker.reset()
+            songReferenceIndex = SongReferenceIndex.EMPTY
+            visibleSongMembershipKeys = emptySet()
+            historyLibrarySnapshot.value = IndexedLibrarySnapshot(
+                SongReferenceIndex.EMPTY,
+                emptySet()
+            )
             updateState {
                 copy(
                     songs = emptyList(),
@@ -571,24 +590,6 @@ class LibraryController(
         }
     }
 
-    fun refreshListeningHistory() {
-        coroutineScope.launch {
-            val historyData = withContext(Dispatchers.IO) {
-                val recentlyPlayed = listeningHistoryRepository.getRecentlyPlayed()
-                val mostPlayed = listeningHistoryRepository.getMostPlayed()
-
-                recentlyPlayed to mostPlayed
-            }
-            val mappedHistory = withContext(Dispatchers.Default) {
-                mapListeningHistoryEntriesToSongs(historyData.first) to
-                        mapListeningHistoryEntriesToSongs(historyData.second)
-            }
-
-            recentlyPlayedSongs = mappedHistory.first
-            mostPlayedSongs = mappedHistory.second
-        }
-    }
-
     internal suspend fun refreshAfterBackupRestore() {
         val restoredData = withContext(Dispatchers.IO) {
             BackupRestoredUserData(
@@ -599,9 +600,7 @@ class LibraryController(
                     )
                 },
                 favoriteMembershipKeys = favoritesRepository.getFavoriteMembershipKeys(),
-                playlists = playlistsRepository.getPlaylists(),
-                recentlyPlayed = listeningHistoryRepository.getRecentlyPlayed(),
-                mostPlayed = listeningHistoryRepository.getMostPlayed()
+                playlists = playlistsRepository.getPlaylists()
             )
         }
         val resolvedFolderSelection = restoredData.folderSelection.copy(
@@ -622,13 +621,6 @@ class LibraryController(
         playlists = restoredData.playlists
         selectedPlaylistName = "Playlist"
         selectedPlaylistSongs = emptyList()
-        val mappedHistory = withContext(Dispatchers.Default) {
-            mapListeningHistoryEntriesToSongs(restoredData.recentlyPlayed) to
-                    mapListeningHistoryEntriesToSongs(restoredData.mostPlayed)
-        }
-        recentlyPlayedSongs = mappedHistory.first
-        mostPlayedSongs = mappedHistory.second
-
         if (folderSelectionChanged) {
             reloadSongsAfterFolderChange()
         } else {
@@ -756,6 +748,7 @@ class LibraryController(
     ) = tracePerformance(traceName) {
         songReferenceIndex = indexedSnapshot.index
         visibleSongMembershipKeys = indexedSnapshot.visibleMembershipKeys
+        historyLibrarySnapshot.value = indexedSnapshot
         libraryPublishCount += 1
         val publishedSongs = libraryData.songs.toList()
         _uiState.update { current ->
@@ -915,34 +908,19 @@ class LibraryController(
                         playlistsRepository.applyReferenceBackfill(plan.playlists)
                         listeningHistoryRepository.applyReferenceBackfill(plan.history)
                     }
-                    val recentlyPlayed = listeningHistoryRepository.getRecentlyPlayed()
-                    val mostPlayed = listeningHistoryRepository.getMostPlayed()
                     val selectedPlaylistRows = selectedPlaylistId?.let {
                         playlistsRepository.getPlaylistSongs(it)
                     }
-                    Triple(recentlyPlayed, mostPlayed, selectedPlaylistRows)
+                    selectedPlaylistRows
                 }
                 val mappedResults = withContext(Dispatchers.Default) {
-                    val recentlyPlayed = mapListeningHistoryEntriesToSongs(
-                        storedResults.first,
-                        index,
-                        visibleMembershipKeys
-                    )
-                    val mostPlayed = mapListeningHistoryEntriesToSongs(
-                        storedResults.second,
-                        index,
-                        visibleMembershipKeys
-                    )
-                    val selectedPlaylistRows = storedResults.third?.let { rows ->
+                    storedResults?.let { rows ->
                         resolvePlaylistRows(rows, index, visibleMembershipKeys)
                     }
-                    Triple(recentlyPlayed, mostPlayed, selectedPlaylistRows)
                 }
                 ReferenceReconciliationData(
                     favoriteMembershipKeys = plan.favorites.result.resolvedMembershipKeys,
-                    recentlyPlayed = mappedResults.first,
-                    mostPlayed = mappedResults.second,
-                    selectedPlaylistSongs = mappedResults.third,
+                    selectedPlaylistSongs = mappedResults,
                     unresolvedFavorites = plan.favorites.result.unresolvedCount +
                             plan.favorites.result.ambiguousCount,
                     unresolvedPlaylistRows = plan.playlists.result.unresolvedCount +
@@ -963,8 +941,6 @@ class LibraryController(
             _uiState.update { current ->
                 current.copy(
                     favoriteMembershipKeys = reconciled.favoriteMembershipKeys.toSet(),
-                    recentlyPlayedSongs = reconciled.recentlyPlayed.toList(),
-                    mostPlayedSongs = reconciled.mostPlayed.toList(),
                     unresolvedFavoriteCount = reconciled.unresolvedFavorites,
                     unresolvedPlaylistRowCount = reconciled.unresolvedPlaylistRows,
                     unresolvedListeningHistoryCount = reconciled.unresolvedHistoryRows,
@@ -1011,17 +987,6 @@ class LibraryController(
         row.copy(resolvedSong = resolved)
     }
 
-    private fun mapListeningHistoryEntriesToSongs(
-        historyEntries: List<ListeningHistoryEntry>,
-        index: SongReferenceIndex = songReferenceIndex,
-        visibleMembershipKeys: Set<String> = visibleSongMembershipKeys
-    ): List<Song> {
-        return historyEntries.mapNotNull { historyEntry ->
-            (index.resolve(historyEntry.reference) as? SongReferenceResolution.Resolved)?.song
-                ?.takeIf { it.membershipKey() in visibleMembershipKeys }
-        }
-    }
-
     private fun resolveRestoredFolderSelections(restored: Set<String>): Set<String> {
         if (restored.isEmpty()) return emptySet()
         val available = libraryFolders.map { it.path }.toSet()
@@ -1048,15 +1013,11 @@ class LibraryController(
 private data class BackupRestoredUserData(
     val folderSelection: FolderSelection,
     val favoriteMembershipKeys: Set<String>,
-    val playlists: List<Playlist>,
-    val recentlyPlayed: List<ListeningHistoryEntry>,
-    val mostPlayed: List<ListeningHistoryEntry>
+    val playlists: List<Playlist>
 )
 
 private data class ReferenceReconciliationData(
     val favoriteMembershipKeys: Set<String>,
-    val recentlyPlayed: List<Song>,
-    val mostPlayed: List<Song>,
     val selectedPlaylistSongs: List<PlaylistSong>?,
     val unresolvedFavorites: Int,
     val unresolvedPlaylistRows: Int,
@@ -1069,9 +1030,4 @@ private data class ReferenceReconciliationData(
     val playlistWrites: Int,
     val historyInspected: Int,
     val historyWrites: Int
-)
-
-private data class IndexedLibrarySnapshot(
-    val index: SongReferenceIndex,
-    val visibleMembershipKeys: Set<String>
 )

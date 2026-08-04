@@ -65,6 +65,10 @@ data class ListeningBindingSnapshot(
     val displayName: String?,
     val fileSizeBytes: Long?,
     val dateModifiedEpochSeconds: Long?,
+    val durationMs: Long?,
+    val legacyStableKey: String?,
+    val portableKey: String?,
+    val portableKeyVersion: Int?,
     val missingSince: Long?
 ) {
     val isCurrentlyAvailable: Boolean get() = missingSince == null
@@ -78,6 +82,7 @@ data class TrackListeningStats(
     val albumArtist: String?,
     val durationMs: Long?,
     val binding: ListeningBindingSnapshot?,
+    val knownBindings: List<ListeningBindingSnapshot> = listOfNotNull(binding),
     val playCounts: ListeningPlayCountBreakdown,
     val confirmedDetailedListeningMs: Long,
     val detailedEventCount: Long,
@@ -132,6 +137,11 @@ data class RecentlyPlayedProjection(
 
 data class MostPlayedProjection(
     val track: TrackListeningStats
+)
+
+data class ProductionListeningHistoryProjections(
+    val recentlyPlayed: List<RecentlyPlayedProjection>,
+    val mostPlayed: List<MostPlayedProjection>
 )
 
 enum class TrackStatsOrder {

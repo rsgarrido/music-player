@@ -14,7 +14,6 @@ import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.TagEditorRepository
 import com.example.cdplaya.data.TagEditorResult
 import com.example.cdplaya.data.PlayerTheme
-import com.example.cdplaya.data.ListeningHistoryRepository
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.data.backup.AppBackup
 import com.example.cdplaya.data.backup.BackupExportResult
@@ -261,16 +260,6 @@ class MusicViewModel(
     private val backupRepository = libraryController.createBackupRepository()
 
     init {
-        val listeningHistoryRepository = ListeningHistoryRepository(
-            appDatabase.songPlayStatsDao()
-        )
-
-        playbackController.setListeningHistoryRepository(listeningHistoryRepository)
-
-        playbackController.setOnListeningHistoryChanged {
-            libraryController.refreshListeningHistory()
-        }
-
         viewModelScope.launch {
             appPreferencesRepository.state
                 .filter { preferences -> preferences.isLoaded }

@@ -2,19 +2,22 @@
 
 Database version 9 adds durable historical track identities, local-track bindings,
 finalized listening events, and exact baselines for the aggregate history that existed
-before event storage. The current Recently Played and Most Played features continue to
-read `song_play_stats`. Native playback now also writes detailed finalized attempts to
-`listening_events` from the authoritative `PlaybackService` player.
+before event storage. Production Recently Played and Most Played now read the
+baseline-plus-qualified-event projections. Native playback writes detailed finalized
+attempts to `listening_events` from the authoritative `PlaybackService` player.
 
 Migration 8→9 creates one identity, one local binding, and one legacy baseline for every
 existing `song_play_stats` row. It deliberately creates no synthetic listening events,
 because the old aggregate count does not contain individual timestamps, listened
 durations, completion state, or qualification evidence.
 
-The manual JSON backup format remains unchanged in this release. A later, explicitly
-versioned backup format must add `listening_track_identities`, `local_track_bindings`,
-`legacy_listening_baselines`, and `listening_events`. That later design must account for
-large event histories instead of silently adding them to the current JSON payload.
+The manual JSON backup format remains unchanged in this session and still exports
+`song_play_stats`, not the complete version-9 history. It cannot reconstruct detailed
+events recorded after this cutover. Session 6 must add an explicitly versioned format
+covering `listening_track_identities`, `local_track_bindings`,
+`legacy_listening_baselines`, and `listening_events`, including a strategy for large
+event histories. This branch is not merge-ready or release-ready until that backup work
+is complete, and complete listening-history backup must not be promised before then.
 
 ## Service-owned native recording
 
@@ -47,11 +50,11 @@ playback-session unique indexes make callback duplication idempotent. Insert fai
 are logged without track metadata and never crash or block playback. Native events keep
 source `CDPLAYA`, null import fields, and never update `song_play_stats`.
 
-This is intentionally transitional: `PlaybackHistoryProgressTracker` and the
-`PlaybackController` aggregate recorder remain active, so `song_play_stats` still uses
-the previous UI-side threshold behavior while `listening_events` uses qualification rule
-v1. Recently Played and Most Played remain on the legacy aggregate queries until the
-later parity/projection session.
+The old `PlaybackController` aggregate recorder and its UI-side progress qualification
+tracker have been removed. Playback-position observation remains for player progress and
+checkpointing, but it no longer decides listening qualification or writes history.
+`PlaybackService` is the only owner of new native listening-event semantics, covering UI,
+notification, Bluetooth/headset, MediaSession, automatic transitions, and repeat-one.
 
 Active sessions are in memory only. Graceful service destruction is finalized and its
 outstanding insert is drained asynchronously, but abrupt process death can lose the
@@ -121,12 +124,43 @@ unknown groups receive `Unknown Album` or `Unknown Artist`.
 
 ### Projections and recent attempts
 
-The replacement-capable Recently Played projection contains one row per identity with a
+The production Recently Played projection contains one row per identity with a
 qualified legacy or detailed play, ordered by latest known qualified play descending and
 then identity ID ascending. The Most Played projection orders by combined play count
 descending, latest known qualified play descending, and identity ID ascending. Both
-retain unresolved historical identities and exact binding/reference evidence; neither
-is wired to production UI filtering yet.
+retain unresolved historical identities and exact binding/reference evidence.
+
+## Production cutover and reactive library mapping
+
+`ListeningStatsRepository.observeProductionHistory()` observes only
+`listening_events`, `legacy_listening_baselines`, `listening_track_identities`, and
+`local_track_bindings`. Room invalidation is conflated, and each refresh reads Recently
+Played, Most Played, and all binding evidence inside one database transaction. A newer
+invalidation cancels an older refresh before it can publish a stale snapshot. Collection
+is owned by the long-lived `LibraryController` scope; cancelling that scope removes the
+Room observer, and no repository-owned or global scope is created.
+
+The controller combines that database snapshot with its immutable
+`SongReferenceIndex` and visible membership-key snapshot. Mapping runs off the main
+thread, publishes both lists in one UI-state update, and is cancelled/restarted when
+either history or the current library changes. Consequently database inserts, rescans,
+and folder-selection changes all use the same resolution path without polling or a
+service-to-UI refresh callback.
+
+Resolution preserves projection order and omits unresolved or ambiguous identities. It
+tries the deterministic preferred exact binding first, then other known bindings for the
+same identity. Resolver confidence tiers may use local ID/URI, source path, file
+signature, portable key, and legacy key evidence stored by those bindings; there is no
+full-library title-only or fuzzy match. A preferred exact match wins. If fallback
+evidence is ambiguous or resolves to conflicting current songs, the identity is omitted.
+Distinct identity IDs are never merged even when their metadata snapshots are identical.
+The index includes the reference library while the visible membership set enforces the
+current folder selection, so hiding a folder removes only the playable row. History is
+not deleted, and a later rescan or folder re-inclusion can resolve it again.
+
+The projection model exposes all known local bindings for production resolution. The
+database query still exposes one deterministic preferred binding on ordinary statistics
+rows for compatibility with the Session 4 API.
 
 Recent detailed events are separate from Recently Played. They include qualified and
 non-qualified stops, transitions, errors, and natural completions, support source and
@@ -141,12 +175,18 @@ event table into Kotlin and do not issue per-track binding queries. Existing ver
 indices cover source/date filtering, qualified/date filtering, track/date grouping, and
 binding selection, so no schema version or new index is required for this layer.
 
-The version-9 baseline is a frozen copy of history present during migration. The old
-UI-side recorder continues changing `song_play_stats`, but those later writes are not
-mirrored into the baseline and are deliberately not added as a third statistics source.
-Until the controlled cutover session, production Recently Played and Most Played still
-read `song_play_stats`, the old recorder remains active, and the existing backup format
-remains unchanged.
+The version-9 baseline is a frozen copy of history present during migration. Production
+totals combine only that frozen baseline with qualified detailed events. Current
+`song_play_stats` values are not copied into baselines or events and are not a third
+statistics source. No heuristic reconciliation is performed. A development device used
+while both branch-only recorders were temporarily active may therefore show small count
+or ordering differences after cutover; those aggregate test writes are intentionally
+ignored because folding them in could double count events and mix qualification rules.
+
+`song_play_stats` remains at database version 9 for migration verification, current
+backup compatibility, and development rollback inspection. Playback no longer mutates
+it, and production history screens no longer read it. Backup restore and legacy-reference
+maintenance may still update the table until Session 6 replaces the backup format.
 
 ## Pure listening-session recorder (qualification rule v1)
 
@@ -229,7 +269,6 @@ Room boundary; the recorder itself neither constructs nor inserts Room entities.
 
 ### Deferred work
 
-Active-session persistence, periodic checkpoints, process-death recovery, combined
-Recently Played/Most Played production migration, old-recorder removal, statistics UI
+Active-session persistence, periodic checkpoints, process-death recovery, statistics UI
 and charts, backup expansion, imports and matching, ratings, Wrapped, smart playlists,
 and shareable reports remain deferred.

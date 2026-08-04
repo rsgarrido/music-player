@@ -220,6 +220,10 @@ object ListeningStatsQueries {
                 pb.displayName,
                 pb.fileSizeBytes,
                 pb.dateModifiedEpochSeconds,
+                pb.durationMsSnapshot AS bindingDurationMsSnapshot,
+                pb.legacyStableKey,
+                pb.portableKey,
+                pb.portableKeyVersion,
                 pb.missingSince,
             """.trimIndent()
         } else ""

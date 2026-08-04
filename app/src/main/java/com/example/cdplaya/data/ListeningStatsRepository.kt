@@ -1,5 +1,6 @@
 package com.example.cdplaya.data
 
+import androidx.room.withTransaction
 import com.example.cdplaya.data.local.AlbumListeningStatsRow
 import com.example.cdplaya.data.local.ArtistListeningStatsRow
 import com.example.cdplaya.data.local.ListeningEndReason
@@ -9,12 +10,32 @@ import com.example.cdplaya.data.local.ListeningSource
 import com.example.cdplaya.data.local.ListeningStatsDao
 import com.example.cdplaya.data.local.ListeningStatsQueries
 import com.example.cdplaya.data.local.ListeningStatsQuerySpec
+import com.example.cdplaya.data.local.LocalTrackBindingEntity
 import com.example.cdplaya.data.local.RecentListeningEventRow
 import com.example.cdplaya.data.local.TrackListeningStatsRow
+import com.example.cdplaya.data.local.AppDatabase
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 class ListeningStatsRepository(
-    private val dao: ListeningStatsDao
+    private val database: AppDatabase
 ) {
+    private val dao: ListeningStatsDao = database.listeningStatsDao()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeProductionHistory(): Flow<ProductionListeningHistoryProjections> =
+        database.invalidationTracker.createFlow(
+            "listening_events",
+            "legacy_listening_baselines",
+            "listening_track_identities",
+            "local_track_bindings",
+            emitInitialState = true
+        )
+            .conflate()
+            .mapLatest { loadProductionHistory() }
+
     suspend fun getAllTimeOverview(
         sources: Set<ListeningSource>? = null,
         includeLegacyBaseline: Boolean = true
@@ -111,6 +132,38 @@ class ListeningStatsRepository(
         ).map(RecentListeningEventRow::toDomain)
     }
 
+    private suspend fun loadProductionHistory(): ProductionListeningHistoryProjections {
+        val filter = ListeningStatsFilter()
+        val spec = filter.toSpec()
+        val snapshot = database.withTransaction {
+            ProductionHistoryRows(
+                recentlyPlayed = dao.getTrackStats(
+                    ListeningStatsQueries.recentlyPlayed(spec, Int.MAX_VALUE)
+                ),
+                mostPlayed = dao.getTrackStats(
+                    ListeningStatsQueries.tracks(
+                        spec = spec,
+                        orderByListeningTime = false,
+                        qualifiedOnly = true,
+                        limit = Int.MAX_VALUE
+                    )
+                ),
+                bindings = dao.getAllBindingsForProjectionResolution()
+            )
+        }
+        val bindingsByIdentity = snapshot.bindings
+            .groupBy(LocalTrackBindingEntity::trackIdentityId)
+            .mapValues { (_, bindings) -> bindings.map(LocalTrackBindingEntity::toDomain) }
+        return ProductionListeningHistoryProjections(
+            recentlyPlayed = snapshot.recentlyPlayed.map { row ->
+                RecentlyPlayedProjection(row.toDomain(bindingsByIdentity[row.trackIdentityId]))
+            },
+            mostPlayed = snapshot.mostPlayed.map { row ->
+                MostPlayedProjection(row.toDomain(bindingsByIdentity[row.trackIdentityId]))
+            }
+        )
+    }
+
     private fun ListeningStatsFilter.toSpec() = ListeningStatsQuerySpec(
         startInclusive = dateRange?.startInclusive,
         endExclusive = dateRange?.endExclusive,
@@ -150,7 +203,9 @@ private fun ListeningOverviewRow.toDomain(): ListeningOverview {
     )
 }
 
-private fun TrackListeningStatsRow.toDomain(): TrackListeningStats {
+private fun TrackListeningStatsRow.toDomain(
+    knownBindings: List<ListeningBindingSnapshot>? = null
+): TrackListeningStats {
     val total = safeAdd(legacyPlayCount, detailedQualifiedPlayCount)
     val binding = localTrackBindingId?.let { bindingId ->
         ListeningBindingSnapshot(
@@ -163,6 +218,10 @@ private fun TrackListeningStatsRow.toDomain(): TrackListeningStats {
             displayName = displayName,
             fileSizeBytes = fileSizeBytes,
             dateModifiedEpochSeconds = dateModifiedEpochSeconds,
+            durationMs = bindingDurationMsSnapshot,
+            legacyStableKey = legacyStableKey,
+            portableKey = portableKey,
+            portableKeyVersion = portableKeyVersion,
             missingSince = missingSince
         )
     }
@@ -173,7 +232,8 @@ private fun TrackListeningStatsRow.toDomain(): TrackListeningStats {
         album = albumSnapshot,
         albumArtist = albumArtistSnapshot,
         durationMs = durationMsSnapshot,
-        binding = binding,
+        binding = knownBindings?.firstOrNull() ?: binding,
+        knownBindings = knownBindings ?: listOfNotNull(binding),
         playCounts = ListeningPlayCountBreakdown(total, legacyPlayCount, detailedQualifiedPlayCount),
         confirmedDetailedListeningMs = detailedListeningMs,
         detailedEventCount = detailedEventCount,
@@ -184,6 +244,23 @@ private fun TrackListeningStatsRow.toDomain(): TrackListeningStats {
         latestDetailedEventAt = latestDetailedEventAt
     )
 }
+
+private fun LocalTrackBindingEntity.toDomain() = ListeningBindingSnapshot(
+    localTrackBindingId = id,
+    referenceKey = referenceKey,
+    mediaStoreId = mediaStoreId,
+    volumeName = volumeName,
+    contentUri = contentUri,
+    relativePath = relativePath,
+    displayName = displayName,
+    fileSizeBytes = fileSizeBytes,
+    dateModifiedEpochSeconds = dateModifiedEpochSeconds,
+    durationMs = durationMsSnapshot,
+    legacyStableKey = legacyStableKey,
+    portableKey = portableKey,
+    portableKeyVersion = portableKeyVersion,
+    missingSince = missingSince
+)
 
 private fun AlbumListeningStatsRow.toDomain(): AlbumListeningStats {
     val total = safeAdd(legacyPlayCount, detailedQualifiedPlayCount)
@@ -231,3 +308,9 @@ private fun RecentListeningEventRow.toDomain() = RecentListeningEvent(
 
 private fun safeAdd(left: Long, right: Long): Long =
     if (right > 0L && left > Long.MAX_VALUE - right) Long.MAX_VALUE else left + right
+
+private data class ProductionHistoryRows(
+    val recentlyPlayed: List<TrackListeningStatsRow>,
+    val mostPlayed: List<TrackListeningStatsRow>,
+    val bindings: List<LocalTrackBindingEntity>
+)

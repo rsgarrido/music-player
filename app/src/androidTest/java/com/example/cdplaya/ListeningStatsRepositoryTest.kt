@@ -15,7 +15,15 @@ import com.example.cdplaya.data.local.ListeningQualificationReason
 import com.example.cdplaya.data.local.ListeningSource
 import com.example.cdplaya.data.local.ListeningTrackIdentityEntity
 import com.example.cdplaya.data.local.LocalTrackBindingEntity
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -37,7 +45,7 @@ class ListeningStatsRepositoryTest {
             InstrumentationRegistry.getInstrumentation().targetContext,
             AppDatabase::class.java
         ).build()
-        repository = ListeningStatsRepository(database.listeningStatsDao())
+        repository = ListeningStatsRepository(database)
         fixture = insertFixture()
     }
 
@@ -211,6 +219,167 @@ class ListeningStatsRepositoryTest {
     }
 
     @Test
+    fun qualifiedDetailedInsertionReactivelyUpdatesBothProductionProjectionsWithoutAggregateWrite() =
+        runBlocking {
+            val trackId = identity("Reactive", "Native", "Flow", "Native")
+            binding(trackId, "local:reactive", missingSince = null, lastSeenAt = 5_000L)
+            val aggregateRowsBefore = songPlayStatsCount()
+            val updated = async(start = CoroutineStart.UNDISPATCHED) {
+                withTimeout(5_000L) {
+                    repository.observeProductionHistory().first { snapshot ->
+                        snapshot.recentlyPlayed.any { it.track.trackIdentityId == trackId }
+                    }
+                }
+            }
+
+            database.listeningEventDao().insert(
+                event("reactive-qualified", trackId, 5_000L, 30_000L, true)
+            )
+            val snapshot = updated.await()
+
+            assertEquals(trackId, snapshot.recentlyPlayed.first().track.trackIdentityId)
+            val mostPlayed = snapshot.mostPlayed.single { it.track.trackIdentityId == trackId }
+            assertEquals(1L, mostPlayed.track.playCounts.totalPlayCount)
+            assertEquals(aggregateRowsBefore, songPlayStatsCount())
+        }
+
+    @Test
+    fun nonQualifiedInsertionInvalidatesButDoesNotChangeProductionOrderingOrCounts() = runBlocking {
+        val before = repository.observeProductionHistory().first()
+
+        database.listeningEventDao().insert(
+            event("reactive-nonqualified", fixture.detailedOnly, 6_000L, 10L, false)
+        )
+        val storedEvent = requireNotNull(
+            database.listeningEventDao().getByUuid("reactive-nonqualified")
+        )
+        val recentlyPlayedAfter = repository.getRecentlyPlayed(limit = 20)
+        val mostPlayedAfter = repository.getMostPlayed(limit = 20)
+
+        assertFalse(storedEvent.qualifiedAsPlay)
+        assertEquals(
+            before.recentlyPlayed.map { it.track.trackIdentityId },
+            recentlyPlayedAfter.map { it.track.trackIdentityId }
+        )
+        assertEquals(
+            before.mostPlayed.map { it.track.trackIdentityId to it.track.playCounts.totalPlayCount },
+            mostPlayedAfter.map { it.track.trackIdentityId to it.track.playCounts.totalPlayCount }
+        )
+        assertFalse(recentlyPlayedAfter.any { it.track.latestKnownPlayAt == 6_000L })
+    }
+
+    @Test
+    fun bindingInsertionInvalidatesAndPublishesAllKnownBindingsPreferredFirst() = runBlocking {
+        val trackId = identity("Binding", "Native", "Flow", "Native")
+        val duplicateMetadataTrackId = identity("Binding", "Native", "Flow", "Native")
+        baseline(trackId, 1, 1L, 2L)
+        baseline(duplicateMetadataTrackId, 1, 1L, 2L)
+        binding(trackId, "local:binding:preferred", missingSince = null, lastSeenAt = 10L)
+        binding(
+            duplicateMetadataTrackId,
+            "local:binding:duplicate-identity",
+            missingSince = null,
+            lastSeenAt = 10L
+        )
+        val emissions = Channel<com.example.cdplaya.data.ProductionListeningHistoryProjections>(
+            Channel.UNLIMITED
+        )
+        val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+            repository.observeProductionHistory().collect(emissions::send)
+        }
+
+        try {
+            val before = withTimeout(5_000L) { emissions.receive() }
+            val beforeTrack = before.recentlyPlayed.single { it.track.trackIdentityId == trackId }
+            assertEquals(
+                listOf("local:binding:preferred"),
+                beforeTrack.track.knownBindings.map { it.referenceKey }
+            )
+
+            binding(
+                trackId,
+                "local:binding:new-missing",
+                missingSince = 20L,
+                lastSeenAt = 20L
+            )
+            val storedBindings = database.localTrackBindingDao().getForTrackIdentity(trackId)
+            assertEquals(
+                setOf("local:binding:preferred", "local:binding:new-missing"),
+                storedBindings.mapTo(mutableSetOf()) { it.referenceKey }
+            )
+
+            val after = withTimeout(5_000L) { emissions.receive() }
+            val afterTrack = after.recentlyPlayed.single { it.track.trackIdentityId == trackId }
+            val duplicateMetadataTrack = after.recentlyPlayed.single {
+                it.track.trackIdentityId == duplicateMetadataTrackId
+            }
+
+            assertEquals("local:binding:preferred", afterTrack.track.binding?.referenceKey)
+            assertEquals(
+                listOf("local:binding:preferred", "local:binding:new-missing"),
+                afterTrack.track.knownBindings.map { it.referenceKey }
+            )
+            assertEquals(
+                listOf("local:binding:duplicate-identity"),
+                duplicateMetadataTrack.track.knownBindings.map { it.referenceKey }
+            )
+            assertEquals(
+                setOf(trackId, duplicateMetadataTrackId),
+                after.recentlyPlayed
+                    .filter { it.track.title == "Binding" }
+                    .mapTo(mutableSetOf()) { it.track.trackIdentityId }
+            )
+        } finally {
+            collector.cancelAndJoin()
+            emissions.close()
+        }
+    }
+
+    @Test
+    fun rapidQualifiedInsertsConflateToACompleteLatestSnapshot() = runBlocking {
+        val trackId = identity("Rapid", "Native", "Flow", "Native")
+        binding(trackId, "local:rapid", missingSince = null, lastSeenAt = 10L)
+        val latest = async(start = CoroutineStart.UNDISPATCHED) {
+            withTimeout(5_000L) {
+                repository.observeProductionHistory().first { snapshot ->
+                    snapshot.mostPlayed
+                        .firstOrNull { it.track.trackIdentityId == trackId }
+                        ?.track?.playCounts?.detailedPlayCount == 25L
+                }
+            }
+        }
+
+        database.listeningEventDao().insert(
+            (0 until 25).map { index ->
+                event("rapid-$index", trackId, 10_000L + index, 1_000L, true)
+            }
+        )
+        val snapshot = latest.await()
+
+        assertEquals(
+            25L,
+            snapshot.mostPlayed.single { it.track.trackIdentityId == trackId }
+                .track.playCounts.detailedPlayCount
+        )
+    }
+
+    @Test
+    fun cancellingProductionObservationStopsTheCollectorCleanly() = runBlocking {
+        val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+            repository.observeProductionHistory().collect { }
+        }
+
+        assertTrue(collector.isActive)
+        collector.cancelAndJoin()
+
+        assertFalse(collector.isActive)
+        database.listeningEventDao().insert(
+            event("after-cancel", fixture.detailedOnly, 20_000L, 1_000L, true)
+        )
+        assertFalse(collector.isActive)
+    }
+
+    @Test
     fun recentDetailedEventsIncludeEveryAttemptWithFiltersAndStableLimits() = runBlocking {
         val latest = repository.getRecentDetailedEvents(limit = 3)
         assertEquals(listOf("unknown-nonqualified", "lastfm-nonqualified", "compilation-natural"), latest.map { it.eventUuid })
@@ -373,6 +542,13 @@ class ListeningStatsRepositoryTest {
         importBatchId = null,
         createdAt = startedAt + 50L
     )
+
+    private fun songPlayStatsCount(): Long = database.openHelper.readableDatabase
+        .query("SELECT COUNT(*) FROM song_play_stats")
+        .use { cursor ->
+            cursor.moveToFirst()
+            cursor.getLong(0)
+        }
 
     private data class Fixture(
         val baselineOnly: Long,
