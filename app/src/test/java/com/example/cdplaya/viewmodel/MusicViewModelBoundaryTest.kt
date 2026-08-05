@@ -2,6 +2,7 @@ package com.example.cdplaya.viewmodel
 
 import com.example.cdplaya.controller.LibraryController
 import com.example.cdplaya.controller.SleepTimerController
+import com.example.cdplaya.controller.ListeningAnalyticsController
 import com.example.cdplaya.player.MusicPlayer
 import com.example.cdplaya.player.PlaybackController
 import java.lang.reflect.Modifier
@@ -16,6 +17,7 @@ class MusicViewModelBoundaryTest {
             PlaybackController::class.java,
             LibraryController::class.java,
             SleepTimerController::class.java,
+            ListeningAnalyticsController::class.java,
             MusicPlayer::class.java
         )
         val controllerFields = MusicViewModel::class.java.declaredFields.filter { field ->

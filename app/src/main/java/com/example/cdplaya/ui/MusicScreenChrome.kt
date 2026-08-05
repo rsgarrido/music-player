@@ -46,8 +46,9 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 fun MusicScreenHeader(
     title: String = "CDPlaya",
     onBackClick: (() -> Unit)? = null,
-    onSettingsClick: () -> Unit,
+    onSettingsClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    backContentDescription: String = "Back to Home",
     viewModeAction: (@Composable () -> Unit)? = null,
     sortAction: (@Composable () -> Unit)? = null
 ) {
@@ -66,7 +67,7 @@ fun MusicScreenHeader(
                 AppShellIconButton(
                     onClick = onBackClick,
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back to Home"
+                    contentDescription = backContentDescription
                 )
             }
 
@@ -87,11 +88,13 @@ fun MusicScreenHeader(
 
             sortAction?.invoke()
 
-            AppShellIconButton(
-                onClick = onSettingsClick,
-                imageVector = Icons.Rounded.Settings,
-                contentDescription = "Settings"
-            )
+            if (onSettingsClick != null) {
+                AppShellIconButton(
+                    onClick = onSettingsClick,
+                    imageVector = Icons.Rounded.Settings,
+                    contentDescription = "Settings"
+                )
+            }
         }
     }
 }
@@ -106,7 +109,7 @@ fun AppShellIconButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.size(40.dp),
+        modifier = modifier.size(48.dp),
         shape = RoundedCornerShape(14.dp),
         color = if (accented) {
             AppShellAccent.copy(alpha = 0.15f)

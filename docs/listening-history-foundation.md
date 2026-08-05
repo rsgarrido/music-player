@@ -404,10 +404,61 @@ UUID generation occurs only for successful finalization. Native drafts always us
 source `CDPLAYA` and leave import fields null. The separate `toEntity()` mapper is the
 Room boundary; the recorder itself neither constructs nor inserts Room entities.
 
+## Statistics destination and overview (Session 3)
+
+Statistics is a full-screen `MusicPrimaryDestination`, not a bottom-navigation item or
+library tab. A rounded Statistics icon button sits immediately before Settings in the
+Home header, leaving the scrollable music content undisturbed. The button is
+navigation-only and never queries analytics. Opening it preserves the underlying
+Home/Library/Search state, activates the single
+ViewModel-owned `ListeningAnalyticsController`, and renders one lifecycle-collected
+`ListeningAnalyticsUiState`. Back closes Statistics, deactivates the controller, and
+reveals the preserved shell state. Deactivation cancels Room observation and current
+work while retaining the last successful snapshot and selected range for reopening.
+The screen is one Material app-shell implementation shared by every player theme.
+
+The range row scrolls horizontally and offers Today, Last 7 days, Last 30 days, This
+month, This year, All time, and Custom; Last 30 days remains the default. A selection is
+published immediately while prior metrics remain visible during refresh. The
+full-screen Material date-range picker requires both endpoints. Picker milliseconds are
+interpreted as UTC calendar dates, and picker initialization uses each `LocalDate` at
+UTC start of day. The inclusive calendar end is passed to the controller; the range
+resolver then re-resolves device timezone and local day boundaries at each load.
+
+The overview reports detailed `confirmedDetailedListeningMs`, total qualified plays,
+detailed natural completions, and detailed non-qualified attempts. Duration formatting
+uses whole minutes below an hour, hours plus minutes below a day, and days plus hours
+thereafter; negative input is clamped to zero. Counts use locale-aware whole-number
+formatting. All Time play totals may include the preserved legacy baseline, but no
+duration, completion, attempt, date-range, or trend detail is inferred from it. The
+inline coverage card and detailed dialog state this explicitly.
+
+With no successful snapshot the screen shows progress or a retryable error without
+zero metric cards. Background refresh retains the last snapshot and uses a thin progress
+line in a permanently reserved six-dp slot beneath the range chips, so neither an
+explanation sentence nor a layout shift occurs. Refresh failure likewise keeps the
+snapshot and adds a retry card. Empty All Time history and empty finite ranges use distinct messages;
+legacy-only All Time remains non-empty and shows its preserved play count, whereas a
+finite range cannot assign legacy plays to dates.
+
+Metric cards use one column on narrow or large-font configurations and two columns at
+ordinary phone width. Chips scroll rather than compress. The Home title receives the
+remaining flexible header width and ellipsizes before the separate 48-dp Statistics and
+Settings targets can overlap. Back, info, range, Retry, Home entry, progress, metric,
+and dialog semantics are exposed, with 48 dp shell icon and chip targets. The picker
+uses the full window so narrow devices do not compress its calendar and actions.
+
+The controller and selected range survive ordinary navigation and configuration through
+the ViewModel. The Statistics `LazyListState` is saveable at the `MusicScreen` level, so
+range changes, dialogs, overlays, and closing/reopening the destination in the current
+saved shell retain scroll. Full process-death range restoration is deferred because the
+current `AndroidViewModel` has no `SavedStateHandle`; adding a second Compose-owned range
+would create an unsafe dual source of truth.
+
 ### Deferred work
 
-Active-session persistence, periodic checkpoints, process-death recovery, Statistics
-navigation, the Home analytics entry, overview cards, date-picker UI, chart rendering,
-ranked-list UI, rating UI and sorting/filtering, album/artist rating summaries,
-Spotify/Last.fm imports and matching, Wrapped, smart playlists, cloud synchronization,
-and shareable reports remain deferred.
+Active-session persistence, periodic checkpoints, process-death recovery for transient
+Statistics selection, trend chart rendering, trend metric toggle UI, top-track,
+top-album, and top-artist UI, rating UI and sorting/filtering, album/artist rating
+summaries, Spotify/Last.fm imports and matching, Wrapped, smart playlists, cloud
+synchronization, and shareable reports remain deferred.

@@ -21,10 +21,12 @@ class MusicRouteStateTest {
         state.isSettingsScreenVisible.value = true
         state.isDiagnosticsScreenVisible.value = true
         state.isEqualizerScreenVisible.value = true
+        state.isStatisticsScreenVisible.value = true
 
         assertFalse(state.isSettingsScreenVisible.value)
         assertFalse(state.isDiagnosticsScreenVisible.value)
-        assertTrue(state.isEqualizerScreenVisible.value)
+        assertFalse(state.isEqualizerScreenVisible.value)
+        assertTrue(state.isStatisticsScreenVisible.value)
         assertFalse(state.isFolderScreenVisible.value)
     }
 

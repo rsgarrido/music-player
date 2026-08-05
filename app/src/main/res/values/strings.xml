@@ -54,4 +54,53 @@
         <item quantity="one">%d file</item>
         <item quantity="other">%d files</item>
     </plurals>
+    <string name="statistics_title">Statistics</string>
+    <string name="statistics_home_button_description">Open listening statistics</string>
+    <string name="statistics_back_description">Back to previous screen</string>
+    <string name="statistics_history_info_description">About listening history coverage</string>
+    <string name="statistics_range_today">Today</string>
+    <string name="statistics_range_last_7_days">Last 7 days</string>
+    <string name="statistics_range_last_30_days">Last 30 days</string>
+    <string name="statistics_range_this_month">This month</string>
+    <string name="statistics_range_this_year">This year</string>
+    <string name="statistics_range_all_time">All time</string>
+    <string name="statistics_range_custom">Custom</string>
+    <string name="statistics_range_selected">Selected</string>
+    <string name="statistics_range_not_selected">Not selected</string>
+    <string name="statistics_custom_range_description">Selected date range: %1$s</string>
+    <string name="statistics_date_picker_title">Choose date range</string>
+    <string name="statistics_cancel">Cancel</string>
+    <string name="statistics_confirm">Confirm</string>
+    <string name="statistics_close">Close</string>
+    <string name="statistics_recorded_listening">Recorded listening</string>
+    <string name="statistics_recorded_listening_support">Detailed history only</string>
+    <string name="statistics_plays">Plays</string>
+    <string name="statistics_completed">Completed</string>
+    <string name="statistics_not_counted">Not counted</string>
+    <string name="statistics_not_counted_support">Attempts below the play threshold</string>
+    <string name="statistics_loading">Loading listening statistics…</string>
+    <string name="statistics_refreshing">Updating statistics</string>
+    <string name="statistics_error">Listening statistics couldn’t be loaded. Try again.</string>
+    <string name="statistics_retry">Retry</string>
+    <string name="statistics_no_history">Your listening activity will appear here as you play music.</string>
+    <string name="statistics_no_activity_range">No listening activity in this range.</string>
+    <string name="statistics_history_concise">Some older plays may be included in All Time totals. Listening time and completion details are available only for activity recorded with detailed history.</string>
+    <string name="statistics_learn_more">Learn more</string>
+    <string name="statistics_history_dialog_title">About your listening history</string>
+    <string name="statistics_history_dialog_message">CDPlaya preserved earlier play counts when detailed listening history was introduced. Those older counts may appear in All Time plays and future rankings, but they do not include exact listening time, completion status, or date-by-date activity. Recorded listening time, completed tracks, not-counted attempts, date ranges, and future trends use detailed events only. CDPlaya does not estimate missing listening time from older aggregate play counts.</string>
+    <string name="statistics_duration_minutes">%1$d min</string>
+    <string name="statistics_duration_hours_minutes">%1$d hr %2$d min</string>
+    <string name="statistics_duration_days_hours">%1$d days %2$d hr</string>
+    <plurals name="statistics_duration_minutes_full">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="statistics_duration_hours_full">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="statistics_duration_days_full">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
 </resources>

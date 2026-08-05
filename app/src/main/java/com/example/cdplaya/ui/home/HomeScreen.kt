@@ -14,16 +14,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.R
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.recentlyAddedShelfSongs
 import com.example.cdplaya.ui.AppShellTypography
+import com.example.cdplaya.ui.AppShellIconButton
 import com.example.cdplaya.ui.MusicScreenHeader
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.mediaaccess.MediaAccessState
@@ -49,6 +53,7 @@ internal fun HomeScreen(
     artistCount: Int,
     playlistCount: Int,
     onSettingsClick: () -> Unit,
+    onStatisticsClick: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
     onRecentlyPlayedSongClick: (Song) -> Unit,
     onRecentlyAddedSongClick: (Song) -> Unit,
@@ -68,8 +73,8 @@ internal fun HomeScreen(
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                MusicScreenHeader(
-                    title = "CDPlaya",
+                HomeHeader(
+                    onStatisticsClick = onStatisticsClick,
                     onSettingsClick = onSettingsClick,
                     modifier = Modifier.statusBarsPadding()
                 )
@@ -189,6 +194,29 @@ internal fun HomeScreen(
             }
         }
     }
+}
+
+@Composable
+internal fun HomeHeader(
+    onStatisticsClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    MusicScreenHeader(
+        title = "CDPlaya",
+        onSettingsClick = onSettingsClick,
+        modifier = modifier,
+        viewModeAction = {
+            AppShellIconButton(
+                onClick = onStatisticsClick,
+                imageVector = Icons.Rounded.QueryStats,
+                contentDescription = stringResource(
+                    R.string.statistics_home_button_description
+                ),
+                accented = true
+            )
+        }
+    )
 }
 
 @Composable

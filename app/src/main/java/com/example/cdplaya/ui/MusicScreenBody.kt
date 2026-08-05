@@ -12,6 +12,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -33,6 +34,7 @@ import com.example.cdplaya.data.PlayerTheme
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.data.AnalyticsRangePreset
 import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.audio.AudioOffloadPreference
@@ -64,12 +66,15 @@ import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
 import com.example.cdplaya.ui.state.LibraryRefreshSummary
+import com.example.cdplaya.ui.state.ListeningAnalyticsUiState
+import com.example.cdplaya.ui.statistics.StatisticsScreen
 import com.example.cdplaya.ui.state.gridColumnCountFor
 import com.example.cdplaya.ui.state.modeFor
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewOption
 import kotlinx.coroutines.flow.StateFlow
 import com.example.cdplaya.mediaaccess.MediaAccessState
+import java.time.LocalDate
 
 @Composable
 internal fun MusicScreenBody(
@@ -120,8 +125,15 @@ internal fun MusicScreenBody(
     isSettingsScreenVisible: Boolean,
     isDiagnosticsScreenVisible: Boolean,
     isEqualizerScreenVisible: Boolean,
+    isStatisticsScreenVisible: Boolean,
+    listeningAnalyticsUiState: ListeningAnalyticsUiState,
     queueSnackbarActions: QueueSnackbarActions,
     onSettingsClick: () -> Unit,
+    onStatisticsClick: () -> Unit,
+    onStatisticsBackClick: () -> Unit,
+    onListeningAnalyticsPresetSelected: (AnalyticsRangePreset) -> Unit,
+    onListeningAnalyticsCustomRangeSelected: (LocalDate, LocalDate) -> Unit,
+    onRetryListeningAnalytics: () -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
     onFolderBackClick: () -> Unit,
     onSettingsBackClick: () -> Unit,
@@ -198,6 +210,7 @@ internal fun MusicScreenBody(
     libraryAppearanceUiState: LibraryAppearanceUiState,
     onLibraryViewOptionSelected: (LibraryViewCategory, LibraryViewOption) -> Unit,
     settingsScrollState: ScrollState = rememberScrollState(),
+    statisticsListState: LazyListState,
     bottomContentPadding: Dp = 24.dp,
     modifier: Modifier = Modifier
 ) {
@@ -206,6 +219,18 @@ internal fun MusicScreenBody(
     }
 
     when {
+        isStatisticsScreenVisible -> {
+            StatisticsScreen(
+                state = listeningAnalyticsUiState,
+                onBackClick = onStatisticsBackClick,
+                onPresetSelected = onListeningAnalyticsPresetSelected,
+                onCustomRangeSelected = onListeningAnalyticsCustomRangeSelected,
+                onRetry = onRetryListeningAnalytics,
+                listState = statisticsListState,
+                modifier = modifier.fillMaxSize()
+            )
+        }
+
         isFolderScreenVisible -> {
             FolderSelectionScreen(
                 libraryFolders = libraryFolders,
@@ -355,6 +380,7 @@ internal fun MusicScreenBody(
                             .size,
                         playlistCount = playlists.size,
                         onSettingsClick = onSettingsClick,
+                        onStatisticsClick = onStatisticsClick,
                         onOpenLibrary = { tab ->
                             onOpenLibrary(tab)
                         },

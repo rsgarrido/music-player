@@ -41,6 +41,8 @@ internal fun MusicRoute(
         .collectAsStateWithLifecycle()
     val lyricsPlaybackUiState by
     musicViewModel.lyricsPlaybackUiState.collectAsStateWithLifecycle()
+    val listeningAnalyticsUiState by
+    musicViewModel.listeningAnalyticsUiState.collectAsStateWithLifecycle()
     if (!playerAppearanceUiState.isLoaded || !libraryAppearanceUiState.isLoaded) return
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
@@ -368,5 +370,11 @@ internal fun MusicRoute(
         onWriteTagsAndArtwork = musicViewModel::writeTagsAndArtwork,
         libraryAppearanceUiState = libraryAppearanceUiState,
         onLibraryViewOptionSelected = musicViewModel::selectLibraryViewOption,
+        listeningAnalyticsUiState = listeningAnalyticsUiState,
+        onListeningAnalyticsActiveChanged = musicViewModel::setListeningAnalyticsActive,
+        onListeningAnalyticsPresetSelected = musicViewModel::selectListeningAnalyticsPreset,
+        onListeningAnalyticsCustomRangeSelected =
+            musicViewModel::selectListeningAnalyticsCustomRange,
+        onRetryListeningAnalytics = musicViewModel::retryListeningAnalytics,
     )
 }

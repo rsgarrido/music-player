@@ -2,6 +2,7 @@ package com.example.cdplaya.architecture
 
 import com.example.cdplaya.controller.LibraryController
 import com.example.cdplaya.controller.SleepTimerController
+import com.example.cdplaya.controller.ListeningAnalyticsController
 import com.example.cdplaya.player.PlaybackController
 import java.lang.reflect.Modifier
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +17,8 @@ class StateFlowArchitectureTest {
         val controllers = listOf(
             LibraryController::class.java,
             PlaybackController::class.java,
-            SleepTimerController::class.java
+            SleepTimerController::class.java,
+            ListeningAnalyticsController::class.java
         )
 
         controllers.forEach { controller ->
@@ -46,7 +48,8 @@ class StateFlowArchitectureTest {
         val controllers = listOf(
             LibraryController::class.java,
             PlaybackController::class.java,
-            SleepTimerController::class.java
+            SleepTimerController::class.java,
+            ListeningAnalyticsController::class.java
         )
 
         controllers.flatMap { it.declaredFields.toList() }.forEach { field ->

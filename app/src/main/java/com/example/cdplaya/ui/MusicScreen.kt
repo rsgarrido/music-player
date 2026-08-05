@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -79,6 +80,9 @@ import com.example.cdplaya.ui.state.PlaybackProgress
 import com.example.cdplaya.ui.state.PlaybackProgressUiState
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
 import com.example.cdplaya.ui.state.LibraryRefreshSummary
+import com.example.cdplaya.ui.state.ListeningAnalyticsUiState
+import com.example.cdplaya.ui.statistics.ListeningAnalyticsVisibilityEffect
+import com.example.cdplaya.data.AnalyticsRangePreset
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewOption
 import com.example.cdplaya.ui.equalizer.EqualizerScreenState
@@ -92,6 +96,7 @@ import kotlinx.coroutines.launch
 import com.example.cdplaya.mediaaccess.MediaAccessState
 import com.example.cdplaya.lyrics.LyricsPlaybackUiState
 import kotlin.math.abs
+import java.time.LocalDate
 
 
 @Composable
@@ -201,7 +206,12 @@ internal fun MusicScreen(
     equalizerActions: EqualizerUiActions,
     libraryAppearanceUiState: LibraryAppearanceUiState,
     onLibraryViewOptionSelected: (LibraryViewCategory, LibraryViewOption) -> Unit,
-    mostPlayedSongs: List<Song>
+    mostPlayedSongs: List<Song>,
+    listeningAnalyticsUiState: ListeningAnalyticsUiState,
+    onListeningAnalyticsActiveChanged: (Boolean) -> Unit,
+    onListeningAnalyticsPresetSelected: (AnalyticsRangePreset) -> Unit,
+    onListeningAnalyticsCustomRangeSelected: (LocalDate, LocalDate) -> Unit,
+    onRetryListeningAnalytics: () -> Unit
 ) {
     val navigationState = rememberMusicNavigationState()
     var mainDestination by navigationState.mainDestination
@@ -218,6 +228,7 @@ internal fun MusicScreen(
 
     val overlayState = rememberMusicOverlayState()
     val settingsScrollState = rememberScrollState()
+    val statisticsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val coroutineScope = rememberCoroutineScope()
     val playerMorphState = overlayState.playerMorphState
     val isPlayerExpanded = playerMorphState.isExpandedOrTransitioning
@@ -230,6 +241,7 @@ internal fun MusicScreen(
     var isSettingsScreenVisible by overlayState.isSettingsScreenVisible
     var isDiagnosticsScreenVisible by overlayState.isDiagnosticsScreenVisible
     var isEqualizerScreenVisible by overlayState.isEqualizerScreenVisible
+    var isStatisticsScreenVisible by overlayState.isStatisticsScreenVisible
     var isExpandedUpNextSheetVisible by overlayState.isExpandedUpNextSheetVisible
     var isCreatePlaylistDialogVisible by overlayState.isCreatePlaylistDialogVisible
     var isSleepTimerDialogVisible by overlayState.isSleepTimerDialogVisible
@@ -248,6 +260,10 @@ internal fun MusicScreen(
     LaunchedEffect(currentSong?.id) {
         if (currentSong == null) lyricsTransitionState.snapToExpanded()
     }
+    ListeningAnalyticsVisibilityEffect(
+        isVisible = isStatisticsScreenVisible,
+        onActiveChanged = onListeningAnalyticsActiveChanged
+    )
 
     val tagEditorActions = rememberTagEditorActions(
         snackbarHostState = snackbarHostState,
@@ -394,6 +410,7 @@ internal fun MusicScreen(
                 isFolderScreenVisible ||
                 isDiagnosticsScreenVisible ||
                 isEqualizerScreenVisible ||
+                isStatisticsScreenVisible ||
                 isSettingsScreenVisible ||
                 selectedArtistName != null ||
                 selectedAlbumFolderPath != null ||
@@ -432,6 +449,10 @@ internal fun MusicScreen(
                 equalizerActions.onBack()
                 isEqualizerScreenVisible = false
                 isSettingsScreenVisible = true
+            }
+
+            isStatisticsScreenVisible -> {
+                isStatisticsScreenVisible = false
             }
 
             isSettingsScreenVisible -> {
@@ -599,12 +620,14 @@ internal fun MusicScreen(
                     !isFolderScreenVisible &&
                     !isDiagnosticsScreenVisible &&
                     !isEqualizerScreenVisible &&
+                    !isStatisticsScreenVisible &&
                     !isSettingsScreenVisible &&
                     selectedSongForTagEdit == null
             val shouldShowBottomNavigation = !isPlayerExpanded &&
                     !isFolderScreenVisible &&
                     !isDiagnosticsScreenVisible &&
                     !isEqualizerScreenVisible &&
+                    !isStatisticsScreenVisible &&
                     !isSettingsScreenVisible &&
                     selectedSongForTagEdit == null
             LaunchedEffect(shouldShowBottomMiniPlayer) {
@@ -719,6 +742,15 @@ internal fun MusicScreen(
                     isDiagnosticsScreenVisible = isDiagnosticsScreenVisible,
                     isEqualizerScreenVisible =
                         isEqualizerScreenVisible,
+                    isStatisticsScreenVisible = isStatisticsScreenVisible,
+                    listeningAnalyticsUiState = listeningAnalyticsUiState,
+                    onStatisticsClick = { isStatisticsScreenVisible = true },
+                    onStatisticsBackClick = { isStatisticsScreenVisible = false },
+                    onListeningAnalyticsPresetSelected = onListeningAnalyticsPresetSelected,
+                    onListeningAnalyticsCustomRangeSelected =
+                        onListeningAnalyticsCustomRangeSelected,
+                    onRetryListeningAnalytics = onRetryListeningAnalytics,
+                    statisticsListState = statisticsListState,
                     queueSnackbarActions = queueSnackbarActions,
                     onSettingsClick = {
                         isSettingsScreenVisible = true
