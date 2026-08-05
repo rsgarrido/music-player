@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
@@ -43,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.cdplaya.R
 import com.example.cdplaya.controller.SongRatingDialogState
 import com.example.cdplaya.controller.SongRatingUiError
@@ -156,18 +159,29 @@ fun SongRatingDialog(
     onSave: () -> Unit,
     onClear: () -> Unit
 ) {
-    Dialog(onDismissRequest = { if (!state.isSaving) onDismiss() }) {
+    Dialog(
+        onDismissRequest = { if (!state.isSaving) onDismiss() },
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
         Surface(
             modifier = Modifier
+                .padding(horizontal = 8.dp)
                 .fillMaxWidth()
                 .widthIn(max = 560.dp),
             shape = RoundedCornerShape(28.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
             tonalElevation = 6.dp
         ) {
-            BoxWithConstraints(modifier = Modifier.padding(24.dp)) {
-                val stackActions = maxWidth < 320.dp || LocalConfiguration.current.fontScale >= 1.3f
-                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            BoxWithConstraints {
+                val largeText = LocalConfiguration.current.fontScale >= 1.3f
+                val contentPadding = if (maxWidth < 336.dp || largeText) 12.dp else 24.dp
+                val stackActions = maxWidth < 360.dp || largeText
+                Column(
+                    modifier = Modifier
+                        .padding(contentPadding)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
                     Text(
                         text = stringResource(R.string.rate_song),
                         style = MaterialTheme.typography.headlineSmall

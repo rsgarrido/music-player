@@ -489,13 +489,17 @@ private fun StatisticsLoadingState() {
 
 @Composable
 private fun StatisticsErrorCard(onRetry: () -> Unit) {
+    val errorDescription = stringResource(R.string.statistics_error)
     Surface(
-        modifier = Modifier.padding(horizontal = 16.dp).fillMaxWidth(),
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth()
+            .semantics { liveRegion = LiveRegionMode.Assertive },
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.errorContainer
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(stringResource(R.string.statistics_error), color = MaterialTheme.colorScheme.onErrorContainer)
+            Text(errorDescription, color = MaterialTheme.colorScheme.onErrorContainer)
             Button(onClick = onRetry) { Text(stringResource(R.string.statistics_retry)) }
         }
     }

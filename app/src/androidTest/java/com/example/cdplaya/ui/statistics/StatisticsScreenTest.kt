@@ -1,11 +1,19 @@
 package com.example.cdplaya.ui.statistics
 
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.assertHeightIsAtLeast
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -17,6 +25,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.data.AnalyticsRangePreset
 import com.example.cdplaya.data.AnalyticsRangeSelection
@@ -30,6 +39,7 @@ import com.example.cdplaya.data.ListeningTimeBreakdown
 import com.example.cdplaya.data.ListeningTrendBucket
 import com.example.cdplaya.data.ListeningTrendMetric
 import com.example.cdplaya.data.ResolvedAnalyticsRange
+import com.example.cdplaya.data.TrackListeningStats
 import com.example.cdplaya.ui.state.ListeningAnalyticsError
 import com.example.cdplaya.ui.state.ListeningAnalyticsErrorKind
 import com.example.cdplaya.ui.state.ListeningAnalyticsUiState
@@ -211,6 +221,95 @@ class StatisticsScreenTest {
             }
         }
         composeRule.onNodeWithText("Confirm").assertIsNotEnabled()
+    }
+
+    @Test
+    fun narrowTwoTimesFontKeepsCriticalStatisticsControlsAndValuesReachable() {
+        val narrowState = ListeningAnalyticsUiState(
+            overview = overview(),
+            trend = listOf(
+                ListeningTrendBucket(
+                    index = 0,
+                    startInclusive = 0L,
+                    endExclusive = 86_400_000L,
+                    granularity = AnalyticsBucketGranularity.DAY,
+                    listenedMs = 60_000L,
+                    qualifiedPlayCount = 1L,
+                    totalAttemptCount = 1L,
+                    naturalCompletionCount = 1L
+                )
+            ),
+            topTracks = listOf(
+                TrackListeningStats(
+                    trackIdentityId = 1L,
+                    title = "Narrow track",
+                    artist = "Artist",
+                    album = "Album",
+                    albumArtist = null,
+                    durationMs = null,
+                    binding = null,
+                    playCounts = ListeningPlayCountBreakdown(1L, 0L, 1L),
+                    confirmedDetailedListeningMs = 60_000L,
+                    detailedEventCount = 1L,
+                    naturalCompletionCount = 1L,
+                    nonQualifiedAttemptCount = 0L,
+                    firstKnownPlayAt = null,
+                    latestKnownPlayAt = null,
+                    latestDetailedEventAt = null
+                )
+            ),
+            coverage = ListeningAnalyticsCoverage(
+                selectionCanIncludeLegacyPlays = false,
+                hasLegacyPlays = false,
+                legacyQualifiedPlayCount = 0L,
+                detailedQualifiedPlayCount = 1L,
+                hasDetailedEvents = true,
+                earliestDetailedEventAt = 0L,
+                latestDetailedEventAt = 0L
+            )
+        )
+        lateinit var listState: LazyListState
+        composeRule.setContent {
+            MaterialTheme {
+                val currentConfiguration = LocalConfiguration.current
+                val currentDensity = LocalDensity.current
+                val largeConfiguration = Configuration(currentConfiguration).apply {
+                    fontScale = 2f
+                    screenWidthDp = 280
+                }
+                CompositionLocalProvider(
+                    LocalConfiguration provides largeConfiguration,
+                    LocalDensity provides Density(currentDensity.density, fontScale = 2f)
+                ) {
+                    Box(Modifier.width(280.dp).height(700.dp)) {
+                        listState = remember { LazyListState() }
+                        StatisticsScreen(
+                            state = narrowState,
+                            onBackClick = {},
+                            onPresetSelected = {},
+                            onCustomRangeSelected = { _, _ -> },
+                            onRetry = {},
+                            listState = listState
+                        )
+                    }
+                }
+            }
+        }
+
+        composeRule.onNodeWithText("Last 30 days")
+            .performScrollTo()
+            .assertIsSelected()
+            .assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithText("3 hr 18 min").performScrollTo().assertIsDisplayed()
+        composeRule.runOnIdle { listState.requestScrollToItem(4) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Listening time").assertHeightIsAtLeast(48.dp)
+        composeRule.runOnIdle { listState.requestScrollToItem(5) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Tracks").assertHeightIsAtLeast(48.dp)
+        composeRule.runOnIdle { listState.requestScrollToItem(6) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Narrow track").assertIsDisplayed()
     }
 
     @Test

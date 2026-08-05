@@ -58,14 +58,16 @@ class SongRatingRepositoryTest {
         val current = repository.setRating(song, 5)
         val same = repository.setRating(song, 5)
         assertEquals(current, same)
-        assertEquals(current, repository.observeRating(current.trackIdentityId).first())
         assertEquals(current, repository.getRatingForSong(song))
-        assertEquals(current, repository.getRatings(listOf(current.trackIdentityId)).getValue(current.trackIdentityId))
+        assertEquals(
+            current,
+            repository.observeRatingSnapshot().first().byTrackIdentityId.getValue(current.trackIdentityId)
+        )
 
         assertThrows(IllegalArgumentException::class.java) { runBlocking { repository.setRating(song, 0) } }
         assertThrows(IllegalArgumentException::class.java) { runBlocking { repository.setRating(song, 6) } }
         assertTrue(repository.clearRating(song))
-        assertNull(repository.observeRating(current.trackIdentityId).first())
+        assertNull(database.songRatingDao().getByTrackIdentityId(current.trackIdentityId))
         assertFalse(repository.clearRating(song))
 
         val rerated = repository.setRating(song, 3)
@@ -93,7 +95,7 @@ class SongRatingRepositoryTest {
 
         val binding = database.localTrackBindingDao().getForTrackIdentity(first.trackIdentityId).single()
         database.localTrackBindingDao().deleteById(binding.id)
-        assertEquals(4, repository.getRating(first.trackIdentityId)?.value)
+        assertEquals(4, database.songRatingDao().getByTrackIdentityId(first.trackIdentityId)?.rating)
     }
 
     @Test
@@ -119,6 +121,24 @@ class SongRatingRepositoryTest {
         val missingSnapshot = repository.observeRatingSnapshot().first()
         assertFalse(missingSnapshot.byReferenceKey.containsKey(firstSong.membershipKey()))
         assertEquals(2, missingSnapshot.byTrackIdentityId.getValue(first.trackIdentityId).value)
+    }
+
+    @Test
+    fun sharedSnapshotHandlesSeveralThousandCurrentSongsAndRatings() = runBlocking {
+        var now = 1L
+        val repository = SongRatingRepository(database, nowMillis = { now++ })
+        val songs = (1L..3_000L).map { id -> song(id, "track-$id.flac") }
+
+        songs.forEachIndexed { index, song ->
+            repository.setRating(song, (index % 5) + 1)
+        }
+
+        val snapshot = repository.observeRatingSnapshot().first()
+        assertEquals(3_000, snapshot.byReferenceKey.size)
+        assertEquals(3_000, snapshot.byTrackIdentityId.size)
+        songs.forEachIndexed { index, song ->
+            assertEquals((index % 5) + 1, snapshot.byReferenceKey.getValue(song.membershipKey()).value)
+        }
     }
 
     private fun song(id: Long, displayName: String) = Song(

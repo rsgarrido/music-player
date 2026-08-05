@@ -1,5 +1,6 @@
 package com.example.cdplaya
 
+import android.database.sqlite.SQLiteConstraintException
 import androidx.room.Room
 import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.sqlite.db.SupportSQLiteOpenHelper
@@ -9,6 +10,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.cdplaya.data.local.AppDatabase
 import com.example.cdplaya.data.local.DatabaseProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -44,6 +46,38 @@ class SongRatingMigrationTest {
                         (1, 'Title', 'Artist', 'Album', NULL, 1000, 'title', 'artist', 'album', NULL, 1, 10, 10)
                         """.trimIndent()
                     )
+                    db.execSQL(
+                        "INSERT INTO local_track_bindings VALUES " +
+                            "(1, 1, 'local:one', 1, 'external', 'content://one', 'Music/', " +
+                            "'one.flac', NULL, 100, 1, 1000, NULL, 'portable:one', 1, 10, 20, NULL)"
+                    )
+                    db.execSQL(
+                        "INSERT INTO legacy_listening_baselines VALUES " +
+                            "(1, 4, 10, 20, 'legacy:one', 30)"
+                    )
+                    db.execSQL(
+                        "INSERT INTO listening_events VALUES " +
+                            "(1, 'event-one', 'cdplaya', 1, 1, 'session-one', 40, 50, 10, " +
+                            "1000, 1, 'time_threshold', 1, 'stopped', NULL, NULL, 50)"
+                    )
+                    db.execSQL(
+                        "INSERT INTO favorite_songs VALUES " +
+                            "('favorite:one', 'one', 'Title', 'Artist', 'Album', 1000, 1, 1, " +
+                            "'external', 'content://one', 'Music/', 'one.flac', 100, 1, " +
+                            "'Artist', 'portable:one', 1)"
+                    )
+                    db.execSQL("INSERT INTO playlists VALUES (1, 'Preserved playlist', 1, 2)")
+                    db.execSQL(
+                        "INSERT INTO playlist_songs " +
+                            "(playlistSongId, playlistId, songKey, position, title, artist, album, duration, addedAt) " +
+                            "VALUES (1, 1, 'one', 0, 'Title', 'Artist', 'Album', 1000, 3)"
+                    )
+                    db.execSQL(
+                        "INSERT INTO cached_songs VALUES " +
+                            "(1, 'Title', 'Artist', 'Album', 1, 1000, 'content://one', " +
+                            "'/music/one.flac', '/music', NULL, 'Artist', 'external', 'one.flac', " +
+                            "'Music/', 100, 1, 1, 1, 99)"
+                    )
                 }
 
                 override fun onUpgrade(db: SupportSQLiteDatabase, oldVersion: Int, newVersion: Int) = Unit
@@ -58,6 +92,13 @@ class SongRatingMigrationTest {
             val sqlite = database.openHelper.writableDatabase
             assertEquals(1L, sqlite.longQuery("SELECT COUNT(*) FROM database_marker WHERE name = 'preserved'"))
             assertEquals(1L, sqlite.longQuery("SELECT COUNT(*) FROM listening_track_identities"))
+            assertEquals(1L, sqlite.longQuery("SELECT COUNT(*) FROM local_track_bindings"))
+            assertEquals(1L, sqlite.longQuery("SELECT COUNT(*) FROM legacy_listening_baselines"))
+            assertEquals(1L, sqlite.longQuery("SELECT COUNT(*) FROM listening_events"))
+            assertEquals(1L, sqlite.longQuery("SELECT COUNT(*) FROM favorite_songs"))
+            assertEquals(1L, sqlite.longQuery("SELECT COUNT(*) FROM playlists"))
+            assertEquals(1L, sqlite.longQuery("SELECT COUNT(*) FROM playlist_songs"))
+            assertEquals(1L, sqlite.longQuery("SELECT COUNT(*) FROM cached_songs"))
             assertEquals(0L, sqlite.longQuery("SELECT COUNT(*) FROM song_ratings"))
             assertEquals(
                 1L,
@@ -65,8 +106,16 @@ class SongRatingMigrationTest {
                     "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name = 'index_song_ratings_rating'"
                 )
             )
-            sqlite.execSQL("INSERT INTO song_ratings VALUES (1, 5, 20, 20)")
-            sqlite.execSQL("DELETE FROM listening_track_identities WHERE id = 1")
+            assertThrows(SQLiteConstraintException::class.java) {
+                sqlite.execSQL("INSERT INTO song_ratings VALUES (999, 5, 20, 20)")
+            }
+            sqlite.execSQL(
+                "INSERT INTO listening_track_identities VALUES " +
+                    "(2, 'Cascade', 'Artist', 'Album', NULL, 1000, 'cascade', 'artist', " +
+                    "'album', NULL, 1, 10, 10)"
+            )
+            sqlite.execSQL("INSERT INTO song_ratings VALUES (2, 5, 20, 20)")
+            sqlite.execSQL("DELETE FROM listening_track_identities WHERE id = 2")
             assertEquals(0L, sqlite.longQuery("SELECT COUNT(*) FROM song_ratings"))
         } finally {
             database.close()

@@ -34,23 +34,26 @@ class SongRatingDaoTest {
     fun tearDown() = database.close()
 
     @Test
-    fun insertUpdateBulkObserveAndDelete() = runBlocking {
+    fun insertUpdateSharedProjectionBackupOrderAndDelete() = runBlocking {
         val first = database.listeningTrackIdentityDao().insert(identity("first"))
         val second = database.listeningTrackIdentityDao().insert(identity("second"))
         val dao = database.songRatingDao()
 
-        assertNull(dao.observeByTrackIdentityId(first).first())
+        assertNull(dao.getByTrackIdentityId(first))
         dao.upsert(SongRatingEntity(first, 1, 10L, 10L))
         dao.upsert(SongRatingEntity(second, 5, 11L, 11L))
-        assertEquals(1, dao.observeByTrackIdentityId(first).first()?.rating)
-        assertEquals(2, dao.getByTrackIdentityIds(listOf(first, second, first)).size)
+        assertEquals(1, dao.getByTrackIdentityId(first)?.rating)
+        assertEquals(
+            listOf(first, second),
+            dao.observeAllWithBindings().first().map { it.trackIdentityId }
+        )
 
         dao.upsert(SongRatingEntity(first, 4, 10L, 20L))
         assertEquals(SongRatingEntity(first, 4, 10L, 20L), dao.getByTrackIdentityId(first))
-        assertEquals(listOf(first, second), dao.observeAll().first().map { it.trackIdentityId })
+        assertEquals(listOf(first, second), dao.getAllForBackup().map { it.trackIdentityId })
 
         assertEquals(1, dao.deleteByTrackIdentityId(first))
-        assertNull(dao.observeByTrackIdentityId(first).first())
+        assertNull(dao.getByTrackIdentityId(first))
         assertEquals(1L, dao.count())
     }
 

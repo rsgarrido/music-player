@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.example.cdplaya.data.AnalyticsBucketBoundary
 import com.example.cdplaya.data.AnalyticsBucketGranularity
 import com.example.cdplaya.data.AnalyticsRangeSelection
+import com.example.cdplaya.data.AnalyticsRangePreset
 import com.example.cdplaya.data.AnalyticsZoneIdProvider
 import com.example.cdplaya.data.ListeningAnalyticsBucketBuilder
 import com.example.cdplaya.data.ListeningAnalyticsRangeResolver
@@ -125,6 +126,71 @@ class ListeningAnalyticsLargeHistoryTest {
         assertTrue(qualifiedPlan.contains("index_listening_events_qualifiedAsPlay_startedAt"))
         assertTrue(trackPlan.contains("index_listening_events_trackIdentityId_startedAt"))
         assertTrue(bucketJoinPlan.contains("index_listening_events_source_startedAt"))
+    }
+
+    @Test
+    fun hundredThousandEventsRemainSqlAggregatedWithBoundedSnapshotResults() = runBlocking {
+        val id = database.listeningTrackIdentityDao().insert(
+            ListeningTrackIdentityEntity(
+                titleSnapshot = "Hundred thousand",
+                artistSnapshot = "Scale",
+                albumSnapshot = "Query plan",
+                albumArtistSnapshot = "Scale",
+                durationMsSnapshot = 100L,
+                normalizedTitle = "hundred thousand",
+                normalizedArtist = "scale",
+                normalizedAlbum = "query plan",
+                metadataKey = null,
+                metadataKeyVersion = 1,
+                createdAt = 1L,
+                updatedAt = 1L
+            )
+        )
+        val base = Instant.parse("2025-01-01T00:00:00Z").toEpochMilli()
+        repeat(100) { batchIndex ->
+            val events = List(1_000) { offset ->
+                val index = batchIndex * 1_000 + offset
+                ListeningEventEntity(
+                    eventUuid = "analytics-100k-$index",
+                    source = ListeningSource.CDPLAYA,
+                    trackIdentityId = id,
+                    localTrackBindingId = null,
+                    playbackSessionId = null,
+                    startedAt = base + index,
+                    endedAt = base + index + 1L,
+                    listenedMs = 1L,
+                    trackDurationMs = 100L,
+                    qualifiedAsPlay = index % 10 == 0,
+                    qualificationReason = if (index % 10 == 0) {
+                        ListeningQualificationReason.TIME_THRESHOLD
+                    } else {
+                        ListeningQualificationReason.NONE
+                    },
+                    qualificationRuleVersion = 1,
+                    endReason = ListeningEndReason.STOPPED,
+                    sourceEventKey = null,
+                    importBatchId = null,
+                    createdAt = base + index + 1L
+                )
+            }
+            database.listeningEventDao().insert(events)
+        }
+        val resolver = ListeningAnalyticsRangeResolver(
+            Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneId.of("UTC")),
+            AnalyticsZoneIdProvider { ZoneId.of("UTC") }
+        )
+        val snapshot = ListeningStatsRepository(database).getAnalyticsSnapshot(
+            resolver.resolve(AnalyticsRangeSelection.Preset(AnalyticsRangePreset.ALL_TIME))
+        )
+
+        assertEquals(100_000L, snapshot.overview.detailedEventCount)
+        assertEquals(100_000L, snapshot.overview.listeningTime.confirmedDetailedListeningMs)
+        assertEquals(10_000L, snapshot.overview.qualifiedDetailedPlayCount)
+        assertEquals(100_000L, snapshot.trend.sumOf { it.totalAttemptCount })
+        assertTrue(snapshot.trend.size <= ListeningAnalyticsBucketBuilder.MAX_BUCKET_COUNT)
+        assertEquals(1, snapshot.topTracks.size)
+        assertTrue(snapshot.topAlbums.size <= 5)
+        assertTrue(snapshot.topArtists.size <= 5)
     }
 
     @Test

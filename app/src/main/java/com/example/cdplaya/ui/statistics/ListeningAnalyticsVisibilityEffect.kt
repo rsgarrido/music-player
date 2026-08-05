@@ -1,6 +1,7 @@
 package com.example.cdplaya.ui.statistics
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberUpdatedState
 
@@ -12,5 +13,10 @@ internal fun ListeningAnalyticsVisibilityEffect(
     val currentCallback = rememberUpdatedState(onActiveChanged)
     LaunchedEffect(isVisible) {
         currentCallback.value(isVisible)
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            currentCallback.value(false)
+        }
     }
 }

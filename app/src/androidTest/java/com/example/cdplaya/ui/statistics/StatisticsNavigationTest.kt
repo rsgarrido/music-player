@@ -41,4 +41,21 @@ class StatisticsNavigationTest {
         composeRule.waitForIdle()
         assertEquals(listOf(false, true, false), calls)
     }
+
+    @Test
+    fun leavingCompositionWhileVisibleDeactivatesAnalyticsObserver() {
+        val showEffect = mutableStateOf(true)
+        val calls = mutableListOf<Boolean>()
+        composeRule.setContent {
+            if (showEffect.value) {
+                ListeningAnalyticsVisibilityEffect(true) { calls += it }
+            }
+        }
+        composeRule.waitForIdle()
+        assertEquals(listOf(true), calls)
+
+        composeRule.runOnIdle { showEffect.value = false }
+        composeRule.waitForIdle()
+        assertEquals(listOf(true, false), calls)
+    }
 }

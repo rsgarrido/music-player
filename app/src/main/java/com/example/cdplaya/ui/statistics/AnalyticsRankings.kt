@@ -214,9 +214,9 @@ private fun RankingRow(
                         CompactRatingIndicator(rating = value, iconFirst = true)
                     }
                     if (stackedMetrics) {
-                        Row(
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Text(
                                 text = plays,

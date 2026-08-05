@@ -53,8 +53,8 @@
     <string name="rating_save">Save rating</string>
     <string name="rating_clear">Clear rating</string>
     <string name="rating_cancel">Cancel</string>
-    <string name="rating_load_error">Couldnâ€™t load rating.</string>
-    <string name="rating_save_error">Couldnâ€™t save rating.</string>
+    <string name="rating_load_error">Couldn’t load rating.</string>
+    <string name="rating_save_error">Couldn’t save rating.</string>
     <string name="rating_clear_error">Couldn’t clear rating.</string>
     <string name="rating_sort">Rating</string>
     <string name="rating_filter">Rating filter: %1$s</string>

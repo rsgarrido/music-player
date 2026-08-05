@@ -13,6 +13,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -152,6 +153,30 @@ class SongRatingUiControllerTest {
         )
         assertEquals(5, controller.state.value.ratingsByTrackIdentityId[7L])
         assertEquals(5, controller.state.value.ratingsByReferenceKey["exact"])
+    }
+
+    @Test
+    fun observationFailureRetainsLastSuccessfulSharedMaps() {
+        val failingRepository = object : SongRatingDataSource {
+            override fun observeRatingSnapshot(): Flow<SongRatingSnapshot> = flow {
+                emit(
+                    SongRatingSnapshot(
+                        byTrackIdentityId = mapOf(9L to rating(9, 4)),
+                        byReferenceKey = mapOf("retained" to rating(9, 4))
+                    )
+                )
+                error("observation failed")
+            }
+
+            override suspend fun getRatingForSong(song: Song): SongRating? = null
+            override suspend fun setRating(song: Song, rating: Int): SongRating =
+                error("unused")
+            override suspend fun clearRating(song: Song): Boolean = error("unused")
+        }
+
+        val failingController = SongRatingUiController(failingRepository, scope)
+        assertEquals(4, failingController.state.value.ratingsByTrackIdentityId[9L])
+        assertEquals(4, failingController.state.value.ratingsByReferenceKey["retained"])
     }
 
     private fun song(id: Long, title: String) = Song(

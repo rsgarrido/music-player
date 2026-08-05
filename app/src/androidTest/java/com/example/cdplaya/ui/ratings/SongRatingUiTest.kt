@@ -1,16 +1,21 @@
 package com.example.cdplaya.ui.ratings
 
 import android.net.Uri
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
@@ -18,6 +23,8 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.example.cdplaya.controller.SongRatingDialogState
 import com.example.cdplaya.controller.SongRatingUiError
@@ -67,6 +74,45 @@ class SongRatingUiTest {
         }
         composeRule.onNodeWithContentDescription("5 stars").assertIsNotEnabled().performClick()
         composeRule.runOnIdle { assertEquals(0, clicks) }
+    }
+
+    @Test
+    fun narrowAndTwoTimesFontKeepEveryStarAndDialogActionReachable() {
+        composeRule.setContent {
+            MaterialTheme {
+                val currentConfiguration = LocalConfiguration.current
+                val currentDensity = LocalDensity.current
+                val largeConfiguration = Configuration(currentConfiguration).apply {
+                    fontScale = 2f
+                    screenWidthDp = 280
+                }
+                CompositionLocalProvider(
+                    LocalConfiguration provides largeConfiguration,
+                    LocalDensity provides Density(currentDensity.density, fontScale = 2f)
+                ) {
+                    SongRatingDialog(
+                        state = dialogState(persisted = rating(3), selected = 3),
+                        onDismiss = {},
+                        onRatingSelected = {},
+                        onSave = {},
+                        onClear = {}
+                    )
+                }
+            }
+        }
+
+        var previousRight = Float.NEGATIVE_INFINITY
+        (1..5).forEach { value ->
+            val star = composeRule.onNodeWithTag("rating_star_$value")
+                .assertWidthIsAtLeast(48.dp)
+                .assertHeightIsAtLeast(48.dp)
+            val bounds = star.fetchSemanticsNode().boundsInRoot
+            assertTrue(bounds.left >= previousRight)
+            previousRight = bounds.right
+        }
+        composeRule.onNodeWithText("Clear rating").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Cancel").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Save rating").performScrollTo().assertIsDisplayed()
     }
 
     @Test

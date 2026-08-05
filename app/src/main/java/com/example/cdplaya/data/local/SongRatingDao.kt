@@ -21,15 +21,6 @@ interface SongRatingDao {
     @Query("SELECT * FROM song_ratings WHERE trackIdentityId = :trackIdentityId")
     suspend fun getByTrackIdentityId(trackIdentityId: Long): SongRatingEntity?
 
-    @Query("SELECT * FROM song_ratings WHERE trackIdentityId = :trackIdentityId")
-    fun observeByTrackIdentityId(trackIdentityId: Long): Flow<SongRatingEntity?>
-
-    @Query("SELECT * FROM song_ratings WHERE trackIdentityId IN (:trackIdentityIds)")
-    suspend fun getByTrackIdentityIds(trackIdentityIds: List<Long>): List<SongRatingEntity>
-
-    @Query("SELECT * FROM song_ratings ORDER BY trackIdentityId ASC")
-    fun observeAll(): Flow<List<SongRatingEntity>>
-
     @Query(
         "SELECT ratings.trackIdentityId, ratings.rating, ratings.ratedAt, ratings.updatedAt, " +
             "bindings.referenceKey AS bindingReferenceKey " +

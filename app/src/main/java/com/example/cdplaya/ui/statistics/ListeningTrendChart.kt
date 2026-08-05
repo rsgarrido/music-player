@@ -89,7 +89,12 @@ private fun TrendMetricSelector(
 ) {
     val selectedDescription = stringResource(R.string.statistics_range_selected)
     val notSelectedDescription = stringResource(R.string.statistics_range_not_selected)
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         ListeningTrendMetric.entries.forEach { choice ->
             val selected = metric == choice
             FilterChip(

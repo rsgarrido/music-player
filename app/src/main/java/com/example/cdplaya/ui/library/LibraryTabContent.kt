@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.Dp
@@ -43,11 +44,14 @@ fun SongsTabContent(
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
-    val ratingUiState = LocalSongRatingUi.current.state
-    val filteredSongs = filterSongsForSearch(
-        songs = songs,
-        searchQuery = searchQuery
-    )
+    val ratingUi = LocalSongRatingUi.current
+    val ratingUiState = ratingUi.state
+    val filteredSongs = remember(songs, searchQuery) {
+        filterSongsForSearch(
+            songs = songs,
+            searchQuery = searchQuery
+        )
+    }
 
     val activeRatings = if (ratingFeaturesEnabled) {
         ratingUiState.ratingsByReferenceKey
@@ -55,7 +59,7 @@ fun SongsTabContent(
         emptyMap()
     }
     val activeFilter = if (ratingFeaturesEnabled) {
-        LocalSongRatingUi.current.filter
+        ratingUi.filter
     } else {
         SongRatingFilter.ALL
     }
@@ -64,17 +68,21 @@ fun SongsTabContent(
     } else {
         sortOption
     }
-    val ratingFilteredSongs = filterSongsByRating(
-        songs = filteredSongs,
-        filter = activeFilter,
-        ratingsByReferenceKey = activeRatings
-    )
+    val ratingFilteredSongs = remember(filteredSongs, activeFilter, activeRatings) {
+        filterSongsByRating(
+            songs = filteredSongs,
+            filter = activeFilter,
+            ratingsByReferenceKey = activeRatings
+        )
+    }
 
-    val displayedSongs = sortSongsForLibrary(
-        songs = ratingFilteredSongs,
-        sortOption = effectiveSortOption,
-        ratingsByReferenceKey = activeRatings
-    )
+    val displayedSongs = remember(ratingFilteredSongs, effectiveSortOption, activeRatings) {
+        sortSongsForLibrary(
+            songs = ratingFilteredSongs,
+            sortOption = effectiveSortOption,
+            ratingsByReferenceKey = activeRatings
+        )
+    }
 
     if (songs.isEmpty()) {
         Text(

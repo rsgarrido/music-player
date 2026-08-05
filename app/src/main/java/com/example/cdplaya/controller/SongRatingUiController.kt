@@ -42,7 +42,7 @@ class SongRatingUiController(
     init {
         scope.launch {
             repository.observeRatingSnapshot()
-                .catch { emit(com.example.cdplaya.data.SongRatingSnapshot()) }
+                .catch { /* Retain the last successful shared map if Room observation fails. */ }
                 .collect { snapshot ->
                     _state.value = _state.value.copy(
                         ratingsByReferenceKey = snapshot.byReferenceKey

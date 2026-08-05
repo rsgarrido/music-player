@@ -583,3 +583,85 @@ exposing it to Albums, Artists, Favorites, or other tabs.
 Independently editable album/artist ratings, derived album/artist rating summaries,
 rating controls in players, half-stars, rating history, minimum/exact-star filters,
 rating smart collections, imports, and Wrapped remain deferred.
+
+## Listening Analytics & Ratings v1 final hardening (Session 6)
+
+The completed v1 inventory is Room version 10 identity-owned whole-star ratings;
+manual backup schema 8; calendar ranges and bounded trend aggregation; the Statistics
+overview, trend, and track/artist/album rankings; Home-header navigation; the shared
+rating dialog; Songs badges, Rating sort, and All/Rated/Unrated filtering; and reactive
+Top Tracks rating badges. Favorites remain an unrelated boolean collection, and no
+album or artist rating value is inferred from song ratings.
+
+Backup export captures favorites, playlists, preferences, canonical identities and all
+binding evidence, frozen legacy baselines, finalized events, and ratings. Ratings refer
+to backup-local identity IDs and are remapped to newly generated Room IDs during a
+full-replacement restore. Validation of history and ratings precedes mutation. The Room
+portion of restore—including favorites, playlists, compatibility aggregate history,
+canonical history, and ratings—is one transaction; malformed references, duplicate
+rating references, values outside 1 through 5, and invalid timestamps roll it back.
+Preferences are DataStore-backed and are replaced only after the Room transaction
+commits, so the operation cannot provide a cross-storage-engine atomicity guarantee.
+Schema 7 restores canonical history with no ratings, while schema 6 and older convert
+aggregate rows to baselines without fabricating events or ratings.
+
+There is one ViewModel-owned rating observation for both library and Statistics
+surfaces. It returns bulk identity and exact-reference maps; rows perform map lookups
+and never open their own Flow or query. A failed observation retains its last successful
+maps. Statistics activation owns one conflated Room invalidation observation and one
+latest-wins snapshot job. Closing Statistics, removing its host composition, or clearing
+the ViewModel cancels that work. Rating-dialog lookup/write jobs are generation-guarded
+and cancelled when another song opens or the dialog closes. No polling, `GlobalScope`,
+fake refresh event, or per-row coroutine exists.
+
+All analytics aggregation remains in SQLite. A snapshot performs a bounded set of
+aggregate queries inside one Room transaction; it does not load listening events into
+Kotlin and does not execute SQL per bucket, track, artist, album, or rating row. Trend
+input is limited to 400 buckets and 900 bindings, with the current three-source maximum
+using 803. Rankings return at most 10 tracks, 5 artists, and 5 albums. The Songs rating
+filter and sort are intentionally in memory and remembered by their list, search,
+filter, sort, and rating-map inputs. Existing source/date, qualified/date, and
+track/date indexes cover the reviewed plans. Some snapshot sections necessarily scan
+the selected event range independently; no additional version-10 index removes those
+aggregations, and no version-11 index is currently recommended without device profiling
+that demonstrates a release-relevant regression.
+
+Accessibility treats Home Statistics, Settings, Statistics Back, coverage Info, range
+chips, trend metric chips, and ranking category chips as separate targets with at least
+48 dp interaction height. Selected controls expose selected state as well as color.
+Overview cards and the bounded chart expose concise combined descriptions; error and
+refresh states use live-region semantics. Ranking rows remain non-clickable and announce
+rank, metadata, plays, recorded time, and a track rating at most once. An unrated row
+does not announce zero. The five stars are separate 48-dp radio-button targets with a
+group value and filled/outlined state; dialog errors stay local.
+
+Narrow and large-font layouts use flexible or scrollable controls rather than
+device-specific branches. Header actions retain fixed targets while titles ellipsize;
+range, trend, and ranking chips scroll horizontally; overview cards switch to one
+column; ranking metrics stack; date-picker actions stack; and the rating dialog uses a
+full-width bounded surface with smaller narrow-screen padding, stacked actions, and
+vertical scrolling. Critical metric values and Save/Clear/Cancel actions remain
+reachable at 280-dp-class width and 2x font scale.
+
+Known v1 limitations are deliberate. Legacy aggregate plays have no exact event dates,
+durations, completion facts, or source provenance, so they appear only in eligible
+All Time counts/rankings. Statistics selection, trend metric, category, and scroll are
+retained for the ViewModel/saved Compose lifetime but not fully restored after process
+death. Historical Top Tracks do not yet resolve exact current artwork or a safe playback
+destination; rows therefore remain text-first and non-clickable. Generated baseline
+profiles had obviously stale project-owned playback-history recorder entries removed,
+but full profile regeneration remains deferred to the dedicated device journey.
+
+Technical merge readiness requires the focused and full JVM suites, lint, debug and
+Android-test packaging, and every milestone-focused connected-test group to pass with a
+clean `git diff --check`. Final merge readiness additionally requires the user to
+complete real version-8 export/restore replacement validation, upgrade/persistence
+checks, S22 Ultra and S9+ UI validation, large-font/landscape/TalkBack checks, and normal
+playback, notification, Bluetooth, theme, EQ, lyrics, queue, playlist, scan, and folder
+regression checks.
+
+Deferred work remains player rating controls; album/artist rating summaries; half-star
+ratings; rating history; exact/minimum-star filters; chart tooltips; full ranking
+destinations; Spotify/Last.fm imports; Smart Collections; Wrapped; active-session and
+analytics-selection process-death recovery; exact current-song resolution, artwork, and
+playback for historical Top Tracks; shareable reports; and cloud synchronization.
