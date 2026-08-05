@@ -72,9 +72,9 @@ fun LibrarySortDropdown(
 
 @Composable
 private fun LibrarySortOption.displayTitle(): String {
-    return if (this == LibrarySortOption.DATE_ADDED) {
-        stringResource(R.string.sort_date_added)
-    } else {
-        title
+    return when (this) {
+        LibrarySortOption.DATE_ADDED -> stringResource(R.string.sort_date_added)
+        LibrarySortOption.RATING -> stringResource(R.string.rating_sort)
+        else -> title
     }
 }

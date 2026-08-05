@@ -1,10 +1,20 @@
 package com.example.cdplaya.data.local
 
 import androidx.room.Dao
+import androidx.room.ColumnInfo
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+
+data class SongRatingBindingRow(
+    val trackIdentityId: Long,
+    val rating: Int,
+    val ratedAt: Long,
+    val updatedAt: Long,
+    @ColumnInfo(name = "bindingReferenceKey")
+    val referenceKey: String?
+)
 
 @Dao
 interface SongRatingDao {
@@ -19,6 +29,16 @@ interface SongRatingDao {
 
     @Query("SELECT * FROM song_ratings ORDER BY trackIdentityId ASC")
     fun observeAll(): Flow<List<SongRatingEntity>>
+
+    @Query(
+        "SELECT ratings.trackIdentityId, ratings.rating, ratings.ratedAt, ratings.updatedAt, " +
+            "bindings.referenceKey AS bindingReferenceKey " +
+            "FROM song_ratings AS ratings " +
+            "LEFT JOIN local_track_bindings AS bindings " +
+            "ON bindings.trackIdentityId = ratings.trackIdentityId " +
+            "ORDER BY ratings.trackIdentityId ASC, bindings.id ASC"
+    )
+    fun observeAllWithBindings(): Flow<List<SongRatingBindingRow>>
 
     @Query("SELECT * FROM song_ratings ORDER BY trackIdentityId ASC")
     suspend fun getAllForBackup(): List<SongRatingEntity>

@@ -4,11 +4,13 @@ import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -17,6 +19,9 @@ import com.example.cdplaya.data.ArtistListeningStats
 import com.example.cdplaya.data.ListeningPlayCountBreakdown
 import com.example.cdplaya.data.ListeningRankingCategory
 import com.example.cdplaya.data.TrackListeningStats
+import com.example.cdplaya.controller.SongRatingUiState
+import com.example.cdplaya.ui.ratings.LocalSongRatingUi
+import com.example.cdplaya.ui.ratings.SongRatingUiEnvironment
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -100,6 +105,48 @@ class AnalyticsRankingsTest {
         composeRule.onNodeWithText("41 plays").assertExists()
         composeRule.onNodeWithText("Various Artists").assertExists()
         composeRule.onNodeWithText("2 hr 0 min recorded").assertExists()
+    }
+
+    @Test
+    fun topTrackRatingUsesIdentityMapAndUpdatesWithoutChangingRankOrder() {
+        val rating = mutableStateOf(2)
+        val first = track(11L, "First", "Artist", "Album", 5L, 0L)
+        val second = track(22L, "Second", "Artist", "Album", 4L, 0L)
+        composeRule.setContent {
+            MaterialTheme {
+                CompositionLocalProvider(
+                    LocalSongRatingUi provides SongRatingUiEnvironment(
+                        state = SongRatingUiState(
+                            ratingsByTrackIdentityId = mapOf(11L to rating.value)
+                        )
+                    )
+                ) {
+                    Column {
+                        TrackRankingRow(1, first)
+                        TrackRankingRow(2, second)
+                        ArtistRankingRow(3, ArtistListeningStats(
+                            groupingKey = "artist",
+                            artist = "Artist only",
+                            playCounts = counts(1),
+                            confirmedDetailedListeningMs = 0,
+                            naturalCompletionCount = 0,
+                            distinctTrackCount = 1,
+                            distinctAlbumCount = 1,
+                            latestKnownPlayAt = null
+                        ))
+                    }
+                }
+            }
+        }
+        composeRule.onNodeWithContentDescription("1. First", substring = true)
+            .assertHasNoClickAction()
+        composeRule.onNodeWithContentDescription("Rated 2 out of 5").assertExists()
+        composeRule.onAllNodesWithText("First").assertCountEquals(1)
+        composeRule.onAllNodesWithText("Second").assertCountEquals(1)
+        composeRule.runOnIdle { rating.value = 5 }
+        composeRule.onNodeWithContentDescription("Rated 5 out of 5").assertExists()
+        composeRule.onAllNodesWithContentDescription("Rated", substring = true)
+            .assertCountEquals(1)
     }
 
     private fun track(

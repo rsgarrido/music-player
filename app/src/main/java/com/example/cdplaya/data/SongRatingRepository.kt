@@ -13,13 +13,25 @@ data class SongRating(
     val updatedAt: Long
 )
 
+data class SongRatingSnapshot(
+    val byTrackIdentityId: Map<Long, SongRating> = emptyMap(),
+    val byReferenceKey: Map<String, SongRating> = emptyMap()
+)
+
+interface SongRatingDataSource {
+    fun observeRatingSnapshot(): Flow<SongRatingSnapshot>
+    suspend fun getRatingForSong(song: Song): SongRating?
+    suspend fun setRating(song: Song, rating: Int): SongRating
+    suspend fun clearRating(song: Song): Boolean
+}
+
 /** Identity-owned ratings. Favorites and legacy aggregate play statistics are deliberately absent. */
 class SongRatingRepository(
     private val database: AppDatabase,
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val nativeTrackResolver: ListeningNativeTrackResolver =
         ListeningNativeTrackResolver(database, nowMillis)
-) {
+) : SongRatingDataSource {
     suspend fun getRating(trackIdentityId: Long): SongRating? =
         database.songRatingDao().getByTrackIdentityId(trackIdentityId)?.toDomain()
 
@@ -30,6 +42,33 @@ class SongRatingRepository(
     fun observeAllRatings(): Flow<List<SongRating>> =
         database.songRatingDao().observeAll().map { rows -> rows.map(SongRatingEntity::toDomain) }
 
+    override fun observeRatingSnapshot(): Flow<SongRatingSnapshot> =
+        database.songRatingDao().observeAllWithBindings().map { rows ->
+            val ratingsByIdentity = rows
+                .distinctBy { row -> row.trackIdentityId }
+                .associate { row ->
+                    row.trackIdentityId to SongRating(
+                        trackIdentityId = row.trackIdentityId,
+                        value = row.rating,
+                        ratedAt = row.ratedAt,
+                        updatedAt = row.updatedAt
+                    )
+                }
+            val ratingsByReference = rows
+                .mapNotNull { row -> row.referenceKey?.let { key -> key to row.trackIdentityId } }
+                .groupBy(keySelector = { it.first }, valueTransform = { it.second })
+                .mapNotNull { (referenceKey, identityIds) ->
+                    identityIds.distinct().singleOrNull()?.let { identityId ->
+                        ratingsByIdentity[identityId]?.let { rating -> referenceKey to rating }
+                    }
+                }
+                .toMap()
+            SongRatingSnapshot(
+                byTrackIdentityId = ratingsByIdentity,
+                byReferenceKey = ratingsByReference
+            )
+        }
+
     suspend fun getRatings(trackIdentityIds: Collection<Long>): Map<Long, SongRating> {
         val uniqueIds = trackIdentityIds.distinct()
         if (uniqueIds.isEmpty()) return emptyMap()
@@ -38,13 +77,13 @@ class SongRatingRepository(
             .associate { entity -> entity.trackIdentityId to entity.toDomain() }
     }
 
-    suspend fun getRatingForSong(song: Song): SongRating? {
+    override suspend fun getRatingForSong(song: Song): SongRating? {
         val binding = database.localTrackBindingDao().getByReferenceKey(song.membershipKey())
             ?: return null
         return getRating(binding.trackIdentityId)
     }
 
-    suspend fun setRating(song: Song, rating: Int): SongRating {
+    override suspend fun setRating(song: Song, rating: Int): SongRating {
         validateRating(rating)
         return database.withTransaction {
             val resolved = nativeTrackResolver.resolveOrCreate(
@@ -65,7 +104,7 @@ class SongRatingRepository(
         }
     }
 
-    suspend fun clearRating(song: Song): Boolean = database.withTransaction {
+    override suspend fun clearRating(song: Song): Boolean = database.withTransaction {
         val binding = database.localTrackBindingDao().getByReferenceKey(song.membershipKey())
             ?: return@withTransaction false
         database.songRatingDao().deleteByTrackIdentityId(binding.trackIdentityId) > 0

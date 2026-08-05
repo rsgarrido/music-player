@@ -45,6 +45,7 @@ import com.example.cdplaya.mediaaccess.LibraryPermissionGate
 import com.example.cdplaya.ui.state.LibraryUiState
 import com.example.cdplaya.ui.state.libraryUiState
 import com.example.cdplaya.ui.state.toUiSummary
+import com.example.cdplaya.ui.library.SongRatingFilter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -119,6 +120,10 @@ class LibraryController(
 
     private val _uiState = MutableStateFlow(LibraryUiState.Empty)
     val uiState: StateFlow<LibraryUiState> = _uiState.asStateFlow()
+
+    fun selectSongRatingFilter(filter: SongRatingFilter) {
+        _uiState.update { current -> current.copy(songRatingFilter = filter) }
+    }
 
     private var lastLibraryRefreshResult: com.example.cdplaya.data.LibraryRefreshResult? = null
 
@@ -766,6 +771,7 @@ class LibraryController(
                 recentlyPlayedSongs = current.recentlyPlayedSongs,
                 mostPlayedSongs = current.mostPlayedSongs,
                 recentlyAddedSongs = sortSongsByDateAddedDescending(publishedSongs),
+                songRatingFilter = current.songRatingFilter,
                 unresolvedFavoriteCount = current.unresolvedFavoriteCount,
                 unresolvedPlaylistRowCount = current.unresolvedPlaylistRowCount,
                 unresolvedListeningHistoryCount = current.unresolvedListeningHistoryCount,

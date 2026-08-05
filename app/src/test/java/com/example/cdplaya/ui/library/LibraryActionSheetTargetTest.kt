@@ -20,7 +20,9 @@ class LibraryActionSheetTargetTest {
             onAddToQueueClick = { invokedActions += "queue" },
             onToggleFavoriteClick = { invokedActions += "favorite" },
             onAddToPlaylistClick = { invokedActions += "playlist" },
-            onEditSongTagsClick = { invokedActions += "edit" }
+            onEditSongTagsClick = { invokedActions += "edit" },
+            rateSongLabel = "Rate song",
+            onRateSongClick = { invokedActions += "rate" }
         )
 
         assertEquals(
@@ -28,6 +30,7 @@ class LibraryActionSheetTargetTest {
                 "Play next",
                 "Add to queue",
                 "Add to favorites",
+                "Rate song",
                 "Add to playlist",
                 "Edit tags"
             ),
@@ -36,7 +39,7 @@ class LibraryActionSheetTargetTest {
 
         target.actions.forEach { action -> action.onClick() }
         assertEquals(
-            listOf("play_next", "queue", "favorite", "playlist", "edit"),
+            listOf("play_next", "queue", "favorite", "rate", "playlist", "edit"),
             invokedActions
         )
     }

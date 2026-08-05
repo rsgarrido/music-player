@@ -6,6 +6,7 @@ import com.example.cdplaya.data.LibraryRefreshResult
 import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
+import com.example.cdplaya.ui.library.SongRatingFilter
 
 data class LibraryUiState(
     val songs: List<Song> = emptyList(),
@@ -20,6 +21,7 @@ data class LibraryUiState(
     val recentlyPlayedSongs: List<Song> = emptyList(),
     val mostPlayedSongs: List<Song> = emptyList(),
     val recentlyAddedSongs: List<Song> = emptyList(),
+    val songRatingFilter: SongRatingFilter = SongRatingFilter.ALL,
     val unresolvedFavoriteCount: Int = 0,
     val unresolvedPlaylistRowCount: Int = 0,
     val unresolvedListeningHistoryCount: Int = 0,
@@ -67,6 +69,7 @@ fun libraryUiState(
     recentlyPlayedSongs: Collection<Song> = emptyList(),
     mostPlayedSongs: Collection<Song> = emptyList(),
     recentlyAddedSongs: Collection<Song> = emptyList(),
+    songRatingFilter: SongRatingFilter = SongRatingFilter.ALL,
     unresolvedFavoriteCount: Int = 0,
     unresolvedPlaylistRowCount: Int = 0,
     unresolvedListeningHistoryCount: Int = 0,
@@ -87,6 +90,7 @@ fun libraryUiState(
     recentlyPlayedSongs = recentlyPlayedSongs.toList(),
     mostPlayedSongs = mostPlayedSongs.toList(),
     recentlyAddedSongs = recentlyAddedSongs.toList(),
+    songRatingFilter = songRatingFilter,
     unresolvedFavoriteCount = unresolvedFavoriteCount,
     unresolvedPlaylistRowCount = unresolvedPlaylistRowCount,
     unresolvedListeningHistoryCount = unresolvedListeningHistoryCount,

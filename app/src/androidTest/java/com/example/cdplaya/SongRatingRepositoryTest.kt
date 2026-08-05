@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.SongRatingRepository
+import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.data.local.AppDatabase
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -93,6 +94,31 @@ class SongRatingRepositoryTest {
         val binding = database.localTrackBindingDao().getForTrackIdentity(first.trackIdentityId).single()
         database.localTrackBindingDao().deleteById(binding.id)
         assertEquals(4, repository.getRating(first.trackIdentityId)?.value)
+    }
+
+    @Test
+    fun bulkSnapshotMapsExactBindingsAndRetainsMissingHistoricalIdentityRatings() = runBlocking {
+        var now = 1L
+        val repository = SongRatingRepository(database, nowMillis = { now++ })
+        assertTrue(repository.observeRatingSnapshot().first().byReferenceKey.isEmpty())
+
+        val firstSong = song(1L, "same.flac")
+        val secondSong = song(2L, "copy.flac")
+        val first = repository.setRating(firstSong, 2)
+        val second = repository.setRating(secondSong, 5)
+        val snapshot = repository.observeRatingSnapshot().first()
+
+        assertEquals(2, snapshot.byReferenceKey.getValue(firstSong.membershipKey()).value)
+        assertEquals(5, snapshot.byReferenceKey.getValue(secondSong.membershipKey()).value)
+        assertEquals(2, snapshot.byTrackIdentityId.getValue(first.trackIdentityId).value)
+        assertEquals(5, snapshot.byTrackIdentityId.getValue(second.trackIdentityId).value)
+
+        val binding = database.localTrackBindingDao()
+            .getForTrackIdentity(first.trackIdentityId).single()
+        database.localTrackBindingDao().deleteById(binding.id)
+        val missingSnapshot = repository.observeRatingSnapshot().first()
+        assertFalse(missingSnapshot.byReferenceKey.containsKey(firstSong.membershipKey()))
+        assertEquals(2, missingSnapshot.byTrackIdentityId.getValue(first.trackIdentityId).value)
     }
 
     private fun song(id: Long, displayName: String) = Song(

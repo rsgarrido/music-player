@@ -19,6 +19,9 @@ import com.example.cdplaya.ui.filterSongsForSearch
 import com.example.cdplaya.ui.sortSongsByAlbumOrder
 import com.example.cdplaya.ui.sortSongsForArtistDetail
 import com.example.cdplaya.ui.sortSongsForLibrary
+import com.example.cdplaya.ui.filterSongsByRating
+import com.example.cdplaya.ui.ratings.LocalSongRatingUi
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun SongsTabContent(
@@ -36,17 +39,41 @@ fun SongsTabContent(
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    ratingFeaturesEnabled: Boolean = true,
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
+    val ratingUiState = LocalSongRatingUi.current.state
     val filteredSongs = filterSongsForSearch(
         songs = songs,
         searchQuery = searchQuery
     )
 
-    val displayedSongs = sortSongsForLibrary(
+    val activeRatings = if (ratingFeaturesEnabled) {
+        ratingUiState.ratingsByReferenceKey
+    } else {
+        emptyMap()
+    }
+    val activeFilter = if (ratingFeaturesEnabled) {
+        LocalSongRatingUi.current.filter
+    } else {
+        SongRatingFilter.ALL
+    }
+    val effectiveSortOption = if (!ratingFeaturesEnabled && sortOption == LibrarySortOption.RATING) {
+        LibrarySortOption.TITLE
+    } else {
+        sortOption
+    }
+    val ratingFilteredSongs = filterSongsByRating(
         songs = filteredSongs,
-        sortOption = sortOption
+        filter = activeFilter,
+        ratingsByReferenceKey = activeRatings
+    )
+
+    val displayedSongs = sortSongsForLibrary(
+        songs = ratingFilteredSongs,
+        sortOption = effectiveSortOption,
+        ratingsByReferenceKey = activeRatings
     )
 
     if (songs.isEmpty()) {
@@ -57,6 +84,11 @@ fun SongsTabContent(
     } else if (filteredSongs.isEmpty()) {
         Text(
             text = "No songs match your search.",
+            modifier = Modifier.padding(16.dp)
+        )
+    } else if (ratingFilteredSongs.isEmpty()) {
+        Text(
+            text = stringResource(R.string.rating_filter_empty),
             modifier = Modifier.padding(16.dp)
         )
     } else {
@@ -76,6 +108,7 @@ fun SongsTabContent(
                     onAddToPlaylistClick = onAddToPlaylistClick,
                     onEditSongTagsClick = onEditSongTagsClick,
                     bottomContentPadding = bottomContentPadding,
+                    ratingValuesByReferenceKey = activeRatings,
                     modifier = Modifier.fillMaxSize()
                 )
             },
@@ -93,7 +126,8 @@ fun SongsTabContent(
                     onAddToPlaylistClick = onAddToPlaylistClick,
                     onEditSongTagsClick = onEditSongTagsClick,
                     bottomContentPadding = bottomContentPadding,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    ratingValuesByReferenceKey = activeRatings
                 )
             }
         )

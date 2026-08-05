@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,6 +43,8 @@ import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.ui.AppShellIcons
 import com.example.cdplaya.ui.AppShellAccent
 import com.example.cdplaya.ui.AppShellTypography
+import com.example.cdplaya.ui.ratings.CompactRatingIndicator
+import com.example.cdplaya.ui.ratings.LocalSongRatingUi
 
 @Composable
 fun SongGrid(
@@ -57,12 +60,15 @@ fun SongGrid(
     onAddToPlaylistClick: (Song) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
     bottomContentPadding: Dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    ratingValuesByReferenceKey: Map<String, Int> = emptyMap()
 ) {
     val gridMetrics = libraryGridMetrics(gridColumnCount)
     var actionSheetTarget by remember {
         mutableStateOf<LibraryItemActionSheetTarget?>(null)
     }
+    val ratingUi = LocalSongRatingUi.current
+    val rateSongLabel = stringResource(R.string.rate_song)
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(gridMetrics.columnCount),
@@ -84,6 +90,7 @@ fun SongGrid(
                 clickLabel = "Play ${song.title}",
                 gridMetrics = gridMetrics,
                 selected = isCurrentSong,
+                rating = ratingValuesByReferenceKey[song.membershipKey()],
                 onClick = { onSongClick(song, songs) },
                 onShowActions = {
                     actionSheetTarget = songActionSheetTarget(
@@ -94,7 +101,9 @@ fun SongGrid(
                         onAddToQueueClick = onAddToQueueClick,
                         onToggleFavoriteClick = onToggleFavoriteClick,
                         onAddToPlaylistClick = onAddToPlaylistClick,
-                        onEditSongTagsClick = onEditSongTagsClick
+                        onEditSongTagsClick = onEditSongTagsClick,
+                        rateSongLabel = rateSongLabel,
+                        onRateSongClick = ratingUi.onOpen
                     )
                 },
                 modifier = Modifier.animateItem(
@@ -282,7 +291,8 @@ private fun LibraryGridCard(
     onClick: () -> Unit,
     onShowActions: () -> Unit,
     modifier: Modifier = Modifier,
-    selected: Boolean = false
+    selected: Boolean = false,
+    rating: Int? = null
 ) {
     Column(
         modifier = modifier
@@ -356,6 +366,9 @@ private fun LibraryGridCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+            rating?.let { value ->
+                CompactRatingIndicator(rating = value)
             }
         }
     }

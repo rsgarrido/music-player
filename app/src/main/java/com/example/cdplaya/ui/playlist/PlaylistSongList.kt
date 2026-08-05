@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -40,6 +42,8 @@ import com.example.cdplaya.ui.library.LibraryItemAction
 import com.example.cdplaya.ui.library.LibraryItemActionSheet
 import com.example.cdplaya.ui.library.LibraryItemActionSheetTarget
 import com.example.cdplaya.ui.library.libraryItemActions
+import com.example.cdplaya.R as AppR
+import com.example.cdplaya.ui.ratings.LocalSongRatingUi
 
 @Composable
 fun PlaylistSongList(
@@ -62,6 +66,8 @@ fun PlaylistSongList(
     var actionSheetTarget by remember {
         mutableStateOf<LibraryItemActionSheetTarget?>(null)
     }
+    val ratingUi = LocalSongRatingUi.current
+    val rateSongLabel = stringResource(AppR.string.rate_song)
 
     LazyColumn(
         modifier = modifier,
@@ -152,6 +158,13 @@ fun PlaylistSongList(
                                         Icons.Filled.FavoriteBorder
                                     },
                                     onClick = { onToggleFavoriteClick(song) }
+                                )
+                            )
+                            add(
+                                LibraryItemAction(
+                                    label = rateSongLabel,
+                                    icon = Icons.Filled.Star,
+                                    onClick = { ratingUi.onOpen(song) }
                                 )
                             )
                             playlistSong?.takeIf { canMoveUp }?.let { row ->

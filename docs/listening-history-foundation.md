@@ -46,9 +46,10 @@ rating sub-formats are rejected. Schema 7 and older backups migrate with zero ra
 favorites and aggregate history never become ratings. `song_play_stats` remains outside
 rating export and restore.
 
-This is a non-UI foundation. No Compose control, action-sheet entry, row display,
-sorting/filtering, or Statistics screen is connected. Album and artist ratings remain
-derived summaries for later work, not independently editable records.
+This began as a non-UI foundation. Session 5 now connects the same persistence contract
+to song-oriented Compose UI, sorting/filtering, and Statistics Top Tracks. Album and
+artist ratings remain derived summaries for later work, not independently editable
+records.
 
 Schema 6 and older backups remain readable. Each old aggregate history row becomes its
 own identity, exact-evidence binding, and legacy baseline, even when metadata is
@@ -519,5 +520,66 @@ Music/Library boundary does not expose the bounded exact-resolution result along
 the analytics snapshot, so artwork and playback are deferred instead of adding a
 second resolver path. Consequently no track row claims click/play semantics, while
 artist and album rows likewise expose no misleading detail navigation. These choices
-keep the screen responsive on narrow phones and leave all rating controls, rating
-display, and rating-based ordering for the later ratings UI session.
+kept Session 4 responsive on narrow phones; Session 5 adds only a compact read-only
+rating indicator without changing ranking or playback behavior.
+
+## Rating UI and Songs sorting/filtering (Session 5)
+
+Every action sheet whose target is a concrete playable `Song`, including playlist song
+rows, includes a localized `Rate song` action after the non-destructive playback and
+favorite actions and before destructive actions. The sheet completes its hide animation
+and dismisses before invoking the ViewModel intent, so the shared modern dialog is not
+rendered behind it. Opening an action sheet does not resolve or create an identity.
+
+`SongRatingUiController` owns the active song, lookup-only load, persisted and locally
+selected values, loading/saving flags, retryable load/save/clear error categories, and
+both reactive rating maps. Opening replaces and cancels any prior
+load. A generation plus exact membership-key check prevents a late result for another
+song from changing the visible dialog. Closing cancels its load. Compose sends intents
+only and never calls Room or launches a dialog coroutine.
+
+The dialog presents title, optional artist, and five separate 48-dp star buttons. Each
+button selects one whole-star value from 1 through 5 and exposes its star-count
+description; filled and outlined shapes distinguish selected and remaining stars without
+depending on color. The group announces the current selection. An unrated song begins
+with no selected star and disabled Save. Save validates 1 through 5, delegates to the
+repository's exact resolve-or-create path, and closes only after success. Saving an equal
+value remains the repository no-op. Clear appears only for a persisted rating, uses the
+exact lookup-only delete path, and cannot create an identity. Cancel changes no
+persistence. Failures retain the dialog and selection with privacy-safe inline text. At
+large font scale or narrow dialog width, actions stack; star targets remain 48 dp and
+long metadata ellipsizes.
+
+Room exposes one reactive left-join projection from `song_ratings` to
+`local_track_bindings`. The repository converts it into both
+`trackIdentityId -> SongRating` and exact `referenceKey -> SongRating` snapshots. The
+identity map retains a rating when no current binding exists, allowing an unresolved
+historical Top Track to display it. The reference map includes only exact bindings;
+defensive grouping omits an ambiguous reference rather than selecting an identity. The
+UI collects this projection once at the ViewModel boundary and performs map lookups, so
+there is no query or Flow per library or ranking row.
+
+The main Songs list and grid alone show a compact numeric star indicator for rated
+songs, with `Rated X out of 5` semantics; unrelated Home, Search, recent/most-played,
+queue, playlist, artist-detail, and album-detail rows do not gain rating badges. Top
+Tracks uses the identity map for the same non-interactive indicator. Artist and Album
+ranking rows remain unrated, and rating invalidation updates Top Tracks without
+rerunning or reordering the analytics snapshot.
+
+The Songs header adds a rating-filter menu beside the existing sort control. Its exact
+choices are All, Rated, and Unrated, defaulting to All. `LibraryController` retains the
+choice for its ViewModel lifetime, including library snapshot publication, but only
+`SongsTabContent` applies it. Transformation
+order is the existing visible/folder-selected Songs source, text search, rating filter,
+then in-memory sort. Changes immediately affect active Rated/Unrated membership, while
+excluded or missing songs never enter the playable library.
+
+Rating is available only in the Songs sort menu. It orders 5 through 1, places unrated
+songs last, then breaks ties by normalized title and the stable exact membership key.
+It returns a new list and keeps metadata-identical songs distinct. Other tabs retain
+their own valid selections, so switching tabs preserves the Songs Rating choice without
+exposing it to Albums, Artists, Favorites, or other tabs.
+
+Independently editable album/artist ratings, derived album/artist rating summaries,
+rating controls in players, half-stars, rating history, minimum/exact-star filters,
+rating smart collections, imports, and Wrapped remain deferred.

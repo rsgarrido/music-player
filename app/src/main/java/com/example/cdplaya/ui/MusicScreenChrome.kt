@@ -30,6 +30,7 @@ import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.library.LibrarySearchBar
 import com.example.cdplaya.ui.library.LibrarySortDropdown
 import com.example.cdplaya.ui.library.LibrarySortOption
+import com.example.cdplaya.ui.library.SongRatingFilterDropdown
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.player.PlayerCard
 import com.example.cdplaya.ui.player.PlayerMorphState
@@ -246,7 +247,8 @@ fun LibrarySortAction(
     onSongSortOptionSelected: (LibrarySortOption) -> Unit,
     onArtistSortOptionSelected: (LibrarySortOption) -> Unit,
     onAlbumSortOptionSelected: (LibrarySortOption) -> Unit,
-    onFavoriteSortOptionSelected: (LibrarySortOption) -> Unit
+    onFavoriteSortOptionSelected: (LibrarySortOption) -> Unit,
+    ratingFeaturesEnabled: Boolean = true
 ) {
     val shouldShowSortDropdown =
         selectedLibraryTab == LibraryTab.SONGS ||
@@ -257,7 +259,9 @@ fun LibrarySortAction(
 
     if (shouldShowSortDropdown) {
         val selectedSortOption = when (selectedLibraryTab) {
-            LibraryTab.SONGS -> selectedSongSortOption
+            LibraryTab.SONGS -> if (
+                !ratingFeaturesEnabled && selectedSongSortOption == LibrarySortOption.RATING
+            ) LibrarySortOption.TITLE else selectedSongSortOption
             LibraryTab.FAVORITES -> selectedFavoriteSortOption
             LibraryTab.RECENTLY_ADDED -> LibrarySortOption.DATE_ADDED
             LibraryTab.ARTISTS -> selectedArtistSortOption
@@ -269,7 +273,14 @@ fun LibrarySortAction(
         }
 
         val availableSortOptions = when (selectedLibraryTab) {
-            LibraryTab.SONGS,
+            LibraryTab.SONGS -> listOfNotNull(
+                LibrarySortOption.TITLE,
+                LibrarySortOption.ARTIST,
+                LibrarySortOption.ALBUM,
+                LibrarySortOption.DATE_ADDED,
+                LibrarySortOption.RATING.takeIf { ratingFeaturesEnabled }
+            )
+
             LibraryTab.FAVORITES -> listOf(
                 LibrarySortOption.TITLE,
                 LibrarySortOption.ARTIST,
@@ -295,10 +306,7 @@ fun LibrarySortAction(
             LibraryTab.QUEUE -> emptyList()
         }
 
-        LibrarySortDropdown(
-            selectedOption = selectedSortOption,
-            options = availableSortOptions,
-            onOptionSelected = { option ->
+        val onOptionSelected: (LibrarySortOption) -> Unit = { option ->
                 when (selectedLibraryTab) {
                     LibraryTab.SONGS -> onSongSortOptionSelected(option)
                     LibraryTab.FAVORITES -> onFavoriteSortOptionSelected(option)
@@ -310,7 +318,22 @@ fun LibrarySortAction(
                     LibraryTab.MOST_PLAYED -> Unit
                     LibraryTab.QUEUE -> Unit
                 }
+        }
+        if (selectedLibraryTab == LibraryTab.SONGS && ratingFeaturesEnabled) {
+            Row {
+                SongRatingFilterDropdown()
+                LibrarySortDropdown(
+                    selectedOption = selectedSortOption,
+                    options = availableSortOptions,
+                    onOptionSelected = onOptionSelected
+                )
             }
-        )
+        } else {
+            LibrarySortDropdown(
+                selectedOption = selectedSortOption,
+                options = availableSortOptions,
+                onOptionSelected = onOptionSelected
+            )
+        }
     }
 }

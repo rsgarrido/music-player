@@ -465,7 +465,8 @@ internal fun MusicScreenBody(
                                     onSongSortOptionSelected = onSongSortOptionSelected,
                                     onArtistSortOptionSelected = onArtistSortOptionSelected,
                                     onAlbumSortOptionSelected = onAlbumSortOptionSelected,
-                                    onFavoriteSortOptionSelected = onFavoriteSortOptionSelected
+                                    onFavoriteSortOptionSelected = onFavoriteSortOptionSelected,
+                                    ratingFeaturesEnabled = !isSearchDestination
                                 )
                             }
                         )
@@ -569,6 +570,7 @@ internal fun MusicScreenBody(
                                     onMovePlaylistSongDownClick = onMovePlaylistSongDownClick,
                                     onAddSongsToPlaylistClick = onAddSongsToPlaylistClick,
                                     onEditSongTagsClick = onEditSongTagsClick,
+                                    ratingFeaturesEnabled = !isSearchDestination,
                                     recentlyPlayedSongs = recentlyPlayedSongs,
                                     recentlyAddedSongs = recentlyAddedLibrarySongs,
                                     mostPlayedSongs = mostPlayedSongs,

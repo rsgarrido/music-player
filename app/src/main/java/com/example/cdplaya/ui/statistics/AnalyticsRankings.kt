@@ -32,6 +32,8 @@ import com.example.cdplaya.data.AlbumListeningStats
 import com.example.cdplaya.data.ArtistListeningStats
 import com.example.cdplaya.data.ListeningRankingCategory
 import com.example.cdplaya.data.TrackListeningStats
+import com.example.cdplaya.ui.ratings.CompactRatingIndicator
+import com.example.cdplaya.ui.ratings.LocalSongRatingUi
 
 @Composable
 internal fun TopListeningHeader(
@@ -93,12 +95,15 @@ internal fun TrackRankingRow(
     stats: TrackListeningStats,
     modifier: Modifier = Modifier
 ) {
+    val rating = LocalSongRatingUi.current.state
+        .ratingsByTrackIdentityId[stats.trackIdentityId]
     RankingRow(
         rank = rank,
         primary = stats.title,
         secondary = stringResource(R.string.statistics_rankings_track_metadata, stats.artist, stats.album),
         playCount = stats.playCounts.totalPlayCount,
         recordedMs = stats.confirmedDetailedListeningMs,
+        rating = rating,
         modifier = modifier
     )
 }
@@ -142,6 +147,7 @@ private fun RankingRow(
     secondary: String?,
     playCount: Long,
     recordedMs: Long,
+    rating: Int? = null,
     modifier: Modifier = Modifier
 ) {
     val plays = pluralStringResource(
@@ -203,6 +209,9 @@ private fun RankingRow(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                    }
+                    rating?.let { value ->
+                        CompactRatingIndicator(rating = value, iconFirst = true)
                     }
                     if (stackedMetrics) {
                         Row(
