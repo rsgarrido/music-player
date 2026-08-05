@@ -72,6 +72,7 @@ fun MusicLibraryContent(
     recentlyPlayedSongs: List<Song>,
     recentlyAddedSongs: List<Song>,
     mostPlayedSongs: List<Song>,
+    ratingFeaturesEnabled: Boolean = true,
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
@@ -92,6 +93,7 @@ fun MusicLibraryContent(
                 onToggleFavoriteClick = onToggleFavoriteClick,
                 onAddToPlaylistClick = onAddToPlaylistClick,
                 onEditSongTagsClick = onEditSongTagsClick,
+                ratingFeaturesEnabled = ratingFeaturesEnabled,
                 bottomContentPadding = bottomContentPadding,
                 modifier = modifier
             )

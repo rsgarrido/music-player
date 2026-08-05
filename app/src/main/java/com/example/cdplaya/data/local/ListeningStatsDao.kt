@@ -91,6 +91,21 @@ data class RecentListeningEventRow(
     val playbackSessionId: String?
 )
 
+data class DetailedListeningEventBoundsRow(
+    val earliestStartedAt: Long?,
+    val latestStartedAt: Long?
+)
+
+data class ListeningTrendBucketRow(
+    val bucketIndex: Int,
+    val startInclusive: Long,
+    val endExclusive: Long,
+    val listenedMs: Long,
+    val qualifiedPlayCount: Long,
+    val totalAttemptCount: Long,
+    val naturalCompletionCount: Long
+)
+
 @Dao
 interface ListeningStatsDao {
     @RawQuery
@@ -107,6 +122,12 @@ interface ListeningStatsDao {
 
     @RawQuery
     suspend fun getRecentEvents(query: SupportSQLiteQuery): List<RecentListeningEventRow>
+
+    @RawQuery
+    suspend fun getDetailedEventBounds(query: SupportSQLiteQuery): DetailedListeningEventBoundsRow
+
+    @RawQuery
+    suspend fun getTrendBuckets(query: SupportSQLiteQuery): List<ListeningTrendBucketRow>
 
     @Query(
         """

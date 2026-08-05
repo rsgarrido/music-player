@@ -9,10 +9,36 @@ import com.example.cdplaya.data.local.ListeningQualificationReason
 import com.example.cdplaya.data.local.ListeningSource
 import com.example.cdplaya.data.local.ListeningTrackIdentityEntity
 import com.example.cdplaya.data.local.LocalTrackBindingEntity
+import com.example.cdplaya.data.local.SongRatingEntity
+
+data class CanonicalHistoryAndRatingsBackup(
+    val history: BackupListeningHistoryV2,
+    val ratings: BackupSongRatings
+)
 
 class ListeningHistoryBackupRepository(
     private val database: AppDatabase
 ) {
+    suspend fun exportWithRatings(): CanonicalHistoryAndRatingsBackup = database.withTransaction {
+        val history = export()
+        val exportedIdentityIds = history.identities.mapTo(HashSet()) { it.backupIdentityId }
+        val entries = database.songRatingDao().getAllForBackup().map { entity ->
+            require(entity.trackIdentityId in exportedIdentityIds) {
+                "A song rating references an identity absent from canonical history export."
+            }
+            BackupSongRating(
+                trackIdentityBackupId = entity.trackIdentityId,
+                rating = entity.rating,
+                ratedAt = entity.ratedAt,
+                updatedAt = entity.updatedAt
+            )
+        }
+        CanonicalHistoryAndRatingsBackup(
+            history = history,
+            ratings = BackupSongRatings(entries = entries)
+        )
+    }
+
     suspend fun export(): BackupListeningHistoryV2 = database.withTransaction {
         val identities = database.listeningTrackIdentityDao().getAll().map { entity ->
             BackupListeningTrackIdentity(
@@ -86,7 +112,9 @@ class ListeningHistoryBackupRepository(
         }
     }
 
-    suspend fun restoreValidatedWithinTransaction(history: BackupListeningHistoryV2) {
+    suspend fun restoreValidatedWithinTransaction(
+        history: BackupListeningHistoryV2
+    ): Map<Long, Long> {
         database.listeningEventDao().deleteAll()
         database.legacyListeningBaselineDao().deleteAll()
         database.localTrackBindingDao().deleteAll()
@@ -172,6 +200,24 @@ class ListeningHistoryBackupRepository(
                     sourceEventKey = backup.sourceEventKey,
                     importBatchId = backup.importBatchId,
                     createdAt = backup.createdAt
+                )
+            })
+        }
+        return identityIds
+    }
+
+    suspend fun restoreRatingsValidatedWithinTransaction(
+        ratings: BackupSongRatings,
+        identityIds: Map<Long, Long>
+    ) {
+        database.songRatingDao().deleteAll()
+        ratings.entries.chunked(RESTORE_BATCH_SIZE).forEach { batch ->
+            database.songRatingDao().insert(batch.map { backup ->
+                SongRatingEntity(
+                    trackIdentityId = identityIds.getValue(backup.trackIdentityBackupId),
+                    rating = backup.rating,
+                    ratedAt = backup.ratedAt,
+                    updatedAt = backup.updatedAt
                 )
             })
         }

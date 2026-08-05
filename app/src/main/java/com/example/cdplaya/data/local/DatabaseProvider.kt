@@ -29,7 +29,8 @@ object DatabaseProvider {
                     MIGRATION_5_6,
                     MIGRATION_6_7,
                     MIGRATION_7_8,
-                    MIGRATION_8_9
+                    MIGRATION_8_9,
+                    MIGRATION_9_10
                 )
                 .build()
                 .also { database ->
@@ -467,6 +468,26 @@ object DatabaseProvider {
                     )
                 }
             }
+        }
+    }
+
+    val MIGRATION_9_10 = object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `song_ratings` (
+                    `trackIdentityId` INTEGER NOT NULL,
+                    `rating` INTEGER NOT NULL,
+                    `ratedAt` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`trackIdentityId`),
+                    FOREIGN KEY(`trackIdentityId`) REFERENCES `listening_track_identities`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            db.execSQL(
+                "CREATE INDEX IF NOT EXISTS `index_song_ratings_rating` ON `song_ratings` (`rating`)"
+            )
         }
     }
 

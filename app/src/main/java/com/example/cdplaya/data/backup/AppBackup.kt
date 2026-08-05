@@ -11,6 +11,7 @@ data class AppBackup(
     val playlists: List<BackupPlaylist> = emptyList(),
     val listeningHistory: List<BackupListeningHistoryEntry> = emptyList(),
     val canonicalListeningHistory: BackupListeningHistoryV2? = null,
+    val songRatings: BackupSongRatings = BackupSongRatings(),
     val preferences: BackupPreferences = BackupPreferences()
 )
 
@@ -226,6 +227,24 @@ data class BackupListeningHistorySummary(
     val nonQualifiedEventCount: Long = 0,
     val earliestDetailedEventAt: Long? = null,
     val latestDetailedEventAt: Long? = null
+)
+
+@Serializable
+data class BackupSongRatings(
+    val formatVersion: Int = CURRENT_FORMAT_VERSION,
+    val entries: List<BackupSongRating> = emptyList()
+) {
+    companion object {
+        const val CURRENT_FORMAT_VERSION = 1
+    }
+}
+
+@Serializable
+data class BackupSongRating(
+    val trackIdentityBackupId: Long,
+    val rating: Int,
+    val ratedAt: Long,
+    val updatedAt: Long
 )
 
 @Serializable

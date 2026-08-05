@@ -85,7 +85,8 @@ enum class MusicPrimaryDestination {
     FOLDERS,
     SETTINGS,
     DIAGNOSTICS,
-    EQUALIZER
+    EQUALIZER,
+    STATISTICS
 }
 enum class MusicOverlayDestination { UP_NEXT, CREATE_PLAYLIST, SLEEP_TIMER }
 
@@ -101,6 +102,8 @@ class MusicOverlayState internal constructor(
         destinationState(primaryDestination, MusicPrimaryDestination.DIAGNOSTICS)
     val isEqualizerScreenVisible =
         destinationState(primaryDestination, MusicPrimaryDestination.EQUALIZER)
+    val isStatisticsScreenVisible =
+        destinationState(primaryDestination, MusicPrimaryDestination.STATISTICS)
     val isExpandedUpNextSheetVisible =
         destinationState(transientDestination, MusicOverlayDestination.UP_NEXT)
     val isCreatePlaylistDialogVisible =

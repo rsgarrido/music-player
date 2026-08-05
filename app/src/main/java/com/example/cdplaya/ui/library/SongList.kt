@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -37,6 +39,9 @@ import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.AppShellAccent
 import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.ui.getDisplayTrackNumber
+import com.example.cdplaya.R as AppR
+import com.example.cdplaya.ui.ratings.CompactRatingIndicator
+import com.example.cdplaya.ui.ratings.LocalSongRatingUi
 
 @Composable
 fun SongList(
@@ -53,11 +58,14 @@ fun SongList(
     modifier: Modifier = Modifier,
     showAlbumName: Boolean = false,
     showTrackNumbers: Boolean = false,
-    bottomContentPadding: Dp = 0.dp
+    bottomContentPadding: Dp = 0.dp,
+    ratingValuesByReferenceKey: Map<String, Int> = emptyMap()
 ) {
     var actionSheetTarget by remember {
         mutableStateOf<LibraryItemActionSheetTarget?>(null)
     }
+    val ratingUi = LocalSongRatingUi.current
+    val rateSongLabel = stringResource(AppR.string.rate_song)
 
     LazyColumn(
         modifier = modifier,
@@ -70,6 +78,7 @@ fun SongList(
             val isCurrentSong = song.id == currentSongId
             val wasRecentlyAdded = song.id in recentlyAddedSongIds
             val isFavorite = song.membershipKey() in favoriteMembershipKeys
+            val rating = ratingValuesByReferenceKey[song.membershipKey()]
 
             ListItem(
                 leadingContent = {
@@ -111,6 +120,9 @@ fun SongList(
                         }
                     )
                 },
+                trailingContent = rating?.let { value ->
+                    { CompactRatingIndicator(rating = value) }
+                },
                 colors = ListItemDefaults.colors(
                     containerColor = if (isCurrentSong) {
                         AppShellAccent.copy(alpha = 0.16f)
@@ -139,7 +151,9 @@ fun SongList(
                             onAddToQueueClick = onAddToQueueClick,
                             onToggleFavoriteClick = onToggleFavoriteClick,
                             onAddToPlaylistClick = onAddToPlaylistClick,
-                            onEditSongTagsClick = onEditSongTagsClick
+                            onEditSongTagsClick = onEditSongTagsClick,
+                            rateSongLabel = rateSongLabel,
+                            onRateSongClick = ratingUi.onOpen
                         )
                     }
                     )
@@ -165,7 +179,9 @@ internal fun songActionSheetTarget(
     onAddToQueueClick: (Song) -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
-    onEditSongTagsClick: (Song) -> Unit
+    onEditSongTagsClick: (Song) -> Unit,
+    rateSongLabel: String,
+    onRateSongClick: (Song) -> Unit
 ): LibraryItemActionSheetTarget {
     val artist = song.artist.ifBlank { "Unknown Artist" }
     val album = song.album.ifBlank { "Unknown Album" }
@@ -199,6 +215,11 @@ internal fun songActionSheetTarget(
                 },
                 icon = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                 onClick = { onToggleFavoriteClick(song) }
+            ),
+            LibraryItemAction(
+                label = rateSongLabel,
+                icon = Icons.Filled.Star,
+                onClick = { onRateSongClick(song) }
             ),
             LibraryItemAction(
                 label = "Add to playlist",

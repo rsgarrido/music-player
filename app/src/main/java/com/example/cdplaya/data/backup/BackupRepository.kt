@@ -49,6 +49,7 @@ class BackupRepository(
 
     suspend fun createBackup(): AppBackup = withContext(Dispatchers.IO) {
         val appPreferences = appPreferencesRepository.awaitLoadedState()
+        val canonical = canonicalHistoryRepository.exportWithRatings()
         AppBackup(
             schemaVersion = AppBackupJson.CURRENT_SCHEMA_VERSION,
             createdAt = System.currentTimeMillis(),
@@ -56,7 +57,8 @@ class BackupRepository(
             favorites = favoritesRepository.getFavoritesForBackup(),
             playlists = playlistsRepository.getPlaylistsForBackup(),
             listeningHistory = emptyList(),
-            canonicalListeningHistory = canonicalHistoryRepository.export(),
+            canonicalListeningHistory = canonical.history,
+            songRatings = canonical.ratings,
             preferences = BackupPreferences(
                 folderSelectionMode = appPreferences.folderSelectionMode.name,
                 selectedLibraryFolders = appPreferences.selectedLibraryFolders
@@ -113,14 +115,23 @@ class BackupRepository(
             val validatedHistory = ListeningHistoryBackupValidator.validate(
                 backup.requiredCanonicalListeningHistory()
             )
+            val validatedRatings = SongRatingBackupValidator.validate(
+                backup.songRatings,
+                validatedHistory
+            )
 
             appDatabase.withTransaction {
+                val restoredIdentityIds =
+                    canonicalHistoryRepository.restoreValidatedWithinTransaction(validatedHistory)
+                canonicalHistoryRepository.restoreRatingsValidatedWithinTransaction(
+                    validatedRatings,
+                    restoredIdentityIds
+                )
                 favoritesRepository.restoreFavoritesFromBackup(backup.favorites)
                 playlistsRepository.restorePlaylistsFromBackup(backup.playlists)
                 listeningHistoryRepository.restoreListeningHistoryFromBackup(
                     backup.listeningHistory
                 )
-                canonicalHistoryRepository.restoreValidatedWithinTransaction(validatedHistory)
             }
             restorePreferences(backup.preferences)
 
@@ -387,5 +398,5 @@ private fun Long.toDisplayCount(): Int = coerceAtMost(Int.MAX_VALUE.toLong()).to
 
 private fun AppBackup.requiredCanonicalListeningHistory(): BackupListeningHistoryV2 =
     requireNotNull(canonicalListeningHistory) {
-        "CDPlaya backup schema 7 requires canonical listening history."
+        "CDPlaya backup schema 8 requires canonical listening history."
     }

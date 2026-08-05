@@ -2,6 +2,7 @@ package com.example.cdplaya.ui
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
@@ -14,6 +15,9 @@ import com.example.cdplaya.ui.settings.rememberBackupRestoreActions
 import com.example.cdplaya.ui.equalizer.EqualizerUiActions
 import com.example.cdplaya.ui.equalizer.rememberEqualizerProfilePlatformActions
 import com.example.cdplaya.mediaaccess.MediaAccessState
+import com.example.cdplaya.ui.ratings.LocalSongRatingUi
+import com.example.cdplaya.ui.ratings.SongRatingDialog
+import com.example.cdplaya.ui.ratings.SongRatingUiEnvironment
 
 @Composable
 internal fun MusicRoute(
@@ -41,6 +45,10 @@ internal fun MusicRoute(
         .collectAsStateWithLifecycle()
     val lyricsPlaybackUiState by
     musicViewModel.lyricsPlaybackUiState.collectAsStateWithLifecycle()
+    val listeningAnalyticsUiState by
+    musicViewModel.listeningAnalyticsUiState.collectAsStateWithLifecycle()
+    val songRatingUiState by
+    musicViewModel.songRatingUiState.collectAsStateWithLifecycle()
     if (!playerAppearanceUiState.isLoaded || !libraryAppearanceUiState.isLoaded) return
     val playlistExportActions = rememberPlaylistExportActions(
         snackbarHostState = snackbarHostState,
@@ -71,6 +79,18 @@ internal fun MusicRoute(
                 musicViewModel::openEqualizerImportPreview
         )
 
+    CompositionLocalProvider(
+        LocalSongRatingUi provides SongRatingUiEnvironment(
+            state = songRatingUiState,
+            filter = libraryUiState.songRatingFilter,
+            onOpen = musicViewModel::openSongRating,
+            onClose = musicViewModel::closeSongRating,
+            onSelectRating = musicViewModel::selectSongRating,
+            onSave = musicViewModel::saveSongRating,
+            onClear = musicViewModel::clearSongRating,
+            onFilterSelected = musicViewModel::selectSongRatingFilter
+        )
+    ) {
     MusicScreen(
         songs = libraryUiState.songs,
         recentlyPlayedSongs = libraryUiState.recentlyPlayedSongs,
@@ -368,5 +388,25 @@ internal fun MusicRoute(
         onWriteTagsAndArtwork = musicViewModel::writeTagsAndArtwork,
         libraryAppearanceUiState = libraryAppearanceUiState,
         onLibraryViewOptionSelected = musicViewModel::selectLibraryViewOption,
+        listeningAnalyticsUiState = listeningAnalyticsUiState,
+        onListeningAnalyticsActiveChanged = musicViewModel::setListeningAnalyticsActive,
+        onListeningAnalyticsPresetSelected = musicViewModel::selectListeningAnalyticsPreset,
+        onListeningAnalyticsCustomRangeSelected =
+            musicViewModel::selectListeningAnalyticsCustomRange,
+        onRetryListeningAnalytics = musicViewModel::retryListeningAnalytics,
+        onListeningAnalyticsTrendMetricSelected =
+            musicViewModel::selectListeningAnalyticsTrendMetric,
+        onListeningAnalyticsRankingCategorySelected =
+            musicViewModel::selectListeningAnalyticsRankingCategory,
     )
+    songRatingUiState.dialog?.let { dialog ->
+        SongRatingDialog(
+            state = dialog,
+            onDismiss = musicViewModel::closeSongRating,
+            onRatingSelected = musicViewModel::selectSongRating,
+            onSave = musicViewModel::saveSongRating,
+            onClear = musicViewModel::clearSongRating
+        )
+    }
+    }
 }

@@ -30,6 +30,7 @@ import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.ui.library.LibrarySearchBar
 import com.example.cdplaya.ui.library.LibrarySortDropdown
 import com.example.cdplaya.ui.library.LibrarySortOption
+import com.example.cdplaya.ui.library.SongRatingFilterDropdown
 import com.example.cdplaya.ui.library.LibraryTab
 import com.example.cdplaya.ui.player.PlayerCard
 import com.example.cdplaya.ui.player.PlayerMorphState
@@ -46,8 +47,9 @@ import com.example.cdplaya.ui.player.theme.PlayerThemeTokens
 fun MusicScreenHeader(
     title: String = "CDPlaya",
     onBackClick: (() -> Unit)? = null,
-    onSettingsClick: () -> Unit,
+    onSettingsClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
+    backContentDescription: String = "Back to Home",
     viewModeAction: (@Composable () -> Unit)? = null,
     sortAction: (@Composable () -> Unit)? = null
 ) {
@@ -66,7 +68,7 @@ fun MusicScreenHeader(
                 AppShellIconButton(
                     onClick = onBackClick,
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back to Home"
+                    contentDescription = backContentDescription
                 )
             }
 
@@ -87,11 +89,13 @@ fun MusicScreenHeader(
 
             sortAction?.invoke()
 
-            AppShellIconButton(
-                onClick = onSettingsClick,
-                imageVector = Icons.Rounded.Settings,
-                contentDescription = "Settings"
-            )
+            if (onSettingsClick != null) {
+                AppShellIconButton(
+                    onClick = onSettingsClick,
+                    imageVector = Icons.Rounded.Settings,
+                    contentDescription = "Settings"
+                )
+            }
         }
     }
 }
@@ -106,7 +110,7 @@ fun AppShellIconButton(
 ) {
     Surface(
         onClick = onClick,
-        modifier = modifier.size(40.dp),
+        modifier = modifier.size(48.dp),
         shape = RoundedCornerShape(14.dp),
         color = if (accented) {
             AppShellAccent.copy(alpha = 0.15f)
@@ -243,7 +247,8 @@ fun LibrarySortAction(
     onSongSortOptionSelected: (LibrarySortOption) -> Unit,
     onArtistSortOptionSelected: (LibrarySortOption) -> Unit,
     onAlbumSortOptionSelected: (LibrarySortOption) -> Unit,
-    onFavoriteSortOptionSelected: (LibrarySortOption) -> Unit
+    onFavoriteSortOptionSelected: (LibrarySortOption) -> Unit,
+    ratingFeaturesEnabled: Boolean = true
 ) {
     val shouldShowSortDropdown =
         selectedLibraryTab == LibraryTab.SONGS ||
@@ -254,7 +259,9 @@ fun LibrarySortAction(
 
     if (shouldShowSortDropdown) {
         val selectedSortOption = when (selectedLibraryTab) {
-            LibraryTab.SONGS -> selectedSongSortOption
+            LibraryTab.SONGS -> if (
+                !ratingFeaturesEnabled && selectedSongSortOption == LibrarySortOption.RATING
+            ) LibrarySortOption.TITLE else selectedSongSortOption
             LibraryTab.FAVORITES -> selectedFavoriteSortOption
             LibraryTab.RECENTLY_ADDED -> LibrarySortOption.DATE_ADDED
             LibraryTab.ARTISTS -> selectedArtistSortOption
@@ -266,7 +273,14 @@ fun LibrarySortAction(
         }
 
         val availableSortOptions = when (selectedLibraryTab) {
-            LibraryTab.SONGS,
+            LibraryTab.SONGS -> listOfNotNull(
+                LibrarySortOption.TITLE,
+                LibrarySortOption.ARTIST,
+                LibrarySortOption.ALBUM,
+                LibrarySortOption.DATE_ADDED,
+                LibrarySortOption.RATING.takeIf { ratingFeaturesEnabled }
+            )
+
             LibraryTab.FAVORITES -> listOf(
                 LibrarySortOption.TITLE,
                 LibrarySortOption.ARTIST,
@@ -292,10 +306,7 @@ fun LibrarySortAction(
             LibraryTab.QUEUE -> emptyList()
         }
 
-        LibrarySortDropdown(
-            selectedOption = selectedSortOption,
-            options = availableSortOptions,
-            onOptionSelected = { option ->
+        val onOptionSelected: (LibrarySortOption) -> Unit = { option ->
                 when (selectedLibraryTab) {
                     LibraryTab.SONGS -> onSongSortOptionSelected(option)
                     LibraryTab.FAVORITES -> onFavoriteSortOptionSelected(option)
@@ -307,7 +318,22 @@ fun LibrarySortAction(
                     LibraryTab.MOST_PLAYED -> Unit
                     LibraryTab.QUEUE -> Unit
                 }
+        }
+        if (selectedLibraryTab == LibraryTab.SONGS && ratingFeaturesEnabled) {
+            Row {
+                SongRatingFilterDropdown()
+                LibrarySortDropdown(
+                    selectedOption = selectedSortOption,
+                    options = availableSortOptions,
+                    onOptionSelected = onOptionSelected
+                )
             }
-        )
+        } else {
+            LibrarySortDropdown(
+                selectedOption = selectedSortOption,
+                options = availableSortOptions,
+                onOptionSelected = onOptionSelected
+            )
+        }
     }
 }

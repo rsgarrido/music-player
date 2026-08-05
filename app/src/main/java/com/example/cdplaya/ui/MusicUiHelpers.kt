@@ -3,6 +3,8 @@ package com.example.cdplaya.ui
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.ui.library.LibrarySortOption
 import com.example.cdplaya.data.sortSongsByDateAddedDescending
+import com.example.cdplaya.data.membershipKey
+import com.example.cdplaya.ui.library.SongRatingFilter
 
 fun filterSongsForSearch(
     songs: List<Song>,
@@ -107,7 +109,8 @@ fun formatDuration(milliseconds: Int): String {
 
 fun sortSongsForLibrary(
     songs: List<Song>,
-    sortOption: LibrarySortOption
+    sortOption: LibrarySortOption,
+    ratingsByReferenceKey: Map<String, Int> = emptyMap()
 ): List<Song> {
     return when (sortOption) {
         LibrarySortOption.TITLE,
@@ -149,11 +152,32 @@ fun sortSongsForLibrary(
             )
         }
 
+        LibrarySortOption.RATING -> songs.sortedWith(
+            compareByDescending<Song> { song ->
+                ratingsByReferenceKey[song.membershipKey()] ?: Int.MIN_VALUE
+            }.thenBy { song -> song.title.trim().lowercase() }
+                .thenBy { song -> song.membershipKey() }
+        )
+
         LibrarySortOption.SONG_COUNT -> {
             songs
         }
 
         LibrarySortOption.DATE_ADDED -> sortSongsByDateAddedDescending(songs)
+    }
+}
+
+fun filterSongsByRating(
+    songs: List<Song>,
+    filter: SongRatingFilter,
+    ratingsByReferenceKey: Map<String, Int>
+): List<Song> = when (filter) {
+    SongRatingFilter.ALL -> songs
+    SongRatingFilter.RATED -> songs.filter { song ->
+        ratingsByReferenceKey[song.membershipKey()] in 1..5
+    }
+    SongRatingFilter.UNRATED -> songs.filter { song ->
+        ratingsByReferenceKey[song.membershipKey()] !in 1..5
     }
 }
 

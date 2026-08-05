@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.unit.Dp
@@ -19,6 +20,9 @@ import com.example.cdplaya.ui.filterSongsForSearch
 import com.example.cdplaya.ui.sortSongsByAlbumOrder
 import com.example.cdplaya.ui.sortSongsForArtistDetail
 import com.example.cdplaya.ui.sortSongsForLibrary
+import com.example.cdplaya.ui.filterSongsByRating
+import com.example.cdplaya.ui.ratings.LocalSongRatingUi
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun SongsTabContent(
@@ -36,18 +40,49 @@ fun SongsTabContent(
     onToggleFavoriteClick: (Song) -> Unit,
     onAddToPlaylistClick: (Song) -> Unit,
     onEditSongTagsClick: (Song) -> Unit,
+    ratingFeaturesEnabled: Boolean = true,
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
-    val filteredSongs = filterSongsForSearch(
-        songs = songs,
-        searchQuery = searchQuery
-    )
+    val ratingUi = LocalSongRatingUi.current
+    val ratingUiState = ratingUi.state
+    val filteredSongs = remember(songs, searchQuery) {
+        filterSongsForSearch(
+            songs = songs,
+            searchQuery = searchQuery
+        )
+    }
 
-    val displayedSongs = sortSongsForLibrary(
-        songs = filteredSongs,
-        sortOption = sortOption
-    )
+    val activeRatings = if (ratingFeaturesEnabled) {
+        ratingUiState.ratingsByReferenceKey
+    } else {
+        emptyMap()
+    }
+    val activeFilter = if (ratingFeaturesEnabled) {
+        ratingUi.filter
+    } else {
+        SongRatingFilter.ALL
+    }
+    val effectiveSortOption = if (!ratingFeaturesEnabled && sortOption == LibrarySortOption.RATING) {
+        LibrarySortOption.TITLE
+    } else {
+        sortOption
+    }
+    val ratingFilteredSongs = remember(filteredSongs, activeFilter, activeRatings) {
+        filterSongsByRating(
+            songs = filteredSongs,
+            filter = activeFilter,
+            ratingsByReferenceKey = activeRatings
+        )
+    }
+
+    val displayedSongs = remember(ratingFilteredSongs, effectiveSortOption, activeRatings) {
+        sortSongsForLibrary(
+            songs = ratingFilteredSongs,
+            sortOption = effectiveSortOption,
+            ratingsByReferenceKey = activeRatings
+        )
+    }
 
     if (songs.isEmpty()) {
         Text(
@@ -57,6 +92,11 @@ fun SongsTabContent(
     } else if (filteredSongs.isEmpty()) {
         Text(
             text = "No songs match your search.",
+            modifier = Modifier.padding(16.dp)
+        )
+    } else if (ratingFilteredSongs.isEmpty()) {
+        Text(
+            text = stringResource(R.string.rating_filter_empty),
             modifier = Modifier.padding(16.dp)
         )
     } else {
@@ -76,6 +116,7 @@ fun SongsTabContent(
                     onAddToPlaylistClick = onAddToPlaylistClick,
                     onEditSongTagsClick = onEditSongTagsClick,
                     bottomContentPadding = bottomContentPadding,
+                    ratingValuesByReferenceKey = activeRatings,
                     modifier = Modifier.fillMaxSize()
                 )
             },
@@ -93,7 +134,8 @@ fun SongsTabContent(
                     onAddToPlaylistClick = onAddToPlaylistClick,
                     onEditSongTagsClick = onEditSongTagsClick,
                     bottomContentPadding = bottomContentPadding,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    ratingValuesByReferenceKey = activeRatings
                 )
             }
         )

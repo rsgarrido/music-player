@@ -6,6 +6,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cdplaya.controller.LibraryController
+import com.example.cdplaya.controller.SongRatingUiController
+import com.example.cdplaya.controller.ListeningAnalyticsController
 import com.example.cdplaya.controller.SleepTimerController
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.EditableSongTags
@@ -14,6 +16,14 @@ import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.TagEditorRepository
 import com.example.cdplaya.data.TagEditorResult
 import com.example.cdplaya.data.PlayerTheme
+import com.example.cdplaya.data.AnalyticsRangePreset
+import com.example.cdplaya.data.AnalyticsRangeSelection
+import com.example.cdplaya.data.AnalyticsZoneIdProvider
+import com.example.cdplaya.data.ListeningAnalyticsRangeResolver
+import com.example.cdplaya.data.ListeningStatsRepository
+import com.example.cdplaya.data.SongRatingRepository
+import com.example.cdplaya.data.ListeningTrendMetric
+import com.example.cdplaya.data.ListeningRankingCategory
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.data.backup.AppBackup
 import com.example.cdplaya.data.backup.BackupExportResult
@@ -51,12 +61,16 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.collectLatest
+import java.time.Clock
+import java.time.LocalDate
+import java.time.ZoneId
 import com.example.cdplaya.ui.state.LibraryAppearanceUiState
 import com.example.cdplaya.ui.state.LibraryCategoryAppearance
 import com.example.cdplaya.ui.state.PlayerAppearanceUiState
 import com.example.cdplaya.ui.state.category
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewOption
+import com.example.cdplaya.ui.library.SongRatingFilter
 import com.example.cdplaya.ui.library.viewCategory
 import com.example.cdplaya.ui.player.theme.applyOverrides
 import com.example.cdplaya.ui.player.theme.defaultTokens
@@ -71,6 +85,55 @@ class MusicViewModel(
 
     private val appPreferencesRepository = AppPreferencesRepository.getInstance(appContext)
     private val tagEditorRepository = TagEditorRepository()
+    private val listeningAnalyticsController = ListeningAnalyticsController(
+        repository = ListeningStatsRepository(appDatabase),
+        rangeResolver = ListeningAnalyticsRangeResolver(
+            clock = Clock.systemUTC(),
+            zoneIdProvider = AnalyticsZoneIdProvider(ZoneId::systemDefault)
+        ),
+        scope = viewModelScope
+    )
+    val listeningAnalyticsUiState = listeningAnalyticsController.state
+
+    private val songRatingUiController = SongRatingUiController(
+        repository = SongRatingRepository(appDatabase),
+        scope = viewModelScope
+    )
+    val songRatingUiState = songRatingUiController.state
+
+    fun openSongRating(song: Song) = songRatingUiController.open(song)
+    fun closeSongRating() = songRatingUiController.close()
+    fun selectSongRating(value: Int) = songRatingUiController.selectRating(value)
+    fun saveSongRating() = songRatingUiController.save()
+    fun clearSongRating() = songRatingUiController.clear()
+    fun selectSongRatingFilter(filter: SongRatingFilter) =
+        libraryController.selectSongRatingFilter(filter)
+
+    fun setListeningAnalyticsActive(active: Boolean) {
+        listeningAnalyticsController.setActive(active)
+    }
+
+    fun selectListeningAnalyticsPreset(preset: AnalyticsRangePreset) {
+        listeningAnalyticsController.selectRange(AnalyticsRangeSelection.Preset(preset))
+    }
+
+    fun selectListeningAnalyticsCustomRange(startDate: LocalDate, endDateInclusive: LocalDate) {
+        listeningAnalyticsController.selectRange(
+            AnalyticsRangeSelection.Custom(startDate, endDateInclusive)
+        )
+    }
+
+    fun retryListeningAnalytics() {
+        listeningAnalyticsController.retry()
+    }
+
+    fun selectListeningAnalyticsTrendMetric(metric: ListeningTrendMetric) {
+        listeningAnalyticsController.selectTrendMetric(metric)
+    }
+
+    fun selectListeningAnalyticsRankingCategory(category: ListeningRankingCategory) {
+        listeningAnalyticsController.selectRankingCategory(category)
+    }
 
     val playerAppearanceUiState = appPreferencesRepository.state.map { preferences ->
         val selectedTheme = preferences.selectedPlayerTheme
@@ -770,6 +833,7 @@ class MusicViewModel(
     }
 
     override fun onCleared() {
+        listeningAnalyticsController.release()
         equalizerUiController.release()
         playbackController.release()
         sleepTimerController.release()
