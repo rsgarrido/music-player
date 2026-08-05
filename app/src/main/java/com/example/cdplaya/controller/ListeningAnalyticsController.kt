@@ -4,6 +4,7 @@ import com.example.cdplaya.data.AnalyticsRangeSelection
 import com.example.cdplaya.data.ListeningAnalyticsDataSource
 import com.example.cdplaya.data.ListeningAnalyticsRangeResolver
 import com.example.cdplaya.data.ListeningAnalyticsSnapshot
+import com.example.cdplaya.data.ListeningRankingCategory
 import com.example.cdplaya.data.ListeningTrendMetric
 import com.example.cdplaya.data.local.ListeningSource
 import com.example.cdplaya.ui.state.ListeningAnalyticsError
@@ -97,6 +98,10 @@ class ListeningAnalyticsController(
 
     fun selectTrendMetric(metric: ListeningTrendMetric) {
         _state.update { it.copy(trendMetric = metric) }
+    }
+
+    fun selectRankingCategory(category: ListeningRankingCategory) {
+        _state.update { it.copy(rankingCategory = category) }
     }
 
     fun release() {

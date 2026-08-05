@@ -83,6 +83,8 @@ import com.example.cdplaya.ui.state.LibraryRefreshSummary
 import com.example.cdplaya.ui.state.ListeningAnalyticsUiState
 import com.example.cdplaya.ui.statistics.ListeningAnalyticsVisibilityEffect
 import com.example.cdplaya.data.AnalyticsRangePreset
+import com.example.cdplaya.data.ListeningRankingCategory
+import com.example.cdplaya.data.ListeningTrendMetric
 import com.example.cdplaya.ui.library.LibraryViewCategory
 import com.example.cdplaya.ui.library.LibraryViewOption
 import com.example.cdplaya.ui.equalizer.EqualizerScreenState
@@ -211,7 +213,9 @@ internal fun MusicScreen(
     onListeningAnalyticsActiveChanged: (Boolean) -> Unit,
     onListeningAnalyticsPresetSelected: (AnalyticsRangePreset) -> Unit,
     onListeningAnalyticsCustomRangeSelected: (LocalDate, LocalDate) -> Unit,
-    onRetryListeningAnalytics: () -> Unit
+    onRetryListeningAnalytics: () -> Unit,
+    onListeningAnalyticsTrendMetricSelected: (ListeningTrendMetric) -> Unit,
+    onListeningAnalyticsRankingCategorySelected: (ListeningRankingCategory) -> Unit
 ) {
     val navigationState = rememberMusicNavigationState()
     var mainDestination by navigationState.mainDestination
@@ -750,6 +754,10 @@ internal fun MusicScreen(
                     onListeningAnalyticsCustomRangeSelected =
                         onListeningAnalyticsCustomRangeSelected,
                     onRetryListeningAnalytics = onRetryListeningAnalytics,
+                    onListeningAnalyticsTrendMetricSelected =
+                        onListeningAnalyticsTrendMetricSelected,
+                    onListeningAnalyticsRankingCategorySelected =
+                        onListeningAnalyticsRankingCategorySelected,
                     statisticsListState = statisticsListState,
                     queueSnackbarActions = queueSnackbarActions,
                     onSettingsClick = {

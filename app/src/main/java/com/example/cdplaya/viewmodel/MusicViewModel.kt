@@ -21,6 +21,7 @@ import com.example.cdplaya.data.AnalyticsZoneIdProvider
 import com.example.cdplaya.data.ListeningAnalyticsRangeResolver
 import com.example.cdplaya.data.ListeningStatsRepository
 import com.example.cdplaya.data.ListeningTrendMetric
+import com.example.cdplaya.data.ListeningRankingCategory
 import com.example.cdplaya.data.preferences.AppPreferencesRepository
 import com.example.cdplaya.data.backup.AppBackup
 import com.example.cdplaya.data.backup.BackupExportResult
@@ -111,6 +112,10 @@ class MusicViewModel(
 
     fun selectListeningAnalyticsTrendMetric(metric: ListeningTrendMetric) {
         listeningAnalyticsController.selectTrendMetric(metric)
+    }
+
+    fun selectListeningAnalyticsRankingCategory(category: ListeningRankingCategory) {
+        listeningAnalyticsController.selectRankingCategory(category)
     }
 
     val playerAppearanceUiState = appPreferencesRepository.state.map { preferences ->

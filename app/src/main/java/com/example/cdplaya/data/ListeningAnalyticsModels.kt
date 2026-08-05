@@ -138,6 +138,12 @@ enum class ListeningTrendMetric {
     QUALIFIED_PLAYS
 }
 
+enum class ListeningRankingCategory {
+    TRACKS,
+    ARTISTS,
+    ALBUMS
+}
+
 interface ListeningAnalyticsDataSource {
     suspend fun getAnalyticsSnapshot(
         resolvedRange: ResolvedAnalyticsRange,

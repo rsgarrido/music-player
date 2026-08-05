@@ -376,5 +376,9 @@ internal fun MusicRoute(
         onListeningAnalyticsCustomRangeSelected =
             musicViewModel::selectListeningAnalyticsCustomRange,
         onRetryListeningAnalytics = musicViewModel::retryListeningAnalytics,
+        onListeningAnalyticsTrendMetricSelected =
+            musicViewModel::selectListeningAnalyticsTrendMetric,
+        onListeningAnalyticsRankingCategorySelected =
+            musicViewModel::selectListeningAnalyticsRankingCategory,
     )
 }

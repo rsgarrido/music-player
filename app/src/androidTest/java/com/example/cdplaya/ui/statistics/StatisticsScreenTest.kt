@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -20,11 +22,20 @@ import com.example.cdplaya.data.AnalyticsRangePreset
 import com.example.cdplaya.data.AnalyticsRangeSelection
 import com.example.cdplaya.data.ListeningOverview
 import com.example.cdplaya.data.ListeningPlayCountBreakdown
+import com.example.cdplaya.data.AnalyticsBucketGranularity
+import com.example.cdplaya.data.ListeningAnalyticsCoverage
+import com.example.cdplaya.data.ListeningDateRange
+import com.example.cdplaya.data.ListeningRankingCategory
 import com.example.cdplaya.data.ListeningTimeBreakdown
+import com.example.cdplaya.data.ListeningTrendBucket
+import com.example.cdplaya.data.ListeningTrendMetric
+import com.example.cdplaya.data.ResolvedAnalyticsRange
 import com.example.cdplaya.ui.state.ListeningAnalyticsError
 import com.example.cdplaya.ui.state.ListeningAnalyticsErrorKind
 import com.example.cdplaya.ui.state.ListeningAnalyticsUiState
 import java.time.LocalDate
+import java.time.Instant
+import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -200,6 +211,90 @@ class StatisticsScreenTest {
             }
         }
         composeRule.onNodeWithText("Confirm").assertIsNotEnabled()
+    }
+
+    @Test
+    fun trendAndRankingsFollowCoverageAndSelectionsPreserveRangeAndScroll() {
+        val selected = AnalyticsRangeSelection.Preset(AnalyticsRangePreset.LAST_7_DAYS)
+        val screenState = mutableStateOf(
+            ListeningAnalyticsUiState(
+                selectedRange = selected,
+                resolvedRange = ResolvedAnalyticsRange(
+                    selection = selected,
+                    eventRange = ListeningDateRange(1L, 2L),
+                    zoneId = ZoneId.of("UTC"),
+                    resolvedAt = Instant.EPOCH
+                ),
+                overview = overview(),
+                trend = List(7) { index ->
+                    ListeningTrendBucket(
+                        index = index,
+                        startInclusive = index * 86_400_000L,
+                        endExclusive = (index + 1L) * 86_400_000L,
+                        granularity = AnalyticsBucketGranularity.DAY,
+                        listenedMs = (index + 1L) * 60_000L,
+                        qualifiedPlayCount = index + 1L,
+                        totalAttemptCount = index + 1L,
+                        naturalCompletionCount = index.toLong()
+                    )
+                },
+                coverage = ListeningAnalyticsCoverage(
+                    selectionCanIncludeLegacyPlays = false,
+                    hasLegacyPlays = false,
+                    legacyQualifiedPlayCount = 0L,
+                    detailedQualifiedPlayCount = 28L,
+                    hasDetailedEvents = true,
+                    earliestDetailedEventAt = 1L,
+                    latestDetailedEventAt = 2L
+                )
+            )
+        )
+        lateinit var listState: LazyListState
+        composeRule.setContent {
+            MaterialTheme {
+                listState = remember { LazyListState() }
+                StatisticsScreen(
+                    state = screenState.value,
+                    onBackClick = {},
+                    onPresetSelected = {},
+                    onCustomRangeSelected = { _, _ -> },
+                    onRetry = {},
+                    onTrendMetricSelected = {
+                        screenState.value = screenState.value.copy(trendMetric = it)
+                    },
+                    onRankingCategorySelected = {
+                        screenState.value = screenState.value.copy(rankingCategory = it)
+                    },
+                    listState = listState,
+                    modifier = Modifier.height(420.dp)
+                )
+            }
+        }
+
+        composeRule.runOnIdle { listState.requestScrollToItem(4) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Listening trend").assertExists()
+        val trendIndex = listState.firstVisibleItemIndex
+        val trendOffset = listState.firstVisibleItemScrollOffset
+        composeRule.onNode(hasText("Plays") and hasClickAction()).performClick().assertIsSelected()
+        composeRule.runOnIdle {
+            assertEquals(ListeningTrendMetric.QUALIFIED_PLAYS, screenState.value.trendMetric)
+            assertEquals(selected, screenState.value.selectedRange)
+            assertEquals(trendIndex, listState.firstVisibleItemIndex)
+            assertEquals(trendOffset, listState.firstVisibleItemScrollOffset)
+        }
+
+        composeRule.runOnIdle { listState.requestScrollToItem(5) }
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Top listening").assertExists()
+        val rankingIndex = listState.firstVisibleItemIndex
+        composeRule.onNodeWithText("Artists").performClick().assertIsSelected()
+        composeRule.runOnIdle {
+            assertEquals(ListeningRankingCategory.ARTISTS, screenState.value.rankingCategory)
+            assertEquals(selected, screenState.value.selectedRange)
+            assertEquals(rankingIndex, listState.firstVisibleItemIndex)
+        }
+        composeRule.onNodeWithText("No top artists in this range.").performScrollTo().assertExists()
     }
 
     private fun setStatisticsContent(

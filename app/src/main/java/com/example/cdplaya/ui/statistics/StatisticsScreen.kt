@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -54,6 +55,8 @@ import com.example.cdplaya.R
 import com.example.cdplaya.data.AnalyticsRangePreset
 import com.example.cdplaya.data.AnalyticsRangeSelection
 import com.example.cdplaya.data.ListeningOverview
+import com.example.cdplaya.data.ListeningRankingCategory
+import com.example.cdplaya.data.ListeningTrendMetric
 import com.example.cdplaya.ui.AppShellIconButton
 import com.example.cdplaya.ui.MusicScreenHeader
 import com.example.cdplaya.ui.state.ListeningAnalyticsUiState
@@ -67,6 +70,8 @@ internal fun StatisticsScreen(
     onPresetSelected: (AnalyticsRangePreset) -> Unit,
     onCustomRangeSelected: (LocalDate, LocalDate) -> Unit,
     onRetry: () -> Unit,
+    onTrendMetricSelected: (ListeningTrendMetric) -> Unit = {},
+    onRankingCategorySelected: (ListeningRankingCategory) -> Unit = {},
     listState: LazyListState,
     modifier: Modifier = Modifier
 ) {
@@ -86,6 +91,8 @@ internal fun StatisticsScreen(
                 } ?: LocalDate.now().minusDays(29L) to LocalDate.now()
         }
     }
+    val displayedSelection = state.resolvedRange?.selection ?: state.selectedRange
+    val displayedRangeDescription = analyticsRangeDescription(displayedSelection)
 
     LazyColumn(
         state = listState,
@@ -176,6 +183,67 @@ internal fun StatisticsScreen(
                         onClick = { showCoverageDialog = true }
                     )
                 }
+                item(key = "listening_trend") {
+                    ListeningTrendSection(
+                        buckets = state.trend,
+                        metric = state.trendMetric,
+                        zoneId = state.resolvedRange?.zoneId ?: java.time.ZoneId.systemDefault(),
+                        selectedRange = displayedSelection,
+                        rangeDescription = displayedRangeDescription,
+                        hasDetailedEvents = state.coverage?.hasDetailedEvents == true,
+                        onMetricSelected = onTrendMetricSelected
+                    )
+                }
+                item(key = "top_listening_header") {
+                    TopListeningHeader(
+                        selectedCategory = state.rankingCategory,
+                        onCategorySelected = onRankingCategorySelected
+                    )
+                }
+                when (state.rankingCategory) {
+                    ListeningRankingCategory.TRACKS -> {
+                        if (state.topTracks.isEmpty()) {
+                            item(key = "top_tracks_empty") {
+                                StatisticsEmptyCard(R.string.statistics_rankings_no_tracks)
+                            }
+                        } else {
+                            itemsIndexed(
+                                items = state.topTracks,
+                                key = { _, stats -> "track_${stats.trackIdentityId}" }
+                            ) { index, stats ->
+                                TrackRankingRow(rank = index + 1, stats = stats)
+                            }
+                        }
+                    }
+                    ListeningRankingCategory.ARTISTS -> {
+                        if (state.topArtists.isEmpty()) {
+                            item(key = "top_artists_empty") {
+                                StatisticsEmptyCard(R.string.statistics_rankings_no_artists)
+                            }
+                        } else {
+                            itemsIndexed(
+                                items = state.topArtists,
+                                key = { _, stats -> "artist_${stats.groupingKey}" }
+                            ) { index, stats ->
+                                ArtistRankingRow(rank = index + 1, stats = stats)
+                            }
+                        }
+                    }
+                    ListeningRankingCategory.ALBUMS -> {
+                        if (state.topAlbums.isEmpty()) {
+                            item(key = "top_albums_empty") {
+                                StatisticsEmptyCard(R.string.statistics_rankings_no_albums)
+                            }
+                        } else {
+                            itemsIndexed(
+                                items = state.topAlbums,
+                                key = { _, stats -> "album_${stats.groupingKey}" }
+                            ) { index, stats ->
+                                AlbumRankingRow(rank = index + 1, stats = stats)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -204,6 +272,15 @@ internal fun StatisticsScreen(
             }
         )
     }
+}
+
+@Composable
+private fun analyticsRangeDescription(selection: AnalyticsRangeSelection): String = when (selection) {
+    is AnalyticsRangeSelection.Custom -> formatCustomDateRange(
+        selection.startDate,
+        selection.endDateInclusive
+    )
+    is AnalyticsRangeSelection.Preset -> stringResource(selection.preset.labelResource())
 }
 
 @Composable

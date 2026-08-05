@@ -8,6 +8,7 @@ import com.example.cdplaya.data.ListeningAnalyticsDataSource
 import com.example.cdplaya.data.ListeningAnalyticsRangeResolver
 import com.example.cdplaya.data.ListeningAnalyticsSnapshot
 import com.example.cdplaya.data.ListeningOverview
+import com.example.cdplaya.data.ListeningRankingCategory
 import com.example.cdplaya.data.ListeningPlayCountBreakdown
 import com.example.cdplaya.data.ListeningTimeBreakdown
 import com.example.cdplaya.data.ListeningTrendMetric
@@ -46,6 +47,14 @@ class ListeningAnalyticsControllerTest {
                 test.controller.state.value.selectedRange
             )
             assertFalse(test.controller.state.value.isActive)
+            assertEquals(
+                ListeningTrendMetric.RECORDED_LISTENING_TIME,
+                test.controller.state.value.trendMetric
+            )
+            assertEquals(
+                ListeningRankingCategory.TRACKS,
+                test.controller.state.value.rankingCategory
+            )
             assertEquals(0, test.repository.calls.get())
 
             test.controller.setActive(true)
@@ -105,7 +114,9 @@ class ListeningAnalyticsControllerTest {
             val initialCalls = test.repository.calls.get()
 
             test.controller.selectTrendMetric(ListeningTrendMetric.QUALIFIED_PLAYS)
+            test.controller.selectRankingCategory(ListeningRankingCategory.ALBUMS)
             assertEquals(ListeningTrendMetric.QUALIFIED_PLAYS, test.controller.state.value.trendMetric)
+            assertEquals(ListeningRankingCategory.ALBUMS, test.controller.state.value.rankingCategory)
             assertEquals(initialCalls, test.repository.calls.get())
 
             test.repository.invalidations.emit(Unit)
@@ -119,6 +130,30 @@ class ListeningAnalyticsControllerTest {
             assertEquals(initialCalls + 1, test.repository.calls.get())
             assertNotNull(test.controller.state.value.overview)
             assertEquals(ListeningTrendMetric.QUALIFIED_PLAYS, test.controller.state.value.trendMetric)
+            assertEquals(ListeningRankingCategory.ALBUMS, test.controller.state.value.rankingCategory)
+        }
+    }
+
+    @Test
+    fun rangeChangePreservesMetricAndRankingCategoryWithoutExtraSelectionQueries() = runBlocking {
+        fixture().use { test ->
+            test.controller.setActive(true)
+            test.repository.requests.receiveWithin()
+            test.controller.state.await { it.overview != null }
+            test.controller.selectTrendMetric(ListeningTrendMetric.QUALIFIED_PLAYS)
+            test.controller.selectRankingCategory(ListeningRankingCategory.ARTISTS)
+            val beforeRangeChange = test.repository.calls.get()
+
+            test.controller.selectRange(AnalyticsRangeSelection.Preset(AnalyticsRangePreset.TODAY))
+            test.repository.requests.receiveWithin()
+            val state = test.controller.state.await {
+                it.resolvedRange?.selection ==
+                    AnalyticsRangeSelection.Preset(AnalyticsRangePreset.TODAY) && !it.isRefreshing
+            }
+
+            assertEquals(beforeRangeChange + 1, test.repository.calls.get())
+            assertEquals(ListeningTrendMetric.QUALIFIED_PLAYS, state.trendMetric)
+            assertEquals(ListeningRankingCategory.ARTISTS, state.rankingCategory)
         }
     }
 

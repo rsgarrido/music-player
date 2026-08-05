@@ -458,7 +458,66 @@ would create an unsafe dual source of truth.
 ### Deferred work
 
 Active-session persistence, periodic checkpoints, process-death recovery for transient
-Statistics selection, trend chart rendering, trend metric toggle UI, top-track,
-top-album, and top-artist UI, rating UI and sorting/filtering, album/artist rating
-summaries, Spotify/Last.fm imports and matching, Wrapped, smart playlists, cloud
-synchronization, and shareable reports remain deferred.
+Statistics selection, rating UI and sorting/filtering, album/artist rating summaries,
+chart tooltips and scrubbing, full ranking destinations, Spotify/Last.fm imports and
+matching, Wrapped, smart playlists, cloud synchronization, and shareable reports remain
+deferred.
+
+## Statistics trend and ranked listening (Session 4)
+
+Statistics completes its read-only Analytics v1 presentation with two sections below
+the overview and history-coverage card. `Listening trend` consumes the bounded bucket
+list from the existing atomic snapshot; Compose neither queries events nor rebuilds
+calendar boundaries. A purpose-built Compose `Canvas` draws rounded vertical bars in
+the app-shell accent over theme outline grid and baseline colors. The chart uses a
+fixed visual area and a shared linear maximum for the selected series. Zero stays
+empty, the smallest nonzero value receives a two-pixel minimum, `Long` ratios are
+calculated through `Double`, and totals saturate rather than overflow.
+
+The controller-owned selector switches between recorded detailed listening time and
+qualified plays. Both values already exist on every bucket, so the intent only copies
+UI state: it does not resolve a range, read Room, change the selected range, or replace
+the retained snapshot. The selection survives destination deactivation/reactivation,
+range refreshes, and invalidation refreshes for the ViewModel lifetime, matching the
+existing process-persistence boundary.
+
+Series through 30 buckets fit the viewport. Denser series use a conservative minimum
+slot width inside a horizontally scrollable chart container, capped by the repository's
+400-bucket contract; the surrounding Statistics screen remains one vertical
+`LazyColumn`. Labels are selected at bounded, evenly distributed indices and always
+include the first and last period. Java-time formatters use the snapshot's resolved
+zone and current locale. Short daily ranges use weekdays; longer days use month names
+and day numbers; months include a year when the series crosses a year boundary; years
+use four digits. Repeated fall-back hours include their localized GMT offset, while a
+spring-forward hour is never fabricated.
+
+The maximum and a concise `Most active` summary communicate scale. Peak selection uses
+the chosen metric and breaks ties toward the greatest bucket start timestamp. An
+all-zero series has no peak. Container semantics announce the metric, period count,
+saturating total, peak, and displayed range without enumerating hundreds of bars. Chip
+selection is semantic as well as visual, and horizontal scrolling retains standard
+accessibility actions. All Time without detailed events explains that detailed
+activity will appear after playback; an empty finite series says there is no trend data
+in the range. Legacy aggregate counts never become bars or recorded time.
+
+`Top listening` uses a second controller-owned, in-memory category selection: Tracks
+by default, then Artists or Albums. Switching categories reads the already-loaded
+snapshot lists, performs no query, preserves the selected range and trend metric, and
+survives Statistics deactivation for the ViewModel lifetime. Repository order is used
+unchanged: qualified plays rank up to 10 tracks, 5 artists, and 5 albums. Rows keep play
+count prominent and label detailed duration as recorded supporting time. Track rows
+show their historical title, artist, and album; album rows show album artist; artist
+rows use the repository display name. Long text ellipsizes independently of the metric
+column, category chips scroll on narrow screens, and each category owns its own empty
+message.
+
+Track rows are deliberately text-first in this version. Every historical identity ID
+remains a separate stable-key row, including metadata-identical identities and tracks
+whose local file is missing or excluded. Statistics does not title-match, fuzzily
+merge, hide unresolved history, or issue per-row binding queries. The present
+Music/Library boundary does not expose the bounded exact-resolution result alongside
+the analytics snapshot, so artwork and playback are deferred instead of adding a
+second resolver path. Consequently no track row claims click/play semantics, while
+artist and album rows likewise expose no misleading detail navigation. These choices
+keep the screen responsive on narrow phones and leave all rating controls, rating
+display, and rating-based ordering for the later ratings UI session.

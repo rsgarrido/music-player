@@ -103,4 +103,43 @@
         <item quantity="one">%d day</item>
         <item quantity="other">%d days</item>
     </plurals>
+    <string name="statistics_trend_title">Listening trend</string>
+    <string name="statistics_trend_metric_time">Listening time</string>
+    <string name="statistics_trend_metric_plays">Plays</string>
+    <string name="statistics_trend_no_detailed_history">Detailed listening activity will appear here as you play music.</string>
+    <string name="statistics_trend_no_data_range">No trend data in this range.</string>
+    <string name="statistics_trend_axis_maximum">Scale maximum: %1$s</string>
+    <string name="statistics_trend_peak_summary">Most active: %1$s · %2$s</string>
+    <string name="statistics_trend_accessibility">Listening trend. %1$s selected. %2$d periods. Total %3$s. Most active %4$s, %5$s. Range: %6$s.</string>
+    <string name="statistics_trend_accessibility_empty">Listening trend. %1$s selected. Range: %2$s. %3$s</string>
+    <plurals name="statistics_trend_plays">
+        <item quantity="one">%1$s play</item>
+        <item quantity="other">%1$s plays</item>
+    </plurals>
+    <plurals name="statistics_trend_minutes">
+        <item quantity="one">%1$s minute</item>
+        <item quantity="other">%1$s minutes</item>
+    </plurals>
+    <plurals name="statistics_trend_hours">
+        <item quantity="one">%1$s hour</item>
+        <item quantity="other">%1$s hours</item>
+    </plurals>
+    <plurals name="statistics_trend_days">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <string name="statistics_rankings_title">Top listening</string>
+    <string name="statistics_rankings_tracks">Tracks</string>
+    <string name="statistics_rankings_artists">Artists</string>
+    <string name="statistics_rankings_albums">Albums</string>
+    <string name="statistics_rankings_basis">Ranked by qualified plays</string>
+    <string name="statistics_rankings_track_metadata">%1$s · %2$s</string>
+    <string name="statistics_rankings_recorded_time">%1$s recorded</string>
+    <string name="statistics_rankings_no_tracks">No top tracks in this range.</string>
+    <string name="statistics_rankings_no_artists">No top artists in this range.</string>
+    <string name="statistics_rankings_no_albums">No top albums in this range.</string>
+    <plurals name="statistics_rankings_plays">
+        <item quantity="one">%1$s play</item>
+        <item quantity="other">%1$s plays</item>
+    </plurals>
 </resources>

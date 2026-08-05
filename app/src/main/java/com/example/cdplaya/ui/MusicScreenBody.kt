@@ -35,6 +35,8 @@ import com.example.cdplaya.data.Playlist
 import com.example.cdplaya.data.PlaylistSong
 import com.example.cdplaya.data.Song
 import com.example.cdplaya.data.AnalyticsRangePreset
+import com.example.cdplaya.data.ListeningRankingCategory
+import com.example.cdplaya.data.ListeningTrendMetric
 import com.example.cdplaya.data.membershipKey
 import com.example.cdplaya.player.RepeatMode
 import com.example.cdplaya.player.audio.AudioOffloadPreference
@@ -134,6 +136,8 @@ internal fun MusicScreenBody(
     onListeningAnalyticsPresetSelected: (AnalyticsRangePreset) -> Unit,
     onListeningAnalyticsCustomRangeSelected: (LocalDate, LocalDate) -> Unit,
     onRetryListeningAnalytics: () -> Unit,
+    onListeningAnalyticsTrendMetricSelected: (ListeningTrendMetric) -> Unit,
+    onListeningAnalyticsRankingCategorySelected: (ListeningRankingCategory) -> Unit,
     onOpenLibrary: (LibraryTab) -> Unit,
     onFolderBackClick: () -> Unit,
     onSettingsBackClick: () -> Unit,
@@ -226,6 +230,8 @@ internal fun MusicScreenBody(
                 onPresetSelected = onListeningAnalyticsPresetSelected,
                 onCustomRangeSelected = onListeningAnalyticsCustomRangeSelected,
                 onRetry = onRetryListeningAnalytics,
+                onTrendMetricSelected = onListeningAnalyticsTrendMetricSelected,
+                onRankingCategorySelected = onListeningAnalyticsRankingCategorySelected,
                 listState = statisticsListState,
                 modifier = modifier.fillMaxSize()
             )
