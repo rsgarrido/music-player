@@ -249,7 +249,6 @@ internal fun ModernPlayerMetadata(
             maxLines = 1,
             textAlign = alignment.textAlign(),
             modifier = Modifier
-                .fillMaxWidth()
                 .graphicsLayer { alpha = expandedContentAlpha }
                 .then(
                     if (onOpenAlbumClick != null) {
