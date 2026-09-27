@@ -1,8 +1,13 @@
 package io.github.rsgarrido.sazanami.widget
 
 import androidx.compose.ui.graphics.Color
+import androidx.datastore.preferences.core.mutablePreferencesOf
 import io.github.rsgarrido.sazanami.data.PlayerTheme
 import io.github.rsgarrido.sazanami.data.preferences.AppPreferencesState
+import io.github.rsgarrido.sazanami.data.preferences.decodeAppPreferences
+import io.github.rsgarrido.sazanami.data.preferences.selectModernAppearanceChoice
+import io.github.rsgarrido.sazanami.data.preferences.writeModernPlayerAppearance
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkShape
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernBackgroundAppearance
@@ -101,6 +106,34 @@ class NowPlayingWidgetAppearanceTest {
         )
         assertEquals(WidgetColorToken.Fixed(SazanamiAccent), appearance.accent)
         assertEquals(16, appearance.artworkCornerRadiusDp)
+    }
+
+    @Test
+    fun widgetUsesEffectiveBuiltInAppearanceAndRestoresMyPlayerAppearance() {
+        val customColor = 0xFF213243L
+        val preferences = mutablePreferencesOf()
+        preferences.writeModernPlayerAppearance(
+            ModernPlayerAppearance(
+                background = ModernBackgroundAppearance(
+                    style = ModernBackgroundStyle.SOLID_COLOR,
+                    solidColorArgb = customColor
+                )
+            )
+        )
+
+        preferences.selectModernAppearanceChoice(ModernAppearanceChoice.MINIMAL)
+        val builtIn = resolveWidgetAppearance(
+            WidgetAppearanceMode.SAZANAMI_DEFAULT,
+            decodeAppPreferences(preferences)
+        )
+        assertEquals(WidgetColorToken.Fixed(Color.Black), builtIn.background)
+
+        preferences.selectModernAppearanceChoice(ModernAppearanceChoice.MY_PLAYER)
+        val myPlayer = resolveWidgetAppearance(
+            WidgetAppearanceMode.SAZANAMI_DEFAULT,
+            decodeAppPreferences(preferences)
+        )
+        assertEquals(WidgetColorToken.Fixed(Color(customColor.toInt())), myPlayer.background)
     }
 
     @Test

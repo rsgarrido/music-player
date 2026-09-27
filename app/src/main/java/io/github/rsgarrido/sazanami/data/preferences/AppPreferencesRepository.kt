@@ -41,6 +41,7 @@ import io.github.rsgarrido.sazanami.ui.library.LibraryGridColumns
 import io.github.rsgarrido.sazanami.ui.library.LibraryViewCategory
 import io.github.rsgarrido.sazanami.ui.library.LibraryViewMode
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkFit
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkShadow
@@ -87,6 +88,8 @@ data class AppPreferencesState(
     val modernArtworkTransitionStyle: ModernArtworkTransitionStyle =
         ModernArtworkTransitionStyle.SLIDE,
     val modernPlayerAppearance: ModernPlayerAppearance = ModernPlayerAppearance.Default,
+    val myPlayerAppearance: ModernPlayerAppearance = ModernPlayerAppearance.Default,
+    val activeModernAppearanceChoice: ModernAppearanceChoice = ModernAppearanceChoice.MY_PLAYER,
     val replayGainMode: ReplayGainMode = ReplayGainMode.OFF,
     val audioOffloadPreference: AudioOffloadPreference = AudioOffloadPreference.DISABLED,
     val smoothPlayPauseEnabled: Boolean = true,
@@ -139,40 +142,51 @@ class AppPreferencesRepository private constructor(
         it[Keys.modernArtworkTransitionStyle] = style.storageValue
     }
 
-    suspend fun setModernSeekbarStyle(style: ModernSeekbarStyle) = edit {
-        it[Keys.modernSeekbarStyle] = style.storageValue
+    suspend fun setModernSeekbarStyle(style: ModernSeekbarStyle) =
+        editModernPlayerAppearance { current ->
+            current.copy(seekbar = current.seekbar.copy(style = style))
+        }
+
+    suspend fun selectModernAppearanceChoice(choice: ModernAppearanceChoice) = edit {
+        it.selectModernAppearanceChoice(choice)
     }
 
-    suspend fun setModernPlayerAppearance(appearance: ModernPlayerAppearance) = edit {
-        it.writeModernPlayerAppearance(appearance)
-    }
+    suspend fun editModernPlayerAppearance(
+        transform: (ModernPlayerAppearance) -> ModernPlayerAppearance
+    ) = edit { preferences -> preferences.editModernPlayerAppearance(transform) }
 
-    suspend fun setModernWaveformSize(size: ModernWaveformSize) = edit {
-        it[Keys.modernWaveformSize] = size.storageValue
-    }
+    suspend fun setModernWaveformSize(size: ModernWaveformSize) =
+        editModernPlayerAppearance { current ->
+            current.copy(seekbar = current.seekbar.copy(waveformSize = size))
+        }
 
-    suspend fun setModernWaveformDensity(density: ModernWaveformDensity) = edit {
-        it[Keys.modernWaveformDensity] = density.storageValue
-    }
+    suspend fun setModernWaveformDensity(density: ModernWaveformDensity) =
+        editModernPlayerAppearance { current ->
+            current.copy(seekbar = current.seekbar.copy(waveformDensity = density))
+        }
 
-    suspend fun setModernSeekbarColorMode(mode: ModernSeekbarColorMode) = edit {
-        it[Keys.modernSeekbarColorMode] = mode.storageValue
-    }
+    suspend fun setModernSeekbarColorMode(mode: ModernSeekbarColorMode) =
+        editModernPlayerAppearance { current ->
+            current.copy(seekbar = current.seekbar.copy(colorMode = mode))
+        }
 
-    suspend fun setModernBackgroundStyle(style: ModernBackgroundStyle) = edit {
-        it[Keys.modernBackgroundStyle] = style.storageValue
-    }
+    suspend fun setModernBackgroundStyle(style: ModernBackgroundStyle) =
+        editModernPlayerAppearance { current ->
+            current.copy(background = current.background.copy(style = style))
+        }
 
-    suspend fun setModernBlurStrength(strength: ModernBlurStrength) = edit {
-        it[Keys.modernBlurStrength] = strength.storageValue
-    }
+    suspend fun setModernBlurStrength(strength: ModernBlurStrength) =
+        editModernPlayerAppearance { current ->
+            current.copy(background = current.background.copy(blurStrength = strength))
+        }
 
-    suspend fun setModernDimmingStrength(strength: ModernDimmingStrength) = edit {
-        it[Keys.modernDimmingStrength] = strength.storageValue
-    }
+    suspend fun setModernDimmingStrength(strength: ModernDimmingStrength) =
+        editModernPlayerAppearance { current ->
+            current.copy(background = current.background.copy(dimmingStrength = strength))
+        }
 
     suspend fun resetModernPlayerAppearance() = edit { preferences ->
-        preferences.clearModernPlayerAppearance()
+        preferences.resetMyPlayerAppearance()
     }
 
     suspend fun setReplayGainMode(mode: ReplayGainMode) = edit {
@@ -646,6 +660,10 @@ internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState
         storedMode = storedFolderMode,
         storedFolders = storedFolders
     )
+    val myPlayer = decodeMyPlayerAppearance(preferences)
+    val choice = ModernAppearanceChoice.fromStorageValue(
+        preferences[Keys.activeModernAppearanceChoice]
+    )
     return AppPreferencesState(
         appFont = AppFont.fromStorageValue(preferences[Keys.appFont]),
         selectedPlayerTheme = PlayerTheme.fromId(preferences[Keys.selectedPlayerTheme]),
@@ -663,70 +681,9 @@ internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState
         modernArtworkTransitionStyle = ModernArtworkTransitionStyle.fromStorageValue(
             preferences[Keys.modernArtworkTransitionStyle]
         ),
-        modernPlayerAppearance = ModernPlayerAppearance(
-            seekbar = ModernSeekbarAppearance(
-                style = ModernSeekbarStyle.fromStorageValue(
-                    preferences[Keys.modernSeekbarStyle]
-                ),
-                waveformSize = ModernWaveformSize.fromStorageValue(
-                    preferences[Keys.modernWaveformSize]
-                ),
-                waveformDensity = ModernWaveformDensity.fromStorageValue(
-                    preferences[Keys.modernWaveformDensity]
-                ),
-                colorMode = ModernSeekbarColorMode.fromStorageValue(
-                    preferences[Keys.modernSeekbarColorMode]
-                )
-            ),
-            background = ModernBackgroundAppearance(
-                style = ModernBackgroundStyle.fromStorageValue(
-                    preferences[Keys.modernBackgroundStyle]
-                ),
-                blurStrength = ModernBlurStrength.fromStorageValue(
-                    preferences[Keys.modernBlurStrength]
-                ),
-                dimmingStrength = ModernDimmingStrength.fromStorageValue(
-                    preferences[Keys.modernDimmingStrength]
-                ),
-                solidColorArgb = sanitizeModernSolidColorArgb(
-                    preferences[Keys.modernSolidColorArgb]
-                )
-            ),
-            artwork = ModernArtworkAppearance(
-                shape = ModernArtworkShape.fromStorageValue(
-                    preferences[Keys.modernArtworkShape]
-                ),
-                size = ModernArtworkSize.fromStorageValue(
-                    preferences[Keys.modernArtworkSize]
-                ),
-                fit = ModernArtworkFit.fromStorageValue(
-                    preferences[Keys.modernArtworkFit]
-                ),
-                shadow = ModernArtworkShadow.fromStorageValue(
-                    preferences[Keys.modernArtworkShadow]
-                )
-            ),
-            controls = ModernControlAppearance(
-                style = ModernControlStyle.fromStorageValue(
-                    preferences[Keys.modernControlStyle]
-                ),
-                size = ModernControlSize.fromStorageValue(
-                    preferences[Keys.modernControlSize]
-                ),
-                accent = ModernControlAccent.fromStorageValue(
-                    preferences[Keys.modernControlAccent]
-                )
-            ),
-            layout = ModernLayoutAppearance(
-                density = ModernLayoutDensity.fromStorageValue(
-                    preferences[Keys.modernLayoutDensity]
-                ),
-                metadataAlignment = ModernMetadataAlignment.fromStorageValue(
-                    preferences[Keys.modernMetadataAlignment]
-                ),
-                showAudioQualityBadge = preferences[Keys.modernShowAudioQualityBadge] ?: true
-            )
-        ),
+        modernPlayerAppearance = choice.effectiveAppearance(myPlayer),
+        myPlayerAppearance = myPlayer,
+        activeModernAppearanceChoice = choice,
         replayGainMode = runCatching {
             ReplayGainMode.valueOf(preferences[Keys.replayGainMode].orEmpty())
         }.getOrDefault(ReplayGainMode.OFF),
@@ -767,6 +724,46 @@ internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState
         isLoaded = true
     )
 }
+
+private fun decodeMyPlayerAppearance(preferences: Preferences): ModernPlayerAppearance =
+    ModernPlayerAppearance(
+        seekbar = ModernSeekbarAppearance(
+            style = ModernSeekbarStyle.fromStorageValue(preferences[Keys.modernSeekbarStyle]),
+            waveformSize = ModernWaveformSize.fromStorageValue(preferences[Keys.modernWaveformSize]),
+            waveformDensity = ModernWaveformDensity.fromStorageValue(
+                preferences[Keys.modernWaveformDensity]
+            ),
+            colorMode = ModernSeekbarColorMode.fromStorageValue(
+                preferences[Keys.modernSeekbarColorMode]
+            )
+        ),
+        background = ModernBackgroundAppearance(
+            style = ModernBackgroundStyle.fromStorageValue(preferences[Keys.modernBackgroundStyle]),
+            blurStrength = ModernBlurStrength.fromStorageValue(preferences[Keys.modernBlurStrength]),
+            dimmingStrength = ModernDimmingStrength.fromStorageValue(
+                preferences[Keys.modernDimmingStrength]
+            ),
+            solidColorArgb = sanitizeModernSolidColorArgb(preferences[Keys.modernSolidColorArgb])
+        ),
+        artwork = ModernArtworkAppearance(
+            shape = ModernArtworkShape.fromStorageValue(preferences[Keys.modernArtworkShape]),
+            size = ModernArtworkSize.fromStorageValue(preferences[Keys.modernArtworkSize]),
+            fit = ModernArtworkFit.fromStorageValue(preferences[Keys.modernArtworkFit]),
+            shadow = ModernArtworkShadow.fromStorageValue(preferences[Keys.modernArtworkShadow])
+        ),
+        controls = ModernControlAppearance(
+            style = ModernControlStyle.fromStorageValue(preferences[Keys.modernControlStyle]),
+            size = ModernControlSize.fromStorageValue(preferences[Keys.modernControlSize]),
+            accent = ModernControlAccent.fromStorageValue(preferences[Keys.modernControlAccent])
+        ),
+        layout = ModernLayoutAppearance(
+            density = ModernLayoutDensity.fromStorageValue(preferences[Keys.modernLayoutDensity]),
+            metadataAlignment = ModernMetadataAlignment.fromStorageValue(
+                preferences[Keys.modernMetadataAlignment]
+            ),
+            showAudioQualityBadge = preferences[Keys.modernShowAudioQualityBadge] ?: true
+        )
+    )
 
 internal fun MutablePreferences.writeAppFont(appFont: AppFont) {
     this[Keys.appFont] = appFont.storageValue
@@ -810,6 +807,24 @@ internal fun MutablePreferences.writeModernPlayerAppearance(
     this[Keys.modernLayoutDensity] = appearance.layout.density.storageValue
     this[Keys.modernMetadataAlignment] = appearance.layout.metadataAlignment.storageValue
     this[Keys.modernShowAudioQualityBadge] = appearance.layout.showAudioQualityBadge
+}
+
+internal fun MutablePreferences.selectModernAppearanceChoice(choice: ModernAppearanceChoice) {
+    this[Keys.activeModernAppearanceChoice] = choice.name
+}
+
+internal fun MutablePreferences.editModernPlayerAppearance(
+    transform: (ModernPlayerAppearance) -> ModernPlayerAppearance
+) {
+    val choice = ModernAppearanceChoice.fromStorageValue(this[Keys.activeModernAppearanceChoice])
+    val current = choice.effectiveAppearance(decodeMyPlayerAppearance(this))
+    writeModernPlayerAppearance(transform(current))
+    selectModernAppearanceChoice(ModernAppearanceChoice.MY_PLAYER)
+}
+
+internal fun MutablePreferences.resetMyPlayerAppearance() {
+    clearModernPlayerAppearance()
+    selectModernAppearanceChoice(ModernAppearanceChoice.MY_PLAYER)
 }
 
 internal fun MutablePreferences.clearModernPlayerAppearance() {
@@ -1189,6 +1204,7 @@ private object Keys {
     val appFont = stringPreferencesKey("app_font")
     val selectedPlayerTheme = stringPreferencesKey("selected_player_theme")
     val modernArtworkTransitionStyle = stringPreferencesKey("artwork_transition_style")
+    val activeModernAppearanceChoice = stringPreferencesKey("modern_active_appearance_choice")
     val modernSeekbarStyle = stringPreferencesKey("seekbar_style")
     val modernWaveformSize = stringPreferencesKey("modern_waveform_size")
     val modernWaveformDensity = stringPreferencesKey("modern_waveform_density")

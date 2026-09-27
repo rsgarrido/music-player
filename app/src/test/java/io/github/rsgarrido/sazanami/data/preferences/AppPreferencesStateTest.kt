@@ -17,6 +17,8 @@ import io.github.rsgarrido.sazanami.player.audio.AudioOffloadPreference
 import io.github.rsgarrido.sazanami.player.replaygain.ReplayGainMode
 import io.github.rsgarrido.sazanami.ui.library.LibraryViewMode
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearancePreset
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkFit
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkShape
@@ -47,6 +49,132 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class AppPreferencesStateTest {
+    @Test
+    fun missingChoiceKeepsExistingAppearanceAsMyPlayer() {
+        val saved = ModernPlayerAppearance.Default.copy(
+            background = ModernPlayerAppearance.Default.background.copy(
+                solidColorArgb = 0xFF204060L
+            )
+        )
+        val preferences = mutablePreferencesOf()
+        preferences.writeModernPlayerAppearance(saved)
+
+        val state = decodeAppPreferences(preferences)
+
+        assertEquals(ModernAppearanceChoice.MY_PLAYER, state.activeModernAppearanceChoice)
+        assertEquals(saved, state.myPlayerAppearance)
+        assertEquals(saved, state.modernPlayerAppearance)
+        assertEquals(
+            ModernAppearanceChoice.MY_PLAYER,
+            decodeAppPreferences(mutablePreferencesOf()).activeModernAppearanceChoice
+        )
+        assertEquals(
+            ModernAppearanceChoice.MY_PLAYER,
+            ModernAppearanceChoice.fromStorageValue("unknown")
+        )
+    }
+
+    @Test
+    fun builtInSelectionPreservesMyPlayerAndReturningRestoresIt() {
+        val saved = ModernPlayerAppearance.Default.copy(
+            background = ModernPlayerAppearance.Default.background.copy(solidColorArgb = 0xFF204060L)
+        )
+        val preferences = mutablePreferencesOf()
+        preferences.writeModernPlayerAppearance(saved)
+        val savedKeys = preferences.asMap()
+
+        preferences.selectModernAppearanceChoice(ModernAppearanceChoice.MINIMAL)
+        val minimal = decodeAppPreferences(preferences)
+        assertEquals(savedKeys, preferences.asMap().filterKeys { it in savedKeys.keys })
+        assertEquals(saved, minimal.myPlayerAppearance)
+        assertEquals(ModernAppearancePreset.MINIMAL.appearance(), minimal.modernPlayerAppearance)
+
+        preferences.selectModernAppearanceChoice(ModernAppearanceChoice.MY_PLAYER)
+        val restored = decodeAppPreferences(preferences)
+        assertEquals(saved, restored.modernPlayerAppearance)
+        assertEquals(ModernAppearanceChoice.MY_PLAYER, restored.activeModernAppearanceChoice)
+    }
+
+    @Test
+    fun exactRecipeMatchDoesNotChangeMyPlayerIdentity() {
+        val preferences = mutablePreferencesOf()
+        preferences.writeModernPlayerAppearance(ModernAppearancePreset.MINIMAL.appearance())
+
+        val state = decodeAppPreferences(preferences)
+
+        assertEquals(ModernAppearanceChoice.MY_PLAYER, state.activeModernAppearanceChoice)
+        assertEquals(ModernAppearancePreset.MINIMAL.appearance(), state.modernPlayerAppearance)
+    }
+
+    @Test
+    fun editingBuiltInStartsFromLatestRecipeAndKeepsRecipeImmutable() {
+        val preferences = mutablePreferencesOf()
+        val minimalRecipe = ModernAppearancePreset.MINIMAL.appearance()
+        preferences.selectModernAppearanceChoice(ModernAppearanceChoice.MINIMAL)
+
+        preferences.editModernPlayerAppearance { current ->
+            current.copy(artwork = current.artwork.copy(size = ModernArtworkSize.LARGE))
+        }
+        val edited = decodeAppPreferences(preferences)
+        val expected = minimalRecipe.copy(
+            artwork = minimalRecipe.artwork.copy(size = ModernArtworkSize.LARGE)
+        )
+        assertEquals(ModernAppearanceChoice.MY_PLAYER, edited.activeModernAppearanceChoice)
+        assertEquals(expected, edited.myPlayerAppearance)
+        assertEquals(expected, edited.modernPlayerAppearance)
+        assertEquals(minimalRecipe, ModernAppearancePreset.MINIMAL.appearance())
+
+        preferences.selectModernAppearanceChoice(ModernAppearanceChoice.MINIMAL)
+        assertEquals(minimalRecipe, decodeAppPreferences(preferences).modernPlayerAppearance)
+        preferences.selectModernAppearanceChoice(ModernAppearanceChoice.MY_PLAYER)
+        assertEquals(expected, decodeAppPreferences(preferences).modernPlayerAppearance)
+    }
+
+    @Test
+    fun orderedActionsUseLatestEffectiveAppearanceForEachEdit() {
+        val preferences = mutablePreferencesOf()
+        preferences.selectModernAppearanceChoice(ModernAppearanceChoice.MINIMAL)
+        preferences.editModernPlayerAppearance { current ->
+            current.copy(artwork = current.artwork.copy(size = ModernArtworkSize.LARGE))
+        }
+        preferences.selectModernAppearanceChoice(ModernAppearanceChoice.COLORFUL)
+        preferences.editModernPlayerAppearance { current ->
+            current.copy(controls = current.controls.copy(size = ModernControlSize.LARGE))
+        }
+
+        val colorful = ModernAppearancePreset.COLORFUL.appearance()
+        val state = decodeAppPreferences(preferences)
+        assertEquals(ModernAppearanceChoice.MY_PLAYER, state.activeModernAppearanceChoice)
+        assertEquals(
+            colorful.copy(controls = colorful.controls.copy(size = ModernControlSize.LARGE)),
+            state.modernPlayerAppearance
+        )
+    }
+
+    @Test
+    fun resetClearsMyPlayerAndSelectsItWithoutTouchingOtherAppearanceSettings() {
+        val preferences = mutablePreferencesOf(
+            stringPreferencesKey("selected_player_theme") to PlayerTheme.RETRO_RACK.id,
+            stringPreferencesKey("artwork_transition_style") to "cover_flow",
+            stringPreferencesKey("retro_rack.accent") to "#FFAABBCC"
+        )
+        preferences.writeModernPlayerAppearance(ModernAppearancePreset.MINIMAL.appearance())
+        preferences.selectModernAppearanceChoice(ModernAppearanceChoice.COLORFUL)
+
+        preferences.resetMyPlayerAppearance()
+
+        val state = decodeAppPreferences(preferences)
+        assertEquals(ModernAppearanceChoice.MY_PLAYER, state.activeModernAppearanceChoice)
+        assertEquals(ModernPlayerAppearance.Default, state.myPlayerAppearance)
+        assertEquals(ModernPlayerAppearance.Default, state.modernPlayerAppearance)
+        assertEquals(PlayerTheme.RETRO_RACK, state.selectedPlayerTheme)
+        assertEquals(ModernArtworkTransitionStyle.COVER_FLOW, state.modernArtworkTransitionStyle)
+        assertEquals(
+            Color(0xFFAABBCC.toInt()),
+            state.playerThemeTokenOverrides[PlayerTheme.RETRO_RACK]?.accentColor
+        )
+    }
+
     @Test
     fun invalidEnumsAndGridCountsFallBackSafely() {
         val preferences = mutablePreferencesOf(

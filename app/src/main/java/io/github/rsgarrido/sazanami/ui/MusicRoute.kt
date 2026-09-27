@@ -636,7 +636,9 @@ internal fun MusicRoute(
             onModernArtworkTransitionStyleSelected =
                 musicViewModel::selectModernArtworkTransitionStyle,
             selectedModernPlayerAppearance = playerAppearanceUiState.modernPlayerAppearance,
-            onModernPlayerAppearanceChanged = musicViewModel::updateModernPlayerAppearance,
+            activeModernAppearanceChoice = playerAppearanceUiState.activeModernAppearanceChoice,
+            onModernAppearanceChoiceSelected = musicViewModel::selectModernAppearanceChoice,
+            onModernPlayerAppearanceEdited = musicViewModel::editModernPlayerAppearance,
             onResetModernPlayerAppearance = musicViewModel::resetModernPlayerAppearance,
             selectedReplayGainMode = playerAppearanceUiState.replayGainMode,
             onReplayGainModeSelected = { replayGainMode ->
