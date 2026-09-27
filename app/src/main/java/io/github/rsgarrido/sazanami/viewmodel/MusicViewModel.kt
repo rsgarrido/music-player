@@ -2,6 +2,7 @@ package io.github.rsgarrido.sazanami.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -72,6 +73,7 @@ import io.github.rsgarrido.sazanami.data.backup.BackupExportResult
 import io.github.rsgarrido.sazanami.data.backup.BackupRepository
 import io.github.rsgarrido.sazanami.data.backup.BackupRestoreResult
 import io.github.rsgarrido.sazanami.data.backup.BackupRestoreSummary
+import io.github.rsgarrido.sazanami.data.backup.BACKUP_RESTORE_LOG_TAG
 import io.github.rsgarrido.sazanami.data.local.AppDatabase
 import io.github.rsgarrido.sazanami.data.local.DatabaseProvider
 import io.github.rsgarrido.sazanami.data.importing.spotify.SpotifyExtendedStreamingParser
@@ -103,6 +105,7 @@ import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernSeekbarStyle
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -1358,14 +1361,39 @@ class MusicViewModel(
         onRestored: (Result<BackupRestoreResult>) -> Unit
     ) {
         viewModelScope.launch {
+            var databaseCommitted = false
             val result = runCatching {
-                val restoreResult = backupRepository.restoreBackup(backup)
-
-                libraryController.refreshAfterBackupRestore()
-
-                restoreResult
+                playbackController.beginBackupRestore()
+                var boundaryFinished = false
+                var restoreFailure: Throwable? = null
+                try {
+                    val restoreResult = backupRepository.restoreBackup(backup) {
+                        databaseCommitted = true
+                    }
+                    playbackController.finishBackupRestore(databaseCommitted = true)
+                    boundaryFinished = true
+                    libraryController.refreshAfterBackupRestore()
+                    restoreResult
+                } catch (failure: Throwable) {
+                    restoreFailure = failure
+                    throw failure
+                } finally {
+                    if (!boundaryFinished) {
+                        withContext(NonCancellable) {
+                            try {
+                                playbackController.finishBackupRestore(databaseCommitted)
+                            } catch (cleanupFailure: Throwable) {
+                                val originalFailure = restoreFailure
+                                if (originalFailure == null) throw cleanupFailure
+                                originalFailure.addSuppressed(cleanupFailure)
+                            }
+                        }
+                    }
+                }
             }
-
+            result.exceptionOrNull()?.let { failure ->
+                Log.e(BACKUP_RESTORE_LOG_TAG, "Backup restore failed", failure)
+            }
             onRestored(result)
         }
     }

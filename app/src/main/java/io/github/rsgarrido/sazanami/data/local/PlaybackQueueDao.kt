@@ -92,6 +92,12 @@ interface PlaybackQueueDao {
     @Query("DELETE FROM playback_queues WHERE queueId = :queueId")
     suspend fun deleteQueue(queueId: String): Int
 
+    @Query("DELETE FROM playback_queue_state")
+    suspend fun deleteQueueStateForBackupRestore()
+
+    @Query("DELETE FROM playback_queues")
+    suspend fun deleteAllQueuesForBackupRestore()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun setQueueState(state: PlaybackQueueStateEntity)
 

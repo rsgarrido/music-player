@@ -582,7 +582,7 @@ class AppPreferencesRepository private constructor(
         preferences[Keys.selectedPlayerTheme] = restored.selectedPlayerTheme.id
         preferences[Keys.modernArtworkTransitionStyle] =
             restored.modernArtworkTransitionStyle.storageValue
-        preferences.writeModernPlayerAppearance(restored.modernPlayerAppearance)
+        preferences.writeRestoredModernAppearance(restored)
         preferences[Keys.replayGainMode] = restored.replayGainMode.name
         preferences[Keys.audioOffloadPreference] = restored.audioOffloadPreference.name
         preferences[Keys.smoothPlayPauseEnabled] = restored.smoothPlayPauseEnabled
@@ -807,6 +807,11 @@ internal fun MutablePreferences.writeModernPlayerAppearance(
     this[Keys.modernLayoutDensity] = appearance.layout.density.storageValue
     this[Keys.modernMetadataAlignment] = appearance.layout.metadataAlignment.storageValue
     this[Keys.modernShowAudioQualityBadge] = appearance.layout.showAudioQualityBadge
+}
+
+internal fun MutablePreferences.writeRestoredModernAppearance(restored: AppPreferencesState) {
+    writeModernPlayerAppearance(restored.myPlayerAppearance)
+    selectModernAppearanceChoice(restored.activeModernAppearanceChoice)
 }
 
 internal fun MutablePreferences.selectModernAppearanceChoice(choice: ModernAppearanceChoice) {

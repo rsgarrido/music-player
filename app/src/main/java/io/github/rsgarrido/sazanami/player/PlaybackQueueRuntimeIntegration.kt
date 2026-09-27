@@ -87,6 +87,42 @@ internal class Media3PlaybackQueueRuntime(
     private val evidenceReader: (MediaItem) -> ListeningMediaItemEvidence? =
         MediaItem::listeningEvidence
 ) : PlaybackQueueRuntime {
+    override fun captureForBackupRestore(): BackupRestorePlaybackSnapshot? {
+        if (player.mediaItemCount == 0) return null
+        return BackupRestorePlaybackSnapshot(
+            mediaItems = (0 until player.mediaItemCount).map(player::getMediaItemAt),
+            currentIndex = player.currentMediaItemIndex.coerceAtLeast(0),
+            currentPositionMs = player.currentPosition.coerceAtLeast(0L),
+            shouldPlay = player.playWhenReady,
+            shuffleEnabled = player.shuffleModeEnabled,
+            repeatMode = player.repeatMode
+        )
+    }
+
+    override fun clearForBackupRestore() {
+        player.pause()
+        player.stop()
+        player.clearMediaItems()
+    }
+
+    override fun restoreAfterFailedBackupRestore(snapshot: BackupRestorePlaybackSnapshot) {
+        player.shuffleModeEnabled = snapshot.shuffleEnabled
+        player.repeatMode = snapshot.repeatMode
+        player.setMediaItems(
+            snapshot.mediaItems,
+            snapshot.currentIndex,
+            snapshot.currentPositionMs
+        )
+        player.prepare()
+        if (snapshot.shouldPlay) player.play()
+    }
+
+    override fun completeBackupRestore() {
+        onBaseSongsRestored(emptyList(), false)
+        player.shuffleModeEnabled = false
+        player.repeatMode = Player.REPEAT_MODE_OFF
+    }
+
     override fun captureSnapshot(): LivePlaybackQueueSnapshot? {
         if (player.mediaItemCount == 0) return null
         val entries = (0 until player.mediaItemCount).mapNotNull { index ->
@@ -214,6 +250,14 @@ internal object PlaybackQueueRuntimeBridge {
     }
 
     suspend fun saveActiveQueue(): String? = coordinator?.persistActiveQueueSnapshot()
+
+    suspend fun beginBackupRestore() {
+        coordinator?.beginBackupRestore()
+    }
+
+    suspend fun finishBackupRestore(databaseCommitted: Boolean) {
+        coordinator?.finishBackupRestore(databaseCommitted)
+    }
 
     fun prepareNewPlaybackContext(baseEntryIds: List<String>) {
         coordinator?.prepareNewPlaybackContext(baseEntryIds)

@@ -74,6 +74,10 @@ class PlayerStateStorage internal constructor(
             .apply()
     }
 
+    fun clearForBackupRestore() {
+        preferences.edit().clear().apply()
+    }
+
     fun getQueueSongIds(): List<Long> {
         return getSongIds(KEY_QUEUE)
     }

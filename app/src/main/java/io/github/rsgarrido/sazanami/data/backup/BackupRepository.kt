@@ -2,6 +2,7 @@ package io.github.rsgarrido.sazanami.data.backup
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.room.withTransaction
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -38,6 +39,7 @@ import io.github.rsgarrido.sazanami.player.equalizer.parametric.slopeOrNull
 import io.github.rsgarrido.sazanami.ui.library.LibraryViewCategory
 import io.github.rsgarrido.sazanami.ui.library.LibraryViewMode
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkFit
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkShadow
@@ -70,6 +72,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 
 private data class RestoredVisualAssets(val count: Int)
+internal const val BACKUP_RESTORE_LOG_TAG = "SazanamiBackupRestore"
 
 class BackupRepository(
     context: Context,
@@ -118,43 +121,6 @@ class BackupRepository(
                 preserveAlbumTransitions = appPreferences.preserveAlbumTransitions,
                 modernArtworkTransitionStyle =
                     appPreferences.modernArtworkTransitionStyle.storageValue,
-                modernSeekbarStyle = appPreferences.modernSeekbarStyle.storageValue,
-                modernWaveformSize =
-                    appPreferences.modernPlayerAppearance.seekbar.waveformSize.storageValue,
-                modernWaveformDensity =
-                    appPreferences.modernPlayerAppearance.seekbar.waveformDensity.storageValue,
-                modernSeekbarColorMode =
-                    appPreferences.modernPlayerAppearance.seekbar.colorMode.storageValue,
-                modernBackgroundStyle =
-                    appPreferences.modernPlayerAppearance.background.style.storageValue,
-                modernBlurStrength =
-                    appPreferences.modernPlayerAppearance.background.blurStrength.storageValue,
-                modernDimmingStrength =
-                    appPreferences.modernPlayerAppearance.background.dimmingStrength.storageValue,
-                modernSolidColorArgb =
-                    sanitizeModernSolidColorArgb(
-                        appPreferences.modernPlayerAppearance.background.solidColorArgb
-                    ),
-                modernArtworkShape =
-                    appPreferences.modernPlayerAppearance.artwork.shape.storageValue,
-                modernArtworkSize =
-                    appPreferences.modernPlayerAppearance.artwork.size.storageValue,
-                modernArtworkFit =
-                    appPreferences.modernPlayerAppearance.artwork.fit.storageValue,
-                modernArtworkShadow =
-                    appPreferences.modernPlayerAppearance.artwork.shadow.storageValue,
-                modernControlStyle =
-                    appPreferences.modernPlayerAppearance.controls.style.storageValue,
-                modernControlSize =
-                    appPreferences.modernPlayerAppearance.controls.size.storageValue,
-                modernControlAccent =
-                    appPreferences.modernPlayerAppearance.controls.accent.storageValue,
-                modernLayoutDensity =
-                    appPreferences.modernPlayerAppearance.layout.density.storageValue,
-                modernMetadataAlignment =
-                    appPreferences.modernPlayerAppearance.layout.metadataAlignment.storageValue,
-                modernShowAudioQualityBadge =
-                    appPreferences.modernPlayerAppearance.layout.showAudioQualityBadge,
                 playerThemeTokenOverrides = createThemeTokenBackup(appPreferences),
                 songsViewMode = appPreferences.songsViewMode.storageValue,
                 albumsViewMode = appPreferences.albumsViewMode.storageValue,
@@ -179,7 +145,7 @@ class BackupRepository(
                 equalizer = appPreferences
                     .equalizerPreferences
                     .toBackupEqualizerPreferences()
-            )
+            ).withMyPlayerAppearance(appPreferences)
         )
         val payloads = collectVisualAssetPayloads(
             playlists = backup.playlists,
@@ -215,58 +181,64 @@ class BackupRepository(
         return backup.toBackupRestoreSummary()
     }
 
-    suspend fun restoreBackup(backup: AppBackup): BackupRestoreResult =
+    suspend fun restoreBackup(
+        backup: AppBackup,
+        onDatabaseCommitted: () -> Unit = {}
+    ): BackupRestoreResult =
         withContext(Dispatchers.IO) {
-            val summary = summarizeRestore(backup)
-            val validatedHistory = ListeningHistoryBackupValidator.validate(
-                backup.requiredCanonicalListeningHistory()
-            )
-            val validatedRatings = SongRatingBackupValidator.validate(
-                backup.songRatings,
-                validatedHistory
-            )
+                val summary = summarizeRestore(backup)
+                val validatedHistory = ListeningHistoryBackupValidator.validate(
+                    backup.requiredCanonicalListeningHistory()
+                )
+                val validatedRatings = SongRatingBackupValidator.validate(
+                    backup.songRatings,
+                    validatedHistory
+                )
 
-            val previousArtistPictures = artistPictureRepository.getAll()
-            val restoredPlaylistIds = appDatabase.withTransaction {
-                val restoredIdentityIds =
-                    canonicalHistoryRepository.restoreValidatedWithinTransaction(validatedHistory)
-                canonicalHistoryRepository.restoreRatingsValidatedWithinTransaction(
-                    validatedRatings,
-                    restoredIdentityIds
-                )
-                favoritesRepository.restoreFavoritesFromBackup(backup.favorites)
-                val playlistIds = playlistsRepository.restorePlaylistsFromBackup(
-                    folders = backup.playlistFolders,
-                    playlists = backup.playlists
-                )
-                smartPlaylistBackupRepository.restoreWithinTransaction(
-                    backup.playlists,
+                val previousArtistPictures = artistPictureRepository.getAll()
+                val restoredPlaylistIds = appDatabase.withTransaction {
+                    appDatabase.playbackQueueDao().deleteQueueStateForBackupRestore()
+                    appDatabase.playbackQueueDao().deleteAllQueuesForBackupRestore()
+                    val restoredIdentityIds =
+                        canonicalHistoryRepository.restoreValidatedWithinTransaction(validatedHistory)
+                    canonicalHistoryRepository.restoreRatingsValidatedWithinTransaction(
+                        validatedRatings,
+                        restoredIdentityIds
+                    )
+                    favoritesRepository.restoreFavoritesFromBackup(backup.favorites)
+                    val playlistIds = playlistsRepository.restorePlaylistsFromBackup(
+                        folders = backup.playlistFolders,
+                        playlists = backup.playlists
+                    )
+                    smartPlaylistBackupRepository.restoreWithinTransaction(
+                        backup.playlists,
+                        playlistIds
+                    )
+                    listeningHistoryRepository.restoreListeningHistoryFromBackup(
+                        backup.listeningHistory
+                    )
+                    appDatabase.artistPictureAssignmentDao().deleteAll()
                     playlistIds
-                )
-                listeningHistoryRepository.restoreListeningHistoryFromBackup(
-                    backup.listeningHistory
-                )
-                appDatabase.artistPictureAssignmentDao().deleteAll()
-                playlistIds
-            }
-            val restoredVisualAssets = restoreVisualAssets(backup, restoredPlaylistIds)
-            previousArtistPictures.forEach { assignment ->
-                visualAssetStore.delete(
-                    VisualAssetOwnerType.ARTIST_IMAGE,
-                    assignment.artistKey,
-                    assignment.assetReference
-                )
-            }
-            restorePreferences(backup.preferences, restoredPlaylistIds)
+                }
+                onDatabaseCommitted()
+                val restoredVisualAssets = restoreVisualAssets(backup, restoredPlaylistIds)
+                previousArtistPictures.forEach { assignment ->
+                    visualAssetStore.delete(
+                        VisualAssetOwnerType.ARTIST_IMAGE,
+                        assignment.artistKey,
+                        assignment.assetReference
+                    )
+                }
+                restorePreferences(backup.preferences, restoredPlaylistIds)
 
-            BackupRestoreResult(
-                favoriteCount = summary.favoriteCount,
-                playlistCount = summary.playlistCount,
-                playlistSongCount = summary.playlistSongCount,
-                listeningHistoryCount = summary.listeningHistoryCount,
-                selectedFolderCount = summary.selectedFolderCount,
-                visualAssetCount = restoredVisualAssets.count
-            )
+                BackupRestoreResult(
+                    favoriteCount = summary.favoriteCount,
+                    playlistCount = summary.playlistCount,
+                    playlistSongCount = summary.playlistSongCount,
+                    listeningHistoryCount = summary.listeningHistoryCount,
+                    selectedFolderCount = summary.selectedFolderCount,
+                    visualAssetCount = restoredVisualAssets.count
+                )
         }
 
     private fun collectVisualAssetPayloads(
@@ -398,6 +370,7 @@ class BackupRepository(
                 onSuccess = { it },
                 onFailure = { failure ->
                     if (failure is CancellationException) throw failure
+                    Log.w(BACKUP_RESTORE_LOG_TAG, "Visual asset restore skipped after failure", failure)
                     false
                 }
             )
@@ -468,6 +441,7 @@ class BackupRepository(
                 )
             )
         }.toMap()
+        val restoredAppearance = preferences.toModernAppearanceState()
         appPreferencesRepository.replaceAll(
             AppPreferencesState(
                 selectedPlayerTheme = PlayerTheme.fromId(preferences.selectedPlayerThemeId),
@@ -475,70 +449,9 @@ class BackupRepository(
                 modernArtworkTransitionStyle = ModernArtworkTransitionStyle.fromStorageValue(
                     preferences.modernArtworkTransitionStyle
                 ),
-                modernPlayerAppearance = ModernPlayerAppearance(
-                    seekbar = ModernSeekbarAppearance(
-                        style = ModernSeekbarStyle.fromStorageValue(
-                            preferences.modernSeekbarStyle
-                        ),
-                        waveformSize = ModernWaveformSize.fromStorageValue(
-                            preferences.modernWaveformSize
-                        ),
-                        waveformDensity = ModernWaveformDensity.fromStorageValue(
-                            preferences.modernWaveformDensity
-                        ),
-                        colorMode = ModernSeekbarColorMode.fromStorageValue(
-                            preferences.modernSeekbarColorMode
-                        )
-                    ),
-                    background = ModernBackgroundAppearance(
-                        style = ModernBackgroundStyle.fromStorageValue(
-                            preferences.modernBackgroundStyle
-                        ),
-                        blurStrength = ModernBlurStrength.fromStorageValue(
-                            preferences.modernBlurStrength
-                        ),
-                        dimmingStrength = ModernDimmingStrength.fromStorageValue(
-                            preferences.modernDimmingStrength
-                        ),
-                        solidColorArgb = sanitizeModernSolidColorArgb(
-                            preferences.modernSolidColorArgb
-                        )
-                    ),
-                    artwork = ModernArtworkAppearance(
-                        shape = ModernArtworkShape.fromStorageValue(
-                            preferences.modernArtworkShape
-                        ),
-                        size = ModernArtworkSize.fromStorageValue(
-                            preferences.modernArtworkSize
-                        ),
-                        fit = ModernArtworkFit.fromStorageValue(
-                            preferences.modernArtworkFit
-                        ),
-                        shadow = ModernArtworkShadow.fromStorageValue(
-                            preferences.modernArtworkShadow
-                        )
-                    ),
-                    controls = ModernControlAppearance(
-                        style = ModernControlStyle.fromStorageValue(
-                            preferences.modernControlStyle
-                        ),
-                        size = ModernControlSize.fromStorageValue(
-                            preferences.modernControlSize
-                        ),
-                        accent = ModernControlAccent.fromStorageValue(
-                            preferences.modernControlAccent
-                        )
-                    ),
-                    layout = ModernLayoutAppearance(
-                        density = ModernLayoutDensity.fromStorageValue(
-                            preferences.modernLayoutDensity
-                        ),
-                        metadataAlignment = ModernMetadataAlignment.fromStorageValue(
-                            preferences.modernMetadataAlignment
-                        ),
-                        showAudioQualityBadge = preferences.modernShowAudioQualityBadge
-                    )
-                ),
+                modernPlayerAppearance = restoredAppearance.modernPlayerAppearance,
+                myPlayerAppearance = restoredAppearance.myPlayerAppearance,
+                activeModernAppearanceChoice = restoredAppearance.activeModernAppearanceChoice,
                 replayGainMode = runCatching { ReplayGainMode.valueOf(preferences.replayGainMode) }
                     .getOrDefault(ReplayGainMode.OFF),
                 audioOffloadPreference = AudioOffloadPreference.fromStorageValue(
@@ -597,6 +510,72 @@ class BackupRepository(
     private companion object {
         const val APP_NAME = "Sazanami"
     }
+}
+
+internal fun BackupPreferences.withMyPlayerAppearance(state: AppPreferencesState): BackupPreferences {
+    val myPlayer = state.myPlayerAppearance
+    return copy(
+        modernActiveAppearanceChoice = state.activeModernAppearanceChoice.name,
+        modernSeekbarStyle = myPlayer.seekbar.style.storageValue,
+        modernWaveformSize = myPlayer.seekbar.waveformSize.storageValue,
+        modernWaveformDensity = myPlayer.seekbar.waveformDensity.storageValue,
+        modernSeekbarColorMode = myPlayer.seekbar.colorMode.storageValue,
+        modernBackgroundStyle = myPlayer.background.style.storageValue,
+        modernBlurStrength = myPlayer.background.blurStrength.storageValue,
+        modernDimmingStrength = myPlayer.background.dimmingStrength.storageValue,
+        modernSolidColorArgb = sanitizeModernSolidColorArgb(myPlayer.background.solidColorArgb),
+        modernArtworkShape = myPlayer.artwork.shape.storageValue,
+        modernArtworkSize = myPlayer.artwork.size.storageValue,
+        modernArtworkFit = myPlayer.artwork.fit.storageValue,
+        modernArtworkShadow = myPlayer.artwork.shadow.storageValue,
+        modernControlStyle = myPlayer.controls.style.storageValue,
+        modernControlSize = myPlayer.controls.size.storageValue,
+        modernControlAccent = myPlayer.controls.accent.storageValue,
+        modernLayoutDensity = myPlayer.layout.density.storageValue,
+        modernMetadataAlignment = myPlayer.layout.metadataAlignment.storageValue,
+        modernShowAudioQualityBadge = myPlayer.layout.showAudioQualityBadge
+    )
+}
+
+internal fun BackupPreferences.toMyPlayerAppearance(): ModernPlayerAppearance = ModernPlayerAppearance(
+    seekbar = ModernSeekbarAppearance(
+        style = ModernSeekbarStyle.fromStorageValue(modernSeekbarStyle),
+        waveformSize = ModernWaveformSize.fromStorageValue(modernWaveformSize),
+        waveformDensity = ModernWaveformDensity.fromStorageValue(modernWaveformDensity),
+        colorMode = ModernSeekbarColorMode.fromStorageValue(modernSeekbarColorMode)
+    ),
+    background = ModernBackgroundAppearance(
+        style = ModernBackgroundStyle.fromStorageValue(modernBackgroundStyle),
+        blurStrength = ModernBlurStrength.fromStorageValue(modernBlurStrength),
+        dimmingStrength = ModernDimmingStrength.fromStorageValue(modernDimmingStrength),
+        solidColorArgb = sanitizeModernSolidColorArgb(modernSolidColorArgb)
+    ),
+    artwork = ModernArtworkAppearance(
+        shape = ModernArtworkShape.fromStorageValue(modernArtworkShape),
+        size = ModernArtworkSize.fromStorageValue(modernArtworkSize),
+        fit = ModernArtworkFit.fromStorageValue(modernArtworkFit),
+        shadow = ModernArtworkShadow.fromStorageValue(modernArtworkShadow)
+    ),
+    controls = ModernControlAppearance(
+        style = ModernControlStyle.fromStorageValue(modernControlStyle),
+        size = ModernControlSize.fromStorageValue(modernControlSize),
+        accent = ModernControlAccent.fromStorageValue(modernControlAccent)
+    ),
+    layout = ModernLayoutAppearance(
+        density = ModernLayoutDensity.fromStorageValue(modernLayoutDensity),
+        metadataAlignment = ModernMetadataAlignment.fromStorageValue(modernMetadataAlignment),
+        showAudioQualityBadge = modernShowAudioQualityBadge
+    )
+)
+
+internal fun BackupPreferences.toModernAppearanceState(): AppPreferencesState {
+    val myPlayer = toMyPlayerAppearance()
+    val choice = ModernAppearanceChoice.fromStorageValue(modernActiveAppearanceChoice)
+    return AppPreferencesState(
+        modernPlayerAppearance = choice.effectiveAppearance(myPlayer),
+        myPlayerAppearance = myPlayer,
+        activeModernAppearanceChoice = choice
+    )
 }
 
 private fun EqualizerPreferencesState
