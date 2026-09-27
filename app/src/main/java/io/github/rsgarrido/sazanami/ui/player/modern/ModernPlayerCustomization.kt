@@ -474,6 +474,27 @@ enum class ModernAppearancePreset(val displayName: String) {
     }
 }
 
+enum class ModernAppearanceChoice(val displayName: String) {
+    MY_PLAYER("My Player"),
+    DEFAULT("Default"),
+    ARTWORK_FOCUS("Artwork Focus"),
+    MINIMAL("Minimal"),
+    COLORFUL("Colorful");
+
+    fun effectiveAppearance(myPlayer: ModernPlayerAppearance): ModernPlayerAppearance = when (this) {
+        MY_PLAYER -> myPlayer
+        DEFAULT -> ModernAppearancePreset.DEFAULT.appearance()
+        ARTWORK_FOCUS -> ModernAppearancePreset.ARTWORK_FOCUS.appearance()
+        MINIMAL -> ModernAppearancePreset.MINIMAL.appearance()
+        COLORFUL -> ModernAppearancePreset.COLORFUL.appearance()
+    }
+
+    companion object {
+        fun fromStorageValue(value: String?): ModernAppearanceChoice =
+            entries.firstOrNull { it.name == value } ?: MY_PLAYER
+    }
+}
+
 const val DEFAULT_MODERN_SOLID_COLOR_ARGB: Long = 0xFF17191F
 
 fun sanitizeModernSolidColorArgb(value: Long?): Long =

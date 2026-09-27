@@ -47,6 +47,7 @@ data class BackupPreferences(
     val crossfadeDurationMs: Int = 5_000,
     val preserveAlbumTransitions: Boolean = true,
     val modernArtworkTransitionStyle: String = "slide",
+    val modernActiveAppearanceChoice: String = "MY_PLAYER",
     val modernSeekbarStyle: String = "waveform_preview",
     val modernWaveformSize: String = "standard",
     val modernWaveformDensity: String = "balanced",

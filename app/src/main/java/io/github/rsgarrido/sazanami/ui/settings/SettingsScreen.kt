@@ -53,6 +53,7 @@ import io.github.rsgarrido.sazanami.ui.home.LocalHomePinUi
 import io.github.rsgarrido.sazanami.ui.state.LibraryRefreshSummary
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokenField
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokens
 import io.github.rsgarrido.sazanami.ui.player.theme.customizationOptions
@@ -91,7 +92,9 @@ fun SettingsScreen(
     selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
     onModernArtworkTransitionStyleSelected: (ModernArtworkTransitionStyle) -> Unit,
     selectedModernPlayerAppearance: ModernPlayerAppearance,
-    onModernPlayerAppearanceChanged: (ModernPlayerAppearance) -> Unit,
+    activeModernAppearanceChoice: ModernAppearanceChoice,
+    onModernAppearanceChoiceSelected: (ModernAppearanceChoice) -> Unit,
+    onModernPlayerAppearanceEdited: ((ModernPlayerAppearance) -> ModernPlayerAppearance) -> Unit,
     onResetModernPlayerAppearance: () -> Unit,
     previewSong: Song?,
     selectedReplayGainMode: ReplayGainMode,
@@ -123,8 +126,10 @@ fun SettingsScreen(
     if (isDefaultPlayerCustomizationVisible) {
         DefaultPlayerCustomizationScreen(
             appearance = selectedModernPlayerAppearance,
+            activeChoice = activeModernAppearanceChoice,
             previewSong = previewSong,
-            onAppearanceChanged = onModernPlayerAppearanceChanged,
+            onChoiceSelected = onModernAppearanceChoiceSelected,
+            onAppearanceEdited = onModernPlayerAppearanceEdited,
             onReset = onResetModernPlayerAppearance,
             onBackClick = { isDefaultPlayerCustomizationVisible = false },
             modifier = modifier

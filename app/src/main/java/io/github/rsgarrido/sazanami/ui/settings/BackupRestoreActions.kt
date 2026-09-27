@@ -162,6 +162,7 @@ internal fun backupRestoreConfirmationText(): String {
         - Library folder selection
         - Player theme and ReplayGain setting
 
+        Saved queues and current playback will be cleared.
         Your music files will not be changed.
     """.trimIndent()
 }

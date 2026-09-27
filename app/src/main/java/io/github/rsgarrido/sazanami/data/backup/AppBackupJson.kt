@@ -22,7 +22,7 @@ import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 
 object AppBackupJson {
-    const val CURRENT_SCHEMA_VERSION = 15
+    const val CURRENT_SCHEMA_VERSION = 16
     private const val OLDEST_SUPPORTED_SCHEMA_VERSION = 1
 
     private val json = Json {
@@ -107,6 +107,9 @@ object AppBackupJson {
         }
         if (migrated.schemaVersion == 14) {
             migrated = migrateV14ToV15(migrated)
+        }
+        if (migrated.schemaVersion == 15) {
+            migrated = migrateV15ToV16(migrated)
         }
         migrated = migrated.copy(
             preferences = migrated.preferences.copy(
@@ -354,6 +357,11 @@ object AppBackupJson {
     private fun migrateV14ToV15(backup: AppBackup): AppBackup = backup.copy(
         schemaVersion = 15,
         visualAssets = emptyList()
+    )
+
+    private fun migrateV15ToV16(backup: AppBackup): AppBackup = backup.copy(
+        schemaVersion = 16,
+        preferences = backup.preferences.copy(modernActiveAppearanceChoice = "MY_PLAYER")
     )
 
     private fun validateEqualizerBackup(

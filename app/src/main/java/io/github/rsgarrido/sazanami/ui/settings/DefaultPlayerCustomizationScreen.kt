@@ -58,7 +58,7 @@ import io.github.rsgarrido.sazanami.ui.player.modern.ModernBackgroundAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernBackgroundStyle
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernBlurStrength
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernDimmingStrength
-import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearancePreset
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkFit
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkShape
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkShadow
@@ -92,8 +92,10 @@ import io.github.rsgarrido.sazanami.ui.player.modern.resolveModernAlbumGradient
 @Composable
 internal fun DefaultPlayerCustomizationScreen(
     appearance: ModernPlayerAppearance,
+    activeChoice: ModernAppearanceChoice,
     previewSong: Song?,
-    onAppearanceChanged: (ModernPlayerAppearance) -> Unit,
+    onChoiceSelected: (ModernAppearanceChoice) -> Unit,
+    onAppearanceEdited: ((ModernPlayerAppearance) -> ModernPlayerAppearance) -> Unit,
     onReset: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -152,13 +154,12 @@ internal fun DefaultPlayerCustomizationScreen(
             description = "Apply a coordinated look, then fine-tune any setting below.",
             icon = AppShellIcons.Palette
         ) {
-            val matchingPreset = ModernAppearancePreset.matching(appearance)
             ChoiceGroup(
-                title = if (matchingPreset == null) "Current: Custom" else "Current preset",
-                options = ModernAppearancePreset.entries,
-                selected = matchingPreset,
-                label = ModernAppearancePreset::displayName,
-                onSelected = { preset -> onAppearanceChanged(preset.appearance()) }
+                title = "Current appearance",
+                options = ModernAppearanceChoice.entries,
+                selected = activeChoice,
+                label = ModernAppearanceChoice::displayName,
+                onSelected = onChoiceSelected
             )
         }
 
@@ -175,9 +176,9 @@ internal fun DefaultPlayerCustomizationScreen(
                 selected = appearance.seekbar.style,
                 label = ModernSeekbarStyle::displayName,
                 onSelected = { style ->
-                    onAppearanceChanged(
-                        appearance.copy(seekbar = appearance.seekbar.copy(style = style))
-                    )
+                    onAppearanceEdited { current ->
+                        current.copy(seekbar = current.seekbar.copy(style = style))
+                    }
                 }
             )
 
@@ -188,11 +189,9 @@ internal fun DefaultPlayerCustomizationScreen(
                     selected = appearance.seekbar.waveformSize,
                     label = ModernWaveformSize::displayName,
                     onSelected = { size ->
-                        onAppearanceChanged(
-                            appearance.copy(
-                                seekbar = appearance.seekbar.copy(waveformSize = size)
-                            )
-                        )
+                        onAppearanceEdited { current ->
+                            current.copy(seekbar = current.seekbar.copy(waveformSize = size))
+                        }
                     }
                 )
                 ChoiceGroup(
@@ -201,11 +200,9 @@ internal fun DefaultPlayerCustomizationScreen(
                     selected = appearance.seekbar.waveformDensity,
                     label = ModernWaveformDensity::displayName,
                     onSelected = { density ->
-                        onAppearanceChanged(
-                            appearance.copy(
-                                seekbar = appearance.seekbar.copy(waveformDensity = density)
-                            )
-                        )
+                        onAppearanceEdited { current ->
+                            current.copy(seekbar = current.seekbar.copy(waveformDensity = density))
+                        }
                     }
                 )
             }
@@ -216,9 +213,9 @@ internal fun DefaultPlayerCustomizationScreen(
                 selected = appearance.seekbar.colorMode,
                 label = ModernSeekbarColorMode::displayName,
                 onSelected = { mode ->
-                    onAppearanceChanged(
-                        appearance.copy(seekbar = appearance.seekbar.copy(colorMode = mode))
-                    )
+                    onAppearanceEdited { current ->
+                        current.copy(seekbar = current.seekbar.copy(colorMode = mode))
+                    }
                 }
             )
         }
@@ -236,11 +233,9 @@ internal fun DefaultPlayerCustomizationScreen(
                 selected = appearance.background.style,
                 label = ModernBackgroundStyle::displayName,
                 onSelected = { style ->
-                    onAppearanceChanged(
-                        appearance.copy(
-                            background = appearance.background.copy(style = style)
-                        )
-                    )
+                    onAppearanceEdited { current ->
+                        current.copy(background = current.background.copy(style = style))
+                    }
                 }
             )
 
@@ -251,11 +246,9 @@ internal fun DefaultPlayerCustomizationScreen(
                     selected = appearance.background.blurStrength,
                     label = ModernBlurStrength::displayName,
                     onSelected = { strength ->
-                        onAppearanceChanged(
-                            appearance.copy(
-                                background = appearance.background.copy(blurStrength = strength)
-                            )
-                        )
+                        onAppearanceEdited { current ->
+                            current.copy(background = current.background.copy(blurStrength = strength))
+                        }
                     }
                 )
             }
@@ -267,13 +260,9 @@ internal fun DefaultPlayerCustomizationScreen(
                     selected = appearance.background.dimmingStrength,
                     label = ModernDimmingStrength::displayName,
                     onSelected = { strength ->
-                        onAppearanceChanged(
-                            appearance.copy(
-                                background = appearance.background.copy(
-                                    dimmingStrength = strength
-                                )
-                            )
-                        )
+                        onAppearanceEdited { current ->
+                            current.copy(background = current.background.copy(dimmingStrength = strength))
+                        }
                     }
                 )
             }
@@ -281,14 +270,14 @@ internal fun DefaultPlayerCustomizationScreen(
             if (appearance.background.style == ModernBackgroundStyle.SOLID_COLOR) {
                 SolidColorPicker(
                     argb = appearance.background.solidColorArgb,
-                    onColorChanged = { argb ->
-                        onAppearanceChanged(
-                            appearance.copy(
-                                background = appearance.background.copy(
-                                    solidColorArgb = argb
+                    onColorChanged = { transform ->
+                        onAppearanceEdited { current ->
+                            current.copy(
+                                background = current.background.copy(
+                                    solidColorArgb = transform(current.background.solidColorArgb)
                                 )
                             )
-                        )
+                        }
                     }
                 )
             }
@@ -303,19 +292,27 @@ internal fun DefaultPlayerCustomizationScreen(
         ) {
             ChoiceGroup("Shape", ModernArtworkShape.entries, appearance.artwork.shape,
                 ModernArtworkShape::displayName) { value ->
-                onAppearanceChanged(appearance.copy(artwork = appearance.artwork.copy(shape = value)))
+                onAppearanceEdited { current ->
+                    current.copy(artwork = current.artwork.copy(shape = value))
+                }
             }
             ChoiceGroup("Size", ModernArtworkSize.entries, appearance.artwork.size,
                 ModernArtworkSize::displayName) { value ->
-                onAppearanceChanged(appearance.copy(artwork = appearance.artwork.copy(size = value)))
+                onAppearanceEdited { current ->
+                    current.copy(artwork = current.artwork.copy(size = value))
+                }
             }
             ChoiceGroup("Image fit", ModernArtworkFit.entries, appearance.artwork.fit,
                 ModernArtworkFit::displayName) { value ->
-                onAppearanceChanged(appearance.copy(artwork = appearance.artwork.copy(fit = value)))
+                onAppearanceEdited { current ->
+                    current.copy(artwork = current.artwork.copy(fit = value))
+                }
             }
             ChoiceGroup("Shadow", ModernArtworkShadow.entries, appearance.artwork.shadow,
                 ModernArtworkShadow::displayName) { value ->
-                onAppearanceChanged(appearance.copy(artwork = appearance.artwork.copy(shadow = value)))
+                onAppearanceEdited { current ->
+                    current.copy(artwork = current.artwork.copy(shadow = value))
+                }
             }
         }
 
@@ -328,15 +325,21 @@ internal fun DefaultPlayerCustomizationScreen(
         ) {
             ChoiceGroup("Style", ModernControlStyle.entries, appearance.controls.style,
                 ModernControlStyle::displayName) { value ->
-                onAppearanceChanged(appearance.copy(controls = appearance.controls.copy(style = value)))
+                onAppearanceEdited { current ->
+                    current.copy(controls = current.controls.copy(style = value))
+                }
             }
             ChoiceGroup("Size", ModernControlSize.entries, appearance.controls.size,
                 ModernControlSize::displayName) { value ->
-                onAppearanceChanged(appearance.copy(controls = appearance.controls.copy(size = value)))
+                onAppearanceEdited { current ->
+                    current.copy(controls = current.controls.copy(size = value))
+                }
             }
             ChoiceGroup("Accent", ModernControlAccent.entries, appearance.controls.accent,
                 ModernControlAccent::displayName) { value ->
-                onAppearanceChanged(appearance.copy(controls = appearance.controls.copy(accent = value)))
+                onAppearanceEdited { current ->
+                    current.copy(controls = current.controls.copy(accent = value))
+                }
             }
         }
 
@@ -349,7 +352,9 @@ internal fun DefaultPlayerCustomizationScreen(
         ) {
             ChoiceGroup("Density", ModernLayoutDensity.entries, appearance.layout.density,
                 ModernLayoutDensity::displayName) { value ->
-                onAppearanceChanged(appearance.copy(layout = appearance.layout.copy(density = value)))
+                onAppearanceEdited { current ->
+                    current.copy(layout = current.layout.copy(density = value))
+                }
             }
             ChoiceGroup(
                 "Metadata alignment",
@@ -357,9 +362,9 @@ internal fun DefaultPlayerCustomizationScreen(
                 appearance.layout.metadataAlignment,
                 ModernMetadataAlignment::displayName
             ) { value ->
-                onAppearanceChanged(
-                    appearance.copy(layout = appearance.layout.copy(metadataAlignment = value))
-                )
+                onAppearanceEdited { current ->
+                    current.copy(layout = current.layout.copy(metadataAlignment = value))
+                }
             }
             Row(
                 modifier = Modifier
@@ -379,11 +384,11 @@ internal fun DefaultPlayerCustomizationScreen(
                 Switch(
                     checked = appearance.layout.showAudioQualityBadge,
                     onCheckedChange = { checked ->
-                        onAppearanceChanged(
-                            appearance.copy(
-                                layout = appearance.layout.copy(showAudioQualityBadge = checked)
+                        onAppearanceEdited { current ->
+                            current.copy(
+                                layout = current.layout.copy(showAudioQualityBadge = checked)
                             )
-                        )
+                        }
                     }
                 )
             }
@@ -685,7 +690,7 @@ private fun BoxScope.PreviewBackground(
 @Composable
 private fun SolidColorPicker(
     argb: Long,
-    onColorChanged: (Long) -> Unit
+    onColorChanged: ((Long) -> Long) -> Unit
 ) {
     val sanitized = sanitizeModernSolidColorArgb(argb)
     val hsv = remember(sanitized) { modernArgbToHsv(sanitized) }
@@ -735,18 +740,24 @@ private fun SolidColorPicker(
                             },
                             shape = RoundedCornerShape(10.dp)
                         )
-                        .clickable { onColorChanged(swatch) }
+                        .clickable { onColorChanged { swatch } }
                 )
             }
         }
         ColorSlider("Hue", hsv.hue, 0f..359f) { value ->
-            onColorChanged(modernHsvToArgb(hsv.copy(hue = value)))
+            onColorChanged { current ->
+                modernHsvToArgb(modernArgbToHsv(current).copy(hue = value))
+            }
         }
         ColorSlider("Saturation", hsv.saturation, 0f..1f) { value ->
-            onColorChanged(modernHsvToArgb(hsv.copy(saturation = value)))
+            onColorChanged { current ->
+                modernHsvToArgb(modernArgbToHsv(current).copy(saturation = value))
+            }
         }
         ColorSlider("Brightness", hsv.value, 0.08f..1f) { value ->
-            onColorChanged(modernHsvToArgb(hsv.copy(value = value)))
+            onColorChanged { current ->
+                modernHsvToArgb(modernArgbToHsv(current).copy(value = value))
+            }
         }
     }
 }

@@ -414,6 +414,33 @@ class PlaybackController(
 
     fun getActiveQueueId(): String? = PlaybackQueueRuntimeBridge.getActiveQueueId()
 
+    suspend fun beginBackupRestore() {
+        PlaybackQueueRuntimeBridge.beginBackupRestore()
+    }
+
+    suspend fun finishBackupRestore(databaseCommitted: Boolean) {
+        PlaybackQueueRuntimeBridge.finishBackupRestore(databaseCommitted)
+        if (databaseCommitted) {
+            progressHandler.removeCallbacks(progressRunnable)
+            pendingExternalPlaybackSelection = null
+            pendingPersistentQueueSwitch = false
+            adoptedPersistentQueueEntryId = null
+            playbackQueueManager.replaceQueue(emptyList())
+            playbackNavigationHistory.clearAll()
+            playbackContextSongs = emptyList()
+            upcomingSongs = emptyList()
+            currentSong = null
+            isPlaying = false
+            currentPosition = 0
+            duration = 0
+            shuffleMode = PlaybackShuffleMode.OFF
+            repeatMode = RepeatMode.OFF
+            playerStateStorage.clearForBackupRestore()
+        } else {
+            adoptLivePlayerState()
+        }
+    }
+
     internal fun activeQueueEntryIds(): List<String> =
         PlaybackQueueRuntimeBridge.getActiveQueueSnapshot()
             ?.entries

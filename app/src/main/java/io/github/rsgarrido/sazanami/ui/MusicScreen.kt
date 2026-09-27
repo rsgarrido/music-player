@@ -77,6 +77,7 @@ import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokenField
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokens
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.player.rememberPlayerLyricsTransitionState
 import io.github.rsgarrido.sazanami.ui.player.PlayerMorphHost
 import io.github.rsgarrido.sazanami.ui.player.playerEndpointInput
@@ -283,7 +284,9 @@ internal fun MusicScreen(
     selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
     onModernArtworkTransitionStyleSelected: (ModernArtworkTransitionStyle) -> Unit,
     selectedModernPlayerAppearance: ModernPlayerAppearance,
-    onModernPlayerAppearanceChanged: (ModernPlayerAppearance) -> Unit,
+    activeModernAppearanceChoice: ModernAppearanceChoice,
+    onModernAppearanceChoiceSelected: (ModernAppearanceChoice) -> Unit,
+    onModernPlayerAppearanceEdited: ((ModernPlayerAppearance) -> ModernPlayerAppearance) -> Unit,
     onResetModernPlayerAppearance: () -> Unit,
     selectedReplayGainMode: ReplayGainMode,
     onReplayGainModeSelected: (ReplayGainMode) -> Unit,
@@ -1478,7 +1481,9 @@ internal fun MusicScreen(
                     selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
                     onModernArtworkTransitionStyleSelected = onModernArtworkTransitionStyleSelected,
                     selectedModernPlayerAppearance = selectedModernPlayerAppearance,
-                    onModernPlayerAppearanceChanged = onModernPlayerAppearanceChanged,
+                    activeModernAppearanceChoice = activeModernAppearanceChoice,
+                    onModernAppearanceChoiceSelected = onModernAppearanceChoiceSelected,
+                    onModernPlayerAppearanceEdited = onModernPlayerAppearanceEdited,
                     onResetModernPlayerAppearance = onResetModernPlayerAppearance,
                     selectedReplayGainMode = selectedReplayGainMode,
                     onReplayGainModeSelected = onReplayGainModeSelected,

@@ -2,6 +2,7 @@ package io.github.rsgarrido.sazanami.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -72,6 +73,7 @@ import io.github.rsgarrido.sazanami.data.backup.BackupExportResult
 import io.github.rsgarrido.sazanami.data.backup.BackupRepository
 import io.github.rsgarrido.sazanami.data.backup.BackupRestoreResult
 import io.github.rsgarrido.sazanami.data.backup.BackupRestoreSummary
+import io.github.rsgarrido.sazanami.data.backup.BACKUP_RESTORE_LOG_TAG
 import io.github.rsgarrido.sazanami.data.local.AppDatabase
 import io.github.rsgarrido.sazanami.data.local.DatabaseProvider
 import io.github.rsgarrido.sazanami.data.importing.spotify.SpotifyExtendedStreamingParser
@@ -99,8 +101,12 @@ import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokenOverrides
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokens
 import io.github.rsgarrido.sazanami.ui.player.theme.customizationOptions
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernSeekbarStyle
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -142,6 +148,17 @@ class MusicViewModel(
     private var refreshOpenHistoryReconciliation: () -> Unit = {}
 
     private val appPreferencesRepository = AppPreferencesRepository.getInstance(appContext)
+    private val modernAppearanceActions = Channel<suspend () -> Unit>(Channel.UNLIMITED)
+
+    private fun enqueueModernAppearanceAction(action: suspend () -> Unit) {
+        modernAppearanceActions.trySend(action).getOrThrow()
+    }
+
+    init {
+        viewModelScope.launch {
+            for (action in modernAppearanceActions) action()
+        }
+    }
     private val tagEditorRepository = TagEditorRepository()
     private val batchMetadataExecutor = BatchMetadataExecutor(
         resolver = LibraryBatchTargetResolver(),
@@ -303,6 +320,7 @@ class MusicViewModel(
             themeTokens = selectedTheme.defaultTokens().applyOverrides(overrides),
             modernArtworkTransitionStyle = preferences.modernArtworkTransitionStyle,
             modernPlayerAppearance = preferences.modernPlayerAppearance,
+            activeModernAppearanceChoice = preferences.activeModernAppearanceChoice,
             replayGainMode = preferences.replayGainMode,
             isLoaded = preferences.isLoaded
         )
@@ -385,53 +403,57 @@ class MusicViewModel(
     }
 
     fun selectModernSeekbarStyle(style: ModernSeekbarStyle) {
-        viewModelScope.launch { appPreferencesRepository.setModernSeekbarStyle(style) }
+        enqueueModernAppearanceAction { appPreferencesRepository.setModernSeekbarStyle(style) }
     }
 
-    fun updateModernPlayerAppearance(
-        appearance: io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
-    ) {
-        viewModelScope.launch {
-            appPreferencesRepository.setModernPlayerAppearance(appearance)
+    fun selectModernAppearanceChoice(choice: ModernAppearanceChoice) {
+        enqueueModernAppearanceAction {
+            appPreferencesRepository.selectModernAppearanceChoice(choice)
+        }
+    }
+
+    fun editModernPlayerAppearance(transform: (ModernPlayerAppearance) -> ModernPlayerAppearance) {
+        enqueueModernAppearanceAction {
+            appPreferencesRepository.editModernPlayerAppearance(transform)
         }
     }
 
     fun selectModernWaveformSize(size: io.github.rsgarrido.sazanami.ui.player.modern.ModernWaveformSize) {
-        viewModelScope.launch { appPreferencesRepository.setModernWaveformSize(size) }
+        enqueueModernAppearanceAction { appPreferencesRepository.setModernWaveformSize(size) }
     }
 
     fun selectModernWaveformDensity(
         density: io.github.rsgarrido.sazanami.ui.player.modern.ModernWaveformDensity
     ) {
-        viewModelScope.launch { appPreferencesRepository.setModernWaveformDensity(density) }
+        enqueueModernAppearanceAction { appPreferencesRepository.setModernWaveformDensity(density) }
     }
 
     fun selectModernSeekbarColorMode(
         mode: io.github.rsgarrido.sazanami.ui.player.modern.ModernSeekbarColorMode
     ) {
-        viewModelScope.launch { appPreferencesRepository.setModernSeekbarColorMode(mode) }
+        enqueueModernAppearanceAction { appPreferencesRepository.setModernSeekbarColorMode(mode) }
     }
 
     fun selectModernBackgroundStyle(
         style: io.github.rsgarrido.sazanami.ui.player.modern.ModernBackgroundStyle
     ) {
-        viewModelScope.launch { appPreferencesRepository.setModernBackgroundStyle(style) }
+        enqueueModernAppearanceAction { appPreferencesRepository.setModernBackgroundStyle(style) }
     }
 
     fun selectModernBlurStrength(
         strength: io.github.rsgarrido.sazanami.ui.player.modern.ModernBlurStrength
     ) {
-        viewModelScope.launch { appPreferencesRepository.setModernBlurStrength(strength) }
+        enqueueModernAppearanceAction { appPreferencesRepository.setModernBlurStrength(strength) }
     }
 
     fun selectModernDimmingStrength(
         strength: io.github.rsgarrido.sazanami.ui.player.modern.ModernDimmingStrength
     ) {
-        viewModelScope.launch { appPreferencesRepository.setModernDimmingStrength(strength) }
+        enqueueModernAppearanceAction { appPreferencesRepository.setModernDimmingStrength(strength) }
     }
 
     fun resetModernPlayerAppearance() {
-        viewModelScope.launch { appPreferencesRepository.resetModernPlayerAppearance() }
+        enqueueModernAppearanceAction { appPreferencesRepository.resetModernPlayerAppearance() }
     }
 
     fun updatePlayerThemeTokenOverride(
@@ -1339,14 +1361,39 @@ class MusicViewModel(
         onRestored: (Result<BackupRestoreResult>) -> Unit
     ) {
         viewModelScope.launch {
+            var databaseCommitted = false
             val result = runCatching {
-                val restoreResult = backupRepository.restoreBackup(backup)
-
-                libraryController.refreshAfterBackupRestore()
-
-                restoreResult
+                playbackController.beginBackupRestore()
+                var boundaryFinished = false
+                var restoreFailure: Throwable? = null
+                try {
+                    val restoreResult = backupRepository.restoreBackup(backup) {
+                        databaseCommitted = true
+                    }
+                    playbackController.finishBackupRestore(databaseCommitted = true)
+                    boundaryFinished = true
+                    libraryController.refreshAfterBackupRestore()
+                    restoreResult
+                } catch (failure: Throwable) {
+                    restoreFailure = failure
+                    throw failure
+                } finally {
+                    if (!boundaryFinished) {
+                        withContext(NonCancellable) {
+                            try {
+                                playbackController.finishBackupRestore(databaseCommitted)
+                            } catch (cleanupFailure: Throwable) {
+                                val originalFailure = restoreFailure
+                                if (originalFailure == null) throw cleanupFailure
+                                originalFailure.addSuppressed(cleanupFailure)
+                            }
+                        }
+                    }
+                }
             }
-
+            result.exceptionOrNull()?.let { failure ->
+                Log.e(BACKUP_RESTORE_LOG_TAG, "Backup restore failed", failure)
+            }
             onRestored(result)
         }
     }

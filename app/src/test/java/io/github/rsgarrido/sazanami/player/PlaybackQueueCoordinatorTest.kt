@@ -18,6 +18,64 @@ import org.mockito.Mockito.mock
 
 class PlaybackQueueCoordinatorTest {
     @Test
+    fun backupRestoreSuppressesSnapshotsAndReconcilesRolledBackQueues() = runBlocking {
+        val persistence = FakePersistence(activeQueueId = "A").apply {
+            seed(queue("A", listOf(spec("one", 1L, 0, 0)), "one"))
+        }
+        val runtime = FakeRuntime(liveSnapshot(listOf("one" to 1L), "one", 25L, true))
+        val coordinator = coordinator(persistence, runtime)
+        coordinator.initialize()
+
+        coordinator.beginBackupRestore()
+        assertNull(runtime.snapshot)
+        assertNull(coordinator.persistActiveQueueSnapshot())
+        assertNull(coordinator.createQueueFromCurrent())
+        assertEquals(1, persistence.queues.size)
+
+        coordinator.finishBackupRestore(databaseCommitted = false)
+        assertEquals("A", coordinator.getActiveQueueId())
+        assertEquals("one", runtime.snapshot?.currentEntryId)
+        assertEquals(1, persistence.queues.size)
+    }
+
+    @Test
+    fun failedBackupRestoreRestoresLivePlaybackCheckpoint() = runBlocking {
+        val persistence = FakePersistence(activeQueueId = "A").apply {
+            seed(queue("A", listOf(spec("one", 1L, 0, 0)), "one"))
+        }
+        val original = liveSnapshot(listOf("one" to 1L), "one", 25L, true)
+        val runtime = FakeRuntime(original).apply { captureBackupRestoreCheckpoint = true }
+        val coordinator = coordinator(persistence, runtime)
+        coordinator.initialize()
+
+        coordinator.beginBackupRestore()
+        assertNull(runtime.snapshot)
+        coordinator.finishBackupRestore(databaseCommitted = false)
+
+        assertEquals(original, runtime.snapshot)
+        assertEquals("A", coordinator.getActiveQueueId())
+    }
+
+    @Test
+    fun completedBackupRestoreDoesNotRecreateQueueFromLateCheckpoint() = runBlocking {
+        val persistence = FakePersistence(activeQueueId = "A").apply {
+            seed(queue("A", listOf(spec("one", 1L, 0, 0)), "one"))
+        }
+        val runtime = FakeRuntime(liveSnapshot(listOf("one" to 1L), "one", 25L, true))
+        val coordinator = coordinator(persistence, runtime)
+        coordinator.initialize()
+
+        coordinator.beginBackupRestore()
+        persistence.queues.clear()
+        persistence.activeQueueId = null
+        coordinator.finishBackupRestore(databaseCommitted = true)
+
+        assertNull(coordinator.getActiveQueueId())
+        assertNull(coordinator.persistActiveQueueSnapshot())
+        assertTrue(persistence.queues.isEmpty())
+    }
+
+    @Test
     fun activeEntrySelectionSeeksExactStableEntryWithoutTimelineReplacement() = runBlocking {
         val persistence = FakePersistence(activeQueueId = "A").apply {
             seed(queue("A", listOf(spec("dup-1", 1L, 0, 0), spec("dup-2", 1L, 1, 1)), "dup-1"))
@@ -1202,6 +1260,8 @@ class PlaybackQueueCoordinatorTest {
     private class FakeRuntime(
         var snapshot: LivePlaybackQueueSnapshot?
     ) : PlaybackQueueRuntime {
+        var captureBackupRestoreCheckpoint = false
+        private var backupRestoreCheckpoint: LivePlaybackQueueSnapshot? = null
         var replaceCount = 0
         var prepareCount = 0
         var playCount = 0
@@ -1212,6 +1272,28 @@ class PlaybackQueueCoordinatorTest {
         var moveCount = 0
 
         override fun captureSnapshot(): LivePlaybackQueueSnapshot? = snapshot
+
+        override fun captureForBackupRestore(): BackupRestorePlaybackSnapshot? {
+            if (!captureBackupRestoreCheckpoint) return null
+            val captured = snapshot ?: return null
+            backupRestoreCheckpoint = captured
+            return BackupRestorePlaybackSnapshot(
+                mediaItems = emptyList(),
+                currentIndex = 0,
+                currentPositionMs = captured.currentPositionMs,
+                shouldPlay = captured.shouldPlay,
+                shuffleEnabled = captured.shuffleEnabled,
+                repeatMode = 0
+            )
+        }
+
+        override fun clearForBackupRestore() {
+            snapshot = null
+        }
+
+        override fun restoreAfterFailedBackupRestore(snapshot: BackupRestorePlaybackSnapshot) {
+            this.snapshot = backupRestoreCheckpoint
+        }
 
         override fun replaceTimeline(restoration: PlaybackQueueRestoration) {
             replaceCount += 1
