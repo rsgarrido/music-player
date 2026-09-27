@@ -69,6 +69,7 @@ fun PocketCassetteExpandedPlayer(
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
+    onOpenAlbumClick: (() -> Unit)?,
     onToggleFavoriteClick: (Song) -> Unit,
     tokens: PlayerThemeTokens = PocketCassetteDefaultTokens,
     renderShell: Boolean = true,
@@ -130,6 +131,7 @@ fun PocketCassetteExpandedPlayer(
                     isVisualizerWorkAllowed = isVisualizerWorkAllowed,
                     currentPosition = currentPosition,
                     duration = duration,
+                    onOpenAlbumClick = onOpenAlbumClick,
                     compact = compact,
                     modifier = Modifier
                         .weight(1f)

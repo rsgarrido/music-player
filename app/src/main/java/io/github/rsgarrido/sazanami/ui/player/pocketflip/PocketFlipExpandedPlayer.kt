@@ -44,6 +44,7 @@ fun PocketFlipExpandedPlayer(
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
+    onOpenAlbumClick: (() -> Unit)?,
     onToggleFavoriteClick: (Song) -> Unit,
     tokens: PlayerThemeTokens = PocketFlipDefaultTokens,
     renderShell: Boolean = true,
@@ -90,6 +91,7 @@ fun PocketFlipExpandedPlayer(
                 currentPosition = currentPosition,
                 duration = duration,
                 onSeekChange = onSeekChange,
+                onOpenAlbumClick = onOpenAlbumClick,
                 compact = compact,
                 modifier = Modifier
                     .weight(if (compact) 0.54f else 0.57f)

@@ -41,6 +41,7 @@ import io.github.rsgarrido.sazanami.ui.player.modern.selectNearbyWaveformSongs
 import io.github.rsgarrido.sazanami.ui.player.pocketcassette.PocketCassetteExpandedPlayer
 import io.github.rsgarrido.sazanami.ui.player.pocketcassette.PocketCassettePlayerMorph
 import io.github.rsgarrido.sazanami.ui.player.pocketcassette.PocketCassetteMorphBounds
+import io.github.rsgarrido.sazanami.ui.player.pocketcassette.PocketCassetteSharedOwner
 import io.github.rsgarrido.sazanami.ui.player.pocketcassette.PocketCassetteMorphSpec
 import io.github.rsgarrido.sazanami.ui.player.pocketcassette.resolvePocketCassetteMorphGeometry
 import io.github.rsgarrido.sazanami.ui.player.pocketcassette.resolvePocketCassetteSharedGeometry
@@ -61,6 +62,7 @@ import io.github.rsgarrido.sazanami.ui.player.pocketdisc.shouldRunPocketDiscExpa
 import io.github.rsgarrido.sazanami.ui.player.pocketflip.PocketFlipExpandedPlayer
 import io.github.rsgarrido.sazanami.ui.player.pocketflip.PocketFlipPlayerMorph
 import io.github.rsgarrido.sazanami.ui.player.pocketflip.PocketFlipMorphBounds
+import io.github.rsgarrido.sazanami.ui.player.pocketflip.PocketFlipSharedOwner
 import io.github.rsgarrido.sazanami.ui.player.pocketflip.PocketFlipMorphSpec
 import io.github.rsgarrido.sazanami.ui.player.pocketflip.resolvePocketFlipMorphGeometry
 import io.github.rsgarrido.sazanami.ui.player.pocketflip.resolvePocketFlipSharedGeometry
@@ -297,6 +299,16 @@ fun ExpandedPlayerThemeHost(
                             onShuffleClick = onShuffleClick,
                             onRepeatClick = onRepeatClick,
                             onCollapseClick = onCollapseClick,
+                            onOpenAlbumClick = if (
+                                playerMorphState.settledPresentation == PlayerPresentation.Expanded &&
+                                playerMorphState.progress == 1f &&
+                                !playerMorphState.isDragging &&
+                                !playerMorphState.isAnimating &&
+                                !lyricsTransitionState.isDragging &&
+                                !lyricsTransitionState.lyricsOwnsInput
+                            ) {
+                                { onOpenCurrentAlbumClick(currentSong) }
+                            } else null,
                             playerMorphState = playerMorphState,
                             lyricsTransitionState = lyricsTransitionState,
                             onOpenUpNextClick = onOpenQueueHubClick,
@@ -499,6 +511,14 @@ fun ExpandedPlayerThemeHost(
                         onRepeatClick = onRepeatClick,
                         onCollapseClick = onCollapseClick,
                         onOpenUpNextClick = onOpenQueueHubClick,
+                        onOpenAlbumClick = if (
+                            inputEnabled &&
+                            sharedOwner == PocketFlipSharedOwner.EXPANDED &&
+                            !lyricsTransitionState.isDragging &&
+                            !lyricsTransitionState.lyricsOwnsInput
+                        ) {
+                            currentSong?.let { song -> { onOpenCurrentAlbumClick(song) } }
+                        } else null,
                         onToggleFavoriteClick = onToggleFavoriteClick,
                         tokens = tokens,
                         renderShell = false,
@@ -577,6 +597,14 @@ fun ExpandedPlayerThemeHost(
                         onRepeatClick = onRepeatClick,
                         onCollapseClick = onCollapseClick,
                         onOpenUpNextClick = onOpenQueueHubClick,
+                        onOpenAlbumClick = if (
+                            inputEnabled &&
+                            sharedOwner == PocketCassetteSharedOwner.EXPANDED &&
+                            !lyricsTransitionState.isDragging &&
+                            !lyricsTransitionState.lyricsOwnsInput
+                        ) {
+                            currentSong?.let { song -> { onOpenCurrentAlbumClick(song) } }
+                        } else null,
                         onToggleFavoriteClick = onToggleFavoriteClick,
                         tokens = tokens,
                         renderShell = false,

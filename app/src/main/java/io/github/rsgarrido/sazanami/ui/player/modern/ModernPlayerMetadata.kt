@@ -1,5 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.modern
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -24,6 +25,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntSize
@@ -43,6 +45,7 @@ internal fun ModernPlayerMetadataCarousel(
     modifier: Modifier = Modifier,
     onPersistentContentBoundsChanged: (Rect) -> Unit = {},
     hidePersistentContent: Boolean = false,
+    onOpenAlbumClick: (() -> Unit)? = null,
     expandedContentAlpha: Float = 1f,
     loadExpandedMetadata: Boolean = true
 ) {
@@ -120,6 +123,7 @@ internal fun ModernPlayerMetadataCarousel(
                             {}
                         },
                         hidePersistentContent = hidePersistentContent,
+                        onOpenAlbumClick = if (item.isCurrent) onOpenAlbumClick else null,
                         expandedContentAlpha = expandedContentAlpha,
                         loadExpandedMetadata = loadExpandedMetadata
                     )
@@ -137,6 +141,7 @@ private fun ModernPlayerMetadataPage(
     layoutAppearance: ModernLayoutAppearance,
     onPersistentContentSizeChanged: (IntSize) -> Unit,
     hidePersistentContent: Boolean,
+    onOpenAlbumClick: (() -> Unit)?,
     expandedContentAlpha: Float,
     loadExpandedMetadata: Boolean
 ) {
@@ -166,6 +171,7 @@ private fun ModernPlayerMetadataPage(
             alignment = layoutAppearance.metadataAlignment,
             onPersistentContentSizeChanged = onPersistentContentSizeChanged,
             hidePersistentContent = hidePersistentContent,
+            onOpenAlbumClick = onOpenAlbumClick,
             expandedContentAlpha = expandedContentAlpha
         )
 
@@ -195,6 +201,7 @@ internal fun ModernPlayerMetadata(
     alignment: ModernMetadataAlignment = ModernMetadataAlignment.LEFT,
     onPersistentContentSizeChanged: (IntSize) -> Unit = {},
     hidePersistentContent: Boolean = false,
+    onOpenAlbumClick: (() -> Unit)? = null,
     expandedContentAlpha: Float = 1f
 ) {
     Column(
@@ -244,6 +251,15 @@ internal fun ModernPlayerMetadata(
             modifier = Modifier
                 .fillMaxWidth()
                 .graphicsLayer { alpha = expandedContentAlpha }
+                .then(
+                    if (onOpenAlbumClick != null) {
+                        Modifier.clickable(
+                            role = Role.Button,
+                            onClickLabel = "Open current album",
+                            onClick = onOpenAlbumClick
+                        )
+                    } else Modifier
+                )
         )
     }
 }
