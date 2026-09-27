@@ -70,6 +70,7 @@ internal fun ModernExpandedPlayer(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
+    onOpenAlbumClick: (() -> Unit)? = null,
     playerMorphState: PlayerMorphState,
     lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
@@ -287,6 +288,7 @@ internal fun ModernExpandedPlayer(
                         defaultMorphBounds?.updateExpandedText(bounds)
                     },
                     hidePersistentContent = morphOwnsPersistentContent,
+                    onOpenAlbumClick = onOpenAlbumClick,
                     expandedContentAlpha =
                         defaultMorphVisualState?.metadataAlpha ?: 1f,
                     loadExpandedMetadata =

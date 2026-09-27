@@ -2,6 +2,7 @@ package io.github.rsgarrido.sazanami.ui.player.pocketflip
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -38,6 +39,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
@@ -58,6 +60,7 @@ internal fun PocketFlipDisplayHalf(
     currentPosition: Int,
     duration: Int,
     onSeekChange: (Int) -> Unit,
+    onOpenAlbumClick: (() -> Unit)?,
     compact: Boolean,
     modifier: Modifier = Modifier,
     displayReveal: Float = 1f,
@@ -129,6 +132,7 @@ internal fun PocketFlipDisplayHalf(
                         artistModifier = Modifier.onGloballyPositioned { coordinates ->
                             morphBounds?.updateExpandedArtist(coordinates.boundsInRoot())
                         },
+                        onOpenAlbumClick = onOpenAlbumClick,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -314,6 +318,7 @@ private fun PocketFlipMetadata(
     renderSharedContent: Boolean,
     titleModifier: Modifier = Modifier,
     artistModifier: Modifier = Modifier,
+    onOpenAlbumClick: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -365,7 +370,14 @@ private fun PocketFlipMetadata(
                 fontFamily = FontFamily.Monospace,
                 fontSize = if (compact) 8.sp else 9.sp,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = if (onOpenAlbumClick != null) {
+                    Modifier.clickable(
+                        role = Role.Button,
+                        onClickLabel = "Open current album",
+                        onClick = onOpenAlbumClick
+                    )
+                } else Modifier
             )
         }
 

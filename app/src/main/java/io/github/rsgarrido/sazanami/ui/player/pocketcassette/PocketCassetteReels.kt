@@ -2,6 +2,7 @@ package io.github.rsgarrido.sazanami.ui.player.pocketcassette
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -54,6 +56,7 @@ internal fun PocketCassetteWindow(
     isVisualizerWorkAllowed: Boolean,
     currentPosition: Int,
     duration: Int,
+    onOpenAlbumClick: (() -> Unit)?,
     compact: Boolean,
     modifier: Modifier = Modifier,
     windowReveal: Float = 1f,
@@ -185,6 +188,7 @@ internal fun PocketCassetteWindow(
                     currentSong = currentSong,
                     currentPosition = currentPosition,
                     duration = duration,
+                    onOpenAlbumClick = onOpenAlbumClick,
                     compact = compact,
                     morphBounds = morphBounds,
                     sharedOwner = sharedOwner,
@@ -391,6 +395,7 @@ private fun PocketCassetteTrackLabel(
     currentSong: Song?,
     currentPosition: Int,
     duration: Int,
+    onOpenAlbumClick: (() -> Unit)?,
     compact: Boolean,
     morphBounds: PocketCassetteMorphBounds? = null,
     sharedOwner: PocketCassetteSharedOwner = PocketCassetteSharedOwner.EXPANDED,
@@ -477,7 +482,14 @@ private fun PocketCassetteTrackLabel(
             fontFamily = FontFamily.Monospace,
             fontSize = 8.sp,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
+            modifier = if (onOpenAlbumClick != null) {
+                Modifier.clickable(
+                    role = Role.Button,
+                    onClickLabel = "Open current album",
+                    onClick = onOpenAlbumClick
+                )
+            } else Modifier
         )
     }
 }
