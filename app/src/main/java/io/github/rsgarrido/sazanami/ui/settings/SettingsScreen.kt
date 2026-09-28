@@ -516,7 +516,7 @@ fun SettingsScreen(
         ) {
             SettingsRow(
                 title = "Export Backup",
-                summary = "Save favorites, playlists, listening history and track links, ratings, and preferences as JSON.",
+                summary = "Save favorites, playlists, listening history and track links, ratings, and preferences to a Sazanami backup file.",
                 icon = AppShellIcons.Export,
                 onClick = onExportBackupClick,
                 navigationContentDescription = "Export backup"
