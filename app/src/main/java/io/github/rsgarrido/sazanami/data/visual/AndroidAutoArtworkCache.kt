@@ -22,7 +22,7 @@ import java.security.MessageDigest
 class AndroidAutoArtworkCache(context: Context) {
     private val appContext = context.applicationContext ?: context
 
-    fun externallyReadableUri(source: Uri?): Uri? {
+    fun externallyReadableUri(source: Uri?, revision: String? = null): Uri? {
         source ?: return null
         if (isAppOwnedArtworkUri(source, appContext.packageName)) return source
         if (source.scheme != "content") return null
@@ -30,9 +30,10 @@ class AndroidAutoArtworkCache(context: Context) {
         val mimeType = runCatching { appContext.contentResolver.getType(source) }.getOrNull()
         if (mimeType != null && !mimeType.startsWith("image/")) return null
 
-        val cacheKey = cacheKey(source.toString())
+        val sourceIdentity = sourceIdentity(source, revision)
+        val cacheKey = cacheKey(source.toString(), revision)
         return synchronized(CACHE_LOCK) {
-            if (!registerSource(appContext, cacheKey, source)) return@synchronized null
+            if (!registerSource(appContext, cacheKey, sourceIdentity)) return@synchronized null
             providerUri(appContext.packageName, cacheKey)
         }
     }
@@ -90,11 +91,17 @@ class AndroidAutoArtworkCache(context: Context) {
             return digest.joinToString("") { byte -> "%02x".format(byte) }
         }
 
-        private fun registerSource(context: Context, cacheKey: String, source: Uri): Boolean {
+        internal fun cacheKey(source: String, revision: String?): String =
+            cacheKey(if (revision.isNullOrBlank()) source else "$source\n$revision")
+
+        private fun sourceIdentity(source: Uri, revision: String?): String =
+            if (revision.isNullOrBlank()) source.toString() else "${source}\n$revision"
+
+        private fun registerSource(context: Context, cacheKey: String, sourceIdentity: String): Boolean {
             val directory = sourceDirectory(context)
             if (!directory.exists() && !directory.mkdirs()) return false
             val target = sourceFile(directory, cacheKey)
-            val sourceText = source.toString()
+            val sourceText = sourceIdentity
             if (target.isFile && runCatching { target.readText() }.getOrNull() == sourceText) {
                 target.setLastModified(System.currentTimeMillis())
                 return true
@@ -119,8 +126,8 @@ class AndroidAutoArtworkCache(context: Context) {
             if (!sourceFile.isFile || sourceFile.length() > MAX_SOURCE_REFERENCE_BYTES) return null
             val raw = runCatching { sourceFile.readText() }.getOrNull()?.trim().orEmpty()
             if (raw.isBlank()) return null
-            val source = runCatching { Uri.parse(raw) }.getOrNull() ?: return null
-            if (source.scheme != "content" || cacheKey(source.toString()) != cacheKey) return null
+            val source = runCatching { Uri.parse(raw.substringBefore('\n')) }.getOrNull() ?: return null
+            if (source.scheme != "content" || cacheKey(raw) != cacheKey) return null
             return source
         }
 

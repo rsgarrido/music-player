@@ -4,6 +4,8 @@ import android.content.Context
 import android.net.Uri
 import androidx.room.InvalidationTracker
 import io.github.rsgarrido.sazanami.data.ArtistPictureRepository
+import io.github.rsgarrido.sazanami.data.LocalArtistArtwork
+import io.github.rsgarrido.sazanami.data.LocalArtistArtworkStore
 import io.github.rsgarrido.sazanami.data.FolderSelection
 import io.github.rsgarrido.sazanami.data.EmbeddedArtworkResolver
 import io.github.rsgarrido.sazanami.data.CURRENT_ARTWORK_ENRICHMENT_VERSION
@@ -65,6 +67,7 @@ class AndroidAutoCatalogRepository(
     private val appContext = context.applicationContext ?: context
     private val playlistsRepository = PlaylistsRepository(database.playlistDao())
     private val artistPictureRepository = ArtistPictureRepository(database.artistPictureAssignmentDao())
+    private val localArtistArtworkStore = LocalArtistArtworkStore(appContext)
     private val collageStore by lazy { PlaylistCollageStore(appContext) }
     private val androidAutoArtworkCache = AndroidAutoArtworkCache(appContext)
     private val mutex = Mutex()
@@ -73,6 +76,7 @@ class AndroidAutoCatalogRepository(
     private var cachedRevision = -1L
     private var cachedSelection: FolderSelection? = null
     private var cachedLiveSongs: List<Song>? = null
+    private var cachedLocalArtistArtwork: Map<String, LocalArtistArtwork>? = null
     private var cachedSnapshot: AndroidAutoCatalogSnapshot? = null
     private var cachedAtNanos = 0L
     private val observer = object : InvalidationTracker.Observer(
@@ -120,10 +124,12 @@ class AndroidAutoCatalogRepository(
                 storedFolders = preferences.selectedLibraryFolders
             )
             val liveSongs = liveSongsProvider()
+            val localArtistArtwork = localArtistArtworkStore.readActive()
             val generation = revision.value
             cachedSnapshot?.takeIf {
                 cachedRevision == generation && cachedSelection == folderSelection &&
-                    cachedLiveSongs === liveSongs && System.nanoTime() - cachedAtNanos < 30_000_000_000L
+                    cachedLiveSongs === liveSongs && cachedLocalArtistArtwork == localArtistArtwork &&
+                    System.nanoTime() - cachedAtNanos < 30_000_000_000L
             }?.let { return@withLock it }
 
             val snapshot = AndroidAutoDiagnostics.measure("catalog") {
@@ -182,16 +188,23 @@ class AndroidAutoCatalogRepository(
                 val assignmentByArtistKey = artistPictureRepository.getAll()
                     .associateBy { assignment -> assignment.artistKey }
                 val artistArtworkUris = buildLibraryArtistGroups(songs).mapNotNull { artist ->
-                    val assignment = assignmentByArtistKey[artist.key] ?: return@mapNotNull null
-                    artist.key to VisualAssetProvider.uriFor(
-                        packageName = appContext.packageName,
-                        identity = VisualAssetIdentity(
-                            ownerType = VisualAssetOwnerType.ARTIST_IMAGE,
-                            ownerKey = artist.key,
-                            revision = assignment.assetReference
-                        ),
-                        variant = VisualAssetVariant.THUMBNAIL
-                    )
+                    val assignment = assignmentByArtistKey[artist.key]
+                    val uri = if (assignment != null) {
+                        VisualAssetProvider.uriFor(
+                            packageName = appContext.packageName,
+                            identity = VisualAssetIdentity(
+                                ownerType = VisualAssetOwnerType.ARTIST_IMAGE,
+                                ownerKey = artist.key,
+                                revision = assignment.assetReference
+                            ),
+                            variant = VisualAssetVariant.THUMBNAIL
+                        )
+                    } else {
+                        localArtistArtwork[artist.key]?.let { local ->
+                            androidAutoArtworkCache.externallyReadableUri(local.uri, local.revision)
+                        }
+                    }
+                    uri?.let { artist.key to it }
                 }.toMap()
 
                 AndroidAutoCatalogSnapshot(
@@ -204,6 +217,7 @@ class AndroidAutoCatalogRepository(
             cachedRevision = generation
             cachedSelection = folderSelection
             cachedLiveSongs = liveSongs
+            cachedLocalArtistArtwork = localArtistArtwork
             cachedSnapshot = snapshot
             // Request-driven expiry also refreshes time-sensitive smart playlists. No timer
             // rebuilds the browse tree (or playback timeline) while the user is scrolling.

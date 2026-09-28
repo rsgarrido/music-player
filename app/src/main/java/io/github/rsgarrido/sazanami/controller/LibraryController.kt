@@ -19,6 +19,9 @@ import io.github.rsgarrido.sazanami.data.planFavoriteBatch
 import io.github.rsgarrido.sazanami.data.FolderSelection
 import io.github.rsgarrido.sazanami.data.FolderSelectionMode
 import io.github.rsgarrido.sazanami.data.FolderArtworkResolver
+import io.github.rsgarrido.sazanami.data.FolderArtworkSnapshot
+import io.github.rsgarrido.sazanami.data.LocalArtistArtworkStore
+import io.github.rsgarrido.sazanami.data.resolveLocalArtistArtwork
 import io.github.rsgarrido.sazanami.data.LibraryFolder
 import io.github.rsgarrido.sazanami.data.LibraryRefreshEngine
 import io.github.rsgarrido.sazanami.data.ListeningHistoryRepository
@@ -160,6 +163,7 @@ class LibraryController(
     )
     private val artistVisualAssetStore = VisualAssetStore(applicationContext)
     private val artistPictureReplacements = VisualAssetReplacementCoordinator()
+    private val localArtistArtworkStore = LocalArtistArtworkStore(applicationContext)
     private var refreshJob: Job? = null
     private var progressiveEnrichmentJob: Job? = null
     private var reconciliationJob: Job? = null
@@ -176,7 +180,7 @@ class LibraryController(
     private val libraryPublicationMutex = Mutex()
     private val libraryScanMutex = Mutex()
     private val permissionGate = LibraryPermissionGate()
-    private var folderArtworkTreeUri: Uri? = null
+    @Volatile private var folderArtworkTreeUri: Uri? = null
     private var initialFolderDiscoverySongs: List<Song> = emptyList()
     private var referenceSongsSnapshot: List<Song> = emptyList()
     private val artworkResolutionCache = ArtworkResolutionCache()
@@ -333,6 +337,34 @@ class LibraryController(
 
     fun setFolderArtworkTreeUri(uri: Uri?) {
         folderArtworkTreeUri = uri
+        val hadArtwork = _uiState.value.localArtistArtwork.isNotEmpty()
+        updateState { copy(localArtistArtwork = emptyMap()) }
+        if (hadArtwork) PlaybackLibraryBridge.notifyCatalogArtworkChanged()
+        if (uri == null) {
+            localArtistArtworkStore.clear()
+        } else {
+            coroutineScope.launch(Dispatchers.IO) {
+                libraryScanMutex.withLock {
+                    val cached = localArtistArtworkStore.readForTree(uri)
+                    if (folderArtworkTreeUri == uri) {
+                        updateState { copy(localArtistArtwork = cached) }
+                        if (cached.isNotEmpty()) PlaybackLibraryBridge.notifyCatalogArtworkChanged()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun publishLocalArtistArtwork(
+        tree: Uri?, snapshot: FolderArtworkSnapshot, selectedSongs: List<Song>
+    ) {
+        if (tree != folderArtworkTreeUri) return
+        val resolved = if (tree == null || !snapshot.complete) emptyMap() else
+            resolveLocalArtistArtwork(applicationContext, tree, snapshot, selectedSongs)
+        localArtistArtworkStore.write(tree, resolved)
+        val changed = _uiState.value.localArtistArtwork != resolved
+        updateState { copy(localArtistArtwork = resolved) }
+        if (changed) PlaybackLibraryBridge.notifyCatalogArtworkChanged()
     }
 
     fun refreshFolderArtwork() {
@@ -343,9 +375,12 @@ class LibraryController(
         }
         coroutineScope.launch {
             try {
-                val libraryData = withContext(Dispatchers.IO) {
+                val (libraryData, snapshot) = withContext(Dispatchers.IO) {
                     libraryScanMutex.withLock {
                         if (!permissionGate.isCurrent(scanToken)) throw CancellationException()
+                        val tree = folderArtworkTreeUri
+                        val snapshot = FolderArtworkResolver.scan(applicationContext, tree)
+                            ?: FolderArtworkSnapshot.EMPTY
                         val cachedSongs = libraryCacheRepository.getAllCachedSongs()
                         val selectedCachedSongs = cachedSongs.filter { song ->
                             folderSelection.includes(song.folderPath)
@@ -353,8 +388,10 @@ class LibraryController(
                         val updatedSelectedSongs =
                             MusicRepository(applicationContext).applyFolderArtwork(
                                 songs = selectedCachedSongs,
-                                folderArtworkTreeUri = folderArtworkTreeUri
+                                folderArtworkTreeUri = tree,
+                                folderArtworkSnapshot = snapshot
                             )
+                        publishLocalArtistArtwork(tree, snapshot, updatedSelectedSongs)
                         val updatedSongs = replaceSelectedSongReferences(
                             referenceSongs = cachedSongs,
                             selectedSongs = updatedSelectedSongs
@@ -362,10 +399,11 @@ class LibraryController(
                         if (updatedSongs != cachedSongs) {
                             libraryCacheRepository.replaceCachedSongs(updatedSongs)
                         }
-                        io.github.rsgarrido.sazanami.data.buildMusicLibraryData(
+                        val data = io.github.rsgarrido.sazanami.data.buildMusicLibraryData(
                             allSongs = updatedSongs,
                             folderSelection = folderSelection
                         )
+                        data to snapshot
                     }
                 }
                 if (permissionGate.isCurrent(scanToken)) {
@@ -373,7 +411,8 @@ class LibraryController(
                     startProgressiveLibraryEnrichment(
                         coreLibraryData = libraryData,
                         scanToken = scanToken,
-                        reconcileEmbeddedMetadata = false
+                        reconcileEmbeddedMetadata = false,
+                        folderSnapshot = snapshot
                     )
                 }
             } catch (cancellation: CancellationException) {
@@ -1336,6 +1375,10 @@ class LibraryController(
     }
 
     private fun reloadSongsAfterFolderChange() {
+        localArtistArtworkStore.clear()
+        val hadArtwork = _uiState.value.localArtistArtwork.isNotEmpty()
+        updateState { copy(localArtistArtwork = emptyMap()) }
+        if (hadArtwork) PlaybackLibraryBridge.notifyCatalogArtworkChanged()
         launchProtectedRefresh { scanToken ->
             withContext(Dispatchers.IO) {
                 smartPlaylistRepository.invalidateLibraryEligibility()
@@ -1353,6 +1396,7 @@ class LibraryController(
                         libraryData = cachedLibraryData,
                         reconcilePlayback = true
                     )
+                    refreshFolderArtwork()
                 }
                 return@launchProtectedRefresh
             }
@@ -1466,7 +1510,8 @@ class LibraryController(
     private fun startProgressiveLibraryEnrichment(
         coreLibraryData: MusicLibraryData,
         scanToken: Long,
-        reconcileEmbeddedMetadata: Boolean
+        reconcileEmbeddedMetadata: Boolean,
+        folderSnapshot: FolderArtworkSnapshot? = null
     ) {
         progressiveEnrichmentJob?.cancel()
         val enrichmentStartedAt = SystemClock.elapsedRealtime()
@@ -1476,6 +1521,7 @@ class LibraryController(
         )
         progressiveEnrichmentJob = coroutineScope.launch(Dispatchers.IO) {
             if (coreLibraryData.songs.isEmpty()) {
+                publishLocalArtistArtwork(folderArtworkTreeUri, FolderArtworkSnapshot.EMPTY, emptyList())
                 libraryScanMutex.withLock {
                     if (!permissionGate.isCurrent(scanToken)) throw CancellationException()
                     libraryCacheRepository.replaceCachedSongs(coreLibraryData.referenceSongs)
@@ -1506,16 +1552,20 @@ class LibraryController(
                 metadataBatchCount += wavResult.batchCount
             }
 
+            val tree = folderArtworkTreeUri
+            val snapshot = folderSnapshot ?: FolderArtworkResolver.scan(applicationContext, tree)
+                ?: FolderArtworkSnapshot.EMPTY
             val embeddedResolver = EmbeddedArtworkResolver(applicationContext)
             val folderResolver = FolderArtworkResolver(
                 context = applicationContext,
-                treeUri = folderArtworkTreeUri
+                treeUri = tree,
+                suppliedSnapshot = snapshot
             )
             val enricher = ProgressiveArtworkEnricher(
                 cache = artworkResolutionCache,
                 resolveEmbedded = embeddedResolver::resolve,
                 resolveFolder = folderResolver::resolve,
-                resolverNamespace = folderArtworkTreeUri?.toString().orEmpty()
+                resolverNamespace = tree?.toString().orEmpty()
             )
             var artworkBatchCount = 0
             for (batch in enricher.batches(latestSongs)) {
@@ -1546,6 +1596,7 @@ class LibraryController(
             }
 
             if (!permissionGate.isCurrent(scanToken)) throw CancellationException()
+            publishLocalArtistArtwork(tree, snapshot, latestSongs)
             val finalReferenceSongs = replaceSelectedSongReferences(
                 referenceSongs = coreLibraryData.referenceSongs,
                 selectedSongs = latestSongs
@@ -1791,6 +1842,7 @@ class LibraryController(
                 excludedFolders = folderSelection.excludedFolders,
                 favoriteMembershipKeys = current.favoriteMembershipKeys,
                 artistPictureAssignments = current.artistPictureAssignments,
+                localArtistArtwork = current.localArtistArtwork,
                 playlists = current.playlists,
                 playlistFolders = current.playlistFolders,
                 selectedPlaylistId = current.selectedPlaylistId,
@@ -1881,12 +1933,22 @@ class LibraryController(
                 updateState { copy(isLoading = false, isRefreshing = true) }
             }
 
+            val tree = folderArtworkTreeUri
+            val folderScanStartedAt = SystemClock.elapsedRealtime()
+            val snapshot = FolderArtworkResolver.scan(applicationContext, tree)
+                ?: FolderArtworkSnapshot.EMPTY
+            debugLibraryTiming(
+                "folder-artwork-scan elapsedMs=${SystemClock.elapsedRealtime() - folderScanStartedAt} " +
+                    "candidates=${snapshot.artists.size} scan=$scanNumber"
+            )
+
             val refreshResult = tracePerformance(PerformanceTraceNames.LIBRARY_ENRICHMENT) {
                 repository.refreshLibrary(
                     cachedSongs = selectedCachedSongs,
                     forceArtworkRefreshIds = forceArtworkRefreshIds,
                     indexSongsOverride = selectedIndexSongs,
-                    folderArtworkTreeUri = folderArtworkTreeUri
+                    folderArtworkTreeUri = tree,
+                    folderArtworkSnapshot = snapshot
                 )
             }
             if (!permissionGate.isCurrent(scanToken)) throw CancellationException()
@@ -1909,6 +1971,9 @@ class LibraryController(
                 refreshedSelectedSongs = refreshResult.songs,
                 selection = folderSelection
             )
+            if (permissionGate.isCurrent(scanToken)) {
+                publishLocalArtistArtwork(tree, snapshot, libraryData.songs)
+            }
 
             if (
                 refreshResult.successfulCompleteScan &&

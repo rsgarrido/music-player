@@ -34,6 +34,10 @@ object PlaybackLibraryBridge {
         publication.update { it + 1 }
     }
 
+    fun notifyCatalogArtworkChanged() {
+        publication.update { it + 1 }
+    }
+
     fun hasPlaybackController(): Boolean = playbackController != null
 
     fun prepareExternalPlaybackSelection(song: Song, playbackContext: List<Song>): Boolean {

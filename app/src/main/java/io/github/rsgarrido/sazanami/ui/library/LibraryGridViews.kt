@@ -497,6 +497,7 @@ fun ArtistGridScreen(
                         slotTreatment =
                             LibrarySharedArtworkSourceSlotTreatment.NEUTRAL_SURFACE,
                         hasResolvedArtwork = artist.key in artistPictureUi.assignments ||
+                                artist.key in artistPictureUi.localArtwork ||
                                 artist.songs.firstOrNull()?.albumArtUri != null
                     ) { artworkModifier ->
                         ArtistPicture(

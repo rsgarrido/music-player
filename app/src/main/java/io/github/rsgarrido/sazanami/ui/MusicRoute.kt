@@ -300,6 +300,7 @@ internal fun MusicRoute(
         LocalHomePinUi provides homePinUiEnvironment,
         LocalArtistPictureUi provides ArtistPictureUiEnvironment(
             assignments = libraryUiState.artistPictureAssignments,
+            localArtwork = libraryUiState.localArtistArtwork,
             onChoosePicture = { identity ->
                 pendingArtistPicture = identity
                 artistPicturePicker.launch(

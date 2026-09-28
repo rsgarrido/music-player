@@ -40,17 +40,18 @@ class MusicRepository(private val context: Context) {
         throw MediaLibraryAccessException(exception)
     }
 
-    fun refreshLibrary(
+    internal fun refreshLibrary(
         cachedSongs: List<Song>,
         forceArtworkRefreshIds: Set<Long> = emptySet(),
         indexSongsOverride: List<Song>? = null,
-        folderArtworkTreeUri: Uri? = null
+        folderArtworkTreeUri: Uri? = null,
+        folderArtworkSnapshot: FolderArtworkSnapshot? = null
     ): LibraryRefreshResult {
         val indexSongs = indexSongsOverride ?: queryLibraryIndex()
         LibraryRefreshEngine.fallbackForIncompleteScan(cachedSongs, indexSongs)?.let { return it }
         checkNotNull(indexSongs)
         val embeddedArtworkResolver = EmbeddedArtworkResolver(context)
-        val folderArtworkResolver = FolderArtworkResolver(context, folderArtworkTreeUri)
+        val folderArtworkResolver = FolderArtworkResolver(context, folderArtworkTreeUri, folderArtworkSnapshot)
         tracePerformance(PerformanceTraceNames.ARTWORK_REPAIR_BATCH) {
             cachedSongs.filter { it.id in forceArtworkRefreshIds }
                 .forEach(embeddedArtworkResolver::invalidate)
@@ -118,11 +119,12 @@ class MusicRepository(private val context: Context) {
         return mergeEmbeddedLibraryMetadata(song, result)
     }
 
-    fun applyFolderArtwork(
+    internal fun applyFolderArtwork(
         songs: List<Song>,
-        folderArtworkTreeUri: Uri?
+        folderArtworkTreeUri: Uri?,
+        folderArtworkSnapshot: FolderArtworkSnapshot? = null
     ): List<Song> {
-        val folderArtworkResolver = FolderArtworkResolver(context, folderArtworkTreeUri)
+        val folderArtworkResolver = FolderArtworkResolver(context, folderArtworkTreeUri, folderArtworkSnapshot)
         var changed = false
         val updated = songs.map { song ->
             if (EmbeddedArtworkContract.isEmbeddedArtworkUri(song.albumArtUri)) {
