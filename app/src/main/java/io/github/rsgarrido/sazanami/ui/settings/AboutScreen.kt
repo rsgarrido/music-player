@@ -45,7 +45,7 @@ fun AboutScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
-                painter = painterResource(R.mipmap.ic_launcher),
+                painter = painterResource(R.drawable.sazanami_about_icon),
                 contentDescription = null,
                 modifier = Modifier.size(72.dp)
             )
