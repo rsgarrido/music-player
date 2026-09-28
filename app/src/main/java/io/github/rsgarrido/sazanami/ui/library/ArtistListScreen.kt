@@ -100,6 +100,7 @@ fun ArtistListScreen(
                         slotTreatment =
                             LibrarySharedArtworkSourceSlotTreatment.NEUTRAL_SURFACE,
                         hasResolvedArtwork = artist.key in artistPictureUi.assignments ||
+                                artist.key in artistPictureUi.localArtwork ||
                                 firstSong?.albumArtUri != null
                     ) { artworkModifier ->
                         ArtistPicture(

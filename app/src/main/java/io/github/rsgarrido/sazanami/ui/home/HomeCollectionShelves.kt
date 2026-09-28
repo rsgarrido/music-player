@@ -70,7 +70,6 @@ import io.github.rsgarrido.sazanami.ui.AppShellTypography
 import io.github.rsgarrido.sazanami.ui.library.ArtistPicture
 import io.github.rsgarrido.sazanami.ui.library.LibrarySharedArtworkKey
 import io.github.rsgarrido.sazanami.ui.library.LibrarySharedArtworkSourceScope
-import io.github.rsgarrido.sazanami.ui.library.LocalArtistPictureUi
 import io.github.rsgarrido.sazanami.ui.library.librarySharedArtwork
 import io.github.rsgarrido.sazanami.ui.playlist.PlaylistArtwork
 import kotlin.math.roundToInt
@@ -417,7 +416,6 @@ private fun HomePinnedCard(
     onUnpin: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val artistPictureAssignments = LocalArtistPictureUi.current.assignments
     val sharedArtworkKey = when (val target = pin.target) {
         is HomePinTarget.AlbumTarget -> LibrarySharedArtworkKey.Album(
             albumKey = target.album.key,
@@ -454,16 +452,13 @@ private fun HomePinnedCard(
             ) {
                 val playlistTarget = pin.target as? HomePinTarget.PlaylistTarget
                 val artistPictureIdentity = pin.artistPictureIdentityOrNull()
-                val artistPictureAssignment = pin.artistPictureAssignmentOrNull(
-                    artistPictureAssignments
-                )
                 if (playlistTarget != null) {
                     PlaylistArtwork(
                         playlist = playlistTarget.playlist,
                         contentDescription = "Artwork for ${pin.title}",
                         modifier = Modifier.fillMaxSize()
                     )
-                } else if (artistPictureIdentity != null && artistPictureAssignment != null) {
+                } else if (artistPictureIdentity != null) {
                     ArtistPicture(
                         identity = artistPictureIdentity,
                         fallbackModel = pin.artworkUri,

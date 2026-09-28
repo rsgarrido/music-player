@@ -15,6 +15,7 @@ import coil.Coil
 import coil.request.ImageRequest
 import io.github.rsgarrido.sazanami.data.ArtistIdentity
 import io.github.rsgarrido.sazanami.data.ArtistPictureAssignment
+import io.github.rsgarrido.sazanami.data.LocalArtistArtwork
 import io.github.rsgarrido.sazanami.data.visual.VisualAssetIdentity
 import io.github.rsgarrido.sazanami.data.visual.VisualAssetOwnerType
 import io.github.rsgarrido.sazanami.data.visual.VisualAssetStore
@@ -25,6 +26,7 @@ import io.github.rsgarrido.sazanami.ui.AppShellIcons
 @Immutable
 data class ArtistPictureUiEnvironment(
     val assignments: Map<String, ArtistPictureAssignment> = emptyMap(),
+    val localArtwork: Map<String, LocalArtistArtwork> = emptyMap(),
     val onChoosePicture: (ArtistIdentity) -> Unit = {},
     val onRemovePicture: (ArtistIdentity) -> Unit = {}
 )
@@ -43,6 +45,7 @@ fun ArtistPicture(
 ) {
     val context = LocalContext.current
     val assignment = LocalArtistPictureUi.current.assignments[identity.key]
+    val localArtwork = LocalArtistPictureUi.current.localArtwork[identity.key]
     val assetIdentity = remember(identity.key, assignment?.assetReference) {
         assignment?.let {
             VisualAssetIdentity(
@@ -73,13 +76,16 @@ fun ArtistPicture(
             )
         }
     }
-    val model = preferredArtistPictureModel(managedFile, fallbackModel)
-    val fallbackRequestPolicy = remember(identity.key, model, assetIdentity, variant) {
-        if (assetIdentity == null) {
+    val model = preferredArtistPictureModel(managedFile, localArtwork?.uri, fallbackModel)
+    val modelIdentity = if (managedFile == null && localArtwork != null && localArtwork.uri == model) {
+        "${localArtwork.uri}:${localArtwork.revision}"
+    } else model?.toString()
+    val fallbackRequestPolicy = remember(identity.key, modelIdentity, assetIdentity, variant) {
+        if (managedFile == null) {
             libraryArtworkRequestPolicy(
                 ownerType = LibraryArtworkOwnerType.ARTIST_FALLBACK,
                 ownerKey = identity.key,
-                modelIdentity = model?.toString(),
+                modelIdentity = modelIdentity,
                 variant = variant
             )
         } else {
@@ -99,6 +105,7 @@ fun ArtistPicture(
                 } else {
                     fallbackRequestPolicy?.let { policy ->
                         memoryCacheKey(policy.cacheKey)
+                        if (localArtwork?.uri == model) diskCacheKey(policy.cacheKey)
                         policy.placeholderMemoryCacheKey?.let(::placeholderMemoryCacheKey)
                     }
                 }
@@ -115,7 +122,7 @@ fun ArtistPicture(
 
     LibraryArtworkImage(
         model = request,
-        unresolvedNull = managedFile == null && unresolvedFallbackArtwork,
+        unresolvedNull = managedFile == null && localArtwork == null && unresolvedFallbackArtwork,
         contentDescription = if (model != null) contentDescription else null,
         modifier = modifier,
         neutralWhileLoading = neutralWhileLoading
@@ -131,8 +138,9 @@ fun ArtistPicture(
     }
 }
 
-internal fun preferredArtistPictureModel(managedModel: Any?, fallbackModel: Any?): Any? =
-    managedModel ?: fallbackModel
+internal fun preferredArtistPictureModel(
+    managedModel: Any?, localModel: Any?, fallbackModel: Any?
+): Any? = managedModel ?: localModel ?: fallbackModel
 
 @Composable
 private fun ArtistDisplayPrefetchEffect(

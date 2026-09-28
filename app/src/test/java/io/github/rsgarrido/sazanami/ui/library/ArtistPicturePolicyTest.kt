@@ -7,12 +7,13 @@ import org.junit.Test
 class ArtistPicturePolicyTest {
     @Test
     fun managedArtistPictureTakesPrecedenceOverExistingAlbumFallback() {
-        assertEquals("managed", preferredArtistPictureModel("managed", "album"))
+        assertEquals("managed", preferredArtistPictureModel("managed", "local", "album"))
     }
 
     @Test
     fun missingAssignmentRetainsExistingFallbackAndMissingFallbackStaysEmpty() {
-        assertEquals("album", preferredArtistPictureModel(null, "album"))
-        assertNull(preferredArtistPictureModel(null, null))
+        assertEquals("local", preferredArtistPictureModel(null, "local", "album"))
+        assertEquals("album", preferredArtistPictureModel(null, null, "album"))
+        assertNull(preferredArtistPictureModel(null, null, null))
     }
 }

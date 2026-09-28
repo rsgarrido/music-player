@@ -25,4 +25,15 @@ class AndroidAutoArtworkCacheTest {
 
         assertNotEquals(first, second)
     }
+
+    @Test
+    fun `same artist document receives a new provider key when its content revision changes`() {
+        val source = "content://documents/artist.jpg"
+        val old = AndroidAutoArtworkCache.cacheKey(source, "old-content")
+        val updated = AndroidAutoArtworkCache.cacheKey(source, "new-content")
+        assertNotEquals(old, updated)
+        assertEquals(updated, AndroidAutoArtworkCache.cacheKey(source, "new-content"))
+        assertEquals(AndroidAutoArtworkCache.cacheKey(source),
+            AndroidAutoArtworkCache.cacheKey(source, null))
+    }
 }

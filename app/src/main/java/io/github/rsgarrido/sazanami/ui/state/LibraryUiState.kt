@@ -8,6 +8,7 @@ import io.github.rsgarrido.sazanami.data.PlaylistFolder
 import io.github.rsgarrido.sazanami.data.PlaylistSong
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.ArtistPictureAssignment
+import io.github.rsgarrido.sazanami.data.LocalArtistArtwork
 import io.github.rsgarrido.sazanami.ui.library.SongRatingFilter
 
 data class LibraryUiState(
@@ -20,6 +21,7 @@ data class LibraryUiState(
     val initialFolderDiscoveryCompleted: Boolean = false,
     val favoriteMembershipKeys: Set<String> = emptySet(),
     val artistPictureAssignments: Map<String, ArtistPictureAssignment> = emptyMap(),
+    val localArtistArtwork: Map<String, LocalArtistArtwork> = emptyMap(),
     val playlists: List<Playlist> = emptyList(),
     val playlistFolders: List<PlaylistFolder> = emptyList(),
     val selectedPlaylistId: Long? = null,
@@ -75,6 +77,7 @@ fun libraryUiState(
     initialFolderDiscoveryCompleted: Boolean = true,
     favoriteMembershipKeys: Collection<String> = emptySet(),
     artistPictureAssignments: Map<String, ArtistPictureAssignment> = emptyMap(),
+    localArtistArtwork: Map<String, LocalArtistArtwork> = emptyMap(),
     playlists: Collection<Playlist> = emptyList(),
     playlistFolders: Collection<PlaylistFolder> = emptyList(),
     selectedPlaylistId: Long? = null,
@@ -103,6 +106,7 @@ fun libraryUiState(
     initialFolderDiscoveryCompleted = initialFolderDiscoveryCompleted,
     favoriteMembershipKeys = favoriteMembershipKeys.toSet(),
     artistPictureAssignments = artistPictureAssignments.toMap(),
+    localArtistArtwork = localArtistArtwork.toMap(),
     playlists = playlists.toList(),
     playlistFolders = playlistFolders.toList(),
     selectedPlaylistId = selectedPlaylistId,
