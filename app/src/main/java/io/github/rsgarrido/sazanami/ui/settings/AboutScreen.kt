@@ -14,6 +14,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -91,9 +94,9 @@ fun AboutScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
             SettingsRow(
                 title = stringResource(R.string.about_repository_title),
                 summary = stringResource(R.string.about_repository_summary),
-                icon = AppShellIcons.Info,
+                icon = Icons.Filled.Code,
                 onClick = { openSettingsUrl(context, SettingsLinks.REPOSITORY) },
-                navigationContentDescription = stringResource(R.string.about_open_repository)
+                trailingIcon = Icons.AutoMirrored.Filled.OpenInNew
             )
         }
         Spacer(Modifier.height(32.dp))

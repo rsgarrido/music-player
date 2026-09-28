@@ -4,8 +4,6 @@
     <string name="settings_help_section_summary">Tips, project links, and app information.</string>
     <string name="settings_help_tips_title">Tips &amp; Help</string>
     <string name="settings_help_tips_summary">Get more from your library and player.</string>
-    <string name="settings_help_repository_title">GitHub Repository</string>
-    <string name="settings_help_repository_summary">View the Sazanami source code.</string>
     <string name="settings_help_issue_title">Report an Issue</string>
     <string name="settings_help_issue_summary">Open the bug report template on GitHub.</string>
     <string name="settings_help_feature_title">Request a Feature</string>
@@ -13,9 +11,6 @@
     <string name="settings_help_about_title">About Sazanami</string>
     <string name="settings_help_about_summary">App details, privacy, and license.</string>
     <string name="settings_help_open_tips">Open Tips and Help</string>
-    <string name="settings_help_open_repository">Open GitHub Repository in a browser</string>
-    <string name="settings_help_open_issue">Open Report an Issue in a browser</string>
-    <string name="settings_help_open_feature">Open Request a Feature in a browser</string>
     <string name="settings_help_open_about">Open About Sazanami</string>
     <string name="settings_help_back">Back to Settings</string>
     <string name="settings_help_link_failure">Couldn’t open this link.</string>
@@ -59,7 +54,6 @@
     <string name="about_license_body">Sazanami is licensed under GPL-3.0.</string>
     <string name="about_repository_title">Source code</string>
     <string name="about_repository_summary">View the Sazanami repository on GitHub.</string>
-    <string name="about_open_repository">Open Sazanami source code in a browser</string>
     <string name="settings_support">Support</string>
     <string name="settings_diagnostics">Diagnostics</string>
     <string name="settings_diagnostics_summary">Playback status and safe cache controls</string>

@@ -17,6 +17,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.TipsAndUpdates
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -543,38 +548,30 @@ fun SettingsScreen(
         SettingsSection(
             title = stringResource(R.string.settings_help_section_title),
             description = stringResource(R.string.settings_help_section_summary),
-            icon = AppShellIcons.Info
+            icon = Icons.AutoMirrored.Filled.HelpOutline
         ) {
             SettingsRow(
                 title = stringResource(R.string.settings_help_tips_title),
                 summary = stringResource(R.string.settings_help_tips_summary),
-                icon = AppShellIcons.Info,
+                icon = Icons.Filled.TipsAndUpdates,
                 onClick = onTipsHelpClick,
                 navigationContentDescription = stringResource(R.string.settings_help_open_tips)
             )
             SettingsDivider()
             SettingsRow(
-                title = stringResource(R.string.settings_help_repository_title),
-                summary = stringResource(R.string.settings_help_repository_summary),
-                icon = AppShellIcons.Info,
-                onClick = { openSettingsUrl(context, SettingsLinks.REPOSITORY) },
-                navigationContentDescription = stringResource(R.string.settings_help_open_repository)
-            )
-            SettingsDivider()
-            SettingsRow(
                 title = stringResource(R.string.settings_help_issue_title),
                 summary = stringResource(R.string.settings_help_issue_summary),
-                icon = AppShellIcons.Diagnostics,
+                icon = Icons.Filled.BugReport,
                 onClick = { openSettingsUrl(context, SettingsLinks.BUG_REPORT) },
-                navigationContentDescription = stringResource(R.string.settings_help_open_issue)
+                trailingIcon = Icons.AutoMirrored.Filled.OpenInNew
             )
             SettingsDivider()
             SettingsRow(
                 title = stringResource(R.string.settings_help_feature_title),
                 summary = stringResource(R.string.settings_help_feature_summary),
-                icon = AppShellIcons.Palette,
+                icon = Icons.Filled.Lightbulb,
                 onClick = { openSettingsUrl(context, SettingsLinks.FEATURE_REQUEST) },
-                navigationContentDescription = stringResource(R.string.settings_help_open_feature)
+                trailingIcon = Icons.AutoMirrored.Filled.OpenInNew
             )
             SettingsDivider()
             SettingsRow(

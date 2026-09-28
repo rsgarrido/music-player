@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.res.stringResource
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.AppShellTypography
@@ -99,6 +100,7 @@ internal fun SettingsRow(
     emphasizeSummary: Boolean = false,
     summaryMaxLines: Int = 3,
     navigationContentDescription: String? = null,
+    trailingIcon: ImageVector? = null,
     trailingContent: (@Composable () -> Unit)? = null
 ) {
     val clickModifier = if (onClick == null) {
@@ -151,8 +153,8 @@ internal fun SettingsRow(
             onClick != null -> {
                 Spacer(modifier = Modifier.width(10.dp))
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = navigationContentDescription,
+                    imageVector = trailingIcon ?: Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = if (trailingIcon == null) navigationContentDescription else null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -161,9 +163,9 @@ internal fun SettingsRow(
 }
 
 @Composable
-internal fun SettingsDivider(modifier: Modifier = Modifier) {
+internal fun SettingsDivider(modifier: Modifier = Modifier, startPadding: Dp = 72.dp) {
     HorizontalDivider(
-        modifier = modifier.padding(start = 72.dp),
+        modifier = modifier.padding(start = startPadding),
         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.62f)
     )
 }

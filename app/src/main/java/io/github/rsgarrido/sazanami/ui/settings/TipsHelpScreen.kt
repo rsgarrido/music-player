@@ -5,14 +5,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.AppShellIcons
@@ -32,13 +35,13 @@ fun TipsHelpScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
             description = stringResource(R.string.tips_playback_category_summary),
             icon = AppShellIcons.MusicNote
         ) {
-            TipRow(R.string.tips_saved_queues_title, R.string.tips_saved_queues_body, AppShellIcons.Deck)
-            SettingsDivider()
-            TipRow(R.string.tips_play_next_title, R.string.tips_play_next_body, AppShellIcons.MusicNote)
-            SettingsDivider()
-            TipRow(R.string.tips_player_album_title, R.string.tips_player_album_body, AppShellIcons.AlbumStack)
-            SettingsDivider()
-            TipRow(R.string.tips_lyrics_title, R.string.tips_lyrics_body, AppShellIcons.MusicNote)
+            HelpTip(R.string.tips_saved_queues_title, R.string.tips_saved_queues_body)
+            SettingsDivider(startPadding = 18.dp)
+            HelpTip(R.string.tips_play_next_title, R.string.tips_play_next_body)
+            SettingsDivider(startPadding = 18.dp)
+            HelpTip(R.string.tips_player_album_title, R.string.tips_player_album_body)
+            SettingsDivider(startPadding = 18.dp)
+            HelpTip(R.string.tips_lyrics_title, R.string.tips_lyrics_body)
         }
 
         SettingsSectionSpacer()
@@ -47,13 +50,13 @@ fun TipsHelpScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
             description = stringResource(R.string.tips_library_category_summary),
             icon = AppShellIcons.AlbumStack
         ) {
-            TipRow(R.string.tips_quick_rate_title, R.string.tips_quick_rate_body, AppShellIcons.Info)
-            SettingsDivider()
-            TipRow(R.string.tips_filters_title, R.string.tips_filters_body, AppShellIcons.Search)
-            SettingsDivider()
-            TipRow(R.string.tips_smart_playlists_title, R.string.tips_smart_playlists_body, AppShellIcons.AlbumStack)
-            SettingsDivider()
-            TipRow(R.string.tips_metadata_title, R.string.tips_metadata_body, AppShellIcons.Info)
+            HelpTip(R.string.tips_quick_rate_title, R.string.tips_quick_rate_body)
+            SettingsDivider(startPadding = 18.dp)
+            HelpTip(R.string.tips_filters_title, R.string.tips_filters_body)
+            SettingsDivider(startPadding = 18.dp)
+            HelpTip(R.string.tips_smart_playlists_title, R.string.tips_smart_playlists_body)
+            SettingsDivider(startPadding = 18.dp)
+            HelpTip(R.string.tips_metadata_title, R.string.tips_metadata_body)
         }
 
         SettingsSectionSpacer()
@@ -62,20 +65,32 @@ fun TipsHelpScreen(onBackClick: () -> Unit, modifier: Modifier = Modifier) {
             description = stringResource(R.string.tips_personalize_category_summary),
             icon = AppShellIcons.Palette
         ) {
-            TipRow(R.string.tips_my_player_title, R.string.tips_my_player_body, AppShellIcons.Palette)
-            SettingsDivider()
-            TipRow(R.string.tips_backup_title, R.string.tips_backup_body, AppShellIcons.Restore)
+            HelpTip(R.string.tips_my_player_title, R.string.tips_my_player_body)
+            SettingsDivider(startPadding = 18.dp)
+            HelpTip(R.string.tips_backup_title, R.string.tips_backup_body)
         }
         Spacer(Modifier.height(32.dp))
     }
 }
 
 @Composable
-private fun TipRow(@StringRes title: Int, @StringRes body: Int, icon: ImageVector) {
-    SettingsRow(
-        title = stringResource(title),
-        summary = stringResource(body),
-        icon = icon,
-        summaryMaxLines = 5
-    )
+private fun HelpTip(@StringRes title: Int, @StringRes body: Int) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 10.dp)
+    ) {
+        Text(
+            text = stringResource(title),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = stringResource(body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 3.dp)
+        )
+    }
 }
