@@ -17,6 +17,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.filled.TipsAndUpdates
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.width
 import io.github.rsgarrido.sazanami.data.preferences.CrossfadePreferences
@@ -77,6 +83,8 @@ fun SettingsScreen(
     onListeningHistoryImportClick: () -> Unit = {},
     onListeningHistoryReconciliationClick: () -> Unit = {},
     onDiagnosticsClick: () -> Unit,
+    onTipsHelpClick: () -> Unit = {},
+    onAboutClick: () -> Unit = {},
     equalizerSummary: String,
     onEqualizerClick: () -> Unit,
     isSleepTimerActive: Boolean,
@@ -122,6 +130,7 @@ fun SettingsScreen(
     var isEmbeddedArtworkOnlyDialogVisible by remember { mutableStateOf(false) }
     val homePinUi = LocalHomePinUi.current
     val folderArtworkUi = LocalFolderArtworkUi.current
+    val context = LocalContext.current
 
     if (isDefaultPlayerCustomizationVisible) {
         DefaultPlayerCustomizationScreen(
@@ -507,7 +516,7 @@ fun SettingsScreen(
         ) {
             SettingsRow(
                 title = "Export Backup",
-                summary = "Save favorites, playlists, listening history and track links, ratings, and preferences as JSON.",
+                summary = "Save favorites, playlists, listening history and track links, ratings, and preferences to a Sazanami backup file.",
                 icon = AppShellIcons.Export,
                 onClick = onExportBackupClick,
                 navigationContentDescription = "Export backup"
@@ -537,14 +546,40 @@ fun SettingsScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "About",
-            description = "Sazanami information and project identity.",
-            icon = AppShellIcons.Info
+            title = stringResource(R.string.settings_help_section_title),
+            description = stringResource(R.string.settings_help_section_summary),
+            icon = Icons.AutoMirrored.Filled.HelpOutline
         ) {
             SettingsRow(
-                title = stringResource(R.string.app_name),
-                summary = "A local music player for your personal library.",
-                icon = AppShellIcons.Info
+                title = stringResource(R.string.settings_help_tips_title),
+                summary = stringResource(R.string.settings_help_tips_summary),
+                icon = Icons.Filled.TipsAndUpdates,
+                onClick = onTipsHelpClick,
+                navigationContentDescription = stringResource(R.string.settings_help_open_tips)
+            )
+            SettingsDivider()
+            SettingsRow(
+                title = stringResource(R.string.settings_help_issue_title),
+                summary = stringResource(R.string.settings_help_issue_summary),
+                icon = Icons.Filled.BugReport,
+                onClick = { openSettingsUrl(context, SettingsLinks.BUG_REPORT) },
+                trailingIcon = Icons.AutoMirrored.Filled.OpenInNew
+            )
+            SettingsDivider()
+            SettingsRow(
+                title = stringResource(R.string.settings_help_feature_title),
+                summary = stringResource(R.string.settings_help_feature_summary),
+                icon = Icons.Filled.Lightbulb,
+                onClick = { openSettingsUrl(context, SettingsLinks.FEATURE_REQUEST) },
+                trailingIcon = Icons.AutoMirrored.Filled.OpenInNew
+            )
+            SettingsDivider()
+            SettingsRow(
+                title = stringResource(R.string.settings_help_about_title),
+                summary = stringResource(R.string.settings_help_about_summary),
+                icon = AppShellIcons.Info,
+                onClick = onAboutClick,
+                navigationContentDescription = stringResource(R.string.settings_help_open_about)
             )
         }
 

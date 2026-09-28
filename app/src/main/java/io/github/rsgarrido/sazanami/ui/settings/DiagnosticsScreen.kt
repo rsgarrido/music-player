@@ -341,7 +341,7 @@ internal fun DiagnosticsScreen(
     var isCacheOperationRunning by remember { mutableStateOf(false) }
     var showClearConfirmation by remember { mutableStateOf(false) }
     var statusMessage by remember { mutableStateOf<String?>(null) }
-    val version = remember(context) { context.appVersion() }
+    val version = remember(context) { context.installedAppVersion() }
     val copiedMessage = stringResource(R.string.diagnostics_copied)
     val cacheClearedMessage = stringResource(R.string.diagnostics_cache_cleared)
 
@@ -785,19 +785,6 @@ private fun DiagnosticValue(label: String, value: String) {
         headlineContent = { Text(label) },
         supportingContent = { Text(value) }
     )
-}
-
-private fun Context.appVersion(): Pair<String, Long> {
-    return runCatching {
-        val info = packageManager.getPackageInfo(packageName, 0)
-        val code = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            info.longVersionCode
-        } else {
-            @Suppress("DEPRECATION")
-            info.versionCode.toLong()
-        }
-        info.versionName.orEmpty().ifBlank { getString(R.string.diagnostics_unknown) } to code
-    }.getOrDefault(getString(R.string.diagnostics_unknown) to 0L)
 }
 
 private fun Context.copyToClipboard(text: String) {
