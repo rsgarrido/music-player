@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.width
 import io.github.rsgarrido.sazanami.data.preferences.CrossfadePreferences
@@ -77,6 +78,8 @@ fun SettingsScreen(
     onListeningHistoryImportClick: () -> Unit = {},
     onListeningHistoryReconciliationClick: () -> Unit = {},
     onDiagnosticsClick: () -> Unit,
+    onTipsHelpClick: () -> Unit = {},
+    onAboutClick: () -> Unit = {},
     equalizerSummary: String,
     onEqualizerClick: () -> Unit,
     isSleepTimerActive: Boolean,
@@ -122,6 +125,7 @@ fun SettingsScreen(
     var isEmbeddedArtworkOnlyDialogVisible by remember { mutableStateOf(false) }
     val homePinUi = LocalHomePinUi.current
     val folderArtworkUi = LocalFolderArtworkUi.current
+    val context = LocalContext.current
 
     if (isDefaultPlayerCustomizationVisible) {
         DefaultPlayerCustomizationScreen(
@@ -537,14 +541,48 @@ fun SettingsScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "About",
-            description = "Sazanami information and project identity.",
+            title = stringResource(R.string.settings_help_section_title),
+            description = stringResource(R.string.settings_help_section_summary),
             icon = AppShellIcons.Info
         ) {
             SettingsRow(
-                title = stringResource(R.string.app_name),
-                summary = "A local music player for your personal library.",
-                icon = AppShellIcons.Info
+                title = stringResource(R.string.settings_help_tips_title),
+                summary = stringResource(R.string.settings_help_tips_summary),
+                icon = AppShellIcons.Info,
+                onClick = onTipsHelpClick,
+                navigationContentDescription = stringResource(R.string.settings_help_open_tips)
+            )
+            SettingsDivider()
+            SettingsRow(
+                title = stringResource(R.string.settings_help_repository_title),
+                summary = stringResource(R.string.settings_help_repository_summary),
+                icon = AppShellIcons.Info,
+                onClick = { openSettingsUrl(context, SettingsLinks.REPOSITORY) },
+                navigationContentDescription = stringResource(R.string.settings_help_open_repository)
+            )
+            SettingsDivider()
+            SettingsRow(
+                title = stringResource(R.string.settings_help_issue_title),
+                summary = stringResource(R.string.settings_help_issue_summary),
+                icon = AppShellIcons.Diagnostics,
+                onClick = { openSettingsUrl(context, SettingsLinks.BUG_REPORT) },
+                navigationContentDescription = stringResource(R.string.settings_help_open_issue)
+            )
+            SettingsDivider()
+            SettingsRow(
+                title = stringResource(R.string.settings_help_feature_title),
+                summary = stringResource(R.string.settings_help_feature_summary),
+                icon = AppShellIcons.Palette,
+                onClick = { openSettingsUrl(context, SettingsLinks.FEATURE_REQUEST) },
+                navigationContentDescription = stringResource(R.string.settings_help_open_feature)
+            )
+            SettingsDivider()
+            SettingsRow(
+                title = stringResource(R.string.settings_help_about_title),
+                summary = stringResource(R.string.settings_help_about_summary),
+                icon = AppShellIcons.Info,
+                onClick = onAboutClick,
+                navigationContentDescription = stringResource(R.string.settings_help_open_about)
             )
         }
 

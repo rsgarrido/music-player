@@ -261,6 +261,8 @@ private val FolderBrowseSelectionSaver = Saver<MutableState<FolderId?>, List<Str
 enum class MusicPrimaryDestination {
     FOLDERS,
     SETTINGS,
+    TIPS_HELP,
+    ABOUT,
     DIAGNOSTICS,
     EQUALIZER,
     STATISTICS,
@@ -277,6 +279,8 @@ class MusicOverlayState internal constructor(
 ) {
     val isFolderScreenVisible = destinationState(primaryDestination, MusicPrimaryDestination.FOLDERS)
     val isSettingsScreenVisible = destinationState(primaryDestination, MusicPrimaryDestination.SETTINGS)
+    val isTipsHelpScreenVisible = destinationState(primaryDestination, MusicPrimaryDestination.TIPS_HELP)
+    val isAboutScreenVisible = destinationState(primaryDestination, MusicPrimaryDestination.ABOUT)
     val isDiagnosticsScreenVisible =
         destinationState(primaryDestination, MusicPrimaryDestination.DIAGNOSTICS)
     val isEqualizerScreenVisible =
@@ -297,6 +301,28 @@ class MusicOverlayState internal constructor(
         destinationState(transientDestination, MusicOverlayDestination.CREATE_PLAYLIST)
     val isSleepTimerDialogVisible =
         destinationState(transientDestination, MusicOverlayDestination.SLEEP_TIMER)
+}
+
+internal class SettingsHelpNavigation(private val overlayState: MusicOverlayState) {
+    fun openTips() {
+        overlayState.isSettingsScreenVisible.value = false
+        overlayState.isTipsHelpScreenVisible.value = true
+    }
+
+    fun backFromTips() {
+        overlayState.isTipsHelpScreenVisible.value = false
+        overlayState.isSettingsScreenVisible.value = true
+    }
+
+    fun openAbout() {
+        overlayState.isSettingsScreenVisible.value = false
+        overlayState.isAboutScreenVisible.value = true
+    }
+
+    fun backFromAbout() {
+        overlayState.isAboutScreenVisible.value = false
+        overlayState.isSettingsScreenVisible.value = true
+    }
 }
 
 @Composable

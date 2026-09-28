@@ -103,6 +103,8 @@ import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyl
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.settings.SettingsScreen
+import io.github.rsgarrido.sazanami.ui.settings.TipsHelpScreen
+import io.github.rsgarrido.sazanami.ui.settings.AboutScreen
 import io.github.rsgarrido.sazanami.ui.settings.DiagnosticsScreen
 import io.github.rsgarrido.sazanami.ui.settings.ListeningHistoryImportScreen
 import io.github.rsgarrido.sazanami.ui.settings.SpotifyImportUiActions
@@ -186,6 +188,9 @@ internal fun MusicScreenBody(
     isPlayerExpanded: Boolean,
     isFolderScreenVisible: Boolean,
     isSettingsScreenVisible: Boolean,
+    isTipsHelpScreenVisible: Boolean,
+    isAboutScreenVisible: Boolean,
+    settingsHelpNavigation: SettingsHelpNavigation,
     isDiagnosticsScreenVisible: Boolean,
     isEqualizerScreenVisible: Boolean,
     isStatisticsScreenVisible: Boolean,
@@ -415,6 +420,26 @@ internal fun MusicScreenBody(
             )
         }
 
+        isTipsHelpScreenVisible -> {
+            TipsHelpScreen(
+                onBackClick = settingsHelpNavigation::backFromTips,
+                modifier = modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+            )
+        }
+
+        isAboutScreenVisible -> {
+            AboutScreen(
+                onBackClick = settingsHelpNavigation::backFromAbout,
+                modifier = modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+            )
+        }
+
         isDiagnosticsScreenVisible -> {
             PlaybackProgress(playbackProgressUiState) { progress ->
                 DiagnosticsScreen(
@@ -466,6 +491,8 @@ internal fun MusicScreenBody(
                 lastLibraryRefreshSummary = lastLibraryRefreshSummary,
                 libraryErrorMessage = libraryErrorMessage,
                 onBackClick = onSettingsBackClick,
+                onTipsHelpClick = settingsHelpNavigation::openTips,
+                onAboutClick = settingsHelpNavigation::openAbout,
                 onLibraryFoldersClick = onLibraryFoldersClick,
                 onScanLibraryClick = onScanLibraryClick,
                 onExportBackupClick = onExportBackupClick,

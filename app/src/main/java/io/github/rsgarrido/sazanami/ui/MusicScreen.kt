@@ -359,6 +359,7 @@ internal fun MusicScreen(
     }
 
     val overlayState = rememberMusicOverlayState()
+    val settingsHelpNavigation = remember(overlayState) { SettingsHelpNavigation(overlayState) }
     val settingsScrollState = rememberScrollState()
     val homeListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val statisticsListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
@@ -372,6 +373,8 @@ internal fun MusicScreen(
     )
     var isFolderScreenVisible by overlayState.isFolderScreenVisible
     var isSettingsScreenVisible by overlayState.isSettingsScreenVisible
+    var isTipsHelpScreenVisible by overlayState.isTipsHelpScreenVisible
+    var isAboutScreenVisible by overlayState.isAboutScreenVisible
     var isDiagnosticsScreenVisible by overlayState.isDiagnosticsScreenVisible
     var isEqualizerScreenVisible by overlayState.isEqualizerScreenVisible
     var isStatisticsScreenVisible by overlayState.isStatisticsScreenVisible
@@ -678,6 +681,8 @@ internal fun MusicScreen(
                 isListeningHistoryImportVisible ||
                 isListeningHistoryReconciliationVisible ||
                 isSettingsScreenVisible ||
+                isTipsHelpScreenVisible ||
+                isAboutScreenVisible ||
                 selectedArtistName != null ||
                 selectedAlbumKey != null ||
                 selectedGenreKey != null ||
@@ -763,6 +768,12 @@ internal fun MusicScreen(
 
             isSettingsScreenVisible -> {
                 closeSettings()
+            }
+            isTipsHelpScreenVisible -> {
+                settingsHelpNavigation.backFromTips()
+            }
+            isAboutScreenVisible -> {
+                settingsHelpNavigation.backFromAbout()
             }
 
             mainDestination == MainDestination.LIBRARY &&
@@ -1012,6 +1023,8 @@ internal fun MusicScreen(
                     !isListeningHistoryImportVisible &&
                     !isListeningHistoryReconciliationVisible &&
                     !isSettingsScreenVisible &&
+                    !isTipsHelpScreenVisible &&
+                    !isAboutScreenVisible &&
                     selectedSongForTagEdit == null &&
                     selectedBatchEditorState == null &&
                     selectedBatchExecutionState == null
@@ -1024,7 +1037,8 @@ internal fun MusicScreen(
                 isListeningHistoryImportVisible = isListeningHistoryImportVisible,
                 isListeningHistoryReconciliationVisible =
                     isListeningHistoryReconciliationVisible,
-                isSettingsScreenVisible = isSettingsScreenVisible,
+                isSettingsScreenVisible = isSettingsScreenVisible ||
+                    isTipsHelpScreenVisible || isAboutScreenVisible,
                 isTagEditorVisible = selectedSongForTagEdit != null ||
                         selectedBatchEditorState != null ||
                         selectedBatchExecutionState != null,
@@ -1192,6 +1206,9 @@ internal fun MusicScreen(
                     isPlayerExpanded = isPlayerExpanded,
                     isFolderScreenVisible = isFolderScreenVisible,
                     isSettingsScreenVisible = isSettingsScreenVisible,
+                    isTipsHelpScreenVisible = isTipsHelpScreenVisible,
+                    isAboutScreenVisible = isAboutScreenVisible,
+                    settingsHelpNavigation = settingsHelpNavigation,
                     isDiagnosticsScreenVisible = isDiagnosticsScreenVisible,
                     isEqualizerScreenVisible =
                         isEqualizerScreenVisible,

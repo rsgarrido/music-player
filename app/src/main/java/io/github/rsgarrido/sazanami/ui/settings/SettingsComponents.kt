@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -28,6 +30,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.AppShellTypography
 
 @Composable
@@ -93,6 +97,7 @@ internal fun SettingsRow(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     emphasizeSummary: Boolean = false,
+    summaryMaxLines: Int = 3,
     navigationContentDescription: String? = null,
     trailingContent: (@Composable () -> Unit)? = null
 ) {
@@ -129,7 +134,7 @@ internal fun SettingsRow(
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 },
-                maxLines = 3,
+                maxLines = summaryMaxLines,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 3.dp)
             )
@@ -209,4 +214,27 @@ private fun SettingsIconBadge(
 @Composable
 internal fun SettingsSectionSpacer() {
     Spacer(modifier = Modifier.height(28.dp))
+}
+
+@Composable
+internal fun SettingsSubpageHeader(title: String, onBackClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 8.dp, top = 10.dp, end = 20.dp, bottom = 22.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBackClick) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = stringResource(R.string.settings_help_back)
+            )
+        }
+        Text(
+            text = title,
+            style = AppShellTypography.ScreenTitle,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+    }
 }
