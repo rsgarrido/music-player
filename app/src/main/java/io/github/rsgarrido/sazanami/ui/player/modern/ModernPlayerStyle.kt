@@ -2,13 +2,14 @@ package io.github.rsgarrido.sazanami.ui.player.modern
 
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.ui.theme.SazanamiAccent
+import io.github.rsgarrido.sazanami.ui.theme.SazanamiSurface
 
 @Immutable
 data class ModernPlayerStyle(
@@ -50,7 +51,7 @@ object ModernPlayerDefaults {
         return ModernPlayerStyle(
             backgroundColor = Color.Black,
             solidBackgroundColor = lerp(
-                MaterialTheme.colorScheme.surface,
+                SazanamiSurface,
                 Color.Black,
                 0.65f
             ),
@@ -70,7 +71,7 @@ object ModernPlayerDefaults {
             primaryControlSurfaceBottomColor = Color.Black.copy(alpha = 0.28f),
             primaryControlSurfaceBorderColor = Color.White.copy(alpha = 0.18f),
             artworkContainerColor = Color.Black.copy(alpha = 0.20f),
-            accentColor = MaterialTheme.colorScheme.primary,
+            accentColor = SazanamiAccent,
             artworkShape = ArtworkShape,
             primaryControlShape = CircleShape,
             modeControlShape = CircleShape

@@ -6,6 +6,9 @@ import io.github.rsgarrido.sazanami.data.PlayerTheme
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokens
 import io.github.rsgarrido.sazanami.ui.player.theme.defaultTokens
 import io.github.rsgarrido.sazanami.ui.theme.SazanamiAccent
+import io.github.rsgarrido.sazanami.ui.theme.SazanamiLightBackground
+import io.github.rsgarrido.sazanami.ui.theme.SazanamiLightOnSurface
+import io.github.rsgarrido.sazanami.ui.theme.SazanamiLightSurfaceHigh
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -84,6 +87,25 @@ class AppShellThemeAccentTest {
         )
 
         assertTrue(resolved.luminance() > darkAccent.luminance())
+    }
+
+    @Test
+    fun brightRetroAccentDarkensForLightShellSurfaces() {
+        val brightAccent = Color(0xFFFFD980)
+        val surfaces = listOf(SazanamiLightBackground, SazanamiLightSurfaceHigh)
+        val resolved = resolveAppShellAccent(
+            playerTheme = PlayerTheme.RETRO_RACK,
+            tokens = tokens(accent = brightAccent),
+            surfaces = surfaces,
+            foreground = SazanamiLightOnSurface
+        )
+
+        assertTrue(resolved.luminance() < brightAccent.luminance())
+        surfaces.forEach { surface ->
+            val lighter = maxOf(resolved.luminance(), surface.luminance())
+            val darker = minOf(resolved.luminance(), surface.luminance())
+            assertTrue((lighter + 0.05f) / (darker + 0.05f) >= 4.5f)
+        }
     }
 
     private fun tokens(

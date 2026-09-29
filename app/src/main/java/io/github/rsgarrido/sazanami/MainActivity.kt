@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
@@ -192,7 +193,12 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appFont by musicViewModel.appFont.collectAsStateWithLifecycle()
-            SazanamiTheme(appFont = appFont) {
+            val appAppearance by musicViewModel.appAppearance.collectAsStateWithLifecycle()
+            val systemIsDark = isSystemInDarkTheme()
+            SazanamiTheme(
+                darkTheme = appAppearance.isDark(systemIsDark),
+                appFont = appFont
+            ) {
                 val snackbarHostState = remember { SnackbarHostState() }
 
                 CompositionLocalProvider(

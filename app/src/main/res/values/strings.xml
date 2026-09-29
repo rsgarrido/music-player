@@ -262,4 +262,11 @@
     <string name="widget_configure_save">Save</string>
     <string name="widget_configure_cancel">Cancel</string>
     <string name="widget_configure_save_failed">Couldn’t save this widget’s appearance. Try again.</string>
+    <string name="app_appearance_title">App appearance</string>
+    <string name="app_appearance_choose">Choose app appearance</string>
+    <string name="app_appearance_description">Controls the normal app interface. Player themes keep their own appearance.</string>
+    <string name="app_appearance_system">System</string>
+    <string name="app_appearance_light">Light</string>
+    <string name="app_appearance_dark">Dark</string>
+    <string name="app_appearance_close">Close</string>
 </resources>

@@ -50,6 +50,7 @@ import io.github.rsgarrido.sazanami.data.FolderBrowseIndex
 import io.github.rsgarrido.sazanami.data.FolderId
 import io.github.rsgarrido.sazanami.data.PlayerTheme
 import io.github.rsgarrido.sazanami.data.preferences.AppFont
+import io.github.rsgarrido.sazanami.data.preferences.AppAppearance
 import io.github.rsgarrido.sazanami.data.Playlist
 import io.github.rsgarrido.sazanami.data.PlaylistFolder
 import io.github.rsgarrido.sazanami.data.PlaylistSong
@@ -291,6 +292,8 @@ internal fun MusicScreenBody(
     selectedPlayerTheme: PlayerTheme,
     selectedAppFont: AppFont,
     onAppFontSelected: (AppFont) -> Unit,
+    selectedAppAppearance: AppAppearance,
+    onAppAppearanceSelected: (AppAppearance) -> Unit,
     selectedPlayerThemeTokens: PlayerThemeTokens,
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
     onUpdatePlayerThemeTokenOverride: (PlayerTheme, PlayerThemeTokenField, Color) -> Unit,
@@ -509,6 +512,8 @@ internal fun MusicScreenBody(
                 selectedPlayerTheme = selectedPlayerTheme,
                 selectedAppFont = selectedAppFont,
                 onAppFontSelected = onAppFontSelected,
+                selectedAppAppearance = selectedAppAppearance,
+                onAppAppearanceSelected = onAppAppearanceSelected,
                 selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                 onPlayerThemeSelected = onPlayerThemeSelected,
                 onUpdatePlayerThemeTokenOverride = onUpdatePlayerThemeTokenOverride,

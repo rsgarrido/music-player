@@ -77,6 +77,7 @@ internal fun MusicRoute(
     val playerAppearanceUiState by
     musicViewModel.playerAppearanceUiState.collectAsStateWithLifecycle()
     val appFont by musicViewModel.appFont.collectAsStateWithLifecycle()
+    val appAppearance by musicViewModel.appAppearance.collectAsStateWithLifecycle()
     val libraryAppearanceUiState by
     musicViewModel.libraryAppearanceUiState.collectAsStateWithLifecycle()
     val audioOffloadPreference by
@@ -626,6 +627,8 @@ internal fun MusicRoute(
             selectedPlayerTheme = playerAppearanceUiState.selectedTheme,
             selectedAppFont = appFont,
             onAppFontSelected = musicViewModel::selectAppFont,
+            selectedAppAppearance = appAppearance,
+            onAppAppearanceSelected = musicViewModel::selectAppAppearance,
             selectedPlayerThemeTokens = playerAppearanceUiState.themeTokens,
             onPlayerThemeSelected = { playerTheme ->
                 musicViewModel.selectPlayerTheme(playerTheme)

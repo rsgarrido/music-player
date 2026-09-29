@@ -33,6 +33,28 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class AppPreferencesMigrationTest {
     @Test
+    fun appAppearancePersistsAndPropagatesEveryChoice() = runBlocking {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        val repository = AppPreferencesRepository.create(
+            context = context,
+            scope = scope,
+            dataStoreFileName = "app_appearance_${System.nanoTime()}.preferences_pb",
+            legacyStores = emptyList()
+        )
+
+        assertEquals(AppAppearance.DARK, repository.awaitLoadedState().appAppearance)
+        AppAppearance.entries.forEach { appearance ->
+            repository.setAppAppearance(appearance)
+            val updated = withTimeout(5_000) {
+                repository.state.firstMatching { it.appAppearance == appearance }
+            }
+            assertEquals(appearance, updated.appAppearance)
+        }
+        scope.cancel()
+    }
+
+    @Test
     fun notCountedVisibilityDefaultsOffAndRoundTrips() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

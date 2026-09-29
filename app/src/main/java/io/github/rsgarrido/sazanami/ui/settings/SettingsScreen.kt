@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.width
 import io.github.rsgarrido.sazanami.data.preferences.CrossfadePreferences
 import io.github.rsgarrido.sazanami.data.preferences.AppFont
+import io.github.rsgarrido.sazanami.data.preferences.AppAppearance
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.FolderSelectionMode
 import io.github.rsgarrido.sazanami.data.PlayerTheme
@@ -93,6 +94,8 @@ fun SettingsScreen(
     selectedPlayerTheme: PlayerTheme,
     selectedAppFont: AppFont = AppFont.SAZANAMI,
     onAppFontSelected: (AppFont) -> Unit = {},
+    selectedAppAppearance: AppAppearance = AppAppearance.DARK,
+    onAppAppearanceSelected: (AppAppearance) -> Unit = {},
     selectedPlayerThemeTokens: PlayerThemeTokens,
     onPlayerThemeSelected: (PlayerTheme) -> Unit,
     onUpdatePlayerThemeTokenOverride: (PlayerTheme, PlayerThemeTokenField, Color) -> Unit,
@@ -122,6 +125,7 @@ fun SettingsScreen(
 ) {
     var isPlayerThemeDialogVisible by remember { mutableStateOf(false) }
     var isFontDialogVisible by remember { mutableStateOf(false) }
+    var isAppAppearanceDialogVisible by remember { mutableStateOf(false) }
     var isReplayGainDialogVisible by remember { mutableStateOf(false) }
     var isAudioOffloadDialogVisible by remember { mutableStateOf(false) }
     var isThemeCustomizationDialogVisible by remember { mutableStateOf(false) }
@@ -439,6 +443,17 @@ fun SettingsScreen(
             SettingsDivider()
 
             SettingsRow(
+                title = stringResource(R.string.app_appearance_title),
+                summary = appAppearanceLabel(selectedAppAppearance),
+                icon = AppShellIcons.Palette,
+                onClick = { isAppAppearanceDialogVisible = true },
+                emphasizeSummary = true,
+                navigationContentDescription = stringResource(R.string.app_appearance_choose)
+            )
+
+            SettingsDivider()
+
+            SettingsRow(
                 title = "Player Theme",
                 summary = selectedPlayerTheme.displayName,
                 icon = AppShellIcons.Deck,
@@ -628,6 +643,48 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = { isFontDialogVisible = false }) {
                     Text(text = "Close")
+                }
+            }
+        )
+    }
+
+    if (isAppAppearanceDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { isAppAppearanceDialogVisible = false },
+            title = { Text(stringResource(R.string.app_appearance_title)) },
+            text = {
+                Column {
+                    Text(
+                        text = stringResource(R.string.app_appearance_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    AppAppearance.entries.forEach { appearance ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    onAppAppearanceSelected(appearance)
+                                    isAppAppearanceDialogVisible = false
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = selectedAppAppearance == appearance,
+                                onClick = {
+                                    onAppAppearanceSelected(appearance)
+                                    isAppAppearanceDialogVisible = false
+                                }
+                            )
+                            Text(appAppearanceLabel(appearance))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { isAppAppearanceDialogVisible = false }) {
+                    Text(stringResource(R.string.app_appearance_close))
                 }
             }
         )
@@ -892,6 +949,13 @@ fun SettingsScreen(
             }
         )
     }
+}
+
+@Composable
+private fun appAppearanceLabel(appearance: AppAppearance): String = when (appearance) {
+    AppAppearance.SYSTEM -> stringResource(R.string.app_appearance_system)
+    AppAppearance.LIGHT -> stringResource(R.string.app_appearance_light)
+    AppAppearance.DARK -> stringResource(R.string.app_appearance_dark)
 }
 
 private val AppFont.displayName: String

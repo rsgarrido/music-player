@@ -67,6 +67,7 @@ import io.github.rsgarrido.sazanami.data.ListeningTrendMetric
 import io.github.rsgarrido.sazanami.data.ListeningRankingCategory
 import io.github.rsgarrido.sazanami.data.ListeningImportRepository
 import io.github.rsgarrido.sazanami.data.preferences.AppPreferencesRepository
+import io.github.rsgarrido.sazanami.data.preferences.AppAppearance
 import io.github.rsgarrido.sazanami.data.home.HomePin
 import io.github.rsgarrido.sazanami.data.backup.AppBackup
 import io.github.rsgarrido.sazanami.data.backup.BackupExportResult
@@ -372,6 +373,10 @@ class MusicViewModel(
         .map { preferences -> preferences.appFont }
         .stateIn(viewModelScope, SharingStarted.Eagerly, AppFont.SAZANAMI)
 
+    val appAppearance = appPreferencesRepository.state
+        .map { preferences -> preferences.appAppearance }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, AppAppearance.DARK)
+
     val smoothPlayPauseEnabled = appPreferencesRepository.state
         .map { preferences -> preferences.smoothPlayPauseEnabled }
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
@@ -394,6 +399,10 @@ class MusicViewModel(
 
     fun selectAppFont(appFont: AppFont) {
         viewModelScope.launch { appPreferencesRepository.setAppFont(appFont) }
+    }
+
+    fun selectAppAppearance(appearance: AppAppearance) {
+        viewModelScope.launch { appPreferencesRepository.setAppAppearance(appearance) }
     }
 
     fun selectModernArtworkTransitionStyle(style: ModernArtworkTransitionStyle) {

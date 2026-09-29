@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import io.github.rsgarrido.sazanami.data.preferences.AppFont
 
 private val DarkColorScheme = darkColorScheme(
@@ -37,11 +38,38 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = SazanamiOnAccentContainer,
     primaryContainer = SazanamiOnAccentContainer,
     onPrimaryContainer = SazanamiOnAccent,
+    inversePrimary = SazanamiAccent,
+    secondary = SazanamiLightSecondary,
+    onSecondary = SazanamiLightOnSecondary,
+    secondaryContainer = SazanamiLightSecondaryContainer,
+    onSecondaryContainer = SazanamiLightOnSecondaryContainer,
+    tertiary = SazanamiLightTertiary,
+    onTertiary = SazanamiLightOnTertiary,
+    tertiaryContainer = SazanamiLightTertiaryContainer,
+    onTertiaryContainer = SazanamiLightOnTertiaryContainer,
     background = SazanamiLightBackground,
     onBackground = SazanamiLightOnSurface,
     surface = SazanamiLightSurface,
     onSurface = SazanamiLightOnSurface,
-    surfaceTint = SazanamiAccentContainer
+    surfaceVariant = SazanamiLightSurfaceVariant,
+    onSurfaceVariant = SazanamiLightOnSurfaceVariant,
+    inverseSurface = SazanamiLightInverseSurface,
+    inverseOnSurface = SazanamiLightInverseOnSurface,
+    outline = SazanamiLightOutline,
+    outlineVariant = SazanamiLightOutlineVariant,
+    error = SazanamiLightError,
+    onError = SazanamiLightOnError,
+    errorContainer = SazanamiLightErrorContainer,
+    onErrorContainer = SazanamiLightOnErrorContainer,
+    scrim = Color.Black,
+    surfaceTint = SazanamiAccentContainer,
+    surfaceBright = SazanamiLightSurface,
+    surfaceDim = SazanamiLightSurfaceHighest,
+    surfaceContainerLowest = SazanamiLightSurface,
+    surfaceContainerLow = SazanamiLightSurfaceLow,
+    surfaceContainer = SazanamiLightSurfaceContainer,
+    surfaceContainerHigh = SazanamiLightSurfaceHigh,
+    surfaceContainerHighest = SazanamiLightSurfaceHighest
 )
 
 @Composable

@@ -27,18 +27,31 @@ fun rememberAppShellAccent(
     playerTheme: PlayerTheme,
     tokens: PlayerThemeTokens?,
     fallbackAccent: Color = MaterialTheme.colorScheme.primary
-): Color = remember(playerTheme, tokens, fallbackAccent) {
-    resolveAppShellAccent(
-        playerTheme = playerTheme,
-        tokens = tokens,
-        fallbackAccent = fallbackAccent
+): Color {
+    val scheme = MaterialTheme.colorScheme
+    val surfaces = listOf(
+        scheme.background,
+        scheme.surfaceContainerLow,
+        scheme.surfaceContainerHigh,
+        scheme.surfaceContainerHighest
     )
+    return remember(playerTheme, tokens, fallbackAccent, surfaces, scheme.onSurface) {
+        resolveAppShellAccent(
+            playerTheme = playerTheme,
+            tokens = tokens,
+            fallbackAccent = fallbackAccent,
+            surfaces = surfaces,
+            foreground = scheme.onSurface
+        )
+    }
 }
 
 internal fun resolveAppShellAccent(
     playerTheme: PlayerTheme,
     tokens: PlayerThemeTokens?,
-    fallbackAccent: Color = SazanamiAccent
+    fallbackAccent: Color = SazanamiAccent,
+    surfaces: List<Color> = listOf(SazanamiSurfaceHigh),
+    foreground: Color = Color.White
 ): Color {
     val tokenAccent = when (playerTheme) {
         PlayerTheme.DEFAULT -> null
@@ -48,18 +61,24 @@ internal fun resolveAppShellAccent(
         PlayerTheme.RETRO_RACK -> tokens?.accentColor
         PlayerTheme.POCKET_DISC -> tokens?.secondaryAccentColor ?: tokens?.accentColor
     }
-    return ensureReadableShellAccent(tokenAccent ?: fallbackAccent)
+    return ensureReadableShellAccent(tokenAccent ?: fallbackAccent, surfaces, foreground)
 }
 
-private fun ensureReadableShellAccent(accent: Color): Color {
+private fun ensureReadableShellAccent(
+    accent: Color,
+    surfaces: List<Color>,
+    foreground: Color
+): Color {
     var readableAccent = accent.copy(alpha = 1f)
-    repeat(12) {
-        if (contrastRatio(readableAccent, SazanamiSurfaceHigh) >= MinimumShellAccentContrast) {
+    repeat(20) {
+        if (surfaces.all { surface ->
+                contrastRatio(readableAccent, surface) >= MinimumShellAccentContrast
+            }) {
             return readableAccent
         }
-        readableAccent = lerp(readableAccent, Color.White, 0.12f)
+        readableAccent = lerp(readableAccent, foreground, 0.12f)
     }
-    return readableAccent
+    return foreground
 }
 
 private fun contrastRatio(first: Color, second: Color): Float {
