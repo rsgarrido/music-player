@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -59,6 +60,7 @@ fun AppBottomNavigation(
     onDestinationSelected: (MainDestination) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val lightShell = MaterialTheme.colorScheme.background.luminance() > 0.5f
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -103,8 +105,13 @@ fun AppBottomNavigation(
                         .offset(x = indicatorOffset)
                         .width(itemWidth)
                         .height(AppBottomNavigationItemHeight),
-                    color = AppShellAccent.copy(alpha = 0.16f),
-                    shape = RoundedCornerShape(20.dp)
+                    color = AppShellAccent.copy(alpha = if (lightShell) 0.22f else 0.16f),
+                    shape = RoundedCornerShape(20.dp),
+                    border = if (lightShell) {
+                        BorderStroke(1.dp, AppShellAccent.copy(alpha = 0.32f))
+                    } else {
+                        null
+                    }
                 ) {}
 
                 Row(

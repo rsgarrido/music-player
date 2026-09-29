@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,7 +36,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.rsgarrido.sazanami.data.preferences.AppPreferencesRepository
 import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.ui.SystemBarIconAppearanceEffect
+import io.github.rsgarrido.sazanami.ui.SystemBarSurface
+import io.github.rsgarrido.sazanami.ui.shouldUseDarkSystemBarIcons
 import io.github.rsgarrido.sazanami.ui.theme.SazanamiTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -61,13 +67,21 @@ class NowPlayingWidgetConfigurationActivity : ComponentActivity() {
             return
         }
         val preferences = NowPlayingWidgetPreferences(this)
+        val appPreferencesRepository = AppPreferencesRepository.getInstance(this)
         setResult(
             RESULT_CANCELED,
             widgetConfigurationResultIntent(appWidgetId)
         )
 
         setContent {
-            SazanamiTheme {
+            val appPreferences by appPreferencesRepository.state.collectAsStateWithLifecycle()
+            val systemIsDark = isSystemInDarkTheme()
+            val shellIsDark = appPreferences.appAppearance.isDark(systemIsDark)
+            SystemBarIconAppearanceEffect(
+                window = window,
+                darkIcons = shouldUseDarkSystemBarIcons(shellIsDark, SystemBarSurface.SHELL)
+            )
+            SazanamiTheme(darkTheme = shellIsDark) {
                 var isSaving by remember { mutableStateOf(false) }
                 var saveFailed by remember { mutableStateOf(false) }
                 WidgetConfigurationScreen(

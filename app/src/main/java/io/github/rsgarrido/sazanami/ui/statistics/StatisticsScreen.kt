@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.statistics
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -41,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
@@ -407,6 +409,8 @@ private fun StatisticsOverviewGrid(
     showNotCountedPlays: Boolean
 ) {
     val duration = durationPresentation(overview.listeningTime.confirmedDetailedListeningMs)
+    val scheme = MaterialTheme.colorScheme
+    val lightShell = scheme.background.luminance() > 0.5f
     val recordedLabel = stringResource(R.string.statistics_recorded_listening)
     val recordedSupport = stringResource(R.string.statistics_recorded_listening_support)
     val recordedAccessibility = "$recordedLabel, ${duration.second}. $recordedSupport"
@@ -415,7 +419,12 @@ private fun StatisticsOverviewGrid(
             .padding(horizontal = 16.dp)
             .fillMaxWidth()
             .testTag("statistics_overview"),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainerLow),
+        border = if (lightShell) {
+            BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.85f))
+        } else {
+            null
+        }
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),

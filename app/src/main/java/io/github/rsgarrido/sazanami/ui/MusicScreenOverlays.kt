@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -139,6 +140,17 @@ fun MusicScreenOverlays(
     pocketDiscMorphBounds: PocketDiscMorphBounds
 ) {
     val isPlayerExpanded = playerMorphState.shouldComposeExpanded
+    val setSystemBarSurface = LocalSystemBarSurfaceSetter.current
+    val systemBarSurface = playerSystemBarSurface(
+        theme = selectedPlayerTheme,
+        isExpanded = isPlayerExpanded,
+        hasSong = currentSong != null,
+        lyricsVisible = isLyricsVisible || lyricsTransitionState.lyricsComposed
+    )
+    DisposableEffect(setSystemBarSurface, systemBarSurface) {
+        setSystemBarSurface(systemBarSurface)
+        onDispose { setSystemBarSurface(SystemBarSurface.SHELL) }
+    }
     val lyricsGestureRegion = remember(selectedPlayerTheme) {
         PlayerLyricsGestureRegion()
     }

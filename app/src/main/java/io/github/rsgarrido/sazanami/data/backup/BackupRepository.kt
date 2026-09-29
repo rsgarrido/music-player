@@ -24,6 +24,7 @@ import io.github.rsgarrido.sazanami.data.home.sanitizeHomePins
 import io.github.rsgarrido.sazanami.player.replaygain.ReplayGainMode
 import io.github.rsgarrido.sazanami.data.preferences.AppPreferencesRepository
 import io.github.rsgarrido.sazanami.data.preferences.AppPreferencesState
+import io.github.rsgarrido.sazanami.data.preferences.AppAppearance
 import io.github.rsgarrido.sazanami.data.preferences.CrossfadePreferences
 import io.github.rsgarrido.sazanami.data.local.AppDatabase
 import io.github.rsgarrido.sazanami.player.audio.AudioOffloadPreference
@@ -112,6 +113,7 @@ class BackupRepository(
                     .map { it.toPortableFolderSelection() }
                     .filter { it.isNotBlank() }
                     .sorted(),
+                appAppearance = appPreferences.appAppearance.storageValue,
                 selectedPlayerThemeId = appPreferences.selectedPlayerTheme.id,
                 replayGainMode = appPreferences.replayGainMode.name,
                 audioOffloadPreference = appPreferences.audioOffloadPreference.name,
@@ -444,6 +446,7 @@ class BackupRepository(
         val restoredAppearance = preferences.toModernAppearanceState()
         appPreferencesRepository.replaceAll(
             AppPreferencesState(
+                appAppearance = preferences.toAppAppearance(),
                 selectedPlayerTheme = PlayerTheme.fromId(preferences.selectedPlayerThemeId),
                 playerThemeTokenOverrides = overrides,
                 modernArtworkTransitionStyle = ModernArtworkTransitionStyle.fromStorageValue(
@@ -511,6 +514,9 @@ class BackupRepository(
         const val APP_NAME = "Sazanami"
     }
 }
+
+internal fun BackupPreferences.toAppAppearance(): AppAppearance =
+    AppAppearance.fromStorageValue(appAppearance)
 
 internal fun BackupPreferences.withMyPlayerAppearance(state: AppPreferencesState): BackupPreferences {
     val myPlayer = state.myPlayerAppearance

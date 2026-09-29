@@ -50,6 +50,28 @@ import org.junit.Test
 
 class AppPreferencesStateTest {
     @Test
+    fun appAppearanceUsesStableValuesAndFallsBackToDark() {
+        val key = stringPreferencesKey("app_appearance")
+        assertEquals(AppAppearance.DARK, decodeAppPreferences(mutablePreferencesOf()).appAppearance)
+        assertEquals(AppAppearance.DARK, decodeAppPreferences(mutablePreferencesOf(key to "unknown")).appAppearance)
+        AppAppearance.entries.forEach { appearance ->
+            assertEquals(appearance.name, appearance.storageValue)
+            assertEquals(
+                appearance,
+                decodeAppPreferences(mutablePreferencesOf(key to appearance.storageValue)).appAppearance
+            )
+        }
+    }
+
+    @Test
+    fun systemAppearanceResolvesFromDeviceMode() {
+        assertEquals(false, AppAppearance.SYSTEM.isDark(systemIsDark = false))
+        assertEquals(true, AppAppearance.SYSTEM.isDark(systemIsDark = true))
+        assertEquals(false, AppAppearance.LIGHT.isDark(systemIsDark = true))
+        assertEquals(true, AppAppearance.DARK.isDark(systemIsDark = false))
+    }
+
+    @Test
     fun missingChoiceKeepsExistingAppearanceAsMyPlayer() {
         val saved = ModernPlayerAppearance.Default.copy(
             background = ModernPlayerAppearance.Default.background.copy(

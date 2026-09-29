@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.statistics
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
@@ -43,7 +45,7 @@ import io.github.rsgarrido.sazanami.data.AnalyticsRangePreset
 import io.github.rsgarrido.sazanami.data.AnalyticsRangeSelection
 import io.github.rsgarrido.sazanami.data.ListeningTrendBucket
 import io.github.rsgarrido.sazanami.data.ListeningTrendMetric
-import io.github.rsgarrido.sazanami.ui.AppShellAccent
+import io.github.rsgarrido.sazanami.ui.AppShellChartAccent
 import java.time.ZoneId
 
 @Composable
@@ -160,6 +162,8 @@ internal fun ListeningTrendChart(
     modifier: Modifier = Modifier
 ) {
     val maximum = remember(buckets, metric) { trendMaximum(buckets, metric) }
+    val scheme = MaterialTheme.colorScheme
+    val lightShell = scheme.background.luminance() > 0.5f
     val total = remember(buckets, metric) { trendTotal(buckets, metric) }
     val peak = remember(buckets, metric) { trendPeak(buckets, metric) }
     val metricLabel = stringResource(
@@ -178,7 +182,12 @@ internal fun ListeningTrendChart(
 
     Card(
         modifier = modifier.fillMaxWidth().heightIn(min = 236.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainerLow),
+        border = if (lightShell) {
+            BorderStroke(1.dp, scheme.outlineVariant.copy(alpha = 0.85f))
+        } else {
+            null
+        }
     ) {
         if (maximum <= 0L || buckets.isEmpty()) {
             Text(
@@ -237,9 +246,17 @@ internal fun ListeningTrendChart(
                         formatTrendBucketLabel(buckets[index], buckets, zoneId, locale)
                     }
                 }
-                val accent = AppShellAccent
-                val gridColor = MaterialTheme.colorScheme.outlineVariant
-                val baselineColor = MaterialTheme.colorScheme.outline
+                val accent = AppShellChartAccent
+                val gridColor = if (lightShell) {
+                    scheme.outline.copy(alpha = 0.38f)
+                } else {
+                    scheme.outlineVariant
+                }
+                val baselineColor = if (lightShell) {
+                    scheme.outline.copy(alpha = 0.68f)
+                } else {
+                    scheme.outline
+                }
                 val scrollState = rememberScrollState()
                 Column(
                     modifier = Modifier

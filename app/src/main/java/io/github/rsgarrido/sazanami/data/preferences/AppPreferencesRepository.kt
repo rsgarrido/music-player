@@ -83,6 +83,7 @@ import kotlinx.serialization.json.Json
 
 data class AppPreferencesState(
     val appFont: AppFont = AppFont.SAZANAMI,
+    val appAppearance: AppAppearance = AppAppearance.DARK,
     val selectedPlayerTheme: PlayerTheme = PlayerTheme.DEFAULT,
     val playerThemeTokenOverrides: Map<PlayerTheme, PlayerThemeTokenOverrides> = emptyMap(),
     val modernArtworkTransitionStyle: ModernArtworkTransitionStyle =
@@ -136,6 +137,10 @@ class AppPreferencesRepository private constructor(
 
     suspend fun setAppFont(appFont: AppFont) = edit {
         it.writeAppFont(appFont)
+    }
+
+    suspend fun setAppAppearance(appearance: AppAppearance) = edit {
+        it[Keys.appAppearance] = appearance.storageValue
     }
 
     suspend fun setModernArtworkTransitionStyle(style: ModernArtworkTransitionStyle) = edit {
@@ -579,6 +584,7 @@ class AppPreferencesRepository private constructor(
     suspend fun replaceAll(restored: AppPreferencesState) = edit { preferences ->
         preferences.clear()
         preferences.writeAppFont(restored.appFont)
+        preferences[Keys.appAppearance] = restored.appAppearance.storageValue
         preferences[Keys.selectedPlayerTheme] = restored.selectedPlayerTheme.id
         preferences[Keys.modernArtworkTransitionStyle] =
             restored.modernArtworkTransitionStyle.storageValue
@@ -666,6 +672,7 @@ internal fun decodeAppPreferences(preferences: Preferences): AppPreferencesState
     )
     return AppPreferencesState(
         appFont = AppFont.fromStorageValue(preferences[Keys.appFont]),
+        appAppearance = AppAppearance.fromStorageValue(preferences[Keys.appAppearance]),
         selectedPlayerTheme = PlayerTheme.fromId(preferences[Keys.selectedPlayerTheme]),
         playerThemeTokenOverrides = PlayerTheme.entries.associateWith { emptyOverrides() }
             .mapValues { (theme, _) ->
@@ -1207,6 +1214,7 @@ private val preferencesJson = Json {
 
 private object Keys {
     val appFont = stringPreferencesKey("app_font")
+    val appAppearance = stringPreferencesKey("app_appearance")
     val selectedPlayerTheme = stringPreferencesKey("selected_player_theme")
     val modernArtworkTransitionStyle = stringPreferencesKey("artwork_transition_style")
     val activeModernAppearanceChoice = stringPreferencesKey("modern_active_appearance_choice")

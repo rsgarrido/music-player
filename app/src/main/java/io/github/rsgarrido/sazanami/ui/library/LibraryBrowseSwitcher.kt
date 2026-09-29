@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -146,6 +147,7 @@ fun LibraryBrowseSwitcher(
     val primaryTabBounds = remember { mutableStateMapOf<LibraryTab, Rect>() }
     val filterBounds = remember { mutableStateMapOf<LibraryTab, Rect>() }
     val primaryTabContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+    val lightShell = MaterialTheme.colorScheme.background.luminance() > 0.5f
     val selectedPrimaryBounds = primaryTabBounds[selectedPrimaryTab]
     val selectedVisibilityInsetPx = with(LocalDensity.current) {
         LibraryTabSelectedVisibilityInset.roundToPx()
@@ -209,7 +211,12 @@ fun LibraryBrowseSwitcher(
                         targetBounds = primaryTabBounds[selectedPrimaryTab],
                         height = LibraryPrimaryIndicatorHeight,
                         shape = RoundedCornerShape(17.dp),
-                        color = AppShellAccent.copy(alpha = 0.16f)
+                        color = AppShellAccent.copy(alpha = if (lightShell) 0.22f else 0.16f),
+                        border = if (lightShell) {
+                            BorderStroke(1.dp, AppShellAccent.copy(alpha = 0.32f))
+                        } else {
+                            null
+                        }
                     )
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -283,8 +290,11 @@ fun LibraryBrowseSwitcher(
                         targetBounds = filterBounds[selectedTab],
                         height = LibraryFilterIndicatorHeight,
                         shape = RoundedCornerShape(14.dp),
-                        color = AppShellAccent.copy(alpha = 0.16f),
-                        border = BorderStroke(1.dp, AppShellAccent.copy(alpha = 0.42f))
+                        color = AppShellAccent.copy(alpha = if (lightShell) 0.2f else 0.16f),
+                        border = BorderStroke(
+                            1.dp,
+                            AppShellAccent.copy(alpha = if (lightShell) 0.5f else 0.42f)
+                        )
                     )
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

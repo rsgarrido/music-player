@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
@@ -51,6 +52,10 @@ import io.github.rsgarrido.sazanami.mediaaccess.FolderArtworkAccessStore
 import io.github.rsgarrido.sazanami.mediaaccess.MediaPermissions
 import io.github.rsgarrido.sazanami.mediaaccess.PermissionAccess
 import io.github.rsgarrido.sazanami.ui.MusicRoute
+import io.github.rsgarrido.sazanami.ui.LocalSystemBarSurfaceSetter
+import io.github.rsgarrido.sazanami.ui.SystemBarIconAppearanceEffect
+import io.github.rsgarrido.sazanami.ui.SystemBarSurface
+import io.github.rsgarrido.sazanami.ui.shouldUseDarkSystemBarIcons
 import io.github.rsgarrido.sazanami.ui.theme.SazanamiTheme
 import io.github.rsgarrido.sazanami.viewmodel.MusicViewModel
 import kotlinx.coroutines.launch
@@ -192,11 +197,26 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val appFont by musicViewModel.appFont.collectAsStateWithLifecycle()
-            SazanamiTheme(appFont = appFont) {
+            val appAppearance by musicViewModel.appAppearance.collectAsStateWithLifecycle()
+            val systemIsDark = isSystemInDarkTheme()
+            val shellIsDark = appAppearance.isDark(systemIsDark)
+            val systemBarSurface = remember { mutableStateOf(SystemBarSurface.SHELL) }
+            val setSystemBarSurface = remember {
+                { surface: SystemBarSurface -> systemBarSurface.value = surface }
+            }
+            SystemBarIconAppearanceEffect(
+                window = window,
+                darkIcons = shouldUseDarkSystemBarIcons(shellIsDark, systemBarSurface.value)
+            )
+            SazanamiTheme(
+                darkTheme = shellIsDark,
+                appFont = appFont
+            ) {
                 val snackbarHostState = remember { SnackbarHostState() }
 
                 CompositionLocalProvider(
-                    LocalContentColor provides MaterialTheme.colorScheme.onBackground
+                    LocalContentColor provides MaterialTheme.colorScheme.onBackground,
+                    LocalSystemBarSurfaceSetter provides setSystemBarSurface
                 ) {
                     Box(
                         modifier = Modifier
