@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Playlist
@@ -41,7 +42,7 @@ fun AddToPlaylistDialog(
 
     if (isCreatingPlaylist) {
         PlaylistNameDialog(
-            title = "Create Playlist",
+            title = stringResource(R.string.playlist_create_title),
             existingPlaylistNames = playlists.map(Playlist::name),
             onDismiss = { isCreatingPlaylist = false },
             onConfirmClick = { name ->
@@ -55,7 +56,7 @@ fun AddToPlaylistDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Add to Playlist")
+            Text(text = stringResource(R.string.playlist_add_to_title))
         },
         text = {
             LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
@@ -68,14 +69,14 @@ fun AddToPlaylistDialog(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         },
-                        headlineContent = { Text("Create new playlist") },
+                        headlineContent = { Text(stringResource(R.string.playlist_create_new)) },
                         modifier = Modifier.clickable { isCreatingPlaylist = true }
                     )
                 }
                 if (eligiblePlaylists.isEmpty()) {
                     item(key = EMPTY_PLAYLISTS_LAZY_LIST_KEY) {
                         Text(
-                            text = "No manual playlists yet.",
+                            text = stringResource(R.string.playlist_no_manual_yet),
                             modifier = Modifier,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -91,16 +92,29 @@ fun AddToPlaylistDialog(
                         val presentCount = distinctSongs.size - songsMissing.size
                         val alreadyContainsAll = distinctSongs.isNotEmpty() &&
                             presentCount == distinctSongs.size
-                        val songCountText = pluralStringResource(
-                            R.plurals.song_count,
-                            playlist.songCount,
-                            playlist.songCount
-                        )
+                        val songCountText = when {
+                            alreadyContainsAll -> pluralStringResource(
+                                R.plurals.playlist_song_count_all_added,
+                                playlist.songCount,
+                                playlist.songCount
+                            )
+                            presentCount > 0 -> pluralStringResource(
+                                R.plurals.playlist_song_count_part_added,
+                                playlist.songCount,
+                                playlist.songCount,
+                                presentCount
+                            )
+                            else -> pluralStringResource(
+                                R.plurals.song_count,
+                                playlist.songCount,
+                                playlist.songCount
+                            )
+                        }
                         ListItem(
                             leadingContent = {
                                 PlaylistArtwork(
                                     playlist = playlist,
-                                    contentDescription = "Artwork for ${playlist.name}",
+                                    contentDescription = stringResource(R.string.playlist_artwork_for, playlist.name),
                                     modifier = Modifier.size(48.dp)
                                 )
                             },
@@ -109,13 +123,7 @@ fun AddToPlaylistDialog(
                             },
                             supportingContent = {
                                 Text(
-                                    text = buildString {
-                                        append(songCountText)
-                                        when {
-                                            alreadyContainsAll -> append(" • Already added")
-                                            presentCount > 0 -> append(" • $presentCount selected already added")
-                                        }
-                                    }
+                                    text = songCountText
                                 )
                             },
                             modifier = Modifier.clickable(enabled = !alreadyContainsAll) {
@@ -129,7 +137,7 @@ fun AddToPlaylistDialog(
         confirmButton = {},
         dismissButton = {
             Button(onClick = onDismiss) {
-                Text(text = "Cancel")
+                Text(text = stringResource(R.string.settings_cancel))
             }
         }
     )

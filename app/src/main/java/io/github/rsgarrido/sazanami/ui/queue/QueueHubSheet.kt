@@ -1,6 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.queue
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
-import android.R
+import android.R as AndroidR
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -113,6 +115,8 @@ fun QueueHubSheet(
     val loadingInteractionSource = remember { MutableInteractionSource() }
     var lastObservedActiveQueueId by remember { mutableStateOf(state.activeQueueId) }
     val latestOnUndoDismissed by rememberUpdatedState<() -> Unit>(onUndoDismissed)
+    val removedMessage = stringResource(R.string.queue_entry_removed)
+    val undoLabel = stringResource(R.string.queue_undo)
 
     val queueCardIds = state.queues.map(PlaybackQueueCardUiState::queueId)
     LaunchedEffect(state.activeQueueId, queueCardIds) {
@@ -142,8 +146,8 @@ fun QueueHubSheet(
     LaunchedEffect(state.removalUndoEventId) {
         if (state.removalUndoEventId == null) return@LaunchedEffect
         when (snackbarHostState.showSnackbar(
-            message = "Queue entry removed",
-            actionLabel = "Undo",
+            message = removedMessage,
+            actionLabel = undoLabel,
             duration = queueRemovalSnackbarDuration
         )) {
             SnackbarResult.ActionPerformed -> onUndoRemove()
@@ -171,7 +175,7 @@ fun QueueHubSheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Queues",
+                    text = stringResource(R.string.queue_hub_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
@@ -183,11 +187,11 @@ fun QueueHubSheet(
                     if (state.isCreating) {
                         CircularProgressIndicator(modifier = Modifier.size(22.dp), strokeWidth = 2.dp)
                     } else {
-                        Icon(Icons.Filled.Add, contentDescription = "New queue from current")
+                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.queue_hub_new_from_current))
                     }
                 }
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Filled.Close, contentDescription = "Close Queue Hub")
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.queue_hub_close))
                 }
             }
 
@@ -210,7 +214,7 @@ fun QueueHubSheet(
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = onMessageDismissed) {
-                            Icon(Icons.Filled.Close, contentDescription = "Dismiss queue message")
+                            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.queue_hub_dismiss_message))
                         }
                     }
                 }
@@ -227,7 +231,7 @@ fun QueueHubSheet(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Start playback to create your first queue.")
+                    Text(stringResource(R.string.queue_hub_empty))
                 }
                 else -> {
                     LazyRow(
@@ -255,15 +259,15 @@ fun QueueHubSheet(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = selected?.name ?: "Queue unavailable",
+                                text = selected?.name ?: stringResource(R.string.queue_hub_unavailable),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
                                 text = if (selected?.isActive == true) {
-                                    "PLAYING QUEUE - Current / Up Next"
+                                    stringResource(R.string.queue_hub_playing_queue)
                                 } else {
-                                    "VIEWING SAVED QUEUE - Saved playback order"
+                                    stringResource(R.string.queue_hub_saved_queue)
                                 },
                                 style = MaterialTheme.typography.labelMedium,
                                 color = if (selected?.isActive == true) {
@@ -275,7 +279,7 @@ fun QueueHubSheet(
                             )
                         }
                         if (selected?.isActive == true) {
-                            AssistChip(onClick = {}, enabled = false, label = { Text("Playing") })
+                            AssistChip(onClick = {}, enabled = false, label = { Text(stringResource(R.string.queue_hub_playing)) })
                         } else if (selected != null) {
                             Button(
                                 onClick = onSwitchSelected,
@@ -290,7 +294,7 @@ fun QueueHubSheet(
                                 } else {
                                     Icon(Icons.Filled.PlayArrow, contentDescription = null)
                                     Spacer(Modifier.width(6.dp))
-                                    Text("Switch to this queue")
+                                    Text(stringResource(R.string.queue_hub_switch))
                                 }
                             }
                         }
@@ -305,9 +309,9 @@ fun QueueHubSheet(
                         ) {
                             Text(
                                 text = if (state.selectedQueueEntryCount == 0) {
-                                    "This queue is empty."
+                                    stringResource(R.string.queue_hub_empty_queue)
                                 } else {
-                                    "No tracks in this queue are currently available."
+                                    stringResource(R.string.queue_hub_no_available_tracks)
                                 },
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -327,7 +331,7 @@ fun QueueHubSheet(
                         }
                         if (state.selectedEntries.none { entry -> entry.song != null }) {
                             Text(
-                                text = "These tracks are not currently available in the local library.",
+                                text = stringResource(R.string.queue_hub_tracks_unavailable),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp)
@@ -575,16 +579,16 @@ fun QueueHubSheet(
     deleteQueue?.let { queue ->
         AlertDialog(
             onDismissRequest = { deleteQueue = null },
-            title = { Text("Delete ${queue.name}?") },
-            text = { Text("This removes its saved queue and resume position.") },
+            title = { Text(stringResource(R.string.queue_delete_named, queue.name)) },
+            text = { Text(stringResource(R.string.queue_hub_delete_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     onDelete(queue.queueId)
                     deleteQueue = null
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.queue_delete)) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteQueue = null }) { Text("Cancel") }
+                TextButton(onClick = { deleteQueue = null }) { Text(stringResource(R.string.queue_cancel)) }
             }
         )
     }
@@ -633,8 +637,8 @@ private fun QueueHubCard(
                     model = queue.representativeTrack?.albumArtUri,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    error = painterResource(R.drawable.ic_media_play),
-                    placeholder = painterResource(R.drawable.ic_media_play),
+                    error = painterResource(AndroidR.drawable.ic_media_play),
+                    placeholder = painterResource(AndroidR.drawable.ic_media_play),
                     modifier = Modifier
                         .size(52.dp)
                         .clip(RoundedCornerShape(10.dp))
@@ -642,21 +646,21 @@ private fun QueueHubCard(
                 Spacer(Modifier.width(8.dp))
                 Box {
                     IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = "Queue actions for ${queue.name}")
+                        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.queue_actions_named, queue.name))
                     }
                     DropdownMenu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Rename") },
+                            text = { Text(stringResource(R.string.queue_rename)) },
                             onClick = {
                                 menuExpanded = false
                                 onRename()
                             }
                         )
                         DropdownMenuItem(
-                            text = { Text("Delete") },
+                            text = { Text(stringResource(R.string.queue_delete)) },
                             enabled = canDelete,
                             onClick = {
                                 menuExpanded = false
@@ -684,7 +688,7 @@ private fun QueueHubCard(
             )
             queue.currentTrack?.let { song ->
                 Text(
-                    text = song.title.ifBlank { "Unknown title" },
+                    text = song.title.ifBlank { stringResource(R.string.queue_unknown_title) },
                     style = MaterialTheme.typography.labelSmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -772,7 +776,7 @@ private fun QueueHubEntryRow(
                     ) {
                         Icon(
                             Icons.Filled.Delete,
-                            contentDescription = "Remove queue entry",
+                            contentDescription = stringResource(R.string.queue_remove_entry),
                             tint = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
@@ -844,8 +848,8 @@ private fun QueueHubEntryRowContent(
             model = entry.song?.albumArtUri,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            error = painterResource(R.drawable.ic_media_play),
-            placeholder = painterResource(R.drawable.ic_media_play),
+            error = painterResource(AndroidR.drawable.ic_media_play),
+            placeholder = painterResource(AndroidR.drawable.ic_media_play),
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(8.dp))
@@ -853,14 +857,14 @@ private fun QueueHubEntryRowContent(
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = entry.song?.title?.ifBlank { "Unknown title" } ?: "Unavailable track",
+                text = entry.song?.title?.ifBlank { stringResource(R.string.queue_unknown_title) } ?: stringResource(R.string.queue_unavailable_track),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = if (entry.isCurrent) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = entry.song?.artist?.ifBlank { "Unknown artist" } ?: "Not found locally",
+                text = entry.song?.artist?.ifBlank { stringResource(R.string.queue_unknown_artist) } ?: stringResource(R.string.queue_not_found_locally),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -869,7 +873,7 @@ private fun QueueHubEntryRowContent(
         }
         if (entry.isCurrent) {
             Text(
-                text = "CURRENT",
+                text = stringResource(R.string.queue_current),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold
@@ -878,7 +882,7 @@ private fun QueueHubEntryRowContent(
         if (reorderEnabled) {
             Icon(
                 imageVector = Icons.Filled.DragHandle,
-                contentDescription = "Reorder ${entry.song?.title ?: "queue entry"}",
+                contentDescription = stringResource(R.string.queue_reorder_named, entry.song?.title ?: stringResource(R.string.queue_entry_generic)),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .size(40.dp)
@@ -904,14 +908,14 @@ private fun QueueHubEntryRowContent(
         }
         Box {
             IconButton(onClick = { menuExpanded = true }) {
-                Icon(Icons.Filled.MoreVert, contentDescription = "Actions for queue entry")
+                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.queue_entry_actions))
             }
             DropdownMenu(
                 expanded = menuExpanded,
                 onDismissRequest = { menuExpanded = false }
             ) {
                 DropdownMenuItem(
-                    text = { Text("Remove") },
+                    text = { Text(stringResource(R.string.queue_remove)) },
                     leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
                     onClick = {
                         menuExpanded = false
@@ -983,21 +987,21 @@ private fun RenameQueueDialog(
     val isValid = name.trim().isNotEmpty()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename queue") },
+        title = { Text(stringResource(R.string.queue_rename_title)) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Queue name") },
+                label = { Text(stringResource(R.string.queue_name)) },
                 singleLine = true,
                 isError = !isValid
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(name) }, enabled = isValid) { Text("Rename") }
+            TextButton(onClick = { onConfirm(name) }, enabled = isValid) { Text(stringResource(R.string.queue_rename)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.queue_cancel)) }
         }
     )
 }

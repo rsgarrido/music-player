@@ -11,11 +11,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.PlayerTheme
 import io.github.rsgarrido.sazanami.data.Playlist
 import io.github.rsgarrido.sazanami.data.Song
@@ -178,7 +180,7 @@ fun MusicScreenOverlays(
             .ifEmpty { listOfNotNull(currentSong) + queuedSongs + upcomingSongs }
         val activeQueueName = activeQueueCard?.name
             ?.takeIf { name -> name.isNotBlank() }
-            ?: "Current Queue"
+            ?: stringResource(R.string.queue_current_fallback)
         val fallbackActiveQueueCount = activeQueueSongs.size.coerceAtLeast(1)
         val activeQueuePosition = activeQueueCard?.currentPosition ?: 1
         val activeQueueCount = activeQueueCard?.entryCount
@@ -320,8 +322,8 @@ fun MusicScreenOverlays(
 
     if (isCreatePlaylistDialogVisible) {
         PlaylistNameDialog(
-            title = "Create Playlist",
-            confirmButtonText = "Create",
+            title = stringResource(R.string.playlist_create_title),
+            confirmButtonText = stringResource(R.string.playlist_create_action),
             existingPlaylistNames = playlists.map { playlist ->
                 playlist.name
             },

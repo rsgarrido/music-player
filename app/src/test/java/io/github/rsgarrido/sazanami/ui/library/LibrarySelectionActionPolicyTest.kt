@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.library
 
 import android.net.Uri
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EditNote
@@ -31,7 +32,9 @@ class LibrarySelectionActionPolicyTest {
             onAddToAnotherQueue = {},
             onPlayInNewQueue = { _, _ -> },
             onApplyFavoriteBatch = {},
-            onClearSelection = {}
+            onClearSelection = {},
+            resolveString = ::resolveTestString,
+            resolvePlural = ::resolveTestPlural
         )
 
         assertNotNull(target)
@@ -60,7 +63,9 @@ class LibrarySelectionActionPolicyTest {
             onAddToAnotherQueue = {},
             onPlayInNewQueue = { _, _ -> },
             onApplyFavoriteBatch = {},
-            onClearSelection = {}
+            onClearSelection = {},
+            resolveString = ::resolveTestString,
+            resolvePlural = ::resolveTestPlural
         )
 
         assertEquals("2 songs selected", target?.title)
@@ -88,7 +93,9 @@ class LibrarySelectionActionPolicyTest {
             onAddToAnotherQueue = {},
             onPlayInNewQueue = { _, _ -> },
             onApplyFavoriteBatch = {},
-            onClearSelection = {}
+            onClearSelection = {},
+            resolveString = ::resolveTestString,
+            resolvePlural = ::resolveTestPlural
         )
         val allFavoriteTarget = songSelectionActionSheetTarget(
             selectedSongs = songs,
@@ -98,7 +105,9 @@ class LibrarySelectionActionPolicyTest {
             onAddToAnotherQueue = {},
             onPlayInNewQueue = { _, _ -> },
             onApplyFavoriteBatch = {},
-            onClearSelection = {}
+            onClearSelection = {},
+            resolveString = ::resolveTestString,
+            resolvePlural = ::resolveTestPlural
         )
 
         assertTrue(mixedTarget?.actions.orEmpty().any { it.label == "Add to favorites" })
@@ -115,7 +124,9 @@ class LibrarySelectionActionPolicyTest {
             singleAlbumTarget = exactAlbumTarget(album),
             onAddToAnotherQueue = {},
             onPlayInNewQueue = { _, _ -> },
-            onClearSelection = {}
+            onClearSelection = {},
+            resolveString = ::resolveTestString,
+            resolvePlural = ::resolveTestPlural
         )
 
         assertEquals("Album 1", target?.title)
@@ -139,7 +150,9 @@ class LibrarySelectionActionPolicyTest {
             singleAlbumTarget = null,
             onAddToAnotherQueue = {},
             onPlayInNewQueue = { _, _ -> },
-            onClearSelection = {}
+            onClearSelection = {},
+            resolveString = ::resolveTestString,
+            resolvePlural = ::resolveTestPlural
         )
 
         assertEquals("2 albums selected", target?.title)
@@ -161,7 +174,9 @@ class LibrarySelectionActionPolicyTest {
             onAddToAnotherQueue = { events += "another" },
             onPlayInNewQueue = { _, _ -> events += "new" },
             onApplyFavoriteBatch = { events += "favorite" },
-            onClearSelection = { events += "clear" }
+            onClearSelection = { events += "clear" },
+            resolveString = ::resolveTestString,
+            resolvePlural = ::resolveTestPlural
         ) ?: error("Expected a selection action target")
 
         target.actions.first { it.label == "Add to another queue..." }.onClick()
@@ -197,6 +212,23 @@ class LibrarySelectionActionPolicyTest {
         assertEquals(target, state.activeActionTarget)
     }
 
+    private fun resolveTestString(id: Int): String = when (id) {
+        R.string.playlist_add_to_another_queue -> "Add to another queue..."
+        R.string.playlist_play_in_new_queue -> "Play in new queue"
+        R.string.playlist_add_favorites -> "Add to favorites"
+        R.string.playlist_remove_favorites -> "Remove from favorites"
+        R.string.library_selection_summary_subtitle -> "Actions apply to the current selection"
+        else -> error("Unexpected resource: $id")
+    }
+
+    private fun resolveTestPlural(id: Int, count: Int): String = when (id) {
+        R.plurals.library_selection_songs_title -> "$count songs selected"
+        R.plurals.library_selection_songs_artwork -> "$count selected songs"
+        R.plurals.library_selection_albums_title -> "$count albums selected"
+        R.plurals.library_selection_albums_artwork -> "$count selected albums"
+        else -> error("Unexpected plural: $id")
+    }
+
     private fun exactSongTarget(
         song: Song,
         onAction: (String) -> Unit = {}
@@ -206,9 +238,9 @@ class LibrarySelectionActionPolicyTest {
         artworkUri = song.albumArtUri,
         artworkDescription = "Album art for ${song.title}",
         actions = listOf(
-            LibraryItemAction("Pin to Home", Icons.Filled.PushPin) { onAction("pin") },
-            LibraryItemAction("Rate song", Icons.Filled.Star) { onAction("rate") },
-            LibraryItemAction("Edit tags", Icons.Filled.Edit) { onAction("edit") }
+            LibraryItemAction("Pin to Home", Icons.Filled.PushPin, id = LibraryActionId.HOME_PIN) { onAction("pin") },
+            LibraryItemAction("Rate song", Icons.Filled.Star, id = LibraryActionId.RATE_SONG) { onAction("rate") },
+            LibraryItemAction("Edit tags", Icons.Filled.Edit, id = LibraryActionId.EDIT_TAGS) { onAction("edit") }
         )
     )
 
@@ -218,10 +250,10 @@ class LibrarySelectionActionPolicyTest {
         artworkUri = album.songs.firstOrNull()?.albumArtUri,
         artworkDescription = "Album art for ${album.title}",
         actions = listOf(
-            LibraryItemAction("Play", Icons.Filled.PlayArrow) {},
-            LibraryItemAction("Shuffle", Icons.Filled.Shuffle) {},
-            LibraryItemAction("Pin to Home", Icons.Filled.PushPin) {},
-            LibraryItemAction("Edit album metadata", Icons.Filled.EditNote) {}
+            LibraryItemAction("Play", Icons.Filled.PlayArrow, id = LibraryActionId.PLAY) {},
+            LibraryItemAction("Shuffle", Icons.Filled.Shuffle, id = LibraryActionId.SHUFFLE) {},
+            LibraryItemAction("Pin to Home", Icons.Filled.PushPin, id = LibraryActionId.HOME_PIN) {},
+            LibraryItemAction("Edit album metadata", Icons.Filled.EditNote, id = LibraryActionId.EDIT_ALBUM_METADATA) {}
         )
     )
 

@@ -1,16 +1,19 @@
 package io.github.rsgarrido.sazanami.ui.library
 
-enum class LibraryTab(val title: String) {
-    SONGS("Songs"),
-    ARTISTS("Artists"),
-    FOLDERS("Folders"),
-    ALBUMS("Albums"),
-    GENRES("Genres"),
-    FAVORITES("Favorites"),
-    RATED("Rated"),
-    PLAYLISTS("Playlists"),
-    RECENTLY_ADDED("Recently Added"),
-    RECENTLY_PLAYED("Recently Played"),
-    MOST_PLAYED("Most Played"),
-    QUEUE("Up Next")
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
+
+enum class LibraryTab(@StringRes val titleRes: Int) {
+    SONGS(R.string.library_tab_songs),
+    ARTISTS(R.string.library_tab_artists),
+    FOLDERS(R.string.library_tab_folders),
+    ALBUMS(R.string.library_tab_albums),
+    GENRES(R.string.library_tab_genres),
+    FAVORITES(R.string.library_tab_favorites),
+    RATED(R.string.library_tab_rated),
+    PLAYLISTS(R.string.library_tab_playlists),
+    RECENTLY_ADDED(R.string.library_tab_recently_added),
+    RECENTLY_PLAYED(R.string.library_tab_recently_played),
+    MOST_PLAYED(R.string.library_tab_most_played),
+    QUEUE(R.string.library_tab_queue)
 }

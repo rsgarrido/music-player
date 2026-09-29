@@ -1,4 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.playlist
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalResources
+import io.github.rsgarrido.sazanami.R
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -108,6 +111,7 @@ fun PlaylistDetailScreen(
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
+    val resources = LocalResources.current
     val homePinUi = LocalHomePinUi.current
     val libraryQueueUi = LocalLibraryQueueUi.current
     var actionSheetTarget by remember { mutableStateOf<LibraryItemActionSheetTarget?>(null) }
@@ -147,17 +151,17 @@ fun PlaylistDetailScreen(
     fun showPlaylistActions() {
         actionSheetTarget = LibraryItemActionSheetTarget(
             title = playlist.name,
-            subtitle = playlistMetadataText(playlist),
+            subtitle = playlistMetadataText(resources, playlist),
             artworkUri = null,
-            artworkDescription = "Artwork for ${playlist.name}",
+            artworkDescription = resources.getString(R.string.playlist_artwork_for, playlist.name),
             actions = buildList {
                 add(homePinUi.actionForPlaylist(playlist))
-                addAll(playlistQueueActions(playlist, libraryQueueUi, onAddPlaylistToQueueClick))
+                addAll(playlistQueueActions(playlist, libraryQueueUi, onAddPlaylistToQueueClick, resources::getString))
                 if (!isLoading && allowsManualPlaylistActions(playlist)) {
-                    add(LibraryItemAction("Add songs", Icons.AutoMirrored.Filled.PlaylistAdd) {
+                    add(LibraryItemAction(resources.getString(R.string.playlist_add_songs_title), Icons.AutoMirrored.Filled.PlaylistAdd) {
                         addSongsVisible = true
                     })
-                    add(LibraryItemAction("Edit order", Icons.Filled.DragHandle) {
+                    add(LibraryItemAction(resources.getString(R.string.playlist_edit_order), Icons.Filled.DragHandle) {
                         sortFieldName = PlaylistSongSortField.CUSTOM.name
                         isEditingOrder = true
                     })
@@ -181,31 +185,31 @@ fun PlaylistDetailScreen(
                         }
                     })
                 }
-                add(LibraryItemAction("Rename", Icons.Filled.Edit) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_rename_action), Icons.Filled.Edit) {
                     renameDialogVisible = true
                 })
-                add(LibraryItemAction("Move to folder", Icons.AutoMirrored.Filled.DriveFileMove) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_move_to_folder), Icons.AutoMirrored.Filled.DriveFileMove) {
                     movePlaylistVisible = true
                 })
-                add(LibraryItemAction("Change artwork", Icons.Filled.Image) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_change_artwork), Icons.Filled.Image) {
                     onChangeArtworkClick(playlist)
                 })
                 if (playlist.artworkMode == PlaylistArtworkMode.CUSTOM) {
-                    add(LibraryItemAction("Reset to automatic artwork", Icons.Filled.Restore) {
+                    add(LibraryItemAction(resources.getString(R.string.playlist_reset_artwork), Icons.Filled.Restore) {
                         onResetArtworkClick(playlist)
                     })
                 }
-                add(LibraryItemAction("Export as M3U8", Icons.Filled.Share) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_export_m3u8), Icons.Filled.Share) {
                     onExportPlaylistClick(playlist)
                 })
-                add(LibraryItemAction("Delete", Icons.Filled.Delete, isDestructive = true) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_delete_action), Icons.Filled.Delete, isDestructive = true) {
                     deleteDialogVisible = true
                 })
             },
             artworkContent = {
                 PlaylistArtwork(
                     playlist = playlist,
-                    contentDescription = "Artwork for ${playlist.name}",
+                    contentDescription = stringResource(R.string.playlist_artwork_for, playlist.name),
                     modifier = Modifier.fillMaxSize(),
                     variant = VisualAssetVariant.DISPLAY
                 )
@@ -230,7 +234,7 @@ fun PlaylistDetailScreen(
                 {
                     TextButton(onClick = { isEditingOrder = false }) {
                         Text(
-                            text = "DONE",
+                            text = stringResource(R.string.playlist_done_uppercase),
                             style = AppShellTypography.CompactAction,
                             color = AppShellAccent
                         )
@@ -351,8 +355,8 @@ fun PlaylistDetailScreen(
 
     if (renameDialogVisible) {
         PlaylistNameDialog(
-            title = "Rename Playlist",
-            confirmButtonText = "Rename",
+            title = stringResource(R.string.playlist_rename_title),
+            confirmButtonText = stringResource(R.string.playlist_rename_action),
             initialName = playlist.name,
             originalName = playlist.name,
             existingPlaylistNames = allPlaylists.map(Playlist::name),
@@ -429,7 +433,7 @@ private fun PlaylistDetailHero(
     ) {
         PlaylistArtwork(
             playlist = playlist,
-            contentDescription = "Artwork for ${playlist.name}",
+            contentDescription = stringResource(R.string.playlist_artwork_for, playlist.name),
             modifier = Modifier
                 .fillMaxWidth(0.72f)
                 .widthIn(max = 320.dp)
@@ -454,12 +458,13 @@ private fun PlaylistDetailHero(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = playlistMetadataText(playlist),
+                text = playlistMetadataText(LocalResources.current, playlist),
                 style = AppShellTypography.SongSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = playlistKindText(playlist),
+                text = if (playlist.membershipBehavior == PlaylistMembershipBehavior.MANUAL)
+                    stringResource(R.string.playlist_kind_manual) else playlistKindText(playlist),
                 style = MaterialTheme.typography.labelMedium,
                 color = AppShellAccent
             )
@@ -472,13 +477,13 @@ private fun PlaylistDetailHero(
         ) {
             LibraryDetailAction(
                 icon = Icons.Filled.PlayArrow,
-                label = "Play",
+                label = stringResource(R.string.playlist_play),
                 enabled = hasSongs,
                 onClick = onPlayClick
             )
             LibraryDetailAction(
                 icon = Icons.Filled.Shuffle,
-                label = "Shuffle",
+                label = stringResource(R.string.playlist_shuffle),
                 enabled = hasSongs,
                 onClick = onShuffleClick
             )
@@ -497,7 +502,7 @@ private fun PlaylistDetailHero(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Songs",
+                text = stringResource(R.string.playlist_songs_heading),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
@@ -511,7 +516,7 @@ private fun PlaylistDetailHero(
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
-                    Text(sortField.label)
+                    Text(stringResource(sortField.labelRes))
                 }
                 DropdownMenu(
                     expanded = sortMenuExpanded,
@@ -519,10 +524,10 @@ private fun PlaylistDetailHero(
                 ) {
                     PlaylistSongSortField.entries.forEach { field ->
                         DropdownMenuItem(
-                            text = { Text(field.label) },
+                            text = { Text(stringResource(field.labelRes)) },
                             leadingIcon = {
                                 if (field == sortField) {
-                                    Icon(Icons.Filled.Check, contentDescription = "Selected")
+                                    Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.playlist_selected))
                                 }
                             },
                             onClick = {
@@ -537,9 +542,9 @@ private fun PlaylistDetailHero(
                         val directionTitle = if (
                             sortDirection == LibrarySortDirection.ASCENDING
                         ) {
-                            "Ascending"
+                            stringResource(R.string.playlist_sort_ascending)
                         } else {
-                            "Descending"
+                            stringResource(R.string.playlist_sort_descending)
                         }
                         DropdownMenuItem(
                             text = { Text(directionTitle) },
@@ -553,7 +558,7 @@ private fun PlaylistDetailHero(
                                         Icons.Filled.ArrowDownward
                                     },
                                     contentDescription =
-                                        "$directionTitle playlist song sort direction",
+                                        stringResource(R.string.playlist_song_sort_direction_description, directionTitle),
                                     tint = AppShellAccent
                                 )
                             },
@@ -584,10 +589,10 @@ private fun PlaylistDetailEmptyState(
                 if (playlist.type == PlaylistType.SMART) {
                     "No songs currently match this Smart Playlist."
                 } else {
-                    "This playlist is empty."
+                    stringResource(R.string.playlist_empty_detail)
                 }
             } else {
-                "The songs in this playlist are not currently available on this device."
+                stringResource(R.string.playlist_songs_unavailable)
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -637,7 +642,7 @@ private fun PlaylistLoadingState(modifier: Modifier = Modifier) {
         ) {
             CircularProgressIndicator(modifier = Modifier.size(22.dp))
             Text(
-                text = "Loading playlist\u2026",
+                text = stringResource(R.string.playlist_loading),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

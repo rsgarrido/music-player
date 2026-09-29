@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.library
 
 import android.R
+import io.github.rsgarrido.sazanami.R as AppR
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +29,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import io.github.rsgarrido.sazanami.controller.PlaybackQueueCardUiState
@@ -48,18 +51,19 @@ val LocalLibraryQueueUi = staticCompositionLocalOf { LibraryQueueUiEnvironment()
 internal fun playlistQueueActions(
     playlist: Playlist,
     queueUi: LibraryQueueUiEnvironment,
-    onAddToQueue: (Playlist) -> Unit
+    onAddToQueue: (Playlist) -> Unit,
+    resolveString: (Int) -> String
 ): List<LibraryItemAction> = listOf(
-    LibraryItemAction("Play next", Icons.Filled.SkipNext) {
+    LibraryItemAction(resolveString(AppR.string.playlist_play_next), Icons.Filled.SkipNext) {
         queueUi.onPlayPlaylistNext(playlist)
     },
-    LibraryItemAction("Add to queue", Icons.AutoMirrored.Filled.QueueMusic) {
+    LibraryItemAction(resolveString(AppR.string.playlist_add_to_queue), Icons.AutoMirrored.Filled.QueueMusic) {
         onAddToQueue(playlist)
     },
-    LibraryItemAction("Add to another queue...", Icons.AutoMirrored.Filled.QueueMusic) {
+    LibraryItemAction(resolveString(AppR.string.playlist_add_to_another_queue), Icons.AutoMirrored.Filled.QueueMusic) {
         queueUi.onAddPlaylistToAnotherQueue(playlist)
     },
-    LibraryItemAction("Play in new queue", Icons.Filled.PlayArrow) {
+    LibraryItemAction(resolveString(AppR.string.playlist_play_in_new_queue), Icons.Filled.PlayArrow) {
         queueUi.onPlayPlaylistInNewQueue(playlist)
     }
 )
@@ -76,10 +80,10 @@ fun AddToAnotherQueueDialog(
     val availableQueues = queues.filterNot { queue -> queue.queueId == activeQueueId }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add to another queue") },
+        title = { Text(stringResource(AppR.string.library_queue_add_to_another_title)) },
         text = {
             if (availableQueues.isEmpty()) {
-                Text("No other queues available")
+                Text(stringResource(AppR.string.library_queue_no_other))
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -105,14 +109,14 @@ fun AddToAnotherQueueDialog(
                             supportingContent = {
                                 Text(
                                     queue.currentTrack?.title?.let { title ->
-                                        "${queue.entryCount} tracks • $title"
-                                    } ?: "${queue.entryCount} tracks"
+                                        pluralStringResource(AppR.plurals.library_queue_track_count_with_title, queue.entryCount, queue.entryCount, title)
+                                    } ?: pluralStringResource(AppR.plurals.library_queue_track_count, queue.entryCount, queue.entryCount)
                                 )
                             },
                             modifier = Modifier.fillMaxWidth(),
                             trailingContent = {
                                 TextButton(onClick = { onQueueSelected(queue.queueId) }) {
-                                    Text("Add")
+                                    Text(stringResource(AppR.string.library_queue_add_action))
                                 }
                             }
                         )
@@ -134,14 +138,14 @@ fun AddToAnotherQueueDialog(
                     Icon(Icons.Filled.Add, contentDescription = null)
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(if (isCreatingQueue) "Creating..." else "Create new queue")
+                Text(if (isCreatingQueue) stringResource(AppR.string.library_queue_creating) else stringResource(AppR.string.library_queue_create_new))
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
                 modifier = Modifier.padding(end = 4.dp)
-            ) { Text("Cancel") }
+            ) { Text(stringResource(AppR.string.settings_cancel)) }
         }
     )
 }

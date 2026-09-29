@@ -9,11 +9,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
 @Composable
 fun PlaylistNameDialog(
-    title: String = "Create Playlist",
-    confirmButtonText: String = "Create",
+    title: String = stringResource(R.string.playlist_create_title),
+    confirmButtonText: String = stringResource(R.string.playlist_create_action),
     initialName: String = "",
     existingPlaylistNames: List<String> = emptyList(),
     originalName: String? = null,
@@ -32,8 +34,8 @@ fun PlaylistNameDialog(
     }
 
     val errorMessage = when {
-        trimmedName.isBlank() -> "Playlist name cannot be empty."
-        duplicateNameExists -> "A playlist with this name already exists."
+        trimmedName.isBlank() -> stringResource(R.string.playlist_name_empty)
+        duplicateNameExists -> stringResource(R.string.playlist_name_duplicate)
         else -> null
     }
 
@@ -49,7 +51,7 @@ fun PlaylistNameDialog(
                     playlistName = value
                 },
                 label = {
-                    Text(text = "Playlist name")
+                    Text(text = stringResource(R.string.playlist_name_label))
                 },
                 singleLine = true,
                 isError = errorMessage != null,
@@ -74,7 +76,7 @@ fun PlaylistNameDialog(
             Button(
                 onClick = onDismiss
             ) {
-                Text(text = "Cancel")
+                Text(text = stringResource(R.string.settings_cancel))
             }
         }
     )

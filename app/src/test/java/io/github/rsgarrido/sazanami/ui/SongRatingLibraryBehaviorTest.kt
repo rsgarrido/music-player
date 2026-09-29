@@ -139,15 +139,15 @@ class SongRatingLibraryBehaviorTest {
     fun ratedFilterOptionsIncludeUnratedInTheRequestedOrder() {
         assertEquals(
             listOf(
-                "All ratings",
-                "Unrated",
-                "5 stars",
-                "4 stars",
-                "3 stars",
-                "2 stars",
-                "1 star"
+                null,
+                null,
+                5,
+                4,
+                3,
+                2,
+                1
             ),
-            RatedSongFilter.entries.map { filter -> filter.label }
+            RatedSongFilter.entries.map { filter -> filter.exactRating }
         )
     }
 

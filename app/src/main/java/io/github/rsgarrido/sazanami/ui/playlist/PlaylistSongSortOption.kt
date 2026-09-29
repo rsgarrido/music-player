@@ -1,16 +1,18 @@
 package io.github.rsgarrido.sazanami.ui.playlist
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.PlaylistSong
 import io.github.rsgarrido.sazanami.ui.library.LibrarySortDirection
 import io.github.rsgarrido.sazanami.ui.library.compareLibraryText
 
 internal enum class PlaylistSongSortField(
-    val label: String
+    @StringRes val labelRes: Int
 ) {
-    CUSTOM("Custom"),
-    TITLE("Title"),
-    ARTIST("Artist"),
-    ALBUM("Album");
+    CUSTOM(R.string.playlist_song_sort_custom),
+    TITLE(R.string.playlist_song_sort_title),
+    ARTIST(R.string.playlist_song_sort_artist),
+    ALBUM(R.string.playlist_song_sort_album);
 
     fun sort(
         rows: List<PlaylistSong>,

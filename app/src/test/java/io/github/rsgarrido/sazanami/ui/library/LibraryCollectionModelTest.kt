@@ -140,7 +140,7 @@ class LibraryCollectionModelTest {
             listOf(LibraryViewOption.LIST, LibraryViewOption.GRID_2),
             libraryViewOptions(adaptiveGrid = true)
         )
-        assertEquals("Grid (responsive)", LibraryViewOption.GRID_2.displayLabel(true))
+        assertEquals(2, LibraryViewOption.GRID_2.gridColumnCount)
     }
 
     @Test

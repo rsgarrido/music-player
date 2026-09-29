@@ -9,7 +9,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.state.SLEEP_TIMER_OPTIONS_MINUTES
 
 @Composable
@@ -23,7 +26,7 @@ fun SleepTimerDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Sleep Timer")
+            Text(text = stringResource(R.string.sleep_timer_title))
         },
         text = {
             Column {
@@ -39,7 +42,7 @@ fun SleepTimerDialog(
                             .fillMaxWidth()
                             .padding(top = 8.dp)
                     ) {
-                        Text(text = "$minutes minutes")
+                        Text(text = pluralStringResource(R.plurals.sleep_timer_minutes_option, minutes, minutes))
                     }
                 }
 
@@ -53,7 +56,7 @@ fun SleepTimerDialog(
                             .fillMaxWidth()
                             .padding(top = 12.dp)
                     ) {
-                        Text(text = "Cancel Timer")
+                        Text(text = stringResource(R.string.sleep_timer_cancel))
                     }
                 }
             }
@@ -63,7 +66,7 @@ fun SleepTimerDialog(
             OutlinedButton(
                 onClick = onDismiss
             ) {
-                Text(text = "Close")
+                Text(text = stringResource(R.string.common_close))
             }
         }
     )

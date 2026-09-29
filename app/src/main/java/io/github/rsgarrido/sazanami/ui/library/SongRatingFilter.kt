@@ -1,5 +1,10 @@
 package io.github.rsgarrido.sazanami.ui.library
 
+import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.membershipKey
 
@@ -14,13 +19,14 @@ enum class RatedSongFilter(val exactRating: Int?) {
     TWO(2),
     ONE(1);
 
-    val label: String
-        get() = when (this) {
-            ALL -> "All ratings"
-            UNRATED -> "Unrated"
-            else -> exactRating?.let { rating ->
-                "$rating star${if (rating == 1) "" else "s"}"
-            }.orEmpty()
+}
+
+@Composable
+internal fun RatedSongFilter.displayLabel(): String = when (this) {
+    RatedSongFilter.ALL -> stringResource(R.string.rated_filter_all)
+    RatedSongFilter.UNRATED -> stringResource(R.string.rated_filter_unrated)
+    else -> requireNotNull(exactRating).let { rating ->
+        pluralStringResource(R.plurals.rated_filter_stars, rating, rating)
     }
 }
 
@@ -67,14 +73,15 @@ internal fun projectSongsForRatedCollection(
     else -> filterSongsForRatedCollection(songs, filter, ratingsByReferenceKey)
 }
 
+@StringRes
 internal fun ratedCollectionEmptyMessage(
     filter: RatedSongFilter,
     searchQuery: String,
     quickRateActive: Boolean
-): String = when {
+): Int = when {
     quickRateActive && filter == RatedSongFilter.ALL && searchQuery.isNotBlank() ->
-        "No songs match your search."
-    searchQuery.isNotBlank() -> "No rated songs match your search."
-    filter != RatedSongFilter.ALL -> "No songs match this rating filter."
-    else -> "No rated songs yet."
+        R.string.rated_empty_search
+    searchQuery.isNotBlank() -> R.string.rated_empty_search_rated
+    filter != RatedSongFilter.ALL -> R.string.rated_empty_filter
+    else -> R.string.rated_empty
 }

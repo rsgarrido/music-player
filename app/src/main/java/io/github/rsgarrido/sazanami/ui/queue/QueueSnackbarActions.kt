@@ -9,6 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalResources
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -33,6 +35,7 @@ fun rememberQueueSnackbarActions(
     onAddSongsToQueueClick: (List<Song>) -> Unit,
     onUndoAddSongsToQueueClick: (List<Song>) -> Unit
 ): QueueSnackbarActions {
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
     var recentlyAddedSongIds by remember { mutableStateOf(setOf<Long>()) }
 
@@ -56,8 +59,8 @@ fun rememberQueueSnackbarActions(
 
             coroutineScope.launch {
                 val result = snackbarHostState.showSnackbar(
-                    message = "\"${song.title}\" added to queue",
-                    actionLabel = "Undo",
+                    message = resources.getString(R.string.queue_added_named, song.title),
+                    actionLabel = resources.getString(R.string.queue_undo),
                     withDismissAction = true,
                     duration = SnackbarDuration.Short
                 )
@@ -76,8 +79,8 @@ fun rememberQueueSnackbarActions(
 
             coroutineScope.launch {
                 val result = snackbarHostState.showSnackbar(
-                    message = "\"${song.title}\" will play next",
-                    actionLabel = "Undo",
+                    message = resources.getString(R.string.queue_play_next_named, song.title),
+                    actionLabel = resources.getString(R.string.queue_undo),
                     withDismissAction = true,
                     duration = SnackbarDuration.Short
                 )
@@ -97,8 +100,8 @@ fun rememberQueueSnackbarActions(
 
                 coroutineScope.launch {
                     val result = snackbarHostState.showSnackbar(
-                        message = "\"$label\" will play next",
-                        actionLabel = "Undo",
+                        message = resources.getString(R.string.queue_play_next_named, label),
+                        actionLabel = resources.getString(R.string.queue_undo),
                         withDismissAction = true,
                         duration = SnackbarDuration.Short
                     )
@@ -116,7 +119,7 @@ fun rememberQueueSnackbarActions(
             if (songsToAdd.isEmpty()) {
                 coroutineScope.launch {
                     snackbarHostState.showSnackbar(
-                        message = "No playable songs in \"$label\"",
+                        message = resources.getString(R.string.queue_no_playable_named, label),
                         withDismissAction = true,
                         duration = SnackbarDuration.Short
                     )
@@ -127,8 +130,8 @@ fun rememberQueueSnackbarActions(
 
                 coroutineScope.launch {
                     val result = snackbarHostState.showSnackbar(
-                        message = "\"$label\" added to queue",
-                        actionLabel = "Undo",
+                        message = resources.getString(R.string.queue_added_named, label),
+                        actionLabel = resources.getString(R.string.queue_undo),
                         withDismissAction = true,
                         duration = SnackbarDuration.Short
                     )

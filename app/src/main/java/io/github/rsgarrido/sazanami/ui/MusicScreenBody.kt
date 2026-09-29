@@ -28,6 +28,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -711,9 +713,9 @@ internal fun MusicScreenBody(
                                 } else {
                                     MusicScreenHeader(
                                         title = when {
-                                            isSearchDestination -> "Search"
-                                            selectedLibraryTab == LibraryTab.QUEUE -> "Up Next"
-                                            else -> "Library"
+                                            isSearchDestination -> stringResource(R.string.shell_search_title)
+                                            selectedLibraryTab == LibraryTab.QUEUE -> stringResource(R.string.shell_up_next_title)
+                                            else -> stringResource(R.string.shell_library_title)
                                         },
                                         onBackClick = null,
                                         onSettingsClick = onSettingsClick,
@@ -727,7 +729,7 @@ internal fun MusicScreenBody(
                                                     onClick = onBatchMetadataClick,
                                                     imageVector = Icons.Filled.EditNote,
                                                     contentDescription =
-                                                        "Select tracks to edit metadata"
+                                                        stringResource(R.string.shell_select_metadata_tracks)
                                                 )
                                             }
                                         } else {

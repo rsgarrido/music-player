@@ -139,7 +139,7 @@ fun HomePinnedShelf(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            HomeSectionHeader(text = "Pinned")
+            HomeSectionHeader(text = stringResource(R.string.home_pinned))
 
             TextButton(
                 onClick = {
@@ -152,7 +152,7 @@ fun HomePinnedShelf(
                 }
             ) {
                 Text(
-                    text = if (isEditing) "DONE" else "MANAGE",
+                    text = stringResource(if (isEditing) R.string.home_done else R.string.home_manage),
                     style = AppShellTypography.CompactAction,
                     color = AppShellAccent
                 )
@@ -432,6 +432,7 @@ private fun HomePinnedCard(
             )
         is HomePinTarget.SongTarget, null -> null
     }
+    val displayedTitle = pin.localizedTitle()
     PressableHomeCard(
         onClick = onClick,
         modifier = modifier,
@@ -455,14 +456,14 @@ private fun HomePinnedCard(
                 if (playlistTarget != null) {
                     PlaylistArtwork(
                         playlist = playlistTarget.playlist,
-                        contentDescription = "Artwork for ${pin.title}",
+                        contentDescription = stringResource(R.string.core_artwork_for, displayedTitle),
                         modifier = Modifier.fillMaxSize()
                     )
                 } else if (artistPictureIdentity != null) {
                     ArtistPicture(
                         identity = artistPictureIdentity,
                         fallbackModel = pin.artworkUri,
-                        contentDescription = "Artwork for ${pin.title}",
+                        contentDescription = stringResource(R.string.core_artwork_for, displayedTitle),
                         modifier = Modifier.fillMaxSize(),
                         variant = VisualAssetVariant.THUMBNAIL
                     )
@@ -470,7 +471,7 @@ private fun HomePinnedCard(
                     ArtworkPlaceholder(modifier = Modifier.fillMaxSize())
                     AsyncImage(
                         model = pin.artworkUri,
-                        contentDescription = "Artwork for ${pin.title}",
+                        contentDescription = stringResource(R.string.core_artwork_for, displayedTitle),
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
@@ -493,7 +494,7 @@ private fun HomePinnedCard(
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.Filled.Close,
-                                    contentDescription = "Unpin ${pin.title}",
+                                    contentDescription = stringResource(R.string.home_unpin_item, displayedTitle),
                                     modifier = Modifier.size(16.dp),
                                     tint = MaterialTheme.colorScheme.onError
                                 )
@@ -504,13 +505,13 @@ private fun HomePinnedCard(
             }
 
             Text(
-                text = pin.title,
+                text = displayedTitle,
                 style = AppShellTypography.SongTitle,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = pin.typeLabel,
+                text = pin.localizedTypeLabel(),
                 style = AppShellTypography.Eyebrow,
                 color = if (pin.target == null) {
                     MaterialTheme.colorScheme.error
@@ -537,7 +538,7 @@ fun HomeRecentlyPlayedShelf(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         HomeCollectionSectionHeader(
-            title = "Recently Played",
+            title = stringResource(R.string.home_recently_played),
             onSeeAllClick = onSeeAllClick,
             modifier = Modifier.padding(start = 16.dp, end = 8.dp)
         )
@@ -580,7 +581,7 @@ fun HomeFavoritesShelf(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         HomeCollectionSectionHeader(
-            title = "Favorites",
+            title = stringResource(R.string.home_favorites),
             onSeeAllClick = onSeeAllClick,
             modifier = Modifier.padding(start = 16.dp, end = 8.dp)
         )
@@ -646,7 +647,7 @@ private fun HomeCollectionSectionHeader(
 
         TextButton(onClick = onSeeAllClick) {
             Text(
-                text = "SEE ALL  ›",
+                text = stringResource(R.string.home_see_all),
                 style = AppShellTypography.CompactAction,
                 color = AppShellAccent
             )
@@ -680,7 +681,7 @@ private fun HomeFeaturedSongCard(
 
             AsyncImage(
                 model = song.albumArtUri,
-                contentDescription = "Artwork for ${song.title}",
+                contentDescription = stringResource(R.string.core_artwork_for, song.title),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -706,7 +707,7 @@ private fun HomeFeaturedSongCard(
                 verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 Text(
-                    text = "LAST PLAYED",
+                    text = stringResource(R.string.home_last_played),
                     style = AppShellTypography.Eyebrow,
                     color = AppShellAccent
                 )
@@ -718,7 +719,7 @@ private fun HomeFeaturedSongCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = song.artist.ifBlank { "Unknown artist" },
+                    text = song.artist.ifBlank { stringResource(R.string.home_unknown_artist) },
                     style = AppShellTypography.SongSubtitle,
                     color = Color.White.copy(alpha = 0.76f),
                     maxLines = 1,
@@ -754,7 +755,7 @@ private fun HomeCompactArtworkCard(
                 ArtworkPlaceholder(modifier = Modifier.fillMaxSize())
                 AsyncImage(
                     model = song.albumArtUri,
-                    contentDescription = "Artwork for ${song.title}",
+                    contentDescription = stringResource(R.string.core_artwork_for, song.title),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -791,7 +792,7 @@ private fun HomeFavoriteRowCard(
                 ArtworkPlaceholder(modifier = Modifier.fillMaxSize())
                 AsyncImage(
                     model = song.albumArtUri,
-                    contentDescription = "Artwork for ${song.title}",
+                    contentDescription = stringResource(R.string.core_artwork_for, song.title),
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
@@ -821,7 +822,7 @@ private fun SongShelfMetadata(
             overflow = TextOverflow.Ellipsis
         )
         Text(
-            text = song.artist.ifBlank { "Unknown artist" },
+            text = song.artist.ifBlank { stringResource(R.string.home_unknown_artist) },
             style = AppShellTypography.SongSubtitle,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,

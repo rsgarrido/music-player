@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
@@ -129,7 +130,7 @@ private fun GenreListScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No genres match your search.",
+                text = stringResource(R.string.library_genre_no_match),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp)
             )
@@ -145,6 +146,7 @@ private fun GenreListScreen(
             items = genres,
             key = GenreCollection::key
         ) { genre ->
+            val openDescription = stringResource(R.string.library_genre_open, genre.name)
             val songCountText = pluralStringResource(
                 R.plurals.song_count,
                 genre.songs.size,
@@ -176,7 +178,7 @@ private fun GenreListScreen(
                             easing = FastOutSlowInEasing
                         )
                     )
-                    .semantics { contentDescription = "Open ${genre.name}" }
+                    .semantics { contentDescription = openDescription }
                     .clickable { onGenreClick(genre.key) }
             )
         }

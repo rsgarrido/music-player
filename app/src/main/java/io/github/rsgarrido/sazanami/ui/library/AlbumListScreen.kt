@@ -27,6 +27,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import io.github.rsgarrido.sazanami.data.Song
@@ -64,6 +66,7 @@ fun AlbumListScreen(
     bottomContentPadding: Dp = 0.dp,
     fastScrollSessionKey: Any? = null
 ) {
+    val resources = LocalResources.current
     val albums = remember(songs, sortState) {
         sortedLibraryAlbumGroups(songs, sortState)
     }
@@ -105,7 +108,9 @@ fun AlbumListScreen(
                             onPlayNextClick = onAlbumPlayNextClick,
                             onAddToQueueClick = onAlbumAddToQueueClick,
                             onAddToPlaylistClick = onAlbumAddToPlaylistClick,
-                            homePinAction = homePinUi.actionForAlbum(album)
+                            homePinAction = homePinUi.actionForAlbum(album),
+                            resolveString = resources::getString,
+                            resolveArtworkDescription = { resources.getString(AppR.string.library_album_art_for, it) }
                         )
                     }
                     albumSelectionActionSheetTarget(
@@ -113,7 +118,9 @@ fun AlbumListScreen(
                         singleAlbumTarget = singleAlbumTarget,
                         onAddToAnotherQueue = selectionUi.onAddToAnotherQueue,
                         onPlayInNewQueue = selectionUi.onPlayInNewQueue,
-                        onClearSelection = selectionUi.onClear
+                        onClearSelection = selectionUi.onClear,
+                        resolveString = resources::getString,
+                        resolvePlural = { id, count -> resources.getQuantityString(id, count, count) }
                     )
                 }
             )
@@ -141,9 +148,10 @@ fun AlbumListScreen(
                 model = firstSong?.albumArtUri,
                 variant = VisualAssetVariant.THUMBNAIL
             )
-            val songCountText = pluralStringResource(
-                AppR.plurals.song_count,
+            val albumSubtitle = pluralStringResource(
+                AppR.plurals.library_album_artist_song_count,
                 album.songs.size,
+                album.artistText,
                 album.songs.size
             )
             val isSelectionSelected = selectionActive &&
@@ -166,12 +174,12 @@ fun AlbumListScreen(
                         LibraryArtworkImage(
                             model = artworkRequest,
                             unresolvedNull = firstSong.hasUnresolvedLibraryArtwork(),
-                            contentDescription = "Album art for ${album.title}",
+                            contentDescription = stringResource(AppR.string.library_album_art_for, album.title),
                             modifier = artworkModifier
                         ) {
                             Image(
                                 painter = painterResource(R.drawable.ic_media_play),
-                                contentDescription = "Album art for ${album.title}",
+                                contentDescription = stringResource(AppR.string.library_album_art_for, album.title),
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
@@ -182,7 +190,7 @@ fun AlbumListScreen(
                     Text(text = album.title)
                 },
                 supportingContent = {
-                    Text(text = "${album.artistText} • $songCountText")
+                    Text(text = albumSubtitle)
                 },
                 trailingContent = if (isSelectionSelected) ({
                     LibrarySelectionCheckBadge()
@@ -201,7 +209,7 @@ fun AlbumListScreen(
                     )
                     .then(
                         if (selectionEnabled) Modifier.librarySelectableItem(
-                            clickLabel = "Open ${album.title}",
+                            clickLabel = stringResource(AppR.string.library_album_open, album.title),
                             selectionActive = selectionActive,
                             selected = isSelectionSelected,
                             onClick = { onAlbumClick(album.key) },
@@ -216,12 +224,12 @@ fun AlbumListScreen(
                                 }
                             }
                         ) else Modifier.libraryItemActions(
-                            clickLabel = "Open ${album.title}",
+                            clickLabel = stringResource(AppR.string.library_album_open, album.title),
                             onClick = { onAlbumClick(album.key) },
                             onShowActions = {
                             actionSheetTarget = albumActionSheetTarget(
                                 albumTitle = album.title,
-                                subtitle = "${album.artistText} • $songCountText",
+                                subtitle = albumSubtitle,
                                 artworkUri = firstSong?.albumArtUri,
                                 albumSongs = album.songs,
                                 onPlayClick = onAlbumPlayClick,
@@ -233,7 +241,9 @@ fun AlbumListScreen(
                                     libraryQueueUi.onPlayInNewQueue(name, selectedSongs)
                                 },
                                 onAddToPlaylistClick = onAlbumAddToPlaylistClick,
-                                homePinAction = homePinUi.actionForAlbum(album)
+                                homePinAction = homePinUi.actionForAlbum(album),
+                                resolveString = resources::getString,
+                                resolveArtworkDescription = { resources.getString(AppR.string.library_album_art_for, it) }
                             )
                             }
                         )
@@ -247,7 +257,7 @@ fun AlbumListScreen(
             LibrarySelectionActionBar(
                 selectedSongs = resolvedSelectedSongs,
                 onAddToPlaylist = { selectedSongs ->
-                    onAlbumAddToPlaylistClick("Selected albums", selectedSongs)
+                    onAlbumAddToPlaylistClick(resources.getString(AppR.string.library_selected_albums), selectedSongs)
                 },
                 modifier = Modifier.padding(bottom = bottomContentPadding)
             )
@@ -329,53 +339,58 @@ internal fun albumActionSheetTarget(
     onPlayInNewQueueClick: (String, List<Song>) -> Unit = { _, _ -> },
     onAddToPlaylistClick: (String, List<Song>) -> Unit,
     onEditMetadataClick: (() -> Unit)? = null,
-    homePinAction: LibraryItemAction? = null
+    homePinAction: LibraryItemAction? = null,
+    resolveString: (Int) -> String,
+    resolveArtworkDescription: (String) -> String
 ): LibraryItemActionSheetTarget {
     return LibraryItemActionSheetTarget(
         title = albumTitle,
         subtitle = subtitle,
         artworkUri = artworkUri,
-        artworkDescription = "Album art for $albumTitle",
+        artworkDescription = resolveArtworkDescription(albumTitle),
         actions = buildList {
             add(LibraryItemAction(
-                label = "Play",
+                label = resolveString(AppR.string.playlist_play),
                 icon = Icons.Filled.PlayArrow,
+                id = LibraryActionId.PLAY,
                 onClick = { onPlayClick(albumTitle, albumSongs) }
             ))
             add(LibraryItemAction(
-                label = "Shuffle",
+                label = resolveString(AppR.string.playlist_shuffle),
                 icon = Icons.Filled.Shuffle,
+                id = LibraryActionId.SHUFFLE,
                 onClick = { onShuffleClick(albumTitle, albumSongs) }
             ))
             add(LibraryItemAction(
-                label = "Play next",
+                label = resolveString(AppR.string.playlist_play_next),
                 icon = Icons.Filled.SkipNext,
                 onClick = { onPlayNextClick(albumTitle, albumSongs) }
             ))
             add(LibraryItemAction(
-                label = "Add to queue",
+                label = resolveString(AppR.string.playlist_add_to_queue),
                 icon = Icons.AutoMirrored.Filled.QueueMusic,
                 onClick = { onAddToQueueClick(albumTitle, albumSongs) }
             ))
             add(LibraryItemAction(
-                label = "Add to another queue...",
+                label = resolveString(AppR.string.playlist_add_to_another_queue),
                 icon = Icons.AutoMirrored.Filled.QueueMusic,
                 onClick = { onAddToAnotherQueueClick(albumSongs) }
             ))
             add(LibraryItemAction(
-                label = "Play in new queue",
+                label = resolveString(AppR.string.playlist_play_in_new_queue),
                 icon = Icons.Filled.PlayArrow,
                 onClick = { onPlayInNewQueueClick(albumTitle, albumSongs) }
             ))
             add(LibraryItemAction(
-                label = "Add to playlist",
+                label = resolveString(AppR.string.library_song_add_to_playlist),
                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
                 onClick = { onAddToPlaylistClick(albumTitle, albumSongs) }
             ))
             onEditMetadataClick?.let { onClick ->
                 add(LibraryItemAction(
-                    label = "Edit album metadata",
+                    label = resolveString(AppR.string.library_album_edit_metadata),
                     icon = Icons.Filled.EditNote,
+                    id = LibraryActionId.EDIT_ALBUM_METADATA,
                     onClick = onClick
                 ))
             }

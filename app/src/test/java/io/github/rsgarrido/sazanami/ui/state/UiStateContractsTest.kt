@@ -20,7 +20,7 @@ class UiStateContractsTest {
         assertEquals(0, PlaybackProgressUiState.Empty.currentPosition)
         assertFalse(PlayerAppearanceUiState().isLoaded)
         assertFalse(LibraryAppearanceUiState().isLoaded)
-        assertEquals("No sleep timer", SleepTimerUiState.Inactive.displayText())
+        assertEquals(false, SleepTimerUiState.Inactive.isActive)
         assertNull(LibraryUiState.Empty.errorMessage)
     }
 

@@ -11,6 +11,7 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import io.github.rsgarrido.sazanami.data.Song
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.TagEditorRepository
 import io.github.rsgarrido.sazanami.data.parseMetadataYear
 import io.github.rsgarrido.sazanami.player.audioquality.AudioQualityInfo
@@ -137,7 +138,11 @@ internal class AlbumPresentationMetadataRepository(context: Context) {
             }
         }.awaitAll()
 
-        summarizeAlbumAudioQuality(qualityInfo)
+        summarizeAlbumAudioQuality(
+            qualityInfo = qualityInfo,
+            mixedFormatsLabel = appContext.getString(R.string.library_album_mixed_formats),
+            mixedQualityLabel = appContext.getString(R.string.library_album_mixed_quality)
+        )
     }
 
     suspend fun getArtworkAccentArgb(artworkUri: Uri?): Int? {
@@ -209,7 +214,9 @@ internal fun albumPresentationMetadataKey(album: LibraryAlbumGroup): String = bu
 }
 
 internal fun summarizeAlbumAudioQuality(
-    qualityInfo: List<AudioQualityInfo>
+    qualityInfo: List<AudioQualityInfo>,
+    mixedFormatsLabel: String,
+    mixedQualityLabel: String
 ): AlbumAudioQualitySummary? {
     val formats = qualityInfo
         .mapNotNull { info -> normalizeAudioFormat(info.format) }
@@ -226,11 +233,11 @@ internal fun summarizeAlbumAudioQuality(
     val formatLabel = when (formats.size) {
         0 -> null
         1 -> formats.first()
-        else -> "MIXED FORMATS"
+        else -> mixedFormatsLabel
     }
 
     val qualityLabel = when {
-        bitDepths.size > 1 || sampleRates.size > 1 -> "Mixed quality"
+        bitDepths.size > 1 || sampleRates.size > 1 -> mixedQualityLabel
         bitDepths.isEmpty() && sampleRates.isEmpty() -> null
         else -> buildList {
             bitDepths.singleOrNull()?.let { bitDepth ->

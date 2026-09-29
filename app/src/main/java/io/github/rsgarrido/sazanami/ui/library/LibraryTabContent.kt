@@ -81,7 +81,7 @@ fun SongsTabContent(
 
     if (songs.isEmpty()) {
         EmptySongsContent(modifier, bottomContentPadding) {
-            Text(text = "No songs found.", modifier = Modifier.padding(16.dp))
+            Text(text = stringResource(R.string.library_empty_songs), modifier = Modifier.padding(16.dp))
         }
     } else if (metadataFilteredSongs.isEmpty() && filterState.isActive) {
         LibrarySelectionHeader(
@@ -95,9 +95,9 @@ fun SongsTabContent(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(text = "No songs match these filters.")
+                Text(text = stringResource(R.string.library_empty_filtered_songs))
                 Button(onClick = onClearFilters) {
-                    Text(text = "Clear filters")
+                    Text(text = stringResource(R.string.library_organize_clear_filters))
                 }
             }
         }
@@ -109,7 +109,7 @@ fun SongsTabContent(
             selectionActionTarget = null
         )
         EmptySongsContent(modifier, bottomContentPadding) {
-            Text(text = "No songs match your search.", modifier = Modifier.padding(16.dp))
+            Text(text = stringResource(R.string.library_empty_search_songs), modifier = Modifier.padding(16.dp))
         }
     } else {
         LibraryLayoutTransition(
@@ -245,11 +245,11 @@ fun RatedSongsTabContent(
         )
         EmptySongsContent(modifier, bottomContentPadding) {
             Text(
-                ratedCollectionEmptyMessage(
+                stringResource(ratedCollectionEmptyMessage(
                     filter = selectedFilter,
                     searchQuery = searchQuery,
                     quickRateActive = quickRateActive
-                ),
+                )),
                 modifier = Modifier.padding(16.dp)
             )
         }
@@ -359,7 +359,7 @@ fun FavoritesTabContent(
             selectionActionTarget = null
         )
         EmptySongsContent(modifier, bottomContentPadding) {
-            Text(text = "No favorite songs yet.", modifier = Modifier.padding(16.dp))
+            Text(text = stringResource(R.string.library_empty_favorites), modifier = Modifier.padding(16.dp))
         }
     } else if (filteredSongs.isEmpty()) {
         LibrarySelectionHeader(
@@ -370,7 +370,7 @@ fun FavoritesTabContent(
         )
         EmptySongsContent(modifier, bottomContentPadding) {
             Text(
-                text = "No favorite songs match your search.",
+                text = stringResource(R.string.library_empty_search_favorites),
                 modifier = Modifier.padding(16.dp)
             )
         }
@@ -385,7 +385,7 @@ fun FavoritesTabContent(
                 enabled = displayedSongs.isNotEmpty(),
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                Text(text = "Add all to playlist")
+                Text(text = stringResource(R.string.library_add_all_to_playlist))
             }
 
             LibraryLayoutTransition(
@@ -502,13 +502,13 @@ fun ArtistsTabContent(
     ) { visibleArtistName ->
         if (songs.isEmpty()) {
             Text(
-                text = "No artists found.",
+                text = stringResource(R.string.library_empty_artists),
                 modifier = Modifier.padding(16.dp)
             )
         } else if (visibleArtistName == null) {
             if (artistSearchSongs.isEmpty()) {
                 Text(
-                    text = "No artists match your search.",
+                    text = stringResource(R.string.library_empty_search_artists),
                     modifier = Modifier.padding(16.dp)
                 )
             } else {
@@ -676,7 +676,7 @@ fun AlbumsTabContent(
     ) { visibleAlbumKey ->
     if (songs.isEmpty()) {
         Text(
-            text = "No albums found.",
+            text = stringResource(R.string.library_empty_albums),
             modifier = Modifier.padding(16.dp)
         )
     } else if (visibleAlbumKey == null) {
@@ -688,7 +688,7 @@ fun AlbumsTabContent(
                 selectionActionTarget = null
             )
             Text(
-                text = "No albums match your search.",
+                text = stringResource(R.string.library_empty_search_albums),
                 modifier = Modifier.padding(16.dp)
             )
         } else {
@@ -763,7 +763,7 @@ fun AlbumsTabContent(
 
         if (album == null) {
             Text(
-                text = "Album is no longer available.",
+                text = stringResource(R.string.library_album_unavailable),
                 modifier = Modifier.padding(16.dp)
             )
         } else {

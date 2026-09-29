@@ -13,7 +13,9 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.AppShellTypography
 import io.github.rsgarrido.sazanami.ui.AppShellIcons
 import io.github.rsgarrido.sazanami.ui.AppShellAccent
@@ -34,7 +36,7 @@ fun LibrarySearchBar(
         leadingIcon = {
             Icon(
                 imageVector = AppShellIcons.Search,
-                contentDescription = "Search"
+                contentDescription = stringResource(R.string.library_search_description)
             )
         },
         trailingIcon = {
@@ -46,14 +48,14 @@ fun LibrarySearchBar(
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
-                        contentDescription = "Clear search"
+                        contentDescription = stringResource(R.string.library_search_clear)
                     )
                 }
             }
         },
         placeholder = {
             Text(
-                text = "Search songs, artists, albums",
+                text = stringResource(R.string.library_search_hint),
                 style = AppShellTypography.SearchInput
             )
         },

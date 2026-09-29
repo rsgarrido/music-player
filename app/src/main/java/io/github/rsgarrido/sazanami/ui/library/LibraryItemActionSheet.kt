@@ -24,6 +24,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -43,10 +45,16 @@ import io.github.rsgarrido.sazanami.ui.AppShellTypography
 import kotlinx.coroutines.launch
 
 @Immutable
+enum class LibraryActionId {
+    HOME_PIN, RATE_SONG, EDIT_TAGS, PLAY, SHUFFLE, EDIT_ALBUM_METADATA
+}
+
+@Immutable
 data class LibraryItemAction(
     val label: String,
     val icon: ImageVector,
     val isDestructive: Boolean = false,
+    val id: LibraryActionId? = null,
     val onClick: () -> Unit
 )
 
@@ -67,6 +75,7 @@ fun Modifier.libraryItemActions(
     onShowActions: () -> Unit
 ): Modifier {
     val hapticFeedback = LocalHapticFeedback.current
+    val showActionsLabel = stringResource(R.string.library_actions_show)
     val showActions = {
         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
         onShowActions()
@@ -75,13 +84,13 @@ fun Modifier.libraryItemActions(
     return combinedClickable(
         role = Role.Button,
         onClickLabel = clickLabel,
-        onLongClickLabel = "Show actions",
+        onLongClickLabel = showActionsLabel,
         onLongClick = showActions,
         onClick = onClick
     ).semantics {
         customActions = listOf(
             CustomAccessibilityAction(
-                label = "Show actions",
+                label = showActionsLabel,
                 action = {
                     onShowActions()
                     true
@@ -101,21 +110,24 @@ fun Modifier.librarySelectableItem(
     onEnterSelection: () -> Unit
 ): Modifier {
     val hapticFeedback = LocalHapticFeedback.current
+    val toggleSelectionLabel = stringResource(R.string.library_selection_toggle)
+    val selectLabel = stringResource(R.string.library_selection_select)
+    val deselectLabel = stringResource(R.string.library_selection_deselect)
     val select = {
         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
         onEnterSelection()
     }
     return combinedClickable(
         role = Role.Button,
-        onClickLabel = if (selectionActive) "Toggle selection" else clickLabel,
-        onLongClickLabel = "Select",
+        onClickLabel = if (selectionActive) toggleSelectionLabel else clickLabel,
+        onLongClickLabel = selectLabel,
         onLongClick = select,
         onClick = if (selectionActive) onToggleSelection else onClick
     ).semantics {
         this.selected = selected
         customActions = listOf(
             CustomAccessibilityAction(
-                label = if (selected) "Deselect" else "Select",
+                label = if (selected) deselectLabel else selectLabel,
                 action = {
                     if (selectionActive) onToggleSelection() else onEnterSelection()
                     true

@@ -350,7 +350,7 @@ internal fun MusicLibraryContent(
                     selectionActionTarget = null
                 )
                 EmptyHistoryMessage(
-                    message = "No recently played songs yet.",
+                    message = stringResource(R.string.library_recently_played_empty),
                     modifier = modifier
                 )
             } else {
@@ -465,7 +465,7 @@ internal fun MusicLibraryContent(
                     selectionActionTarget = null
                 )
                 EmptyHistoryMessage(
-                    message = "No most played songs yet.",
+                    message = stringResource(R.string.library_most_played_empty),
                     modifier = modifier
                 )
             } else {

@@ -1,6 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.queue
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
-import android.R
+import android.R as AndroidR
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -62,12 +64,12 @@ fun QueueScreen(
             IconButton(onClick = onBackClick) {
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = stringResource(R.string.queue_back)
                 )
             }
 
             Text(
-                text = "Up Next",
+                text = stringResource(R.string.queue_up_next),
                 style = MaterialTheme.typography.titleLarge
             )
         }
@@ -78,9 +80,9 @@ fun QueueScreen(
         ) {
             item {
                 QueueSectionHeader(
-                    title = "Queue",
+                    title = stringResource(R.string.queue_title),
                     subtitle = if (queuedSongs.isEmpty()) {
-                        "No manually queued songs."
+                        stringResource(R.string.queue_no_manual_songs)
                     } else {
                         "${queuedSongs.size} queued song(s)"
                     },
@@ -89,7 +91,7 @@ fun QueueScreen(
                             Button(
                                 onClick = onClearQueueClick
                             ) {
-                                Text(text = "Clear")
+                                Text(text = stringResource(R.string.queue_clear))
                             }
                         }
                     }
@@ -99,7 +101,7 @@ fun QueueScreen(
             if (queuedSongs.isEmpty()) {
                 item {
                     Text(
-                        text = "Songs you add to queue will appear here.",
+                        text = stringResource(R.string.queue_add_hint),
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -135,11 +137,11 @@ fun QueueScreen(
 
             item {
                 QueueSectionHeader(
-                    title = "Coming Up",
+                    title = stringResource(R.string.queue_coming_up),
                     subtitle = if (isShuffleEnabled) {
-                        "Exact shuffled order"
+                        stringResource(R.string.queue_exact_shuffle)
                     } else {
-                        "Based on current playback context"
+                        stringResource(R.string.queue_based_on_context)
                     }
                 )
             }
@@ -147,7 +149,7 @@ fun QueueScreen(
             if (upcomingSongs.isEmpty()) {
                 item {
                     Text(
-                        text = "Nothing else is coming up.",
+                        text = stringResource(R.string.queue_nothing_coming),
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.bodyMedium
                     )
@@ -212,13 +214,13 @@ private fun QueuedSongRow(
         leadingContent = {
             AsyncImage(
                 model = song.albumArtUri,
-                contentDescription = "Album art for ${song.title}",
+                contentDescription = stringResource(R.string.core_artwork_for, song.title),
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop,
-                error = painterResource(R.drawable.ic_media_play),
-                placeholder = painterResource(R.drawable.ic_media_play)
+                error = painterResource(AndroidR.drawable.ic_media_play),
+                placeholder = painterResource(AndroidR.drawable.ic_media_play)
             )
         },
         headlineContent = {
@@ -235,7 +237,7 @@ private fun QueuedSongRow(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.KeyboardArrowUp,
-                        contentDescription = "Move ${song.title} up"
+                        contentDescription = stringResource(R.string.queue_move_up, song.title)
                     )
                 }
 
@@ -245,7 +247,7 @@ private fun QueuedSongRow(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = "Move ${song.title} down"
+                        contentDescription = stringResource(R.string.queue_move_down, song.title)
                     )
                 }
 
@@ -254,7 +256,7 @@ private fun QueuedSongRow(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Delete,
-                        contentDescription = "Remove ${song.title} from queue"
+                        contentDescription = stringResource(R.string.queue_remove_named, song.title)
                     )
                 }
             }
@@ -282,13 +284,13 @@ private fun UpcomingSongRow(
 
                 AsyncImage(
                     model = song.albumArtUri,
-                    contentDescription = "Album art for ${song.title}",
+                    contentDescription = stringResource(R.string.core_artwork_for, song.title),
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop,
-                    error = painterResource(R.drawable.ic_media_play),
-                    placeholder = painterResource(R.drawable.ic_media_play)
+                    error = painterResource(AndroidR.drawable.ic_media_play),
+                    placeholder = painterResource(AndroidR.drawable.ic_media_play)
                 )
             }
         },

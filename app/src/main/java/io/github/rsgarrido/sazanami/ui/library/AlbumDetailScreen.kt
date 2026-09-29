@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -101,6 +102,7 @@ fun AlbumDetailScreen(
 ) {
     val songs = album.songs
     val context = LocalContext.current
+    val resources = LocalResources.current
     val metadataRepository = remember(context) {
         AlbumPresentationMetadataRepository(context)
     }
@@ -238,7 +240,9 @@ fun AlbumDetailScreen(
                         onPlayInNewQueueClick = libraryQueueUi.onPlayInNewQueue,
                         onAddToPlaylistClick = { _, _ -> onAddAllToPlaylistClick() },
                         onEditMetadataClick = { onEditAlbumMetadataClick(album) },
-                        homePinAction = homePinUi.actionForAlbum(album)
+                        homePinAction = homePinUi.actionForAlbum(album),
+                        resolveString = resources::getString,
+                        resolveArtworkDescription = { resources.getString(R.string.library_album_art_for, it) }
                     )
                 }
             )
@@ -303,7 +307,9 @@ fun AlbumDetailScreen(
                                     onEditSongTagsClick = onEditSongTagsClick,
                                     rateSongLabel = rateSongLabel,
                                     onRateSongClick = ratingUi.onOpen,
-                                    homePinAction = homePinUi.actionForSong(song)
+                                    homePinAction = homePinUi.actionForSong(song),
+                                resolveString = resources::getString,
+                                resolveArtworkDescription = { resources.getString(R.string.library_song_album_art_for, it) }
                                 )
                             }
                         )
@@ -328,7 +334,8 @@ private fun AlbumDiscHeader(
     discNumber: Int?
 ) {
     Text(
-        text = discNumber?.let { number -> "Disc $number" } ?: "Other tracks",
+        text = discNumber?.let { number -> stringResource(R.string.library_album_disc, number) }
+            ?: stringResource(R.string.library_album_other_tracks),
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 8.dp),
@@ -381,7 +388,7 @@ private fun AlbumDetailHero(
             )
             AsyncImage(
                 model = artworkRequest,
-                contentDescription = "Album art for ${album.title}",
+                contentDescription = stringResource(R.string.library_album_art_for, album.title),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -437,19 +444,19 @@ private fun AlbumDetailHero(
         ) {
             LibraryDetailAction(
                 icon = Icons.Filled.PlayArrow,
-                label = "Play",
+                label = stringResource(R.string.playlist_play),
                 enabled = hasSongs,
                 onClick = onPlayClick
             )
             LibraryDetailAction(
                 icon = Icons.Filled.Shuffle,
-                label = "Shuffle",
+                label = stringResource(R.string.playlist_shuffle),
                 enabled = hasSongs,
                 onClick = onShuffleClick
             )
             LibraryDetailAction(
                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                label = "Add",
+                label = stringResource(R.string.library_queue_add_action),
                 enabled = hasSongs,
                 onClick = onAddToPlaylistClick
             )
@@ -558,7 +565,7 @@ private fun AlbumTrackRow(
                 }
             )
             .libraryItemActions(
-                clickLabel = "Play ${song.title}",
+                clickLabel = stringResource(R.string.library_song_play, song.title),
                 onClick = onClick,
                 onShowActions = onShowActions
             )
@@ -582,7 +589,7 @@ private fun AlbumTrackRow(
             verticalArrangement = Arrangement.spacedBy(1.dp)
         ) {
             Text(
-                text = song.title.ifBlank { "Unknown Title" },
+                text = song.title.ifBlank { stringResource(R.string.library_song_unknown_title) },
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = if (isCurrentSong) FontWeight.SemiBold else FontWeight.Normal,
                 color = if (isCurrentSong) AppShellAccent else MaterialTheme.colorScheme.onSurface,
@@ -624,13 +631,14 @@ private fun AlbumTrackRow(
         ) {
             Icon(
                 imageVector = Icons.Filled.MoreVert,
-                contentDescription = "More options for ${song.title}",
+                contentDescription = stringResource(R.string.library_album_more_options, song.title),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
 }
 
+@Composable
 private fun formatCollectionDuration(durationMs: Long): String {
     if (durationMs <= 0L) return ""
 
@@ -639,9 +647,9 @@ private fun formatCollectionDuration(durationMs: Long): String {
     val minutes = totalMinutes % 60L
 
     return when {
-        hours <= 0L -> "$totalMinutes min"
-        minutes == 0L -> "$hours hr"
-        else -> "$hours hr $minutes min"
+        hours <= 0L -> stringResource(R.string.library_album_duration_minutes, totalMinutes)
+        minutes == 0L -> stringResource(R.string.library_album_duration_hours, hours)
+        else -> stringResource(R.string.library_album_duration_hours_minutes, hours, minutes)
     }
 }
 

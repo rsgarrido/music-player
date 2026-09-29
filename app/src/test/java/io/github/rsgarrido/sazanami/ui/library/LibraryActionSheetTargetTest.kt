@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.library
 
 import android.net.Uri
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PushPin
 import io.github.rsgarrido.sazanami.data.Song
@@ -30,7 +31,9 @@ class LibraryActionSheetTargetTest {
             onShuffleClick = noOp,
             onPlayNextClick = noOp,
             onAddToQueueClick = noOp,
-            onAddToPlaylistClick = noOp
+            onAddToPlaylistClick = noOp,
+            resolveString = ::testActionString,
+            resolveArtworkDescription = { "Artwork for $it" }
         )
         customTarget.actions.first { it.label == "Change artist picture" }.onClick()
         customTarget.actions.first { it.label == "Remove artist picture" }.onClick()
@@ -50,7 +53,9 @@ class LibraryActionSheetTargetTest {
             onShuffleClick = noOp,
             onPlayNextClick = noOp,
             onAddToQueueClick = noOp,
-            onAddToPlaylistClick = noOp
+            onAddToPlaylistClick = noOp,
+            resolveString = ::testActionString,
+            resolveArtworkDescription = { "Artwork for $it" }
         )
         assertEquals(
             emptyList<String>(),
@@ -75,19 +80,21 @@ class LibraryActionSheetTargetTest {
             onAddToPlaylistClick = { invokedActions += "playlist" },
             onEditSongTagsClick = { invokedActions += "edit" },
             rateSongLabel = "Rate song",
-            onRateSongClick = { invokedActions += "rate" }
+            onRateSongClick = { invokedActions += "rate" },
+            resolveString = Int::toString,
+            resolveArtworkDescription = { it }
         )
 
         assertEquals(
             listOf(
-                "Play next",
-                "Add to queue",
-                "Add to another queue...",
-                "Play in new queue",
-                "Add to favorites",
+                R.string.playlist_play_next.toString(),
+                R.string.playlist_add_to_queue.toString(),
+                R.string.playlist_add_to_another_queue.toString(),
+                R.string.playlist_play_in_new_queue.toString(),
+                R.string.playlist_add_favorites.toString(),
                 "Rate song",
-                "Add to playlist",
-                "Edit tags"
+                R.string.library_song_add_to_playlist.toString(),
+                R.string.playlist_edit_tags.toString()
             ),
             target.actions.map { action -> action.label }
         )
@@ -113,7 +120,9 @@ class LibraryActionSheetTargetTest {
             onShuffleClick = noOp,
             onPlayNextClick = noOp,
             onAddToQueueClick = noOp,
-            onAddToPlaylistClick = noOp
+            onAddToPlaylistClick = noOp,
+            resolveString = ::testActionString,
+            resolveArtworkDescription = { "Album art for $it" }
         )
         val artistTarget = artistActionSheetTarget(
             artistName = "Artist",
@@ -128,7 +137,9 @@ class LibraryActionSheetTargetTest {
             onShuffleClick = noOp,
             onPlayNextClick = noOp,
             onAddToQueueClick = noOp,
-            onAddToPlaylistClick = noOp
+            onAddToPlaylistClick = noOp,
+            resolveString = ::testActionString,
+            resolveArtworkDescription = { "Artwork for $it" }
         )
         val expected = listOf(
             "Play",
@@ -161,7 +172,9 @@ class LibraryActionSheetTargetTest {
             onAddToQueueClick = noOp,
             onAddToAnotherQueueClick = { anotherQueueSongs = it },
             onPlayInNewQueueClick = { _, selectedSongs -> newQueueSongs = selectedSongs },
-            onAddToPlaylistClick = noOp
+            onAddToPlaylistClick = noOp,
+            resolveString = ::testActionString,
+            resolveArtworkDescription = { "Album art for $it" }
         )
 
         target.actions.first { it.label == "Add to another queue..." }.onClick()
@@ -193,7 +206,9 @@ class LibraryActionSheetTargetTest {
             onEditSongTagsClick = {},
             rateSongLabel = "Rate song",
             onRateSongClick = {},
-            homePinAction = pinAction
+            homePinAction = pinAction,
+            resolveString = Int::toString,
+            resolveArtworkDescription = { it }
         )
         val albumTarget = albumActionSheetTarget(
             albumTitle = "Album",
@@ -205,7 +220,9 @@ class LibraryActionSheetTargetTest {
             onPlayNextClick = noOp,
             onAddToQueueClick = noOp,
             onAddToPlaylistClick = noOp,
-            homePinAction = pinAction
+            homePinAction = pinAction,
+            resolveString = ::testActionString,
+            resolveArtworkDescription = { "Album art for $it" }
         )
         val artistTarget = artistActionSheetTarget(
             artistName = "Artist",
@@ -221,20 +238,22 @@ class LibraryActionSheetTargetTest {
             onPlayNextClick = noOp,
             onAddToQueueClick = noOp,
             onAddToPlaylistClick = noOp,
-            homePinAction = pinAction
+            homePinAction = pinAction,
+            resolveString = ::testActionString,
+            resolveArtworkDescription = { "Artwork for $it" }
         )
 
         assertEquals(
             listOf(
-                "Play next",
-                "Add to queue",
-                "Add to another queue...",
-                "Play in new queue",
-                "Add to favorites",
+                R.string.playlist_play_next.toString(),
+                R.string.playlist_add_to_queue.toString(),
+                R.string.playlist_add_to_another_queue.toString(),
+                R.string.playlist_play_in_new_queue.toString(),
+                R.string.playlist_add_favorites.toString(),
                 "Pin to Home",
                 "Rate song",
-                "Add to playlist",
-                "Edit tags"
+                R.string.library_song_add_to_playlist.toString(),
+                R.string.playlist_edit_tags.toString()
             ),
             songTarget.actions.map { it.label }
         )
@@ -243,6 +262,21 @@ class LibraryActionSheetTargetTest {
 
         songTarget.actions.first { it.label == "Pin to Home" }.onClick()
         assertEquals(true, pinInvoked)
+    }
+
+    private fun testActionString(id: Int): String = when (id) {
+        R.string.playlist_play -> "Play"
+        R.string.playlist_shuffle -> "Shuffle"
+        R.string.playlist_play_next -> "Play next"
+        R.string.playlist_add_to_queue -> "Add to queue"
+        R.string.playlist_add_to_another_queue -> "Add to another queue..."
+        R.string.playlist_play_in_new_queue -> "Play in new queue"
+        R.string.library_song_add_to_playlist -> "Add to playlist"
+        R.string.library_artist_picture_change -> "Change artist picture"
+        R.string.library_artist_picture_set -> "Set artist picture"
+        R.string.library_artist_picture_remove -> "Remove artist picture"
+        R.string.library_album_edit_metadata -> "Edit album metadata"
+        else -> error("Unexpected resource: $id")
     }
 
     private fun testSong(id: Long = 1L): Song {

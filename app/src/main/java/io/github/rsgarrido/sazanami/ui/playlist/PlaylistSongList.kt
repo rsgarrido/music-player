@@ -34,6 +34,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
@@ -73,6 +74,7 @@ fun PlaylistSongList(
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
+    val resources = LocalResources.current
     var actionSheetTarget by remember {
         mutableStateOf<LibraryItemActionSheetTarget?>(null)
     }
@@ -117,7 +119,7 @@ fun PlaylistSongList(
                 leadingContent = {
                     AsyncImage(
                         model = song.albumArtUri,
-                        contentDescription = "Album art for ${song.title}",
+                        contentDescription = stringResource(AppR.string.playlist_album_art_for, song.title),
                         modifier = Modifier
                             .size(56.dp)
                             .clip(RoundedCornerShape(8.dp)),
@@ -128,7 +130,7 @@ fun PlaylistSongList(
                 },
                 headlineContent = {
                     Text(
-                        text = song.title.ifBlank { "Unknown Title" },
+                        text = song.title.ifBlank { stringResource(AppR.string.playlist_unknown_title) },
                         fontWeight = if (isCurrentSong) {
                             FontWeight.Bold
                         } else {
@@ -137,7 +139,7 @@ fun PlaylistSongList(
                     )
                 },
                 supportingContent = {
-                    Text(text = song.artist.ifBlank { "Unknown Artist" })
+                    Text(text = song.artist.ifBlank { stringResource(AppR.string.playlist_unknown_artist) })
                 },
                 trailingContent = rating?.let { value ->
                     {
@@ -163,34 +165,34 @@ fun PlaylistSongList(
                         )
                     )
                     .libraryItemActions(
-                    clickLabel = "Play ${song.title}",
+                    clickLabel = stringResource(AppR.string.playlist_play_song, song.title),
                     onClick = {
                         onSongClick(song, playlistSongs)
                     },
                     onShowActions = {
                         val subtitleParts = buildList {
-                            add(song.artist.ifBlank { "Unknown Artist" })
-                            add(song.album.ifBlank { "Unknown Album" })
-                            if (wasRecentlyAdded) add("Recently added")
+                            add(song.artist.ifBlank { resources.getString(AppR.string.playlist_unknown_artist) })
+                            add(song.album.ifBlank { resources.getString(AppR.string.playlist_unknown_album) })
+                            if (wasRecentlyAdded) add(resources.getString(AppR.string.playlist_recently_added))
                         }
                         val actions = buildList {
                             add(
                                 LibraryItemAction(
-                                    label = "Play next",
+                                    label = resources.getString(AppR.string.playlist_play_next),
                                     icon = Icons.Filled.SkipNext,
                                     onClick = { onPlayNextClick(song) }
                                 )
                             )
                             add(
                                 LibraryItemAction(
-                                    label = "Add to queue",
+                                    label = resources.getString(AppR.string.playlist_add_to_queue),
                                     icon = Icons.AutoMirrored.Filled.QueueMusic,
                                     onClick = { onAddToQueueClick(song) }
                                 )
                             )
                             add(
                                 LibraryItemAction(
-                                    label = "Add to another queue...",
+                                    label = resources.getString(AppR.string.playlist_add_to_another_queue),
                                     icon = Icons.AutoMirrored.Filled.QueueMusic,
                                     onClick = {
                                         libraryQueueUi.onAddToAnotherQueue(listOf(song))
@@ -199,7 +201,7 @@ fun PlaylistSongList(
                             )
                             add(
                                 LibraryItemAction(
-                                    label = "Play in new queue",
+                                    label = resources.getString(AppR.string.playlist_play_in_new_queue),
                                     icon = Icons.Filled.PlayArrow,
                                     onClick = {
                                         libraryQueueUi.onPlayInNewQueue("", listOf(song))
@@ -209,9 +211,9 @@ fun PlaylistSongList(
                             add(
                                 LibraryItemAction(
                                     label = if (isFavorite) {
-                                        "Remove from favorites"
+                                        resources.getString(AppR.string.playlist_remove_favorites)
                                     } else {
-                                        "Add to favorites"
+                                        resources.getString(AppR.string.playlist_add_favorites)
                                     },
                                     icon = if (isFavorite) {
                                         Icons.Filled.Favorite
@@ -231,7 +233,7 @@ fun PlaylistSongList(
                             )
                             add(
                                 LibraryItemAction(
-                                    label = "Edit tags",
+                                    label = resources.getString(AppR.string.playlist_edit_tags),
                                     icon = Icons.Filled.Edit,
                                     onClick = { onEditSongTagsClick(song) }
                                 )
@@ -239,7 +241,7 @@ fun PlaylistSongList(
                             if (allowManualRemoval && playlistSong != null) {
                                 add(
                                     LibraryItemAction(
-                                        label = "Remove from playlist",
+                                        label = resources.getString(AppR.string.playlist_remove_song),
                                         icon = Icons.Filled.Delete,
                                         isDestructive = true,
                                         onClick = { onRemovePlaylistSongClick(playlistSong) }
@@ -249,10 +251,10 @@ fun PlaylistSongList(
                         }
 
                         actionSheetTarget = LibraryItemActionSheetTarget(
-                            title = song.title.ifBlank { "Unknown Title" },
+                            title = song.title.ifBlank { resources.getString(AppR.string.playlist_unknown_title) },
                             subtitle = subtitleParts.joinToString(" • "),
                             artworkUri = song.albumArtUri,
-                            artworkDescription = "Album art for ${song.title}",
+                            artworkDescription = resources.getString(AppR.string.playlist_album_art_for, song.title),
                             actions = actions
                         )
                     }

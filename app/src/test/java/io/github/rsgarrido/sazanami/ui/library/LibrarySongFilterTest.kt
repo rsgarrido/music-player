@@ -216,19 +216,6 @@ class LibrarySongFilterTest {
         )
     }
 
-    @Test
-    fun organizeButtonDescriptionReflectsOnlyActiveFilterCount() {
-        assertEquals("Organize library", organizeButtonContentDescription(0))
-        assertEquals(
-            "Organize library, 1 active filter",
-            organizeButtonContentDescription(1)
-        )
-        assertEquals(
-            "Organize library, 2 active filters",
-            organizeButtonContentDescription(2)
-        )
-    }
-
     private fun song(
         id: Long,
         genres: List<String> = emptyList(),

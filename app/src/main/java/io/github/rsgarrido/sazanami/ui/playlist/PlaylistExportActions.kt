@@ -1,5 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.playlist
 
+import android.content.res.Resources
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -11,6 +12,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalResources
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Playlist
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.playlistfile.M3uExportResult
@@ -28,6 +31,7 @@ fun rememberPlaylistExportActions(
     onPrepareExport: (Playlist, (Result<PreparedPlaylistExport>) -> Unit) -> Unit,
     onExport: (Uri, List<Song>, (Result<M3uExportResult>) -> Unit) -> Unit
 ): PlaylistExportActions {
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
     var pendingExport by remember {
         mutableStateOf<PreparedPlaylistExport?>(null)
@@ -55,13 +59,14 @@ fun rememberPlaylistExportActions(
                     onSuccess = { exportResult ->
                         showMessage(
                             exportSuccessMessage(
+                                resources = resources,
                                 exportedSongCount = exportResult.exportedSongCount,
                                 unavailableSongCount = export.unavailableSongCount
                             )
                         )
                     },
                     onFailure = {
-                        showMessage("Couldn't export playlist.")
+                        showMessage(resources.getString(R.string.playlist_export_failed))
                     }
                 )
             }
@@ -75,9 +80,13 @@ fun rememberPlaylistExportActions(
                     onSuccess = { export ->
                         if (export.songs.isEmpty()) {
                             val message = if (export.unavailableSongCount == 0) {
-                                "This playlist is empty."
+                                resources.getString(R.string.playlist_export_empty)
                             } else {
-                                "No songs could be exported. ${unavailableSongsMessage(export.unavailableSongCount)}"
+                                resources.getQuantityString(
+                                    R.plurals.playlist_export_none_with_skipped,
+                                    export.unavailableSongCount,
+                                    export.unavailableSongCount
+                                )
                             }
 
                             showMessage(message)
@@ -89,7 +98,7 @@ fun rememberPlaylistExportActions(
                         }
                     },
                     onFailure = {
-                        showMessage("Couldn't prepare playlist for export.")
+                        showMessage(resources.getString(R.string.playlist_export_prepare_failed))
                     }
                 )
             }
@@ -114,23 +123,24 @@ internal fun sanitizedM3uFilename(playlistName: String): String {
 }
 
 internal fun exportSuccessMessage(
+    resources: Resources,
     exportedSongCount: Int,
     unavailableSongCount: Int
 ): String {
-    val songLabel = if (exportedSongCount == 1) "song" else "songs"
-    val exportedMessage = "Exported $exportedSongCount $songLabel"
-
-    return if (unavailableSongCount > 0) {
-        "$exportedMessage. ${unavailableSongsMessage(unavailableSongCount)}"
-    } else {
-        exportedMessage
+    if (unavailableSongCount == 0) {
+        return resources.getQuantityString(
+            R.plurals.playlist_export_success,
+            exportedSongCount,
+            exportedSongCount
+        )
     }
-}
-
-private fun unavailableSongsMessage(unavailableSongCount: Int): String {
-    return if (unavailableSongCount == 1) {
-        "1 unavailable song was skipped."
-    } else {
-        "$unavailableSongCount unavailable songs were skipped."
-    }
+    val pluralRes = if (exportedSongCount == 1)
+        R.plurals.playlist_export_one_song_with_skipped
+    else R.plurals.playlist_export_many_songs_with_skipped
+    return resources.getQuantityString(
+        pluralRes,
+        unavailableSongCount,
+        exportedSongCount,
+        unavailableSongCount
+    )
 }

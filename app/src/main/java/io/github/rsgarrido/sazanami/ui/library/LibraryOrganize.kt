@@ -44,6 +44,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -65,7 +68,7 @@ fun LibraryOrganizeButton(
     onSortStateChanged: (LibrarySortState) -> Unit,
     filterState: LibrarySongFilterState? = null,
     onFilterStateChanged: ((LibrarySongFilterState) -> Unit)? = null,
-    optionTitle: (LibrarySortOption) -> String = { option -> option.title },
+    optionTitle: (LibrarySortOption) -> Int = { option -> option.titleRes },
     modifier: Modifier = Modifier
 ) {
     var isSheetVisible by rememberSaveable { mutableStateOf(false) }
@@ -79,7 +82,9 @@ fun LibraryOrganizeButton(
                 isSheetVisible = true
             },
             imageVector = Icons.Filled.Tune,
-            contentDescription = organizeButtonContentDescription(activeFilterCount),
+            contentDescription = if (activeFilterCount > 0)
+                pluralStringResource(R.plurals.library_organize_active_filters, activeFilterCount, activeFilterCount)
+            else stringResource(R.string.library_organize_title),
             accented = activeFilterCount > 0
         )
 
@@ -112,14 +117,6 @@ fun LibraryOrganizeButton(
     }
 }
 
-internal fun organizeButtonContentDescription(activeFilterCount: Int): String =
-    if (activeFilterCount > 0) {
-        "Organize library, $activeFilterCount active " +
-                if (activeFilterCount == 1) "filter" else "filters"
-    } else {
-        "Organize library"
-    }
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun LibraryOrganizeSheet(
@@ -129,7 +126,7 @@ private fun LibraryOrganizeSheet(
     onSortStateChanged: (LibrarySortState) -> Unit,
     filterState: LibrarySongFilterState?,
     onFilterStateChanged: ((LibrarySongFilterState) -> Unit)?,
-    optionTitle: (LibrarySortOption) -> String,
+    optionTitle: (LibrarySortOption) -> Int,
     page: LibraryOrganizePage,
     onPageChanged: (LibraryOrganizePage) -> Unit,
     onDismissRequest: () -> Unit
@@ -189,7 +186,7 @@ private fun OrganizeMainContent(
     onSortStateChanged: (LibrarySortState) -> Unit,
     filterState: LibrarySongFilterState?,
     onFilterStateChanged: ((LibrarySongFilterState) -> Unit)?,
-    optionTitle: (LibrarySortOption) -> String,
+    optionTitle: (LibrarySortOption) -> Int,
     onOpenGenre: () -> Unit,
     onOpenYear: () -> Unit
 ) {
@@ -202,13 +199,13 @@ private fun OrganizeMainContent(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
-            text = "Organize library",
+            text = stringResource(R.string.library_organize_title),
             style = AppShellTypography.SectionTitle,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
         )
 
-        OrganizeSectionLabel("SORT BY")
+        OrganizeSectionLabel(stringResource(R.string.library_organize_sort_by))
         sortOptions.chunked(2).forEach { rowOptions ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -216,7 +213,7 @@ private fun OrganizeMainContent(
             ) {
                 rowOptions.forEach { option ->
                     OrganizeChoiceCard(
-                        label = optionTitle(option),
+                        label = stringResource(optionTitle(option)),
                         selected = sortState.option == option,
                         onClick = {
                             onSortStateChanged(sortState.select(option))
@@ -230,7 +227,7 @@ private fun OrganizeMainContent(
             }
         }
 
-        OrganizeSectionLabel("DIRECTION")
+        OrganizeSectionLabel(stringResource(R.string.library_organize_direction))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -258,18 +255,19 @@ private fun OrganizeMainContent(
         }
 
         if (filterState != null && onFilterStateChanged != null) {
-            val genreName = remember(songs, filterState.genre) {
-                selectedLibraryGenreName(songs, filterState.genre)
+            val allGenres = stringResource(R.string.library_organize_all_genres)
+            val genreName = remember(songs, filterState.genre, allGenres) {
+                selectedLibraryGenreName(songs, filterState.genre, allGenres)
             }
 
-            OrganizeSectionLabel("FILTER")
+            OrganizeSectionLabel(stringResource(R.string.library_organize_filter))
             FilterSelectorRow(
-                label = "Genre",
+                label = stringResource(R.string.library_organize_genre),
                 selection = genreName,
                 onClick = onOpenGenre
             )
             FilterSelectorRow(
-                label = "Year",
+                label = stringResource(R.string.library_organize_year),
                 selection = filterState.year.displayName(),
                 onClick = onOpenYear
             )
@@ -278,7 +276,7 @@ private fun OrganizeMainContent(
                 modifier = Modifier.fillMaxWidth(),
                 enabled = filterState.isActive
             ) {
-                Text("Clear filters")
+                Text(stringResource(R.string.library_organize_clear_filters))
             }
         }
     }
@@ -337,7 +335,7 @@ private fun OrganizeChoiceCard(
             if (selected) {
                 Icon(
                     imageVector = Icons.Filled.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.playlist_selected),
                     modifier = Modifier.size(18.dp),
                     tint = AppShellAccent
                 )
@@ -354,7 +352,7 @@ private fun DirectionChoiceCard(
     modifier: Modifier = Modifier
 ) {
     val ascending = direction == LibrarySortDirection.ASCENDING
-    val label = if (ascending) "Ascending" else "Descending"
+    val label = if (ascending) stringResource(R.string.playlist_sort_ascending) else stringResource(R.string.playlist_sort_descending)
     val icon = if (ascending) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward
 
     Surface(
@@ -405,12 +403,13 @@ private fun FilterSelectorRow(
     selection: String,
     onClick: () -> Unit
 ) {
+    val filterDescription = stringResource(R.string.library_organize_filter_description, label, selection)
     Surface(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .semantics {
-                contentDescription = "Filter by $label, currently $selection"
+                contentDescription = filterDescription
             },
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -465,13 +464,13 @@ private fun GenreSelectionContent(
         )
     }
     SelectorList(
-        title = "Choose Genre",
+        title = stringResource(R.string.library_organize_choose_genre),
         onBack = onBack,
         items = buildList {
             add(
                 OrganizeSelectorItem(
                     key = "all",
-                    label = "All genres",
+                    label = stringResource(R.string.library_organize_all_genres),
                     selected = filterState.genre == null,
                     onClick = {
                         onFilterStateChanged(filterState.copy(genre = null))
@@ -507,13 +506,13 @@ private fun YearSelectionContent(
         organizeYearOptions(availableLibraryYears(songs), filterState.year)
     }
     SelectorList(
-        title = "Choose Year",
+        title = stringResource(R.string.library_organize_choose_year),
         onBack = onBack,
         items = buildList {
             add(
                 OrganizeSelectorItem(
                     key = "all",
-                    label = "All years",
+                    label = stringResource(R.string.library_organize_all_years),
                     selected = filterState.year == LibraryYearFilter.All,
                     onClick = {
                         onFilterStateChanged(filterState.copy(year = LibraryYearFilter.All))
@@ -539,7 +538,7 @@ private fun YearSelectionContent(
             add(
                 OrganizeSelectorItem(
                     key = "unknown",
-                    label = "Unknown Year",
+                    label = stringResource(R.string.library_organize_unknown_year),
                     selected = filterState.year == LibraryYearFilter.Unknown,
                     onClick = {
                         onFilterStateChanged(filterState.copy(year = LibraryYearFilter.Unknown))
@@ -576,12 +575,13 @@ internal fun organizeYearOptions(
 
 internal fun selectedLibraryGenreName(
     songs: List<Song>,
-    selectedGenre: LibraryGenreFilter?
+    selectedGenre: LibraryGenreFilter?,
+    allGenresLabel: String
 ): String = availableLibraryGenreFilters(songs)
     .firstOrNull { option -> option.key == selectedGenre?.key }
     ?.name
     ?: selectedGenre?.name
-    ?: "All genres"
+    ?: allGenresLabel
 
 @Composable
 private fun SelectorList(
@@ -625,7 +625,7 @@ private fun SelectorHeader(
         IconButton(onClick = onBack) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back to Organize library"
+                contentDescription = stringResource(R.string.library_organize_back)
             )
         }
         Text(
@@ -678,7 +678,7 @@ private fun SelectorRow(item: OrganizeSelectorItem) {
             if (item.selected) {
                 Icon(
                     imageVector = Icons.Filled.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.playlist_selected),
                     modifier = Modifier.size(20.dp),
                     tint = AppShellAccent
                 )

@@ -33,6 +33,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.dp
@@ -108,16 +110,16 @@ fun FolderSelectionScreen(
                 IconButton(onClick = onBackClick) {
                     Icon(
                         imageVector = Icons.Filled.ArrowBack,
-                        contentDescription = "Back to settings"
+                        contentDescription = stringResource(R.string.folder_selection_back)
                     )
                 }
             }
 
             Text(
                 text = if (isInitialOnboarding) {
-                    "Choose your music folders"
+                    stringResource(R.string.folder_selection_choose_title)
                 } else {
-                    "Library Folders"
+                    stringResource(R.string.folder_selection_title)
                 },
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(start = if (isInitialOnboarding) 0.dp else 8.dp)
@@ -126,8 +128,7 @@ fun FolderSelectionScreen(
 
         if (isInitialOnboarding) {
             Text(
-                text = "Sazanami will only include music from the folders you select. " +
-                        "Select one or more roots now; you can change them later in Settings.",
+                text = stringResource(R.string.folder_selection_intro),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -137,27 +138,27 @@ fun FolderSelectionScreen(
         Text(
             text = when {
                 isInitialOnboarding && selectedLibraryFolders.isEmpty() ->
-                    "No folders selected. You can continue with an empty library."
+                    stringResource(R.string.folder_selection_empty_onboarding)
                 isInitialOnboarding ->
-                    selectedFolderCountText(selectedLibraryFolders.size)
+                    pluralStringResource(R.plurals.folder_selection_selected_count, selectedLibraryFolders.size, selectedLibraryFolders.size)
                 folderSelectionMode == FolderSelectionMode.ALL &&
                         excludedLibraryFolders.isEmpty() ->
-                    "Every detected folder tree is included."
+                    stringResource(R.string.folder_selection_all_included)
                 folderSelectionMode == FolderSelectionMode.ALL ->
-                    "All folder trees are included except ${excludedLibraryFolders.size} exclusion(s)."
+                    pluralStringResource(R.plurals.folder_selection_exclusions, excludedLibraryFolders.size, excludedLibraryFolders.size)
                 selectedLibraryFolders.isEmpty() ->
-                    "No music folders are included."
+                    stringResource(R.string.folder_selection_none_included)
                 excludedLibraryFolders.isEmpty() ->
-                    "${selectedLibraryFolders.size} folder root(s) included."
+                    pluralStringResource(R.plurals.folder_selection_roots_included, selectedLibraryFolders.size, selectedLibraryFolders.size)
                 else ->
-                    "${selectedLibraryFolders.size} included • ${excludedLibraryFolders.size} excluded"
+                    stringResource(R.string.folder_selection_included_excluded, selectedLibraryFolders.size, excludedLibraryFolders.size)
             },
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
         )
 
         Text(
-            text = "Selecting a parent folder includes its current and future subfolders after a library scan.",
+            text = stringResource(R.string.folder_selection_parent_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -171,7 +172,7 @@ fun FolderSelectionScreen(
                     onClick = onSelectAllClick,
                     modifier = Modifier.padding(end = 8.dp)
                 ) {
-                    Text(text = "Include All")
+                    Text(text = stringResource(R.string.folder_selection_include_all))
                 }
             }
 
@@ -180,7 +181,7 @@ fun FolderSelectionScreen(
                 enabled = !isSaving,
                 modifier = Modifier.padding(end = 8.dp)
             ) {
-                Text(text = "Clear")
+                Text(text = stringResource(R.string.folder_selection_clear))
             }
 
             if (isInitialOnboarding) {
@@ -188,7 +189,7 @@ fun FolderSelectionScreen(
                     onClick = onContinueClick,
                     enabled = !isDiscoveryLoading && !isSaving
                 ) {
-                    Text(text = if (isSaving) "Saving…" else "Continue")
+                    Text(text = stringResource(if (isSaving) R.string.folder_selection_saving else R.string.folder_selection_continue))
                 }
             }
         }
@@ -196,7 +197,7 @@ fun FolderSelectionScreen(
         if (isDiscoveryLoading) {
             CircularProgressIndicator(modifier = Modifier.padding(24.dp))
             Text(
-                text = "Finding music folders…",
+                text = stringResource(R.string.folder_selection_finding),
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
         } else {
@@ -216,11 +217,9 @@ fun FolderSelectionScreen(
                     item {
                         Text(
                             text = if (isInitialOnboarding) {
-                                "No music folders were found. You can continue with an empty " +
-                                        "library and scan again after adding music."
+                                stringResource(R.string.folder_selection_no_folders_onboarding)
                             } else {
-                                "No music folders found. Run Scan library after adding music " +
-                                        "to the device."
+                                stringResource(R.string.folder_selection_no_folders)
                             },
                             modifier = Modifier.padding(16.dp)
                         )
@@ -258,9 +257,9 @@ fun FolderSelectionScreen(
                                             Icons.Filled.ChevronRight
                                         },
                                         contentDescription = if (isExpanded) {
-                                            "Collapse ${folder.name}"
+                                            stringResource(R.string.folder_selection_collapse, folder.name)
                                         } else {
-                                            "Expand ${folder.name}"
+                                            stringResource(R.string.folder_selection_expand, folder.name)
                                         }
                                     )
                                 }
@@ -278,12 +277,12 @@ fun FolderSelectionScreen(
                                 folder.songCount
                             )
                             val countDescription = if (folder.hasChildren) {
-                                "$songCountText in this folder tree"
+                                pluralStringResource(R.plurals.folder_selection_songs_in_tree, folder.songCount, folder.songCount)
                             } else {
                                 songCountText
                             }
                             Text(
-                                text = "$countDescription\n${folder.path}",
+                                text = stringResource(R.string.folder_selection_song_count_and_path, countDescription, folder.path),
                                 style = MaterialTheme.typography.bodySmall
                             )
                         },
@@ -300,11 +299,6 @@ fun FolderSelectionScreen(
     }
 }
 
-internal fun selectedFolderCountText(count: Int): String = when (count) {
-    1 -> "1 folder selected."
-    else -> "$count folders selected."
-}
-
 @Composable
 private fun FolderArtworkOnboardingSection(
     treeUri: Uri?,
@@ -319,23 +313,21 @@ private fun FolderArtworkOnboardingSection(
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Text(
-            text = "Folder artwork (optional)",
+            text = stringResource(R.string.folder_selection_artwork_optional),
             style = MaterialTheme.typography.titleMedium
         )
         Text(
-            text = "Embedded artwork inside your audio files works automatically. Allow " +
-                    "access only if you also want Sazanami to use separate cover.jpg, " +
-                    "folder.jpg, and similar images stored alongside music.",
+            text = stringResource(R.string.folder_selection_artwork_explanation),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp)
         )
         Text(
             text = when {
-                treeUri != null -> folderArtworkLocationLabel(treeUri)
+                treeUri != null -> folderArtworkLocationLabel(LocalResources.current, treeUri)
                 onboardingComplete ->
-                    "Skipped for now. You can enable it later in Settings."
-                else -> "No additional folder access granted."
+                    stringResource(R.string.folder_selection_artwork_skipped)
+                else -> stringResource(R.string.folder_selection_artwork_no_access)
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -350,9 +342,9 @@ private fun FolderArtworkOnboardingSection(
         ) {
             Text(
                 if (treeUri != null) {
-                    "Change artwork folder"
+                    stringResource(R.string.folder_selection_change_artwork)
                 } else {
-                    "Allow folder artwork access"
+                    stringResource(R.string.folder_selection_allow_artwork)
                 }
             )
         }
@@ -364,7 +356,7 @@ private fun FolderArtworkOnboardingSection(
                     .fillMaxWidth()
                     .padding(top = 8.dp)
             ) {
-                Text("Not now")
+                Text(stringResource(R.string.folder_selection_not_now))
             }
         }
     }

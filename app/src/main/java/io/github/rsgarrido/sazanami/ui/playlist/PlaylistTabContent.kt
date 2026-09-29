@@ -14,10 +14,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.rsgarrido.sazanami.data.Playlist
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.PlaylistFolder
 import io.github.rsgarrido.sazanami.data.PlaylistSong
 import io.github.rsgarrido.sazanami.data.Song
@@ -147,7 +149,7 @@ fun PlaylistsTabContent(
             playlist.playlistId == visiblePlaylistId
         } ?: Playlist(
             playlistId = visiblePlaylistId,
-            name = if (stateMatchesSelection) selectedPlaylistName else "Playlist",
+            name = if (stateMatchesSelection) selectedPlaylistName else stringResource(R.string.playlist_generic_name),
             songCount = scopedPlaylistSongRows.size,
             totalDuration = scopedPlaylistSongRows.sumOf { it.duration.coerceAtLeast(0L) },
             automaticArtworkSongs = availablePlaylistSongs.distinctBy { song ->

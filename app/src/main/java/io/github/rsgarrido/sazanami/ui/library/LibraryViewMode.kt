@@ -18,10 +18,12 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.AppShellIconButton
 import io.github.rsgarrido.sazanami.ui.AppShellAccent
 import io.github.rsgarrido.sazanami.ui.AppShellIcons
@@ -68,8 +70,6 @@ enum class LibraryViewOption(
     GRID_4(LibraryViewMode.GRID, 4),
     GRID_5(LibraryViewMode.GRID, 5);
 
-    val label: String
-        get() = if (this == LIST) "List" else "Grid: $gridColumnCount columns"
 }
 
 internal fun libraryViewOptions(adaptiveGrid: Boolean): List<LibraryViewOption> =
@@ -79,8 +79,12 @@ internal fun libraryViewOptions(adaptiveGrid: Boolean): List<LibraryViewOption> 
         LibraryViewOption.entries
     }
 
-internal fun LibraryViewOption.displayLabel(adaptiveGrid: Boolean): String =
-    if (adaptiveGrid && viewMode == LibraryViewMode.GRID) "Grid (responsive)" else label
+@Composable
+internal fun LibraryViewOption.displayLabel(adaptiveGrid: Boolean): String = when {
+    adaptiveGrid && viewMode == LibraryViewMode.GRID -> stringResource(R.string.library_view_grid_responsive)
+    this == LibraryViewOption.LIST -> stringResource(R.string.library_view_list)
+    else -> stringResource(R.string.library_view_grid_columns, gridColumnCount ?: 0)
+}
 
 fun LibraryTab.viewCategory(): LibraryViewCategory? {
     return when (this) {
@@ -105,12 +109,12 @@ fun LibraryViewOptionsButton(
     onClick: () -> Unit
 ) {
     val description = if (viewMode == LibraryViewMode.LIST) {
-        "View options, currently list"
+        stringResource(R.string.library_view_current_list)
     } else {
         if (adaptiveGrid) {
-            "View options, currently responsive grid"
+            stringResource(R.string.library_view_current_responsive_grid)
         } else {
-            "View options, currently grid, $gridColumnCount columns"
+            stringResource(R.string.library_view_current_grid_columns, gridColumnCount)
         }
     }
     AppShellIconButton(
@@ -148,7 +152,7 @@ fun LibraryViewOptionsSheet(
             verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             Text(
-                text = "VIEW OPTIONS",
+                text = stringResource(R.string.library_view_options),
                 style = AppShellTypography.Eyebrow,
                 color = AppShellAccent,
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
@@ -227,7 +231,7 @@ private fun LibraryViewOptionRow(
             if (isSelected) {
                 Icon(
                     imageVector = Icons.Filled.Check,
-                    contentDescription = "Selected",
+                    contentDescription = stringResource(R.string.core_selected),
                     modifier = Modifier.size(20.dp),
                     tint = AppShellAccent
                 )
