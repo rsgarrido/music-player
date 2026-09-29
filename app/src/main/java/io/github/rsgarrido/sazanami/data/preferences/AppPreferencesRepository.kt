@@ -584,6 +584,7 @@ class AppPreferencesRepository private constructor(
     suspend fun replaceAll(restored: AppPreferencesState) = edit { preferences ->
         preferences.clear()
         preferences.writeAppFont(restored.appFont)
+        preferences[Keys.appAppearance] = restored.appAppearance.storageValue
         preferences[Keys.selectedPlayerTheme] = restored.selectedPlayerTheme.id
         preferences[Keys.modernArtworkTransitionStyle] =
             restored.modernArtworkTransitionStyle.storageValue

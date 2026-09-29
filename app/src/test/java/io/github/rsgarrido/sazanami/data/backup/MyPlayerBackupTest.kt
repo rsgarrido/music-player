@@ -36,7 +36,7 @@ import org.junit.Test
 
 class MyPlayerBackupTest {
     @Test
-    fun schema16RoundTripPreservesAllMyPlayerFieldsWhenMyPlayerIsActive() {
+    fun currentSchemaRoundTripPreservesAllMyPlayerFieldsWhenMyPlayerIsActive() {
         val saved = customizedAppearance()
         val source = AppPreferencesState(
             modernPlayerAppearance = saved,
@@ -47,7 +47,7 @@ class MyPlayerBackupTest {
         val decoded = roundTrip(BackupPreferences().withMyPlayerAppearance(source))
         val restored = restoreModernAppearance(decoded.preferences)
 
-        assertEquals(16, decoded.schemaVersion)
+        assertEquals(AppBackupJson.CURRENT_SCHEMA_VERSION, decoded.schemaVersion)
         assertEquals("MY_PLAYER", decoded.preferences.modernActiveAppearanceChoice)
         assertEquals(saved, restored.myPlayerAppearance)
         assertEquals(saved, restored.modernPlayerAppearance)
@@ -55,7 +55,7 @@ class MyPlayerBackupTest {
     }
 
     @Test
-    fun schema16BuiltInActiveKeepsSavedMyPlayerThroughRestoreAndSwitchBack() {
+    fun currentSchemaBuiltInActiveKeepsSavedMyPlayerThroughRestoreAndSwitchBack() {
         val saved = customizedAppearance()
         val source = AppPreferencesState(
             modernPlayerAppearance = ModernAppearancePreset.MINIMAL.appearance(),
@@ -99,7 +99,7 @@ class MyPlayerBackupTest {
         assertFalse(encodedV15.contains("modernActiveAppearanceChoice"))
 
         val migrated = AppBackupJson.decodeBackup(encodedV15)
-        assertEquals(16, migrated.schemaVersion)
+        assertEquals(AppBackupJson.CURRENT_SCHEMA_VERSION, migrated.schemaVersion)
         assertEquals("MY_PLAYER", migrated.preferences.modernActiveAppearanceChoice)
 
         val existing = mutablePreferencesOf()

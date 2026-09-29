@@ -1,5 +1,6 @@
 package io.github.rsgarrido.sazanami.data.backup
 
+import io.github.rsgarrido.sazanami.data.preferences.AppAppearance
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
@@ -39,6 +40,7 @@ data class BackupVisualAssetPayload(
 data class BackupPreferences(
     val folderSelectionMode: String = "",
     val selectedLibraryFolders: List<String> = emptyList(),
+    val appAppearance: String = AppAppearance.DARK.storageValue,
     val selectedPlayerThemeId: String = "",
     val replayGainMode: String = "",
     val audioOffloadPreference: String = "",

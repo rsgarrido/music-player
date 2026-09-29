@@ -39,6 +39,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.rsgarrido.sazanami.data.preferences.AppPreferencesRepository
 import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.ui.SystemBarIconAppearanceEffect
+import io.github.rsgarrido.sazanami.ui.SystemBarSurface
+import io.github.rsgarrido.sazanami.ui.shouldUseDarkSystemBarIcons
 import io.github.rsgarrido.sazanami.ui.theme.SazanamiTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -73,7 +76,12 @@ class NowPlayingWidgetConfigurationActivity : ComponentActivity() {
         setContent {
             val appPreferences by appPreferencesRepository.state.collectAsStateWithLifecycle()
             val systemIsDark = isSystemInDarkTheme()
-            SazanamiTheme(darkTheme = appPreferences.appAppearance.isDark(systemIsDark)) {
+            val shellIsDark = appPreferences.appAppearance.isDark(systemIsDark)
+            SystemBarIconAppearanceEffect(
+                window = window,
+                darkIcons = shouldUseDarkSystemBarIcons(shellIsDark, SystemBarSurface.SHELL)
+            )
+            SazanamiTheme(darkTheme = shellIsDark) {
                 var isSaving by remember { mutableStateOf(false) }
                 var saveFailed by remember { mutableStateOf(false) }
                 WidgetConfigurationScreen(
