@@ -6,13 +6,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.drawWithCache
 import kotlin.math.max
 
 @Composable
 fun Modifier.appShellBackground(): Modifier {
-    val background = MaterialTheme.colorScheme.surfaceContainerLowest
-    val surface = MaterialTheme.colorScheme.surfaceContainerLow
+    val scheme = MaterialTheme.colorScheme
+    val lightShell = scheme.background.luminance() > 0.5f
+    val background = if (lightShell) scheme.background else scheme.surfaceContainerLowest
+    val surface = if (lightShell) scheme.surfaceContainer else scheme.surfaceContainerLow
     val accent = AppShellAccent
 
     return drawWithCache {

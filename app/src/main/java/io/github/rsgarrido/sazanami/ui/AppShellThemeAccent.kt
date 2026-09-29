@@ -14,34 +14,48 @@ import io.github.rsgarrido.sazanami.ui.theme.SazanamiAccent
 import io.github.rsgarrido.sazanami.ui.theme.SazanamiSurfaceHigh
 
 private const val MinimumShellAccentContrast = 4.5f
+internal const val ChartAccentMinimumContrast = 3f
 
 internal val LocalAppShellAccent = staticCompositionLocalOf { SazanamiAccent }
+internal val LocalAppShellChartAccent = staticCompositionLocalOf { SazanamiAccent }
 
 val AppShellAccent: Color
     @Composable
     @ReadOnlyComposable
     get() = LocalAppShellAccent.current
 
+val AppShellChartAccent: Color
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalAppShellChartAccent.current
+
 @Composable
 fun rememberAppShellAccent(
     playerTheme: PlayerTheme,
     tokens: PlayerThemeTokens?,
-    fallbackAccent: Color = MaterialTheme.colorScheme.primary
+    fallbackAccent: Color = MaterialTheme.colorScheme.primary,
+    minimumContrast: Float = MinimumShellAccentContrast,
+    contrastSurface: Color? = null
 ): Color {
     val scheme = MaterialTheme.colorScheme
-    val surfaces = listOf(
-        scheme.background,
-        scheme.surfaceContainerLow,
-        scheme.surfaceContainerHigh,
-        scheme.surfaceContainerHighest
-    )
-    return remember(playerTheme, tokens, fallbackAccent, surfaces, scheme.onSurface) {
+    val surfaces = if (contrastSurface == null) {
+        listOf(
+            scheme.background,
+            scheme.surfaceContainerLow,
+            scheme.surfaceContainerHigh,
+            scheme.surfaceContainerHighest
+        )
+    } else {
+        listOf(contrastSurface)
+    }
+    return remember(playerTheme, tokens, fallbackAccent, surfaces, scheme.onSurface, minimumContrast) {
         resolveAppShellAccent(
             playerTheme = playerTheme,
             tokens = tokens,
             fallbackAccent = fallbackAccent,
             surfaces = surfaces,
-            foreground = scheme.onSurface
+            foreground = scheme.onSurface,
+            minimumContrast = minimumContrast
         )
     }
 }
@@ -51,7 +65,8 @@ internal fun resolveAppShellAccent(
     tokens: PlayerThemeTokens?,
     fallbackAccent: Color = SazanamiAccent,
     surfaces: List<Color> = listOf(SazanamiSurfaceHigh),
-    foreground: Color = Color.White
+    foreground: Color = Color.White,
+    minimumContrast: Float = MinimumShellAccentContrast
 ): Color {
     val tokenAccent = when (playerTheme) {
         PlayerTheme.DEFAULT -> null
@@ -61,24 +76,35 @@ internal fun resolveAppShellAccent(
         PlayerTheme.RETRO_RACK -> tokens?.accentColor
         PlayerTheme.POCKET_DISC -> tokens?.secondaryAccentColor ?: tokens?.accentColor
     }
-    return ensureReadableShellAccent(tokenAccent ?: fallbackAccent, surfaces, foreground)
+    return ensureReadableShellAccent(
+        tokenAccent ?: fallbackAccent,
+        surfaces,
+        foreground,
+        minimumContrast
+    )
 }
 
 private fun ensureReadableShellAccent(
     accent: Color,
     surfaces: List<Color>,
-    foreground: Color
+    foreground: Color,
+    minimumContrast: Float
 ): Color {
     var readableAccent = accent.copy(alpha = 1f)
+    val adjustment = if (foreground.luminance() < 0.5f) Color.Black else foreground
     repeat(20) {
         if (surfaces.all { surface ->
-                contrastRatio(readableAccent, surface) >= MinimumShellAccentContrast
+                contrastRatio(readableAccent, surface) >= minimumContrast
             }) {
             return readableAccent
         }
-        readableAccent = lerp(readableAccent, foreground, 0.12f)
+        readableAccent = lerp(
+            readableAccent,
+            adjustment,
+            if (adjustment == Color.Black) 0.08f else 0.12f
+        )
     }
-    return foreground
+    return adjustment
 }
 
 private fun contrastRatio(first: Color, second: Color): Float {

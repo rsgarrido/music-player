@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -29,12 +30,14 @@ fun ModernMiniPlayer(
     morphCallbacks: DefaultMiniPlayerMorphCallbacks? = null,
     morphOwnsVisuals: Boolean = false
 ) {
+    val scheme = MaterialTheme.colorScheme
+    val lightShell = scheme.background.luminance() > 0.5f
     MiniPlayerScaffold(
         state = state,
         callbacks = callbacks,
         modifier = modifier,
-        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.76f),
+        containerColor = if (lightShell) scheme.surfaceContainerLow else scheme.surfaceContainerHighest,
+        borderColor = scheme.outlineVariant.copy(alpha = if (lightShell) 1f else 0.76f),
         tonalElevation = 4.dp,
         defaultMorphCallbacks = morphCallbacks,
         onSurfaceBoundsChanged = { bounds ->

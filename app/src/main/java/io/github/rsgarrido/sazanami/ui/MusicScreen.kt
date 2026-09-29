@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import android.content.Intent
@@ -79,6 +81,7 @@ import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokens
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
+import io.github.rsgarrido.sazanami.ui.theme.SazanamiAccent
 import io.github.rsgarrido.sazanami.ui.player.rememberPlayerLyricsTransitionState
 import io.github.rsgarrido.sazanami.ui.player.PlayerMorphHost
 import io.github.rsgarrido.sazanami.ui.player.playerEndpointInput
@@ -814,8 +817,20 @@ internal fun MusicScreen(
         playerTheme = selectedPlayerTheme,
         tokens = selectedPlayerThemeTokens
     )
+    val appShellChartAccent = if (MaterialTheme.colorScheme.background.luminance() > 0.5f) {
+        rememberAppShellAccent(
+            playerTheme = selectedPlayerTheme,
+            tokens = selectedPlayerThemeTokens,
+            fallbackAccent = SazanamiAccent,
+            minimumContrast = ChartAccentMinimumContrast,
+            contrastSurface = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    } else {
+        appShellAccent
+    }
     CompositionLocalProvider(
         LocalAppShellAccent provides appShellAccent,
+        LocalAppShellChartAccent provides appShellChartAccent,
         LocalLibrarySelectionUi provides librarySelectionUi.copy(
             headerState = librarySelectionHeaderState,
             onPlayNext = { selectedSongs ->

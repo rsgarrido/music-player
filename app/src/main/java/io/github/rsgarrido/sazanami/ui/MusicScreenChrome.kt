@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -124,14 +125,16 @@ fun AppShellIconButton(
     modifier: Modifier = Modifier,
     accented: Boolean = false
 ) {
+    val scheme = MaterialTheme.colorScheme
+    val lightShell = scheme.background.luminance() > 0.5f
     Surface(
         onClick = onClick,
         modifier = modifier.size(48.dp),
         shape = RoundedCornerShape(14.dp),
         color = if (accented) {
-            AppShellAccent.copy(alpha = 0.15f)
+            AppShellAccent.copy(alpha = if (lightShell) 0.2f else 0.15f)
         } else {
-            MaterialTheme.colorScheme.surfaceContainerHigh
+            if (lightShell) scheme.surfaceContainerLow else scheme.surfaceContainerHigh
         },
         contentColor = if (accented) {
             AppShellAccent
@@ -141,9 +144,9 @@ fun AppShellIconButton(
         border = BorderStroke(
             1.dp,
             if (accented) {
-                AppShellAccent.copy(alpha = 0.36f)
+                AppShellAccent.copy(alpha = if (lightShell) 0.46f else 0.36f)
             } else {
-                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.72f)
+                scheme.outlineVariant.copy(alpha = if (lightShell) 1f else 0.72f)
             }
         )
     ) {

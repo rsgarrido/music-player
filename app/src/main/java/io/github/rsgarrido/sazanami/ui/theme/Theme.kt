@@ -34,10 +34,10 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = SazanamiAccentContainer,
-    onPrimary = SazanamiOnAccentContainer,
-    primaryContainer = SazanamiOnAccentContainer,
-    onPrimaryContainer = SazanamiOnAccent,
+    primary = SazanamiLightPrimary,
+    onPrimary = Color.White,
+    primaryContainer = SazanamiLightPrimaryContainer,
+    onPrimaryContainer = SazanamiAccentContainer,
     inversePrimary = SazanamiAccent,
     secondary = SazanamiLightSecondary,
     onSecondary = SazanamiLightOnSecondary,
@@ -62,7 +62,7 @@ private val LightColorScheme = lightColorScheme(
     errorContainer = SazanamiLightErrorContainer,
     onErrorContainer = SazanamiLightOnErrorContainer,
     scrim = Color.Black,
-    surfaceTint = SazanamiAccentContainer,
+    surfaceTint = SazanamiLightPrimary,
     surfaceBright = SazanamiLightSurface,
     surfaceDim = SazanamiLightSurfaceHighest,
     surfaceContainerLowest = SazanamiLightSurface,
