@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="rated_filter_stars">
+        <item quantity="one">%1$d estrella</item>
+        <item quantity="other">%1$d estrellas</item>
+    </plurals>
+    <plurals name="library_search_see_all_songs">
+        <item quantity="one">Ver %1$d canción</item>
+        <item quantity="other">Ver las %1$d canciones</item>
+    </plurals>
+    <plurals name="library_search_see_all_albums">
+        <item quantity="one">Ver %1$d álbum</item>
+        <item quantity="other">Ver los %1$d álbumes</item>
+    </plurals>
+    <plurals name="library_search_see_all_artists">
+        <item quantity="one">Ver %1$d artista</item>
+        <item quantity="other">Ver los %1$d artistas</item>
+    </plurals>
+    <plurals name="library_search_see_all_playlists">
+        <item quantity="one">Ver %1$d lista de reproducción</item>
+        <item quantity="other">Ver las %1$d listas de reproducción</item>
+    </plurals>
+    <plurals name="library_search_artist_subtitle">
+        <item quantity="one">Artista · %1$d canción</item>
+        <item quantity="other">Artista · %1$d canciones</item>
+    </plurals>
+    <plurals name="library_search_playlist_subtitle">
+        <item quantity="one">Lista de reproducción · %1$d canción</item>
+        <item quantity="other">Lista de reproducción · %1$d canciones</item>
+    </plurals>
+    <plurals name="core_song_count">
+        <item quantity="one">%1$d canción</item>
+        <item quantity="other">%1$d canciones</item>
+    </plurals>
+    <plurals name="settings_library_song_count">
+        <item quantity="one">%1$d canción en tu biblioteca actual</item>
+        <item quantity="other">%1$d canciones en tu biblioteca actual</item>
+    </plurals>
+    <plurals name="settings_crossfade_seconds">
+        <item quantity="one">%1$d segundo</item>
+        <item quantity="other">%1$d segundos</item>
+    </plurals>
+    <plurals name="settings_all_folder_sources">
+        <item quantity="one">Todas las carpetas · %1$d fuente</item>
+        <item quantity="other">Todas las carpetas · %1$d fuentes</item>
+    </plurals>
+    <plurals name="settings_all_except_folder_sources">
+        <item quantity="one">Todas excepto %1$d · %2$d fuente</item>
+        <item quantity="other">Todas excepto %1$d · %2$d fuentes</item>
+    </plurals>
+    <plurals name="settings_no_folder_sources_selected">
+        <item quantity="one">Ninguna carpeta seleccionada · %1$d fuente</item>
+        <item quantity="other">Ninguna carpeta seleccionada · %1$d fuentes</item>
+    </plurals>
+    <plurals name="settings_folder_roots_selected">
+        <item quantity="one">%1$d carpeta raíz seleccionada</item>
+        <item quantity="other">%1$d carpetas raíz seleccionadas</item>
+    </plurals>
+    <plurals name="settings_scan_added">
+        <item quantity="one">%1$d agregada</item>
+        <item quantity="other">%1$d agregadas</item>
+    </plurals>
+    <plurals name="settings_scan_updated">
+        <item quantity="one">%1$d actualizada</item>
+        <item quantity="other">%1$d actualizadas</item>
+    </plurals>
+    <plurals name="settings_scan_moved">
+        <item quantity="one">%1$d movida</item>
+        <item quantity="other">%1$d movidas</item>
+    </plurals>
+    <plurals name="settings_scan_removed">
+        <item quantity="one">%1$d eliminada</item>
+        <item quantity="other">%1$d eliminadas</item>
+    </plurals>
+    <plurals name="folder_selection_selected_count">
+        <item quantity="one">%1$d carpeta seleccionada.</item>
+        <item quantity="other">%1$d carpetas seleccionadas.</item>
+    </plurals>
+    <plurals name="folder_selection_exclusions">
+        <item quantity="one">Se incluyen todas las carpetas excepto %1$d exclusión.</item>
+        <item quantity="other">Se incluyen todas las carpetas excepto %1$d exclusiones.</item>
+    </plurals>
+    <plurals name="folder_selection_roots_included">
+        <item quantity="one">%1$d carpeta raíz incluida.</item>
+        <item quantity="other">%1$d carpetas raíz incluidas.</item>
+    </plurals>
+    <plurals name="folder_selection_songs_in_tree">
+        <item quantity="one">%1$d canción en esta carpeta y sus subcarpetas</item>
+        <item quantity="other">%1$d canciones en esta carpeta y sus subcarpetas</item>
+    </plurals>
+    <plurals name="song_count">
+        <item quantity="one">%1$d canción</item>
+        <item quantity="other">%1$d canciones</item>
+    </plurals>
+    <plurals name="filtered_song_count">
+        <item quantity="one">%1$d de %2$d canción</item>
+        <item quantity="other">%1$d de %2$d canciones</item>
+    </plurals>
+    <plurals name="available_song_count">
+        <item quantity="one">%1$d canción disponible</item>
+        <item quantity="other">%1$d canciones disponibles</item>
+    </plurals>
+    <plurals name="song_label">
+        <item quantity="one">canción</item>
+        <item quantity="other">canciones</item>
+    </plurals>
+    <plurals name="album_label">
+        <item quantity="one">álbum</item>
+        <item quantity="other">álbumes</item>
+    </plurals>
+    <plurals name="artist_label">
+        <item quantity="one">artista</item>
+        <item quantity="other">artistas</item>
+    </plurals>
+    <plurals name="playlist_label">
+        <item quantity="one">lista de reproducción</item>
+        <item quantity="other">listas de reproducción</item>
+    </plurals>
+    <plurals name="sleep_timer_minutes_option">
+        <item quantity="one">%d minuto</item>
+        <item quantity="other">%d minutos</item>
+    </plurals>
+    <plurals name="playlist_folder_delete_explanation">
+        <item quantity="one">Se eliminará \"%1$s\". Su %2$d lista de reproducción pasará a la raíz; no se eliminará ninguna lista.</item>
+        <item quantity="other">Se eliminará \"%1$s\". Sus %2$d listas de reproducción pasarán a la raíz; no se eliminará ninguna lista.</item>
+    </plurals>
+    <plurals name="playlist_song_count_all_added">
+        <item quantity="one">%d canción · Ya agregada</item>
+        <item quantity="other">%d canciones · Ya agregadas</item>
+    </plurals>
+    <plurals name="playlist_song_count_part_added">
+        <item quantity="one">%1$d canción · Ya agregadas de la selección: %2$d</item>
+        <item quantity="other">%1$d canciones · Ya agregadas de la selección: %2$d</item>
+    </plurals>
+    <plurals name="playlist_folder_count">
+        <item quantity="one">%d lista de reproducción</item>
+        <item quantity="other">%d listas de reproducción</item>
+    </plurals>
+    <plurals name="playlist_root_counts_one_playlist">
+        <item quantity="one">%1$d lista de reproducción · %2$d carpeta</item>
+        <item quantity="other">%1$d lista de reproducción · %2$d carpetas</item>
+    </plurals>
+    <plurals name="playlist_root_counts_many_playlists">
+        <item quantity="one">%1$d listas de reproducción · %2$d carpeta</item>
+        <item quantity="other">%1$d listas de reproducción · %2$d carpetas</item>
+    </plurals>
+    <plurals name="playlist_import_success">
+        <item quantity="one">Se importó %1$d canción a %2$s</item>
+        <item quantity="other">Se importaron %1$d canciones a %2$s</item>
+    </plurals>
+    <plurals name="playlist_import_one_song_with_unmatched">
+        <item quantity="one">Se importó %1$d canción a %2$s. No se encontró coincidencia para %3$d entrada.</item>
+        <item quantity="other">Se importó %1$d canción a %2$s. No se encontró coincidencia para %3$d entradas.</item>
+    </plurals>
+    <plurals name="playlist_import_many_songs_with_unmatched">
+        <item quantity="one">Se importaron %1$d canciones a %2$s. No se encontró coincidencia para %3$d entrada.</item>
+        <item quantity="other">Se importaron %1$d canciones a %2$s. No se encontró coincidencia para %3$d entradas.</item>
+    </plurals>
+    <plurals name="playlist_export_success">
+        <item quantity="one">Se exportó %d canción</item>
+        <item quantity="other">Se exportaron %d canciones</item>
+    </plurals>
+    <plurals name="playlist_export_one_song_with_skipped">
+        <item quantity="one">Se exportó %1$d canción. Se omitió %2$d canción no disponible.</item>
+        <item quantity="other">Se exportó %1$d canción. Se omitieron %2$d canciones no disponibles.</item>
+    </plurals>
+    <plurals name="playlist_export_many_songs_with_skipped">
+        <item quantity="one">Se exportaron %1$d canciones. Se omitió %2$d canción no disponible.</item>
+        <item quantity="other">Se exportaron %1$d canciones. Se omitieron %2$d canciones no disponibles.</item>
+    </plurals>
+    <plurals name="playlist_export_none_with_skipped">
+        <item quantity="one">No se pudieron exportar canciones. Se omitió %d canción no disponible.</item>
+        <item quantity="other">No se pudieron exportar canciones. Se omitieron %d canciones no disponibles.</item>
+    </plurals>
+    <plurals name="library_folder_child_count">
+        <item quantity="one">%d carpeta</item>
+        <item quantity="other">%d carpetas</item>
+    </plurals>
+    <plurals name="library_queue_track_count">
+        <item quantity="one">%d canción</item>
+        <item quantity="other">%d canciones</item>
+    </plurals>
+    <plurals name="library_queue_track_count_with_title">
+        <item quantity="one">%1$d canción · %2$s</item>
+        <item quantity="other">%1$d canciones · %2$s</item>
+    </plurals>
+    <plurals name="library_selection_songs_title">
+        <item quantity="one">%d canción seleccionada</item>
+        <item quantity="other">%d canciones seleccionadas</item>
+    </plurals>
+    <plurals name="library_selection_songs_artwork">
+        <item quantity="one">%d canción seleccionada</item>
+        <item quantity="other">%d canciones seleccionadas</item>
+    </plurals>
+    <plurals name="library_selection_albums_title">
+        <item quantity="one">%d álbum seleccionado</item>
+        <item quantity="other">%d álbumes seleccionados</item>
+    </plurals>
+    <plurals name="library_selection_albums_artwork">
+        <item quantity="one">%d álbum seleccionado</item>
+        <item quantity="other">%d álbumes seleccionados</item>
+    </plurals>
+    <plurals name="library_selection_count">
+        <item quantity="one">%d elemento seleccionado</item>
+        <item quantity="other">%d elementos seleccionados</item>
+    </plurals>
+    <plurals name="library_organize_active_filters">
+        <item quantity="one">Organizar biblioteca, %d filtro activo</item>
+        <item quantity="other">Organizar biblioteca, %d filtros activos</item>
+    </plurals>
+    <plurals name="library_album_artist_song_count">
+        <item quantity="one">%1$s · %2$d canción</item>
+        <item quantity="other">%1$s · %2$d canciones</item>
+    </plurals>
+    <plurals name="rating_star_target">
+        <item quantity="one">%d estrella</item>
+        <item quantity="other">%d estrellas</item>
+    </plurals>
+</resources>
