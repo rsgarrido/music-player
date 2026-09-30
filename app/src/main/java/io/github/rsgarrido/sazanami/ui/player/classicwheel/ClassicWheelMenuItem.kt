@@ -1,8 +1,10 @@
 package io.github.rsgarrido.sazanami.ui.player.classicwheel
 
+import io.github.rsgarrido.sazanami.ui.state.UiMessage
+
 data class ClassicWheelMenuItem(
-    val title: String,
-    val subtitle: String? = null,
+    val title: UiMessage,
+    val subtitle: UiMessage? = null,
     val action: ClassicWheelMenuAction
 )
 

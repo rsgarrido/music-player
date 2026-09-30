@@ -22,6 +22,7 @@ import io.github.rsgarrido.sazanami.data.Playlist
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.PlaylistFolder
 import io.github.rsgarrido.sazanami.data.PlaylistSong
+import io.github.rsgarrido.sazanami.data.SmartPlaylistTemplate
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.player.PlaybackShuffleMode
 import io.github.rsgarrido.sazanami.ui.library.LibraryDetailAnimatedContent
@@ -69,6 +70,9 @@ fun PlaylistsTabContent(
     modifier: Modifier = Modifier
 ) {
     val smartUi = LocalSmartPlaylistUi.current
+    val templateNameSuggestions = SmartPlaylistTemplate.entries.associateWith { template ->
+        stringResource(template.nameRes)
+    }
     var playlistPendingArtworkId by remember { mutableStateOf<Long?>(null) }
     var selectedFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var creationChooserVisible by remember { mutableStateOf(false) }
@@ -231,7 +235,7 @@ fun PlaylistsTabContent(
                 smartEditorRequest = SmartPlaylistEditorRequest(
                     folderId = creationFolderId,
                     model = template?.let {
-                        SmartPlaylistEditorModel.fromDraft(it.displayName, it.draft)
+                        SmartPlaylistEditorModel.fromDraft(templateNameSuggestions.getValue(it), it.draft)
                     } ?: SmartPlaylistEditorModel(),
                     template = template
                 )

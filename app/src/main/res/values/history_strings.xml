@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="history_import_back">Back</string>
+    <string name="history_import_title">Import listening history</string>
+    <string name="history_import_spotify_subtitle">Spotify Extended Streaming History</string>
+    <string name="history_import_checking">Checking earlier imports…</string>
+    <string name="history_import_checking_detail">Making sure any interrupted import is safe to continue.</string>
+    <string name="history_import_cleaning">Cleaning up unfinished import…</string>
+    <string name="history_import_cleaning_detail">Previously published history will remain unchanged.</string>
+    <string name="history_import_cancelling">Cancelling import…</string>
+    <string name="history_import_cancelling_detail">Cleaning up unfinished changes.</string>
+    <string name="history_import_cancel_confirm_title">Cancel import?</string>
+    <string name="history_import_cancel_confirm_detail">No new history from this import will be added.</string>
+    <string name="history_import_cancel_action">Cancel</string>
+    <string name="history_import_keep_importing">Keep importing</string>
+    <string name="history_import_spotify">Import from Spotify</string>
+    <string name="history_import_select_help">Select the JSON files from your Spotify Extended Streaming History export.</string>
+    <string name="history_import_local_privacy">Your listening history stays on this device.</string>
+    <string name="history_import_select_json">Select JSON files</string>
+    <string name="history_import_analysis_cancelled">Analysis was cancelled. No listening history was added.</string>
+    <string name="history_import_analyze">Analyze</string>
+    <string name="history_import_change_files">Change files</string>
+    <string name="history_import_analyzing">Analyzing listening history…</string>
+    <string name="history_import_preview">Preview</string>
+    <string name="history_import_records_found">Listening records found</string>
+    <string name="history_import_music_records">Music records</string>
+    <string name="history_import_new_records">New listening records</string>
+    <string name="history_import_already_imported">Already imported</string>
+    <string name="history_import_overlap_ignored">Overlap ignored</string>
+    <string name="history_import_unsupported">Unsupported / non-music</string>
+    <string name="history_import_invalid_records">Invalid records</string>
+    <string name="history_import_everything_imported">Everything in these files has already been imported.</string>
+    <string name="history_import_done">Done</string>
+    <string name="history_import_import_history">Import history</string>
+    <string name="history_import_preparing">Preparing…</string>
+    <string name="history_import_importing">Importing history…</string>
+    <string name="history_import_publishing">Publishing…</string>
+    <string name="history_import_finishing">Finishing…</string>
+    <string name="history_import_progress_description">%1$s of %2$s records</string>
+    <string name="history_import_complete">Import complete</string>
+    <string name="history_import_no_new_records">No new listening records were added. Everything selected was already in your history.</string>
+    <string name="history_import_imported">Imported</string>
+    <string name="history_import_skipped_non_music">Skipped non-music</string>
+    <string name="history_import_more">Import more</string>
+    <string name="history_import_cancelled">Import cancelled</string>
+    <string name="history_import_cancelled_detail">No new history from this import was added. Previously imported history is unchanged.</string>
+    <string name="history_import_try_again">Try again</string>
+    <string name="history_import_recovery_title">An earlier import didn\'t finish</string>
+    <string name="history_import_recovery_unverified">Sazanami couldn\'t verify or clean up an earlier import. Try again before starting a new import.</string>
+    <string name="history_import_recovery_detail">Sazanami can clean up its unfinished changes before starting another import. Published history will remain unchanged.</string>
+    <string name="history_import_cleanup_failed">Cleanup couldn\'t be completed. Try again.</string>
+    <string name="history_import_clean_up">Clean up</string>
+    <string name="history_import_error_account_data">This looks like Spotify\'s Account Data streaming history. Sazanami currently supports Extended Streaming History instead.</string>
+    <string name="history_import_error_unknown_json">These files don\'t appear to contain supported Spotify Extended Streaming History.</string>
+    <string name="history_import_error_malformed_json">One of the selected files couldn\'t be read as valid JSON.</string>
+    <string name="history_import_error_file_access">Sazanami could no longer access one of the selected files. Select the files again and retry.</string>
+    <string name="history_import_error_no_music">No music listening history was found in these files.</string>
+    <string name="history_import_error_failed">The import couldn\'t be completed. Unfinished changes were cleaned up and it is safe to try again.</string>
+    <string name="history_import_error_title">Import couldn\'t continue</string>
+    <string name="history_import_file_name">File: %1$s</string>
+    <string name="history_import_date_range">Date range</string>
+    <plurals name="history_import_files_selected"><item quantity="one">%1$s file selected</item><item quantity="other">%1$s files selected</item></plurals>
+    <plurals name="history_import_records_processed"><item quantity="one">%1$s record processed</item><item quantity="other">%1$s records processed</item></plurals>
+    <plurals name="history_import_reading_files"><item quantity="one">Reading %1$d selected file.</item><item quantity="other">Reading %1$d selected files.</item></plurals>
+    <plurals name="history_import_preview_summary"><item quantity="one">%1$s new listening record will be added. It will affect Statistics and remain on this device.</item><item quantity="other">%1$s new listening records will be added. They will affect Statistics and remain on this device.</item></plurals>
+    <plurals name="history_import_added_records"><item quantity="one">%1$s listening record was added to your history.</item><item quantity="other">%1$s listening records were added to your history.</item></plurals>
+    <string name="history_match_title">Match imported tracks</string>
+    <string name="history_match_subtitle">Connect imported listening history to songs in your library</string>
+    <string name="history_match_finding_description">Finding imported track matches</string>
+    <string name="history_match_finding">Finding possible matches…</string>
+    <string name="history_match_loading_help">Large listening histories may take a moment.</string>
+    <string name="history_match_dismiss">Dismiss</string>
+    <string name="history_match_search_hint">Search title, artist, or album</string>
+    <string name="history_match_tracks">Tracks</string>
+    <string name="history_match_albums">Albums</string>
+    <string name="history_match_artists">Artists</string>
+    <string name="history_match_historical_plays">Historical plays</string>
+    <string name="history_match_track_title">Track title</string>
+    <string name="history_match_artist">Artist</string>
+    <string name="history_match_album">Album</string>
+    <string name="history_match_all_review">All review</string>
+    <string name="history_match_title_formatting">Title formatting</string>
+    <string name="history_match_accent">Accent/diacritic</string>
+    <string name="history_match_similar_title">Similar title</string>
+    <string name="history_match_ambiguous">Ambiguous</string>
+    <plurals name="history_match_shown"><item quantity="one">%1$d shown</item><item quantity="other">%1$d shown</item></plurals>
+    <string name="history_match_clear">Clear</string>
+    <string name="history_match_link_selected">Link selected</string>
+    <string name="history_match_tab_review">Review %1$d</string>
+    <string name="history_match_tab_unmatched">Unmatched %1$d</string>
+    <string name="history_match_tab_linked">Linked %1$d</string>
+    <string name="history_match_selected_tab">%1$s, selected</string>
+    <string name="history_match_group_summary">%1$d imported · %2$d linked · %3$d review · %4$d unmatched</string>
+    <string name="history_match_collapse_group">Collapse group</string>
+    <string name="history_match_expand_group">Expand group</string>
+    <string name="history_match_collapse">Collapse</string>
+    <string name="history_match_expand">Expand</string>
+    <string name="history_match_collapse_track">Collapse imported track</string>
+    <string name="history_match_expand_track">Expand imported track</string>
+    <string name="history_match_select_track">Select %1$s</string>
+    <string name="history_match_linked_local_song">Linked local song</string>
+    <string name="history_match_unlink_description">Unlink %1$s from %2$s</string>
+    <string name="history_match_unlink_history">Unlink history</string>
+    <string name="history_match_ambiguous_warning">Multiple library versions may match. No track has been selected.</string>
+    <string name="history_match_select_this_track">Select this track</string>
+    <string name="history_match_link_history">Link history</string>
+    <string name="history_match_more_candidates">More possible matches exist. Search the library to review them.</string>
+    <string name="history_match_choose_library">Choose from library</string>
+    <string name="history_match_skip_later">Skip · review later</string>
+    <string name="history_match_spotify_import">Spotify import</string>
+    <string name="history_match_imported_history">Imported history</string>
+    <string name="history_match_first_listened">First listened %1$s</string>
+    <string name="history_match_last_listened">Last listened %1$s</string>
+    <string name="history_match_recorded_listening">Recorded listening %1$s</string>
+    <string name="history_match_album_missing">Album information is missing from the imported track.</string>
+    <string name="history_match_warning_description">Warning: %1$s</string>
+    <string name="history_match_no_library_songs">No available library songs found.</string>
+    <string name="history_match_confirm_link">Link imported history?</string>
+    <string name="history_match_confirm_batch">Link selected histories?</string>
+    <string name="history_match_confirm_unlink">Unlink imported history?</string>
+    <string name="history_match_connected_to">will be connected to:</string>
+    <string name="history_match_link_statistics">After linking, Statistics will combine this history with the local song.</string>
+    <string name="history_match_unlink_later">You can unlink this later.</string>
+    <string name="history_match_link_pair">%1$s → %2$s</string>
+    <string name="history_match_conflicts_not_overwritten">Existing or conflicting links will not be overwritten.</string>
+    <string name="history_match_unlink_these_later">You can unlink these later.</string>
+    <string name="history_match_unlink_statistics">Imported history will remain saved, but it will no longer be combined with this local song in Statistics.</string>
+    <string name="history_match_linked_to">Linked to %1$s</string>
+    <string name="history_match_unlink">Unlink</string>
+    <string name="history_match_evidence_strong">Title, artist, and album match</string>
+    <string name="history_match_evidence_canonical">Title, artist, and album match after typography normalization</string>
+    <string name="history_match_evidence_typography">Similar title</string>
+    <string name="history_match_evidence_incomplete">Some imported metadata is missing</string>
+    <string name="history_match_evidence_version">Possible different song version</string>
+    <string name="history_match_evidence_ambiguous">Multiple library versions may match</string>
+    <string name="history_match_warning_version">This may be a different version of the song.</string>
+    <string name="history_match_warning_ambiguous">Multiple library versions may match.</string>
+    <string name="history_match_empty_review">No review cases found</string>
+    <string name="history_match_empty_unmatched">No unmatched imported tracks found</string>
+    <string name="history_match_empty_linked">No linked imported tracks found</string>
+    <string name="history_match_empty_search">Try another track, artist, or album search.</string>
+    <string name="history_match_empty_review_help">Change the review filter or browse unmatched history.</string>
+    <string name="history_match_empty_unmatched_help">All imported tracks have a review candidate or are already linked.</string>
+    <string name="history_match_empty_linked_help">Confirmed and automatic matches will appear here.</string>
+    <string name="history_match_hours_minutes">%1$d hr %2$d min</string>
+    <string name="history_match_rating_conflict">These tracks have different ratings. After linking, the local song\'s %1$d-star rating will be used. The imported rating will remain saved.</string>
+    <string name="history_match_rating_source_only">This imported track has a rating, but the local song is unrated. After linking, the local song\'s rating will be used in Statistics. The historical rating remains saved if you unlink later.</string>
+    <plurals name="history_match_selected"><item quantity="one">%1$d selected</item><item quantity="other">%1$d selected</item></plurals>
+    <plurals name="history_match_select_review_matches"><item quantity="one">Select %1$d review match</item><item quantity="other">Select %1$d review matches</item></plurals>
+    <plurals name="history_match_album_count"><item quantity="one">%1$d album</item><item quantity="other">%1$d albums</item></plurals>
+    <plurals name="history_match_historical_play_count"><item quantity="one">%1$d historical play</item><item quantity="other">%1$d historical plays</item></plurals>
+    <plurals name="history_match_fragments"><item quantity="one">%1$d imported history fragment</item><item quantity="other">%1$d imported history fragments</item></plurals>
+    <plurals name="history_match_batch_summary"><item quantity="one">%1$d explicitly selected review match will be linked in one batch.</item><item quantity="other">%1$d explicitly selected review matches will be linked in one batch.</item></plurals>
+    <plurals name="history_match_more_count"><item quantity="one">And %1$d more.</item><item quantity="other">And %1$d more.</item></plurals>
+    <plurals name="history_match_link_all"><item quantity="one">Link all %1$d history</item><item quantity="other">Link all %1$d histories</item></plurals>
+    <plurals name="history_match_link_count"><item quantity="one">Link %1$d selected</item><item quantity="other">Link %1$d selected</item></plurals>
+    <plurals name="history_match_minutes"><item quantity="one">%1$d min</item><item quantity="other">%1$d min</item></plurals>
+    <string name="history_match_skipped_message">Skipped for now. It will return the next time you open this screen.</string>
+    <string name="history_match_unlinked_result">History unlinked. Statistics now treats it separately.</string>
+    <string name="history_match_already_unlinked_result">This imported history was already unlinked. The list has been refreshed.</string>
+    <string name="history_match_load_failed">Imported tracks couldn\'t be loaded. Try again.</string>
+    <string name="history_match_refresh_failed">The change was saved, but the list couldn\'t be refreshed. Try again.</string>
+    <string name="history_match_generic_refresh">The tracks changed before they could be linked. Review the matches again.</string>
+    <string name="history_match_failure_already_many">Some imported history has already been linked. Review the matches again.</string>
+    <string name="history_match_failure_already_one">This imported track has already been linked.</string>
+    <string name="history_match_failure_target_missing">That song is no longer available in your library. Choose another track.</string>
+    <string name="history_match_failure_source_many">Some imported history changed before it could be linked. Review the matches again.</string>
+    <string name="history_match_failure_source_one">This imported history is no longer available.</string>
+    <string name="history_match_batch_no_change">No selected histories were changed.</string>
+    <string name="history_match_batch_result">%1$d linked · %2$d already linked · %3$d conflicts · %4$d failed.</string>
+    <plurals name="history_match_linked_result"><item quantity="one">History linked. Statistics will now combine it with the local track.</item><item quantity="other">%1$d histories linked. Statistics will now combine them with the local track.</item></plurals>
+</resources>

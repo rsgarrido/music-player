@@ -1,4 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.retrorack
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -94,14 +96,14 @@ private fun RetroRackSharedContent(
         .size(with(density) { rect.width.toDp() }, with(density) { rect.height.toDp() })
     RetainedArtworkImage(
         model = song.albumArtUri,
-        contentDescription = "Album art for ${song.title}",
+        contentDescription = stringResource(R.string.player_album_art_for, song.title),
         contentScale = ContentScale.Crop,
         error = painterResource(android.R.drawable.ic_media_play),
         placeholder = painterResource(android.R.drawable.ic_media_play),
         modifier = Modifier.at(geometry.artwork).clip(RoundedCornerShape((3f * (1f - progress)).dp))
     )
     Text(
-        text = song.title.ifBlank { "Unknown Title" }.uppercase(),
+        text = song.title.ifBlank { stringResource(R.string.player_unknown_title) }.uppercase(),
         color = tokens.accentColor,
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Bold,
@@ -111,7 +113,7 @@ private fun RetroRackSharedContent(
         modifier = Modifier.at(geometry.title)
     )
     Text(
-        text = song.artist.ifBlank { "Unknown Artist" }.uppercase(),
+        text = song.artist.ifBlank { stringResource(R.string.player_unknown_artist) }.uppercase(),
         color = tokens.accentColor.copy(alpha = .65f),
         fontFamily = FontFamily.Monospace,
         fontSize = (9f + progress).sp,
@@ -172,7 +174,7 @@ private fun RetroRackSharedContent(
         IconButton(onClick = onPlayPauseClick, modifier = Modifier.fillMaxSize()) {
             Icon(
                 if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                 tint = tokens.displayTextColor
             )
         }

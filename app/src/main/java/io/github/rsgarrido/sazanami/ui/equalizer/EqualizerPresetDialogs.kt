@@ -1,5 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.equalizer
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,19 +44,19 @@ internal fun EqualizerPresetSelectorDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Choose preset") },
+        title = { Text(stringResource(R.string.eq_choose_preset_title)) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(
                     rememberScrollState()
                 )
             ) {
-                Text("Built-in presets")
+                Text(stringResource(R.string.eq_builtin_presets))
                 builtInEqualizerPresets.forEachIndexed {
                         index,
                         preset ->
                     ListItem(
-                        headlineContent = { Text(preset.name) },
+                        headlineContent = { Text(stringResource(preset.id.labelRes)) },
                         supportingContent = {
                             Text(
                                 preset.bandGainsDb.joinToString(
@@ -71,7 +74,7 @@ internal fun EqualizerPresetSelectorDialog(
                 }
                 if (userPresets.isNotEmpty()) {
                     Text(
-                        text = "User presets",
+                        text = stringResource(R.string.eq_user_presets),
                         modifier = Modifier.padding(top = 12.dp)
                     )
                 }
@@ -86,7 +89,7 @@ internal fun EqualizerPresetSelectorDialog(
                                     Icon(
                                         Icons.Default.Edit,
                                         contentDescription =
-                                            "Rename ${preset.name}"
+                                            stringResource(R.string.eq_rename_named_preset, preset.name)
                                     )
                                 }
                                 IconButton(
@@ -95,7 +98,7 @@ internal fun EqualizerPresetSelectorDialog(
                                     Icon(
                                         Icons.Default.Delete,
                                         contentDescription =
-                                            "Delete ${preset.name}"
+                                            stringResource(R.string.eq_delete_named_preset, preset.name)
                                     )
                                 }
                             }
@@ -110,7 +113,7 @@ internal fun EqualizerPresetSelectorDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close")
+                Text(stringResource(R.string.eq_close))
             }
         },
         confirmButton = {
@@ -120,7 +123,7 @@ internal fun EqualizerPresetSelectorDialog(
                     onSaveAs()
                 }
             ) {
-                Text("Save as preset")
+                Text(stringResource(R.string.eq_save_as_preset))
             }
         }
     )
@@ -151,9 +154,9 @@ internal fun EqualizerPresetNameDialog(
             OutlinedTextField(
                 value = name,
                 onValueChange = { updated -> name = updated },
-                label = { Text("Preset name") },
+                label = { Text(stringResource(R.string.eq_preset_name)) },
                 supportingText = validationError?.let { message ->
-                    { Text(message) }
+                    { Text(stringResource(message)) }
                 },
                 isError = validationError != null,
                 singleLine = true,
@@ -162,7 +165,7 @@ internal fun EqualizerPresetNameDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.eq_cancel))
             }
         },
         confirmButton = {
@@ -192,7 +195,7 @@ internal fun ConfirmEqualizerActionDialog(
         text = { Text(message) },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.eq_cancel))
             }
         },
         confirmButton = {
@@ -203,21 +206,22 @@ internal fun ConfirmEqualizerActionDialog(
     )
 }
 
+@StringRes
 internal fun presetNameValidationError(
     name: String,
     userPresets: List<UserEqualizerPreset>,
     excludingPresetId: String? = null
-): String? {
+): Int? {
     val normalized = name.trim()
-    if (normalized.isBlank()) return "Name cannot be blank."
+    if (normalized.isBlank()) return R.string.eq_name_blank
     if (normalized.length > 40) {
-        return "Name must be 40 characters or fewer."
+        return R.string.eq_name_too_long
     }
     if (
         normalized.lowercase() in
         GraphicEqualizerPresets.builtInNamesLowercase
     ) {
-        return "That name is used by a built-in preset."
+        return R.string.eq_name_builtin
     }
     if (
         userPresets.any { preset ->
@@ -225,7 +229,7 @@ internal fun presetNameValidationError(
                 preset.name.equals(normalized, ignoreCase = true)
         }
     ) {
-        return "A preset with that name already exists."
+        return R.string.eq_name_duplicate
     }
     return null
 }

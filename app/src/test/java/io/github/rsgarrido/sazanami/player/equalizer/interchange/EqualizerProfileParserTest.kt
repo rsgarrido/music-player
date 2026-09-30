@@ -2,7 +2,6 @@ package io.github.rsgarrido.sazanami.player.equalizer.interchange
 
 import io.github.rsgarrido.sazanami.player.equalizer.parametric.ParametricFilter
 import io.github.rsgarrido.sazanami.player.equalizer.parametric.gainDbOrNull
-import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -283,16 +282,14 @@ class EqualizerProfileParserTest {
 
     @Test
     fun phaseFRealisticFixtureMapsToTenAudibleFilters() {
-        val fixture = listOf(
-            File("docs/performance/phase-f-realistic-profile.txt"),
-            File("../docs/performance/phase-f-realistic-profile.txt")
-        ).firstOrNull(File::isFile)
-        requireNotNull(fixture) {
+        val fixture = requireNotNull(
+            javaClass.getResourceAsStream("/equalizer/phase-f-realistic-profile.txt")
+        ) {
             "Phase F realistic profile fixture is missing."
-        }
+        }.bufferedReader(Charsets.UTF_8).use { it.readText() }
 
         val result = EqualizerProfileParser.parse(
-            fixture.readText(),
+            fixture,
             idFactory = sequenceIds()
         )
         val mapped = result.declarations.mapNotNull {

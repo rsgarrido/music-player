@@ -96,7 +96,12 @@ fun buildLibraryAlbumDiscSections(
 
 fun buildLibraryAlbumArtistText(
     albumSongs: List<Song>
-): String {
+): String = representativeAlbumArtistText(albumSongs) ?: "Various Artists"
+
+internal fun LibraryAlbumGroup.hasRepresentativeArtist(): Boolean =
+    representativeAlbumArtistText(songs) != null
+
+private fun representativeAlbumArtistText(albumSongs: List<Song>): String? {
     val albumArtistText = chooseMostRepresentativeArtist(
         albumSongs.map { song ->
             song.albumArtist
@@ -111,7 +116,7 @@ fun buildLibraryAlbumArtistText(
         albumSongs.map { song ->
             song.artist
         }
-    ) ?: "Various Artists"
+    )
 }
 
 private fun buildFolderAlbumGroup(

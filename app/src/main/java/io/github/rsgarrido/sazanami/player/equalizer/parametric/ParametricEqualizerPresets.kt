@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.player.equalizer.parametric
 
 import io.github.rsgarrido.sazanami.player.equalizer.EqualizerPresetMatch
+import io.github.rsgarrido.sazanami.player.equalizer.EqualizerBuiltInPresetId
 import io.github.rsgarrido.sazanami.player.equalizer.normalizePresetName
 import java.util.UUID
 import kotlin.math.abs
@@ -88,7 +89,8 @@ internal object ParametricEqualizerPresetMatcher {
             )
         ) {
             return EqualizerPresetMatch(
-                name = ParametricEqualizerPresets.FLAT_NAME
+                name = ParametricEqualizerPresets.FLAT_NAME,
+                builtInId = EqualizerBuiltInPresetId.FLAT
             )
         }
         return state.userPresets

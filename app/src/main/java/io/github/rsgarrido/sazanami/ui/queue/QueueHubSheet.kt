@@ -208,7 +208,7 @@ fun QueueHubSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = message,
+                            text = stringResource(message),
                             color = MaterialTheme.colorScheme.onErrorContainer,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.weight(1f)
@@ -694,9 +694,9 @@ private fun QueueHubCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            queue.stateLabel?.let { stateLabel ->
+            queue.stateLabelRes?.let { stateLabelRes ->
                 Text(
-                    text = stateLabel,
+                    text = stringResource(stateLabelRes),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (queue.isActive) {
                         MaterialTheme.colorScheme.primary

@@ -1,4 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.pocketcassette
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -208,7 +210,7 @@ private fun PocketCassetteDeviceHeader(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Pocket Cassette // Audio",
+            text = stringResource(R.string.player_cassette_audio_brand),
                 color = PocketCassetteColors.shellInk,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Black,
@@ -218,7 +220,7 @@ private fun PocketCassetteDeviceHeader(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "STEREO  •  LOCAL  •  TAPE MODE",
+            text = stringResource(R.string.player_cassette_stereo_local_tape),
                 color = PocketCassetteColors.shellInk.copy(alpha = 0.66f),
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
@@ -256,7 +258,7 @@ private fun PocketCassetteStatusLamp(isPlaying: Boolean, compact: Boolean) {
             )
         }
         Text(
-            text = "RUN",
+            text = stringResource(R.string.player_cassette_run),
             color = PocketCassetteColors.shellInk.copy(alpha = 0.66f),
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -323,14 +325,14 @@ private fun PocketCassetteCloseButton(
                 indication = null,
                 enabled = enabled,
                 role = Role.Button,
-                onClickLabel = "Collapse player",
+            onClickLabel = stringResource(R.string.player_collapse),
                 onClick = onClick
             ),
         contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = Icons.Filled.Close,
-            contentDescription = "Collapse player",
+            contentDescription = stringResource(R.string.player_collapse),
             tint = PocketCassetteColors.buttonIcon,
             modifier = Modifier.size(if (compact) 20.dp else 22.dp)
         )
@@ -368,7 +370,7 @@ private fun PocketCassetteLowerSeam(
             )
         }
         Text(
-            text = "DC // 01",
+            text = stringResource(R.string.player_cassette_deck_mark),
             color = PocketCassetteColors.shellInk.copy(alpha = 0.55f),
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,

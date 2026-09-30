@@ -282,6 +282,7 @@ internal class PlaybackQueueCoordinator(
     private val persistence: PlaybackQueuePersistence,
     private val trackAccess: PlaybackQueueTrackAccess,
     private val runtime: PlaybackQueueRuntime,
+    private val generatedQueueName: (Int) -> String,
     private val queueIdFactory: () -> String = { java.util.UUID.randomUUID().toString() },
     private val onActiveQueueChanged: (String?) -> Unit = {}
 ) {
@@ -403,9 +404,7 @@ internal class PlaybackQueueCoordinator(
         val sourceQueueId = persistActiveQueueSnapshotLocked() ?: return@withLock null
         val source = persistence.loadQueue(sourceQueueId) ?: return@withLock null
         if (source.entries.isEmpty()) return@withLock null
-        val displayName = nextDefaultQueueName(
-            persistence.listQueues().map(PlaybackQueueEntity::displayName)
-        )
+        val displayName = nextDefaultQueueNameLocked()
         persistence.duplicateQueue(
             sourceQueueId = sourceQueueId,
             displayName = displayName
@@ -740,7 +739,7 @@ internal class PlaybackQueueCoordinator(
             }
             persistence.createQueue(
                 queueId = newQueueId,
-                displayName = DEFAULT_QUEUE_NAME,
+                displayName = generatedQueueName(1),
                 entries = drafts,
                 currentEntryId = currentEntryId,
                 currentPositionMs = position,
@@ -883,9 +882,7 @@ internal class PlaybackQueueCoordinator(
         if (identified.size != songs.size) return null
         val queueId = queueIdFactory()
         val resolvedDisplayName = displayName.trim().takeIf(String::isNotEmpty)
-            ?: nextDefaultQueueName(
-                persistence.listQueues().map(PlaybackQueueEntity::displayName)
-            )
+            ?: nextDefaultQueueNameLocked()
         val drafts = identified.mapIndexed { index, item ->
             item.toDraft(baseOrder = index, playbackOrder = index)
         }
@@ -1019,22 +1016,27 @@ internal class PlaybackQueueCoordinator(
         val identified: List<IdentifiedLivePlaybackQueueItem>
     )
 
-    companion object {
-        private const val DEFAULT_QUEUE_NAME = "Queue 1"
+    private suspend fun nextDefaultQueueNameLocked(): String {
+        val existingNames = persistence.listQueues().map(PlaybackQueueEntity::displayName)
+        return generatedQueueName(nextDefaultQueueNumber(existingNames, generatedQueueName))
     }
 }
 
-internal fun nextDefaultQueueName(existingNames: List<String>): String {
-    val pattern = Regex("Queue (\\d+)")
-    val highestGeneratedNumber = existingNames
-        .mapNotNull(pattern::matchEntire)
+internal fun nextDefaultQueueNumber(
+    existingNames: List<String>,
+    generatedQueueName: (Int) -> String
+): Int {
+    // Compatibility only: old persisted English queue names were the sole numbering record.
+    val legacyPattern = Regex("Queue (\\d+)")
+    val highestLegacyNumber = existingNames
+        .mapNotNull(legacyPattern::matchEntire)
         .mapNotNull { match -> match.groupValues[1].toIntOrNull() }
         .maxOrNull()
         ?: 0
-    var number = maxOf(existingNames.size + 1, highestGeneratedNumber + 1)
+    var number = maxOf(existingNames.size + 1, highestLegacyNumber + 1)
     val existing = existingNames.toSet()
-    while ("Queue $number" in existing) number += 1
-    return "Queue $number"
+    while (generatedQueueName(number) in existing) number += 1
+    return number
 }
 
 private fun Song.toLivePlaybackQueueItem(): LivePlaybackQueueItem {

@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -136,16 +138,16 @@ internal fun PocketFlipControlHalf(
             verticalAlignment = Alignment.CenterVertically
         ) {
             PocketFlipUtilitySwitch(
-                label = "QUEUE",
-                contentDescription = "Open queues",
+                label = stringResource(R.string.player_flip_queue),
+                contentDescription = stringResource(R.string.player_open_queues),
                 onClick = onOpenUpNextClick,
                 compact = compact,
                 enabled = inputEnabled
             )
             Spacer(modifier = Modifier.width(if (compact) 12.dp else 18.dp))
             PocketFlipUtilitySwitch(
-                label = "CLOSE",
-                contentDescription = "Collapse player",
+                label = stringResource(R.string.player_flip_close),
+                contentDescription = stringResource(R.string.player_collapse),
                 onClick = onCollapseClick,
                 compact = compact,
                 enabled = inputEnabled
@@ -176,7 +178,7 @@ private fun PocketFlipDirectionPad(
 
         PocketFlipPadHitTarget(
             icon = Icons.Filled.Shuffle,
-            contentDescription = if (isShuffleEnabled) "Disable shuffle" else "Enable shuffle",
+            contentDescription = stringResource(if (isShuffleEnabled) R.string.player_disable_shuffle else R.string.player_enable_shuffle),
             active = isShuffleEnabled,
             size = hitSize,
             onClick = onShuffleClick,
@@ -185,7 +187,7 @@ private fun PocketFlipDirectionPad(
         )
         PocketFlipPadHitTarget(
             icon = Icons.Filled.SkipPrevious,
-            contentDescription = "Previous track",
+            contentDescription = stringResource(R.string.player_previous_song),
             size = hitSize,
             onClick = onPreviousClick,
             enabled = inputEnabled,
@@ -193,7 +195,7 @@ private fun PocketFlipDirectionPad(
         )
         PocketFlipPadHitTarget(
             icon = Icons.Filled.SkipNext,
-            contentDescription = "Next track",
+            contentDescription = stringResource(R.string.player_next_song),
             size = hitSize,
             onClick = onNextClick,
             enabled = inputEnabled,
@@ -202,9 +204,9 @@ private fun PocketFlipDirectionPad(
         PocketFlipPadHitTarget(
             icon = if (repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
             contentDescription = when (repeatMode) {
-                RepeatMode.OFF -> "Enable repeat all"
-                RepeatMode.ALL -> "Enable repeat one"
-                RepeatMode.ONE -> "Disable repeat"
+                RepeatMode.OFF -> stringResource(R.string.player_enable_repeat_all)
+                RepeatMode.ALL -> stringResource(R.string.player_enable_repeat_one)
+                RepeatMode.ONE -> stringResource(R.string.player_disable_repeat)
             },
             active = repeatMode != RepeatMode.OFF,
             size = hitSize,
@@ -386,7 +388,7 @@ private fun PocketFlipActionCluster(
             PocketFlipRoundAction(
                 icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                 markCount = 1,
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                 faceSize = if (compact) 48.dp else 52.dp,
                 onClick = onPlayPauseClick,
                 enabled = inputEnabled && sharedOwner == PocketFlipSharedOwner.EXPANDED,
@@ -402,11 +404,7 @@ private fun PocketFlipActionCluster(
                     Icons.Filled.FavoriteBorder
                 },
                 markCount = 2,
-                contentDescription = if (isCurrentSongFavorite) {
-                    "Remove from favorites"
-                } else {
-                    "Add to favorites"
-                },
+                contentDescription = stringResource(if (isCurrentSongFavorite) R.string.player_remove_favorite else R.string.player_add_favorite),
                 faceSize = if (compact) 48.dp else 52.dp,
                 active = isCurrentSongFavorite,
                 enabled = inputEnabled,

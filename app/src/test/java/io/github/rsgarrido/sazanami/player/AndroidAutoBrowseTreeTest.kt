@@ -93,6 +93,20 @@ class AndroidAutoBrowseTreeTest {
         assertNotEquals("album:/private/music/album", first)
     }
 
+    @Test
+    fun `album artist fallback is semantic and does not classify a literal artist name`() {
+        val missing = buildAndroidAutoBrowseTree(
+            listOf(song(1, "One", "", "Album", "/missing")), "Sazanami"
+        ).findNode(ALBUMS_ID)!!.children.single()
+        val literal = buildAndroidAutoBrowseTree(
+            listOf(song(2, "Two", "Various Artists", "Album", "/literal")), "Sazanami"
+        ).findNode(ALBUMS_ID)!!.children.single()
+
+        assertEquals(AutoBrowseSubtitleFallback.VARIOUS_ARTISTS, missing.subtitleFallback)
+        assertEquals(null, literal.subtitleFallback)
+        assertEquals("Various Artists", literal.subtitle)
+    }
+
     private fun song(
         id: Long,
         title: String,

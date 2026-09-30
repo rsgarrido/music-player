@@ -1,5 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.playlist
 
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Playlist
 import io.github.rsgarrido.sazanami.data.PlaylistMembershipBehavior
 import io.github.rsgarrido.sazanami.data.PlaylistType
@@ -239,11 +240,9 @@ class SmartPlaylistEditorModelTest {
             PlaylistMembershipBehavior.GENERATED_SMART_LIVE
         )
 
-        assertEquals("Smart", playlistCollectionKindText(userSmart))
-        assertEquals("Smart Playlist • Updates automatically", playlistKindText(userSmart))
-        assertEquals("Smart Playlist • Updates automatically", playlistKindText(generatedLive))
-        assertFalse(playlistKindText(generatedLive).contains("Suggested"))
-        assertFalse(playlistKindText(generatedLive).contains("Live"))
+        assertEquals(R.string.smart_playlist_collection_smart, playlistCollectionKindRes(userSmart))
+        assertEquals(R.string.smart_playlist_updates_automatically, playlistKindBaseRes(userSmart.membershipBehavior))
+        assertEquals(R.string.smart_playlist_updates_automatically, playlistKindBaseRes(generatedLive.membershipBehavior))
     }
 
     private fun playlist(type: PlaylistType, behavior: PlaylistMembershipBehavior) = Playlist(

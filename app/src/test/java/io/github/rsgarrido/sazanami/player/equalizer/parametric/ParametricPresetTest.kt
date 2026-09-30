@@ -1,5 +1,6 @@
 package io.github.rsgarrido.sazanami.player.equalizer.parametric
 
+import io.github.rsgarrido.sazanami.player.equalizer.EqualizerBuiltInPresetId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
@@ -13,6 +14,10 @@ class ParametricPresetTest {
             ParametricEqualizerPresetMatcher.match(
                 ParametricEqualizerState()
             )?.name
+        )
+        assertEquals(
+            EqualizerBuiltInPresetId.FLAT,
+            ParametricEqualizerPresetMatcher.match(ParametricEqualizerState())?.builtInId
         )
         assertNull(
             ParametricEqualizerPresetMatcher.match(

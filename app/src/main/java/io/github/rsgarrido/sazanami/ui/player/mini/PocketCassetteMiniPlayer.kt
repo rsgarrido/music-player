@@ -94,7 +94,7 @@ fun PocketCassetteMiniPlayer(
                 Spacer(modifier = Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = displayedState.currentSong.miniTitle.uppercase(Locale.ROOT),
+                        text = displayedState.currentSong.localizedMiniTitle().uppercase(Locale.ROOT),
                         style = MaterialTheme.typography.labelMedium,
                         color = ink,
                         fontFamily = FontFamily.Monospace,
@@ -113,7 +113,7 @@ fun PocketCassetteMiniPlayer(
                             )
                     )
                     Text(
-                        text = displayedState.currentSong.miniArtist.uppercase(Locale.ROOT),
+                        text = displayedState.currentSong.localizedMiniArtist().uppercase(Locale.ROOT),
                         style = MaterialTheme.typography.labelSmall,
                         color = ink.copy(alpha = 0.7f),
                         fontFamily = FontFamily.Monospace,

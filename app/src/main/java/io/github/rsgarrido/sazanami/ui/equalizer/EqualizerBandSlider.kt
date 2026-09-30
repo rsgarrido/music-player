@@ -31,6 +31,8 @@ import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.player.equalizer.MAX_EQUALIZER_BAND_DB
 import io.github.rsgarrido.sazanami.player.equalizer.MIN_EQUALIZER_BAND_DB
 import io.github.rsgarrido.sazanami.player.equalizer.normalizeEqualizerDb
@@ -65,18 +67,18 @@ internal fun EqualizerBandSlider(
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
     val thumbColor = MaterialTheme.colorScheme.onSurface
     val zeroColor = thumbColor.copy(alpha = 0.55f)
+    val bandDescription = stringResource(
+        if (unavailable) R.string.eq_band_description_unavailable else R.string.eq_band_description,
+        formatEqualizerFrequency(frequencyHz),
+        formatEqualizerDb(gainDb)
+    )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .width(76.dp)
             .semantics {
-                contentDescription =
-                    equalizerBandAccessibilityText(
-                        frequencyHz,
-                        gainDb,
-                        unavailable
-                    )
+                contentDescription = bandDescription
                 progressBarRangeInfo = ProgressBarRangeInfo(
                     current = gainDb.toFloat(),
                     range = MIN_EQUALIZER_BAND_DB.toFloat()..
@@ -218,7 +220,7 @@ internal fun EqualizerBandSlider(
         }
         if (unavailable) {
             Text(
-                text = "Unavailable",
+                text = stringResource(R.string.eq_unavailable),
                 style = MaterialTheme.typography.labelSmall
             )
         }

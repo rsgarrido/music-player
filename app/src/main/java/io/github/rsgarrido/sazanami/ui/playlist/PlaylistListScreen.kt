@@ -828,14 +828,22 @@ private fun rootCollectionCountText(folderCount: Int, playlistCount: Int): Strin
     return pluralStringResource(pluralRes, folderCount, playlistCount, folderCount)
 }
 
+@Composable
 internal fun playlistCollectionKindText(playlist: Playlist): String =
     when {
-        playlist.type != PlaylistType.SMART -> "Manual"
+        playlist.type != PlaylistType.SMART -> stringResource(playlistCollectionKindRes(playlist))
         playlist.membershipBehavior ==
             io.github.rsgarrido.sazanami.data.PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT &&
-            playlist.generatedLastRefreshedAt != null ->
-            "Smart • Updated ${relativeUpdatedText(playlist.generatedLastRefreshedAt)}"
-        else -> "Smart"
+            playlist.generatedLastRefreshedAt != null -> {
+            val age = relativePlaylistAge(playlist.generatedLastRefreshedAt)
+            when (age.unit) {
+                PlaylistAgeUnit.NOW -> stringResource(R.string.smart_playlist_collection_updated_now)
+                PlaylistAgeUnit.MINUTE -> pluralStringResource(R.plurals.smart_playlist_collection_updated_minutes, age.count, age.count)
+                PlaylistAgeUnit.HOUR -> pluralStringResource(R.plurals.smart_playlist_collection_updated_hours, age.count, age.count)
+                PlaylistAgeUnit.DAY -> pluralStringResource(R.plurals.smart_playlist_collection_updated_days, age.count, age.count)
+            }
+        }
+        else -> stringResource(playlistCollectionKindRes(playlist))
     }
 
 internal fun playlistGridMetadataText(
@@ -845,23 +853,21 @@ internal fun playlistGridMetadataText(
 ): String = when {
     playlist.type != PlaylistType.SMART -> playlistMetadataText(resources, playlist)
     playlist.membershipBehavior == PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT &&
-        playlist.generatedLastRefreshedAt != null ->
-        "Smart \u2022 Updated ${compactRelativeUpdatedText(playlist.generatedLastRefreshedAt, now)}"
-    else -> "Smart"
+        playlist.generatedLastRefreshedAt != null -> {
+        val age = relativePlaylistAge(playlist.generatedLastRefreshedAt, now)
+        when (age.unit) {
+            PlaylistAgeUnit.NOW -> resources.getString(R.string.smart_playlist_grid_updated_now)
+            PlaylistAgeUnit.MINUTE -> resources.getQuantityString(R.plurals.smart_playlist_grid_updated_minutes, age.count, age.count)
+            PlaylistAgeUnit.HOUR -> resources.getQuantityString(R.plurals.smart_playlist_grid_updated_hours, age.count, age.count)
+            PlaylistAgeUnit.DAY -> resources.getQuantityString(R.plurals.smart_playlist_grid_updated_days, age.count, age.count)
+        }
+    }
+    else -> resources.getString(R.string.smart_playlist_collection_smart)
 }
 
-internal fun compactRelativeUpdatedText(timestamp: Long, now: Long = System.currentTimeMillis()): String {
-    val elapsed = (now - timestamp).coerceAtLeast(0L)
-    val minutes = elapsed / 60_000L
-    val hours = minutes / 60L
-    val days = hours / 24L
-    return when {
-        minutes < 1L -> "now"
-        minutes < 60L -> "${minutes}m"
-        hours < 24L -> "${hours}h"
-        else -> "${days}d"
-    }
-}
+internal fun playlistCollectionKindRes(playlist: Playlist): Int =
+    if (playlist.type == PlaylistType.SMART) R.string.smart_playlist_collection_smart
+    else R.string.smart_playlist_collection_manual
 
 internal enum class PlaylistSortField(
     @StringRes val labelRes: Int

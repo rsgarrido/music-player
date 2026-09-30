@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.ui.state.resolve
 
 @Composable
 fun ClassicWheelMenuDisplay(
@@ -89,7 +90,7 @@ private fun ClassicWheelMenuRow(
             modifier = Modifier.weight(1f)
         ) {
             Text(
-                text = item.title,
+                text = item.title.resolve(),
                 color = contentColor,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = if (isSelected) {
@@ -103,7 +104,7 @@ private fun ClassicWheelMenuRow(
 
             if (item.subtitle != null) {
                 Text(
-                    text = item.subtitle,
+                text = item.subtitle.resolve(),
                     color = contentColor.copy(alpha = 0.85f),
                     style = MaterialTheme.typography.labelMedium,
                     maxLines = 1,

@@ -1,5 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.playlist
+import android.util.Log
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.platform.LocalResources
 import io.github.rsgarrido.sazanami.R
 
@@ -121,7 +123,7 @@ fun PlaylistDetailScreen(
     var movePlaylistVisible by remember { mutableStateOf(false) }
     var isEditingOrder by remember { mutableStateOf(false) }
     var smartEditorData by remember(playlist.playlistId) { mutableStateOf<io.github.rsgarrido.sazanami.controller.SmartPlaylistUiData?>(null) }
-    var smartActionError by remember(playlist.playlistId) { mutableStateOf<String?>(null) }
+    var smartActionError by remember(playlist.playlistId) { mutableStateOf<Int?>(null) }
     var isRefreshingSnapshot by remember(playlist.playlistId) { mutableStateOf(false) }
     val smartUi = LocalSmartPlaylistUi.current
     var sortFieldName by rememberSaveable(playlist.playlistId) {
@@ -167,21 +169,27 @@ fun PlaylistDetailScreen(
                     })
                 }
                 if (playlist.membershipBehavior == PlaylistMembershipBehavior.USER_SMART_LIVE) {
-                    add(LibraryItemAction("Edit Smart Playlist", Icons.Filled.AutoAwesome) {
+                    add(LibraryItemAction(resources.getString(R.string.smart_playlist_edit_action), Icons.Filled.AutoAwesome) {
                         smartActionError = null
                         smartUi.onLoad(playlist.playlistId) { result ->
                             result.onSuccess { smartEditorData = it }
-                                .onFailure { smartActionError = it.message ?: "Unable to load Smart Playlist rules." }
+                                .onFailure { failure ->
+                                    Log.w("SmartPlaylist", "Unable to load rules", failure)
+                                    smartActionError = R.string.smart_playlist_load_rules_failed
+                                }
                         }
                     })
                 }
                 if (playlist.membershipBehavior == PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT) {
-                    add(LibraryItemAction("Refresh", Icons.Filled.Refresh) {
+                    add(LibraryItemAction(resources.getString(R.string.smart_playlist_refresh_action), Icons.Filled.Refresh) {
                         isRefreshingSnapshot = true
                         smartActionError = null
                         smartUi.onRefresh(playlist.playlistId) { result ->
                             isRefreshingSnapshot = false
-                            result.onFailure { smartActionError = it.message ?: "Unable to refresh this playlist." }
+                            result.onFailure { failure ->
+                                Log.w("SmartPlaylist", "Unable to refresh playlist", failure)
+                                smartActionError = R.string.smart_playlist_refresh_failed
+                            }
                         }
                     })
                 }
@@ -294,23 +302,24 @@ fun PlaylistDetailScreen(
                                 smartActionError = null
                                 smartUi.onRefresh(playlist.playlistId) { result ->
                                     isRefreshingSnapshot = false
-                                    result.onFailure {
-                                        smartActionError = it.message ?: "Unable to refresh this playlist."
+                                    result.onFailure { failure ->
+                                        Log.w("SmartPlaylist", "Unable to refresh playlist", failure)
+                                        smartActionError = R.string.smart_playlist_refresh_failed
                                     }
                                 }
                             }
                         } else null
                     )
-                    playlist.smartResolutionError?.let { error ->
+                    playlist.smartResolutionError?.let {
                         Text(
-                            text = error,
+                            text = stringResource(R.string.smart_playlist_unsupported_rules),
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                         )
                     }
-                    smartActionError?.let { error ->
+                    smartActionError?.let { errorRes ->
                         Text(
-                            text = error,
+                            text = stringResource(errorRes),
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                         )
@@ -490,7 +499,7 @@ private fun PlaylistDetailHero(
             onRefreshClick?.let { refresh ->
                 LibraryDetailAction(
                     icon = Icons.Filled.Refresh,
-                    label = if (isRefreshingSnapshot) "Refreshing" else "Refresh",
+                    label = stringResource(if (isRefreshingSnapshot) R.string.smart_playlist_refreshing else R.string.smart_playlist_refresh_action),
                     enabled = !isRefreshingSnapshot,
                     onClick = refresh
                 )
@@ -585,9 +594,11 @@ private fun PlaylistDetailEmptyState(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = playlist.smartResolutionError ?: if (playlist.songCount == 0) {
+            text = if (playlist.smartResolutionError != null) {
+                stringResource(R.string.smart_playlist_unsupported_rules)
+            } else if (playlist.songCount == 0) {
                 if (playlist.type == PlaylistType.SMART) {
-                    "No songs currently match this Smart Playlist."
+                    stringResource(R.string.smart_playlist_no_matching_songs)
                 } else {
                     stringResource(R.string.playlist_empty_detail)
                 }
@@ -600,33 +611,47 @@ private fun PlaylistDetailEmptyState(
     }
 }
 
+@Composable
 internal fun playlistKindText(playlist: Playlist): String = when (playlist.membershipBehavior) {
-    PlaylistMembershipBehavior.MANUAL -> "Manual playlist"
-    PlaylistMembershipBehavior.USER_SMART_LIVE -> "Smart Playlist • Updates automatically"
-    PlaylistMembershipBehavior.GENERATED_SMART_LIVE -> "Smart Playlist • Updates automatically"
-    PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT -> buildString {
-        append("Smart Playlist")
-        playlist.generatedLastRefreshedAt?.let { refreshedAt ->
-            append(" • Updated ")
-            append(relativeUpdatedText(refreshedAt))
+    PlaylistMembershipBehavior.MANUAL -> stringResource(playlistKindBaseRes(playlist.membershipBehavior))
+    PlaylistMembershipBehavior.USER_SMART_LIVE,
+    PlaylistMembershipBehavior.GENERATED_SMART_LIVE -> stringResource(playlistKindBaseRes(playlist.membershipBehavior))
+    PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT -> playlist.generatedLastRefreshedAt?.let {
+        val age = relativePlaylistAge(it)
+        when (age.unit) {
+            PlaylistAgeUnit.NOW -> stringResource(R.string.smart_playlist_updated_just_now)
+            PlaylistAgeUnit.MINUTE -> pluralStringResource(R.plurals.smart_playlist_updated_minutes, age.count, age.count)
+            PlaylistAgeUnit.HOUR -> pluralStringResource(R.plurals.smart_playlist_updated_hours, age.count, age.count)
+            PlaylistAgeUnit.DAY -> pluralStringResource(R.plurals.smart_playlist_updated_days, age.count, age.count)
         }
-    }
+    } ?: stringResource(R.string.smart_playlist_kind)
+}
+
+internal fun playlistKindBaseRes(behavior: PlaylistMembershipBehavior): Int = when (behavior) {
+    PlaylistMembershipBehavior.MANUAL -> R.string.playlist_kind_manual
+    PlaylistMembershipBehavior.USER_SMART_LIVE,
+    PlaylistMembershipBehavior.GENERATED_SMART_LIVE -> R.string.smart_playlist_updates_automatically
+    PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT -> R.string.smart_playlist_kind
 }
 
 internal fun allowsManualPlaylistActions(playlist: Playlist): Boolean =
     playlist.type == PlaylistType.MANUAL &&
         playlist.membershipBehavior == PlaylistMembershipBehavior.MANUAL
 
-internal fun relativeUpdatedText(timestamp: Long, now: Long = System.currentTimeMillis()): String {
+internal enum class PlaylistAgeUnit { NOW, MINUTE, HOUR, DAY }
+
+internal data class RelativePlaylistAge(val unit: PlaylistAgeUnit, val count: Int = 0)
+
+internal fun relativePlaylistAge(timestamp: Long, now: Long = System.currentTimeMillis()): RelativePlaylistAge {
     val elapsed = (now - timestamp).coerceAtLeast(0L)
     val minutes = elapsed / 60_000L
     val hours = minutes / 60L
     val days = hours / 24L
     return when {
-        minutes < 1L -> "just now"
-        minutes < 60L -> "$minutes min ago"
-        hours < 24L -> "$hours hr ago"
-        else -> "$days day${if (days == 1L) "" else "s"} ago"
+        minutes < 1L -> RelativePlaylistAge(PlaylistAgeUnit.NOW)
+        minutes < 60L -> RelativePlaylistAge(PlaylistAgeUnit.MINUTE, minutes.toInt())
+        hours < 24L -> RelativePlaylistAge(PlaylistAgeUnit.HOUR, hours.toInt())
+        else -> RelativePlaylistAge(PlaylistAgeUnit.DAY, days.coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
     }
 }
 

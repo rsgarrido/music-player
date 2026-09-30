@@ -4,6 +4,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
 @Composable
 fun DiscardTagChangesDialog(
@@ -13,25 +15,25 @@ fun DiscardTagChangesDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Discard changes?")
+            Text(text = stringResource(R.string.metadata_discard_confirm_title))
         },
         text = {
             Text(
-                text = "You have unsaved tag or artwork changes. If you leave now, those edits will be lost."
+                text = stringResource(R.string.metadata_discard_tag_warning)
             )
         },
         confirmButton = {
             Button(
                 onClick = onConfirmDiscardClick
             ) {
-                Text(text = "Discard")
+                Text(text = stringResource(R.string.metadata_discard))
             }
         },
         dismissButton = {
             Button(
                 onClick = onDismiss
             ) {
-                Text(text = "Keep Editing")
+                Text(text = stringResource(R.string.metadata_keep_editing))
             }
         }
     )

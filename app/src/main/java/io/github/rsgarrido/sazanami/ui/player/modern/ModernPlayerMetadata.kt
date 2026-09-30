@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -219,7 +221,7 @@ internal fun ModernPlayerMetadata(
                 .hiddenFromDefaultMorph(hidePersistentContent)
         ) {
             Text(
-                text = currentSong.title.ifBlank { "Unknown Title" },
+            text = currentSong.title.ifBlank { stringResource(R.string.player_unknown_title) },
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = style.contentColor,
@@ -231,7 +233,7 @@ internal fun ModernPlayerMetadata(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = currentSong.artist.ifBlank { "Unknown Artist" },
+            text = currentSong.artist.ifBlank { stringResource(R.string.player_unknown_artist) },
                 style = MaterialTheme.typography.titleMedium,
                 color = style.secondaryContentColor,
                 maxLines = 1,
@@ -243,7 +245,7 @@ internal fun ModernPlayerMetadata(
         Spacer(modifier = Modifier.height(3.dp))
 
         Text(
-            text = currentSong.album.ifBlank { "Unknown Album" },
+            text = currentSong.album.ifBlank { stringResource(R.string.player_unknown_album) },
             style = MaterialTheme.typography.bodyMedium,
             color = style.tertiaryContentColor,
             maxLines = 1,
@@ -254,7 +256,7 @@ internal fun ModernPlayerMetadata(
                     if (onOpenAlbumClick != null) {
                         Modifier.clickable(
                             role = Role.Button,
-                            onClickLabel = "Open current album",
+            onClickLabel = stringResource(R.string.player_open_current_album),
                             onClick = onOpenAlbumClick
                         )
                     } else Modifier

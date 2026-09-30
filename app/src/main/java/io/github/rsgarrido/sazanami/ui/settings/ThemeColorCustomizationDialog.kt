@@ -50,7 +50,7 @@ fun ThemeColorCustomizationDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = stringResource(R.string.theme_color_customize, playerTheme.displayName))
+            Text(text = stringResource(R.string.theme_color_customize, stringResource(playerTheme.labelRes)))
         },
         text = {
             Column(

@@ -5,6 +5,9 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.SnackbarDuration
@@ -17,6 +20,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import io.github.rsgarrido.sazanami.player.equalizer.interchange.SazanamiPresetFile
 import io.github.rsgarrido.sazanami.player.equalizer.interchange.SazanamiPresetFileJson
 import io.github.rsgarrido.sazanami.player.equalizer.interchange.EqualizerProfileExporter
@@ -49,6 +53,7 @@ internal fun rememberEqualizerProfilePlatformActions(
     onImportText: (String, String?) -> Unit
 ): EqualizerProfilePlatformActions {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val latestState by rememberUpdatedState(currentState)
     val latestName by rememberUpdatedState(currentName)
@@ -59,10 +64,10 @@ internal fun rememberEqualizerProfilePlatformActions(
         mutableStateOf<PendingProfileExport?>(null)
     }
 
-    fun show(message: String) {
+    fun show(@StringRes messageRes: Int) {
         scope.launch {
             snackbarHostState.showSnackbar(
-                message,
+                resources.getString(messageRes),
                 duration = SnackbarDuration.Short,
                 withDismissAction = true
             )
@@ -86,10 +91,8 @@ internal fun rememberEqualizerProfilePlatformActions(
                         )
                     },
                     onFailure = { error ->
-                        show(
-                            error.message
-                                ?: "Couldn't open EQ profile."
-                        )
+                        Log.w("EqualizerImport", "Could not open EQ profile", error)
+                        show(R.string.eq_open_failed)
                     }
                 )
             }
@@ -107,8 +110,11 @@ internal fun rememberEqualizerProfilePlatformActions(
                         writeProfile(context, uri, export.content)
                     }
                 }.fold(
-                    onSuccess = { show("Parametric EQ text exported.") },
-                    onFailure = { show("Couldn't export EQ text.") }
+                    onSuccess = { show(R.string.eq_text_exported) },
+                    onFailure = { error ->
+                        Log.w("EqualizerExport", "Could not export EQ text", error)
+                        show(R.string.eq_text_export_failed)
+                    }
                 )
             }
         }
@@ -126,10 +132,11 @@ internal fun rememberEqualizerProfilePlatformActions(
                     }
                 }.fold(
                     onSuccess = {
-                        show("Sazanami Parametric preset exported.")
+                        show(R.string.eq_native_exported)
                     },
-                    onFailure = {
-                        show("Couldn't export Sazanami preset.")
+                    onFailure = { error ->
+                        Log.w("EqualizerExport", "Could not export Sazanami preset", error)
+                        show(R.string.eq_native_export_failed)
                     }
                 )
             }
@@ -171,13 +178,13 @@ internal fun rememberEqualizerProfilePlatformActions(
                 description == null ||
                 !description.hasMimeType("text/*")
             ) {
-                show("Clipboard does not contain EQ text.")
+                show(R.string.eq_clipboard_missing)
             } else {
                 val text = clip.getItemAt(0).text?.toString()
                 if (text.isNullOrBlank()) {
-                    show("Clipboard EQ text is empty.")
+                    show(R.string.eq_clipboard_empty)
                 } else {
-                    onImportText(text, "Clipboard")
+                    onImportText(text, resources.getString(R.string.eq_clipboard_source))
                 }
             }
         },
@@ -198,11 +205,11 @@ internal fun rememberEqualizerProfilePlatformActions(
             )
             clipboard.setPrimaryClip(
                 ClipData.newPlainText(
-                    "Sazanami Parametric EQ",
+                    resources.getString(R.string.eq_clipboard_label),
                     EqualizerProfileExporter.exportText(latestState)
                 )
             )
-            show("Parametric EQ text copied.")
+            show(R.string.eq_text_copied)
         },
         exportCurrentNative = {
             val safeName = if (

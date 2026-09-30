@@ -31,12 +31,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import io.github.rsgarrido.sazanami.R
 import kotlin.math.abs
 
 data class ClassicWheelAlbumCarouselItem(
@@ -61,7 +63,7 @@ fun ClassicWheelAlbumCarouselDisplay(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "No albums found",
+                text = stringResource(R.string.player_wheel_no_albums),
                 color = ClassicWheelColors.screenText,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
@@ -70,7 +72,7 @@ fun ClassicWheelAlbumCarouselDisplay(
             Spacer(modifier = Modifier.height(6.dp))
 
             Text(
-                text = "Check your library",
+                text = stringResource(R.string.player_wheel_check_library),
                 color = ClassicWheelColors.screenTextMuted,
                 style = MaterialTheme.typography.bodyMedium
             )
@@ -224,7 +226,7 @@ fun ClassicWheelAlbumCarouselDisplay(
                     ) {
                         AsyncImage(
                             model = item.albumArtUri,
-                            contentDescription = "Album art for ${item.title}",
+                            contentDescription = stringResource(R.string.player_album_art_for, item.title),
                             modifier = Modifier
                                 .fillMaxSize()
                                 .clip(RoundedCornerShape(5.dp))

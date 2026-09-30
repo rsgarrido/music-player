@@ -1,5 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.player.modern
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
+
 enum class ModernArtworkTransitionStyle(
     val storageValue: String,
     val displayName: String,
@@ -401,11 +404,11 @@ data class ModernPlayerAppearance(
     }
 }
 
-enum class ModernAppearancePreset(val displayName: String) {
-    DEFAULT("Sazanami Default"),
-    ARTWORK_FOCUS("Artwork Focus"),
-    MINIMAL("Minimal"),
-    COLORFUL("Colorful");
+enum class ModernAppearancePreset(@StringRes val labelRes: Int) {
+    DEFAULT(R.string.modern_preset_sazanami_default),
+    ARTWORK_FOCUS(R.string.modern_preset_artwork_focus),
+    MINIMAL(R.string.modern_preset_minimal),
+    COLORFUL(R.string.modern_preset_colorful);
 
     fun appearance(): ModernPlayerAppearance = when (this) {
         DEFAULT -> ModernPlayerAppearance.Default
@@ -474,12 +477,12 @@ enum class ModernAppearancePreset(val displayName: String) {
     }
 }
 
-enum class ModernAppearanceChoice(val displayName: String) {
-    MY_PLAYER("My Player"),
-    DEFAULT("Default"),
-    ARTWORK_FOCUS("Artwork Focus"),
-    MINIMAL("Minimal"),
-    COLORFUL("Colorful");
+enum class ModernAppearanceChoice(@StringRes val labelRes: Int) {
+    MY_PLAYER(R.string.modern_choice_my_player),
+    DEFAULT(R.string.modern_choice_default),
+    ARTWORK_FOCUS(R.string.modern_preset_artwork_focus),
+    MINIMAL(R.string.modern_preset_minimal),
+    COLORFUL(R.string.modern_preset_colorful);
 
     fun effectiveAppearance(myPlayer: ModernPlayerAppearance): ModernPlayerAppearance = when (this) {
         MY_PLAYER -> myPlayer

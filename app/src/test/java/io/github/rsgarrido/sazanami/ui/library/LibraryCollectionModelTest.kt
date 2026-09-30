@@ -1,5 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.library
 
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.state.LibraryAppearanceUiState
 import io.github.rsgarrido.sazanami.ui.state.LibraryCategoryAppearance
 import io.github.rsgarrido.sazanami.ui.state.gridColumnCountFor
@@ -61,7 +62,7 @@ class LibraryCollectionModelTest {
             librarySortOptionsFor(LibraryTab.RECENTLY_ADDED)
         )
         assertEquals(
-            "Date added",
+            R.string.library_sort_date_added,
             LibrarySortOption.DATE_ADDED.displayTitleFor(LibraryTab.RECENTLY_ADDED)
         )
     }

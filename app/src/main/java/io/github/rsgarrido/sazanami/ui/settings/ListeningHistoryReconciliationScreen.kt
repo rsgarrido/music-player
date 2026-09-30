@@ -53,6 +53,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -72,15 +75,19 @@ import io.github.rsgarrido.sazanami.controller.ReconciliationReviewTab
 import io.github.rsgarrido.sazanami.controller.ReconciliationSortOption
 import io.github.rsgarrido.sazanami.controller.ReconciliationTrackPresentation
 import io.github.rsgarrido.sazanami.controller.ReconciliationTrackStatus
-import io.github.rsgarrido.sazanami.controller.ratingWarning
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationSource
 import io.github.rsgarrido.sazanami.data.ListeningIdentityReconciliationCandidate
+import io.github.rsgarrido.sazanami.data.ListeningIdentityReconciliationRatings
+import io.github.rsgarrido.sazanami.data.ListeningIdentityReconciliationRatingState
 import io.github.rsgarrido.sazanami.data.LocalReconciliationTarget
 import io.github.rsgarrido.sazanami.data.ReconciliationCandidateCategory
 import io.github.rsgarrido.sazanami.data.ReconciliationCandidateDisposition
 import io.github.rsgarrido.sazanami.data.ReconciliationMissingField
 import io.github.rsgarrido.sazanami.data.local.ListeningSource
 import io.github.rsgarrido.sazanami.ui.AppShellTypography
+import io.github.rsgarrido.sazanami.ui.state.UiMessage
+import io.github.rsgarrido.sazanami.ui.state.resolve
+import io.github.rsgarrido.sazanami.R
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -170,16 +177,16 @@ private fun ReconciliationHeader(onBack: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.history_import_back))
         }
         Column(modifier = Modifier.padding(start = 4.dp)) {
             Text(
-                "Match imported tracks",
+                stringResource(R.string.history_match_title),
                 style = AppShellTypography.ScreenTitle,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                "Connect imported listening history to songs in your library",
+                stringResource(R.string.history_match_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -189,21 +196,22 @@ private fun ReconciliationHeader(onBack: () -> Unit) {
 
 @Composable
 private fun LoadingContent() {
+    val loadingDescription = stringResource(R.string.history_match_finding_description)
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         CircularProgressIndicator(modifier = Modifier.semantics {
-            contentDescription = "Finding imported track matches"
+            contentDescription = loadingDescription
         })
         Text(
-            "Finding possible matches…",
+            stringResource(R.string.history_match_finding),
             modifier = Modifier.padding(top = 18.dp),
             style = MaterialTheme.typography.titleMedium
         )
         Text(
-            "Large listening histories may take a moment.",
+            stringResource(R.string.history_match_loading_help),
             modifier = Modifier.padding(top = 6.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -211,14 +219,14 @@ private fun LoadingContent() {
 }
 
 @Composable
-private fun ErrorContent(message: String, onRetry: () -> Unit) {
+private fun ErrorContent(message: UiMessage, onRetry: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(message, style = MaterialTheme.typography.titleMedium)
-        Button(onClick = onRetry, modifier = Modifier.padding(top = 18.dp)) { Text("Try again") }
+        Text(message.resolve(), style = MaterialTheme.typography.titleMedium)
+        Button(onClick = onRetry, modifier = Modifier.padding(top = 18.dp)) { Text(stringResource(R.string.history_import_try_again)) }
     }
 }
 
@@ -241,8 +249,8 @@ private fun Content(
                     modifier = Modifier.padding(start = 14.dp, top = 10.dp, bottom = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(message, modifier = Modifier.weight(1f))
-                    TextButton(onClick = actions.onMessageDismissed) { Text("Dismiss") }
+                    Text(message.resolve(), modifier = Modifier.weight(1f))
+                    TextButton(onClick = actions.onMessageDismissed) { Text(stringResource(R.string.history_match_dismiss)) }
                 }
             }
         }
@@ -286,7 +294,7 @@ private fun BrowseControls(
                 FilterChip(
                     selected = content.browseMode == mode,
                     onClick = { actions.onBrowseModeSelected(mode) },
-                    label = { Text(mode.displayLabel()) },
+                    label = { Text(stringResource(mode.labelRes)) },
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -297,7 +305,7 @@ private fun BrowseControls(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-            label = { Text("Search title, artist, or album") }
+            label = { Text(stringResource(R.string.history_match_search_hint)) }
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -305,7 +313,7 @@ private fun BrowseControls(
         ) {
             SortMenu(content.sortOption, actions.onSortSelected)
             Text(
-                "${content.visibleTracks.size} shown",
+                pluralStringResource(R.plurals.history_match_shown, content.visibleTracks.size, content.visibleTracks.size),
                 modifier = Modifier.padding(start = 10.dp),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -320,7 +328,7 @@ private fun BrowseControls(
                     FilterChip(
                         selected = content.reviewFilter == filter,
                         onClick = { actions.onReviewFilterSelected(filter) },
-                        label = { Text(filter.displayLabel()) }
+                        label = { Text(stringResource(filter.labelRes)) }
                     )
                 }
             }
@@ -338,12 +346,12 @@ private fun SortMenu(
     Box {
         TextButton(onClick = { expanded = true }) {
             Icon(Icons.Default.Sort, contentDescription = null)
-            Text(selected.displayLabel(), modifier = Modifier.padding(start = 6.dp))
+            Text(stringResource(selected.labelRes), modifier = Modifier.padding(start = 6.dp))
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             ReconciliationSortOption.entries.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option.displayLabel()) },
+                    text = { Text(stringResource(option.labelRes)) },
                     onClick = {
                         expanded = false
                         onSelected(option)
@@ -368,15 +376,15 @@ private fun SelectionBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                "${content.selectedSourceIds.size} selected",
+                pluralStringResource(R.plurals.history_match_selected, content.selectedSourceIds.size, content.selectedSourceIds.size),
                 modifier = Modifier.weight(1f),
                 fontWeight = FontWeight.SemiBold
             )
             TextButton(onClick = actions.onClearSelection, enabled = !content.isWorking) {
-                Text("Clear")
+                Text(stringResource(R.string.history_match_clear))
             }
             Button(onClick = actions.onLinkSelectedRequested, enabled = !content.isWorking) {
-                Text("Link selected")
+                Text(stringResource(R.string.history_match_link_selected))
             }
         }
     }
@@ -391,13 +399,13 @@ private fun TabRow(content: ReconciliationReviewContent, onSelected: (Reconcilia
                 ReconciliationReviewTab.UNMATCHED -> content.unmatchedCount
                 ReconciliationReviewTab.LINKED -> content.linkedCount
             }
-            val name = tab.name.lowercase().replaceFirstChar { it.titlecase() }
-            val label = "$name $count"
+            val label = stringResource(tab.labelRes, count)
             val selected = content.activeTab == tab
+            val tabDescription = if (selected) stringResource(R.string.history_match_selected_tab, label) else label
             TextButton(
                 onClick = { onSelected(tab) },
                 modifier = Modifier.weight(1f).semantics {
-                    contentDescription = "$label${if (selected) ", selected" else ""}"
+                    contentDescription = tabDescription
                 }
             ) {
                 Text(label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal)
@@ -414,7 +422,7 @@ private fun TrackPresentationList(
     actions: ListeningHistoryReconciliationUiActions
 ) {
     if (tracks.isEmpty()) {
-        EmptyState(emptyTitle(content), emptyText(content))
+        EmptyState(stringResource(emptyTitleRes(content)), stringResource(emptyTextRes(content)))
         return
     }
     LazyColumn(
@@ -436,7 +444,7 @@ private fun AlbumPresentationList(
     actions: ListeningHistoryReconciliationUiActions
 ) {
     if (albums.isEmpty()) {
-        EmptyState(emptyTitle(content), emptyText(content))
+        EmptyState(stringResource(emptyTitleRes(content)), stringResource(emptyTextRes(content)))
         return
     }
     LazyColumn(
@@ -455,7 +463,7 @@ private fun AlbumPresentationList(
                 CompactGroupHeader(
                     title = album.title,
                     subtitle = album.artist,
-                    summary = albumSummary(album),
+                    summary = stringResource(R.string.history_match_group_summary, album.importedCount, album.linkedCount, album.reviewCount, album.unmatchedCount),
                     expanded = expanded,
                     onClick = { actions.onToggleAlbum(album.key) }
                 )
@@ -470,7 +478,7 @@ private fun AlbumPresentationList(
                             OutlinedButton(
                                 onClick = { actions.onSelectItems(eligible.map { it.sourceId }) },
                                 modifier = Modifier.fillMaxWidth()
-                            ) { Text("Select ${eligible.size} review matches") }
+                            ) { Text(pluralStringResource(R.plurals.history_match_select_review_matches, eligible.size, eligible.size)) }
                         }
                         album.tracks.forEach { track -> CompactTrackCard(track, content, actions) }
                     }
@@ -488,7 +496,7 @@ private fun ArtistPresentationList(
     actions: ListeningHistoryReconciliationUiActions
 ) {
     if (artists.isEmpty()) {
-        EmptyState(emptyTitle(content), emptyText(content))
+        EmptyState(stringResource(emptyTitleRes(content)), stringResource(emptyTextRes(content)))
         return
     }
     LazyColumn(
@@ -506,8 +514,8 @@ private fun ArtistPresentationList(
             ) {
                 CompactGroupHeader(
                     title = artist.artist,
-                    subtitle = "${artist.albums.size} ${if (artist.albums.size == 1) "album" else "albums"}",
-                    summary = artistSummary(artist),
+                    subtitle = pluralStringResource(R.plurals.history_match_album_count, artist.albums.size, artist.albums.size),
+                    summary = stringResource(R.string.history_match_group_summary, artist.importedCount, artist.linkedCount, artist.reviewCount, artist.unmatchedCount),
                     expanded = expanded,
                     onClick = { actions.onToggleArtist(artist.key) }
                 )
@@ -524,7 +532,7 @@ private fun ArtistPresentationList(
                                 modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                             )
                             Text(
-                                albumSummary(album),
+                                stringResource(R.string.history_match_group_summary, album.importedCount, album.linkedCount, album.reviewCount, album.unmatchedCount),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(start = 4.dp)
@@ -547,12 +555,13 @@ private fun CompactGroupHeader(
     expanded: Boolean,
     onClick: () -> Unit
 ) {
+    val expandLabel = stringResource(if (expanded) R.string.history_match_collapse_group else R.string.history_match_expand_group)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(
                 role = Role.Button,
-                onClickLabel = if (expanded) "Collapse group" else "Expand group",
+                onClickLabel = expandLabel,
                 onClick = onClick
             )
             .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -575,7 +584,7 @@ private fun CompactGroupHeader(
         }
         Icon(
             if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-            contentDescription = if (expanded) "Collapse" else "Expand"
+            contentDescription = stringResource(if (expanded) R.string.history_match_collapse else R.string.history_match_expand)
         )
     }
 }
@@ -586,8 +595,10 @@ private fun CompactTrackCard(
     content: ReconciliationReviewContent,
     actions: ListeningHistoryReconciliationUiActions
 ) {
+    val resources = LocalResources.current
     val expanded = content.expandedSourceId == track.sourceId
     val selected = track.sourceId in content.selectedSourceIds
+    val expandTrackLabel = stringResource(if (expanded) R.string.history_match_collapse_track else R.string.history_match_expand_track)
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
@@ -597,7 +608,7 @@ private fun CompactTrackCard(
                 .fillMaxWidth()
                 .clickable(
                     role = Role.Button,
-                    onClickLabel = if (expanded) "Collapse imported track" else "Expand imported track"
+                    onClickLabel = expandTrackLabel
                 ) { actions.onToggleExpanded(track.sourceId) }
                 .padding(horizontal = 10.dp, vertical = 9.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -608,28 +619,28 @@ private fun CompactTrackCard(
                     onCheckedChange = { actions.onToggleSelected(track.sourceId) },
                     enabled = !content.isWorking,
                     modifier = Modifier.semantics {
-                        contentDescription = "Select ${track.source.title}"
+                        contentDescription = resources.getString(R.string.history_match_select_track, track.source.title)
                     }
                 )
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    track.source.title.ifBlank { "Unknown title" },
+                    track.source.title.ifBlank { stringResource(R.string.player_unknown_title) },
                     style = MaterialTheme.typography.titleSmall,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    formatArtistAlbum(track.source.artist, track.source.album),
+                    localizedArtistAlbum(track.source.artist, track.source.album),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(historicalPlayLabel(track.source), style = MaterialTheme.typography.labelSmall)
+                    Text(pluralStringResource(R.plurals.history_match_historical_play_count, track.source.metrics.qualifiedPlayCount.toInt(), track.source.metrics.qualifiedPlayCount), style = MaterialTheme.typography.labelSmall)
                     Text(
-                        track.reason.label,
+                        stringResource(track.reason.labelRes),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         maxLines = 1,
@@ -639,7 +650,7 @@ private fun CompactTrackCard(
             }
             Icon(
                 if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                contentDescription = if (expanded) "Collapse" else "Expand"
+                contentDescription = stringResource(if (expanded) R.string.history_match_collapse else R.string.history_match_expand)
             )
         }
         if (expanded) {
@@ -652,34 +663,34 @@ private fun CompactTrackCard(
                 when (track.status) {
                     ReconciliationTrackStatus.LINKED -> {
                         val linked = requireNotNull(track.linkedItem)
-                        Text("Linked local song", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(R.string.history_match_linked_local_song), style = MaterialTheme.typography.labelLarge)
                         TargetMetadata(linked.target)
                         OutlinedButton(
                             onClick = { actions.onUnlinkRequested(linked) },
                             modifier = Modifier.fillMaxWidth().semantics {
                                 contentDescription =
-                                    "Unlink ${linked.source.title} from ${linked.target.title}"
+                                    resources.getString(R.string.history_match_unlink_description, linked.source.title, linked.target.title)
                             }
-                        ) { Text("Unlink history") }
+                        ) { Text(stringResource(R.string.history_match_unlink_history)) }
                     }
                     ReconciliationTrackStatus.REVIEW,
                     ReconciliationTrackStatus.UNMATCHED -> {
                         val item = requireNotNull(track.reviewItem)
                         if (item.disposition == ReconciliationCandidateDisposition.AMBIGUOUS) {
-                            WarningText("Multiple library versions may match. No track has been selected.")
+                            WarningText(stringResource(R.string.history_match_ambiguous_warning))
                         }
                         item.candidates.forEach { candidate ->
                             CandidateRow(
                                 candidate = candidate,
                                 actionLabel = if (item.disposition == ReconciliationCandidateDisposition.AMBIGUOUS) {
-                                    "Select this track"
+                                    stringResource(R.string.history_match_select_this_track)
                                 } else {
-                                    "Link history"
+                                    stringResource(R.string.history_match_link_history)
                                 },
                                 evidenceLabel = if (item.candidates.size == 1) {
-                                    track.reason.label
+                                    stringResource(track.reason.labelRes)
                                 } else {
-                                    candidateEvidenceCopy(candidate.evidence.category)
+                                    stringResource(candidate.evidence.category.evidenceRes)
                                 },
                                 onSelected = {
                                     actions.onCandidateSelected(listOf(track.sourceId), candidate.target)
@@ -688,7 +699,7 @@ private fun CompactTrackCard(
                         }
                         if (item.hasMoreCandidates) {
                             Text(
-                                "More possible matches exist. Search the library to review them.",
+                                stringResource(R.string.history_match_more_candidates),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -697,13 +708,13 @@ private fun CompactTrackCard(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Icon(Icons.Default.Search, contentDescription = null)
-                            Text("Choose from library", modifier = Modifier.padding(start = 8.dp))
+                            Text(stringResource(R.string.history_match_choose_library), modifier = Modifier.padding(start = 8.dp))
                         }
                         if (track.status == ReconciliationTrackStatus.REVIEW) {
                             TextButton(
                                 onClick = { actions.onSkip(track.sourceId) },
                                 modifier = Modifier.fillMaxWidth()
-                            ) { Text("Skip · review later") }
+                            ) { Text(stringResource(R.string.history_match_skip_later)) }
                         }
                     }
                 }
@@ -718,17 +729,17 @@ private fun HistoricalDetails(source: HistoricalReconciliationSource) {
         .withZone(ZoneId.systemDefault())
     val providers = source.importedProviders.mapNotNull { provider ->
         when (provider) {
-            ListeningSource.SPOTIFY_IMPORT -> "Spotify import"
+            ListeningSource.SPOTIFY_IMPORT -> stringResource(R.string.history_match_spotify_import)
             ListeningSource.NATIVE -> null
-            ListeningSource.LASTFM_IMPORT -> "Imported history"
+            ListeningSource.LASTFM_IMPORT -> stringResource(R.string.history_match_imported_history)
         }
     }.sorted().joinToString()
     Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
         if (providers.isNotBlank()) Text(providers, style = MaterialTheme.typography.labelMedium)
-        Text("First listened ${formatter.format(Instant.ofEpochMilli(source.metrics.firstListenedAt))}")
-        Text("Last listened ${formatter.format(Instant.ofEpochMilli(source.metrics.lastListenedAt))}")
+        Text(stringResource(R.string.history_match_first_listened, formatter.format(Instant.ofEpochMilli(source.metrics.firstListenedAt))))
+        Text(stringResource(R.string.history_match_last_listened, formatter.format(Instant.ofEpochMilli(source.metrics.lastListenedAt))))
         if (source.metrics.recordedListeningMs > 0) {
-            Text("Recorded listening ${formatListeningDuration(source.metrics.recordedListeningMs)}")
+            Text(stringResource(R.string.history_match_recorded_listening, localizedListeningDuration(source.metrics.recordedListeningMs)))
         }
     }
 }
@@ -737,10 +748,10 @@ private fun HistoricalDetails(source: HistoricalReconciliationSource) {
 private fun CandidateRow(
     candidate: ListeningIdentityReconciliationCandidate,
     actionLabel: String,
-    evidenceLabel: String = candidateEvidenceCopy(candidate.evidence.category),
+    evidenceLabel: String,
     onSelected: () -> Unit
 ) {
-    val warning = candidateWarningCopy(candidate.evidence.category)
+    val warningRes = candidate.evidence.category.warningRes
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -750,9 +761,9 @@ private fun CandidateRow(
             Text(evidenceLabel, style = MaterialTheme.typography.labelLarge)
             TargetMetadata(candidate.target)
             if (candidate.evidence.missingFields.contains(ReconciliationMissingField.ALBUM)) {
-                Text("Album information is missing from the imported track.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.history_match_album_missing), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            warning?.let { WarningText(it) }
+            warningRes?.let { WarningText(stringResource(it)) }
             Button(onClick = onSelected, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
                 Icon(Icons.Default.Link, contentDescription = null)
                 Text(actionLabel, modifier = Modifier.padding(start = 8.dp))
@@ -763,9 +774,9 @@ private fun CandidateRow(
 
 @Composable
 private fun TargetMetadata(target: LocalReconciliationTarget) {
-    Text(target.title.ifBlank { "Unknown title" }, style = MaterialTheme.typography.titleMedium)
+    Text(if (target.title.isBlank()) stringResource(R.string.player_unknown_title) else target.title, style = MaterialTheme.typography.titleMedium)
     Text(
-        formatArtistAlbum(target.artist, target.album),
+        localizedArtistAlbum(target.artist, target.album),
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
     Text(
@@ -777,8 +788,9 @@ private fun TargetMetadata(target: LocalReconciliationTarget) {
 
 @Composable
 private fun WarningText(text: String) {
+    val warningDescription = stringResource(R.string.history_match_warning_description, text)
     Row(
-        modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Warning: $text" },
+        modifier = Modifier.fillMaxWidth().semantics { contentDescription = warningDescription },
         verticalAlignment = Alignment.Top
     ) {
         Icon(
@@ -818,7 +830,7 @@ private fun SearchDialog(
 ) {
     AlertDialog(
         onDismissRequest = { if (!isWorking) onDismiss() },
-        title = { Text("Choose from library") },
+        title = { Text(stringResource(R.string.history_match_choose_library)) },
         text = {
             Column(modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp)) {
                 OutlinedTextField(
@@ -827,23 +839,24 @@ private fun SearchDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    label = { Text("Search title, artist, or album") }
+                    label = { Text(stringResource(R.string.history_match_search_hint)) }
                 )
                 if (results.isEmpty()) {
-                    Text("No available library songs found.", modifier = Modifier.padding(top = 20.dp))
+                    Text(stringResource(R.string.history_match_no_library_songs), modifier = Modifier.padding(top = 20.dp))
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth().weight(1f).padding(top = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(results, key = { "search-${it.identityId}" }) { target ->
+                            val selectDescription = stringResource(R.string.history_match_select_track, target.title)
                             Surface(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable(
                                         enabled = !isWorking,
                                         role = Role.Button,
-                                        onClickLabel = "Select ${target.title}"
+                                        onClickLabel = selectDescription
                                     ) { onSelected(target) },
                                 tonalElevation = 2.dp,
                                 shape = RoundedCornerShape(10.dp)
@@ -856,7 +869,7 @@ private fun SearchDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss, enabled = !isWorking) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !isWorking) { Text(stringResource(R.string.eq_cancel)) } }
     )
 }
 
@@ -872,9 +885,9 @@ private fun ConfirmationDialog(
         title = {
             Text(
                 when (confirmation) {
-                    is ReconciliationConfirmation.Link -> "Link imported history?"
-                    is ReconciliationConfirmation.Batch -> "Link selected histories?"
-                    is ReconciliationConfirmation.Unlink -> "Unlink imported history?"
+                    is ReconciliationConfirmation.Link -> stringResource(R.string.history_match_confirm_link)
+                    is ReconciliationConfirmation.Batch -> stringResource(R.string.history_match_confirm_batch)
+                    is ReconciliationConfirmation.Unlink -> stringResource(R.string.history_match_confirm_unlink)
                 }
             )
         },
@@ -886,45 +899,45 @@ private fun ConfirmationDialog(
                 when (confirmation) {
                     is ReconciliationConfirmation.Link -> {
                         val first = confirmation.sources.first()
-                        Text("Imported history", fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.history_match_imported_history), fontWeight = FontWeight.SemiBold)
                         Text(first.title, style = MaterialTheme.typography.titleMedium)
-                        Text(formatArtistAlbum(first.artist, first.album))
+                        Text(localizedArtistAlbum(first.artist, first.album))
                         Text(
-                            if (confirmation.sources.size == 1) historicalPlayLabel(first)
-                            else "${confirmation.sources.size} imported history fragments"
+                            if (confirmation.sources.size == 1) pluralStringResource(R.plurals.history_match_historical_play_count, first.metrics.qualifiedPlayCount.toInt(), first.metrics.qualifiedPlayCount)
+                            else pluralStringResource(R.plurals.history_match_fragments, confirmation.sources.size, confirmation.sources.size)
                         )
-                        Text("will be connected to:")
+                        Text(stringResource(R.string.history_match_connected_to))
                         TargetMetadata(confirmation.target)
-                        ratingWarning(confirmation.ratings)?.let { WarningText(it) }
-                        Text("After linking, Statistics will combine this history with the local song.")
-                        Text("You can unlink this later.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        localizedRatingWarning(confirmation.ratings)?.let { WarningText(it) }
+                        Text(stringResource(R.string.history_match_link_statistics))
+                        Text(stringResource(R.string.history_match_unlink_later), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     is ReconciliationConfirmation.Batch -> {
                         Text(
-                            "${confirmation.selections.size} explicitly selected review matches will be linked in one batch."
+                            pluralStringResource(R.plurals.history_match_batch_summary, confirmation.selections.size, confirmation.selections.size)
                         )
                         confirmation.selections.take(8).forEach { selection ->
                             Text(
-                                "${selection.source.title} → ${selection.target.title}",
+                                stringResource(R.string.history_match_link_pair, selection.source.title, selection.target.title),
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
                         if (confirmation.selections.size > 8) {
                             Text(
-                                "And ${confirmation.selections.size - 8} more.",
+                                pluralStringResource(R.plurals.history_match_more_count, confirmation.selections.size - 8, confirmation.selections.size - 8),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Text("Existing or conflicting links will not be overwritten.")
-                        Text("You can unlink these later.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.history_match_conflicts_not_overwritten))
+                        Text(stringResource(R.string.history_match_unlink_these_later), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     is ReconciliationConfirmation.Unlink -> {
                         Text(
-                            "Imported history will remain saved, but it will no longer be combined with this local song in Statistics."
+                            stringResource(R.string.history_match_unlink_statistics)
                         )
                         Text(confirmation.item.source.title, style = MaterialTheme.typography.titleMedium)
-                        Text("Linked to ${confirmation.item.target.title}")
+                        Text(stringResource(R.string.history_match_linked_to, confirmation.item.target.title))
                     }
                 }
             }
@@ -934,88 +947,82 @@ private fun ConfirmationDialog(
                 Text(
                     when (confirmation) {
                         is ReconciliationConfirmation.Link -> if (confirmation.sources.size == 1) {
-                            "Link history"
-                        } else "Link all ${confirmation.sources.size} histories"
+                            stringResource(R.string.history_match_link_history)
+                        } else pluralStringResource(R.plurals.history_match_link_all, confirmation.sources.size, confirmation.sources.size)
                         is ReconciliationConfirmation.Batch ->
-                            "Link ${confirmation.selections.size} selected"
-                        is ReconciliationConfirmation.Unlink -> "Unlink"
+                            pluralStringResource(R.plurals.history_match_link_count, confirmation.selections.size, confirmation.selections.size)
+                        is ReconciliationConfirmation.Unlink -> stringResource(R.string.history_match_unlink)
                     }
                 )
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss, enabled = !isWorking) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !isWorking) { Text(stringResource(R.string.eq_cancel)) } }
     )
 }
 
-fun candidateEvidenceCopy(category: ReconciliationCandidateCategory): String = when (category) {
-    ReconciliationCandidateCategory.STRONG_METADATA -> "Title, artist, and album match"
-    ReconciliationCandidateCategory.CANONICAL_METADATA ->
-        "Title, artist, and album match after typography normalization"
-    ReconciliationCandidateCategory.TYPOGRAPHY_VARIANT -> "Similar title"
-    ReconciliationCandidateCategory.INCOMPLETE_EVIDENCE -> "Some imported metadata is missing"
-    ReconciliationCandidateCategory.VERSION_SENSITIVE -> "Possible different song version"
-    ReconciliationCandidateCategory.AMBIGUOUS -> "Multiple library versions may match"
+internal val ReconciliationCandidateCategory.evidenceRes: Int get() = when (this) {
+    ReconciliationCandidateCategory.STRONG_METADATA -> R.string.history_match_evidence_strong
+    ReconciliationCandidateCategory.CANONICAL_METADATA -> R.string.history_match_evidence_canonical
+    ReconciliationCandidateCategory.TYPOGRAPHY_VARIANT -> R.string.history_match_evidence_typography
+    ReconciliationCandidateCategory.INCOMPLETE_EVIDENCE -> R.string.history_match_evidence_incomplete
+    ReconciliationCandidateCategory.VERSION_SENSITIVE -> R.string.history_match_evidence_version
+    ReconciliationCandidateCategory.AMBIGUOUS -> R.string.history_match_evidence_ambiguous
 }
 
-private fun ReconciliationBrowseMode.displayLabel(): String = when (this) {
-    ReconciliationBrowseMode.TRACKS -> "Tracks"
-    ReconciliationBrowseMode.ALBUMS -> "Albums"
-    ReconciliationBrowseMode.ARTISTS -> "Artists"
-}
-
-private fun ReconciliationSortOption.displayLabel(): String = when (this) {
-    ReconciliationSortOption.HISTORICAL_PLAYS -> "Historical plays"
-    ReconciliationSortOption.TRACK_TITLE -> "Track title"
-    ReconciliationSortOption.ARTIST -> "Artist"
-    ReconciliationSortOption.ALBUM -> "Album"
-}
-
-private fun ReconciliationReviewFilter.displayLabel(): String = when (this) {
-    ReconciliationReviewFilter.ALL -> "All review"
-    ReconciliationReviewFilter.TITLE_FORMATTING -> "Title formatting"
-    ReconciliationReviewFilter.ACCENT_DIACRITIC -> "Accent/diacritic"
-    ReconciliationReviewFilter.SIMILAR_TITLE -> "Similar title"
-    ReconciliationReviewFilter.AMBIGUOUS -> "Ambiguous"
-}
-
-private fun emptyTitle(content: ReconciliationReviewContent): String = when (content.activeTab) {
-    ReconciliationReviewTab.REVIEW -> "No review cases found"
-    ReconciliationReviewTab.UNMATCHED -> "No unmatched imported tracks found"
-    ReconciliationReviewTab.LINKED -> "No linked imported tracks found"
-}
-
-private fun emptyText(content: ReconciliationReviewContent): String = when {
-    content.browseQuery.isNotBlank() -> "Try another track, artist, or album search."
-    content.activeTab == ReconciliationReviewTab.REVIEW ->
-        "Change the review filter or browse unmatched history."
-    content.activeTab == ReconciliationReviewTab.UNMATCHED ->
-        "All imported tracks have a review candidate or are already linked."
-    else -> "Confirmed and automatic matches will appear here."
-}
-
-fun albumSummary(album: ReconciliationAlbumPresentation): String = buildList {
-    add("${album.importedCount} imported")
-    if (album.linkedCount > 0) add("${album.linkedCount} linked")
-    if (album.reviewCount > 0) add("${album.reviewCount} review")
-    if (album.unmatchedCount > 0) add("${album.unmatchedCount} unmatched")
-}.joinToString(" · ")
-
-fun artistSummary(artist: ReconciliationArtistPresentation): String = buildList {
-    add("${artist.importedCount} imported")
-    if (artist.linkedCount > 0) add("${artist.linkedCount} linked")
-    if (artist.reviewCount > 0) add("${artist.reviewCount} review")
-    if (artist.unmatchedCount > 0) add("${artist.unmatchedCount} unmatched")
-}.joinToString(" · ")
-
-fun candidateWarningCopy(category: ReconciliationCandidateCategory): String? = when (category) {
-    ReconciliationCandidateCategory.VERSION_SENSITIVE -> "This may be a different version of the song."
-    ReconciliationCandidateCategory.AMBIGUOUS -> "Multiple library versions may match."
+internal val ReconciliationCandidateCategory.warningRes: Int? get() = when (this) {
+    ReconciliationCandidateCategory.VERSION_SENSITIVE -> R.string.history_match_warning_version
+    ReconciliationCandidateCategory.AMBIGUOUS -> R.string.history_match_warning_ambiguous
     else -> null
+}
+
+private val ReconciliationReviewTab.labelRes: Int get() = when (this) {
+    ReconciliationReviewTab.REVIEW -> R.string.history_match_tab_review
+    ReconciliationReviewTab.UNMATCHED -> R.string.history_match_tab_unmatched
+    ReconciliationReviewTab.LINKED -> R.string.history_match_tab_linked
+}
+
+private val ReconciliationBrowseMode.labelRes: Int get() = when (this) {
+    ReconciliationBrowseMode.TRACKS -> R.string.history_match_tracks
+    ReconciliationBrowseMode.ALBUMS -> R.string.history_match_albums
+    ReconciliationBrowseMode.ARTISTS -> R.string.history_match_artists
+}
+
+private val ReconciliationSortOption.labelRes: Int get() = when (this) {
+    ReconciliationSortOption.HISTORICAL_PLAYS -> R.string.history_match_historical_plays
+    ReconciliationSortOption.TRACK_TITLE -> R.string.history_match_track_title
+    ReconciliationSortOption.ARTIST -> R.string.history_match_artist
+    ReconciliationSortOption.ALBUM -> R.string.history_match_album
+}
+
+private val ReconciliationReviewFilter.labelRes: Int get() = when (this) {
+    ReconciliationReviewFilter.ALL -> R.string.history_match_all_review
+    ReconciliationReviewFilter.TITLE_FORMATTING -> R.string.history_match_title_formatting
+    ReconciliationReviewFilter.ACCENT_DIACRITIC -> R.string.history_match_accent
+    ReconciliationReviewFilter.SIMILAR_TITLE -> R.string.history_match_similar_title
+    ReconciliationReviewFilter.AMBIGUOUS -> R.string.history_match_ambiguous
+}
+
+private fun emptyTitleRes(content: ReconciliationReviewContent): Int = when (content.activeTab) {
+    ReconciliationReviewTab.REVIEW -> R.string.history_match_empty_review
+    ReconciliationReviewTab.UNMATCHED -> R.string.history_match_empty_unmatched
+    ReconciliationReviewTab.LINKED -> R.string.history_match_empty_linked
+}
+
+private fun emptyTextRes(content: ReconciliationReviewContent): Int = when {
+    content.browseQuery.isNotBlank() -> R.string.history_match_empty_search
+    content.activeTab == ReconciliationReviewTab.REVIEW ->
+        R.string.history_match_empty_review_help
+    content.activeTab == ReconciliationReviewTab.UNMATCHED ->
+        R.string.history_match_empty_unmatched_help
+    else -> R.string.history_match_empty_linked_help
 }
 
 fun formatArtistAlbum(artist: String, album: String): String =
     listOf(artist.trim(), album.trim()).filter(String::isNotBlank).joinToString(" · ")
-        .ifBlank { "Unknown artist" }
+
+@Composable
+private fun localizedArtistAlbum(artist: String, album: String): String =
+    formatArtistAlbum(artist, album).let { if (it.isBlank()) stringResource(R.string.player_unknown_artist) else it }
 
 fun formatTargetDetails(target: LocalReconciliationTarget): String = buildList {
     target.durationMs?.takeIf { it > 0 }?.let { add(formatTrackDuration(it)) }
@@ -1023,17 +1030,28 @@ fun formatTargetDetails(target: LocalReconciliationTarget): String = buildList {
     if (isEmpty()) target.relativeFolder?.substringAfterLast('/')?.takeIf(String::isNotBlank)?.let(::add)
 }.joinToString(" · ")
 
-private fun historicalPlayLabel(source: HistoricalReconciliationSource): String {
-    val count = source.metrics.qualifiedPlayCount
-    return "$count historical ${if (count == 1L) "play" else "plays"}"
-}
-
 private fun formatTrackDuration(milliseconds: Long): String {
     val totalSeconds = milliseconds / 1_000L
     return "%d:%02d".format(Locale.ROOT, totalSeconds / 60L, totalSeconds % 60L)
 }
 
-private fun formatListeningDuration(milliseconds: Long): String {
+@Composable
+private fun localizedListeningDuration(milliseconds: Long): String {
     val minutes = milliseconds / 60_000L
-    return if (minutes < 60) "$minutes min" else "${minutes / 60} hr ${minutes % 60} min"
+    return if (minutes < 60) pluralStringResource(R.plurals.history_match_minutes, minutes.toInt(), minutes)
+    else stringResource(R.string.history_match_hours_minutes, minutes / 60, minutes % 60)
+}
+
+@Composable
+private fun localizedRatingWarning(ratings: List<ListeningIdentityReconciliationRatings>): String? {
+    val conflict = ratings.firstOrNull { it.state == ListeningIdentityReconciliationRatingState.CONFLICTING_RATINGS }
+    if (conflict != null) {
+        conflict.targetRating?.let { rating ->
+            return stringResource(R.string.history_match_rating_conflict, rating)
+        }
+    }
+    if (ratings.any { it.state == ListeningIdentityReconciliationRatingState.SOURCE_ONLY }) {
+        return stringResource(R.string.history_match_rating_source_only)
+    }
+    return null
 }

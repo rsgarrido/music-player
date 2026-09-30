@@ -2,10 +2,12 @@ package io.github.rsgarrido.sazanami.ui.settings
 
 import android.content.Context
 import android.net.Uri
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.lyrics.LocalLyricsRepository
 import io.github.rsgarrido.sazanami.lyrics.LocalLyricsServices
 import io.github.rsgarrido.sazanami.lyrics.LyricsRoot
 import io.github.rsgarrido.sazanami.lyrics.LyricsRootIssue
+import io.github.rsgarrido.sazanami.ui.state.UiMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -21,7 +23,7 @@ data class LyricsFolderUiState(
     val roots: List<LyricsFolderUiItem> = emptyList(),
     val indexedFileCount: Int = 0,
     val isScanning: Boolean = false,
-    val message: String? = null
+    val message: UiMessage? = null
 )
 
 data class LyricsFolderUiItem(
@@ -100,9 +102,9 @@ internal class LyricsSettingsController(
                     val failureCount = snapshot.issues.size - permissionCount
                     val message = when {
                         permissionCount > 0 ->
-                            "$permissionCount lyrics folder permission(s) are missing."
+                            UiMessage.Quantity(R.plurals.lyrics_missing_folder_permissions, permissionCount)
                         failureCount > 0 ->
-                            "$failureCount lyrics folder(s) could not be scanned."
+                            UiMessage.Quantity(R.plurals.lyrics_folder_scan_failures, failureCount)
                         else -> null
                     }
                     _state.value = _state.value.copy(
@@ -121,9 +123,9 @@ internal class LyricsSettingsController(
                     _state.value = _state.value.copy(
                         isScanning = false,
                         message = if (error is LyricsFolderAccessException) {
-                            "Sazanami could not retain access to that folder."
+                            UiMessage.Text(R.string.lyrics_retain_access_failed)
                         } else {
-                            "Lyrics folders could not be scanned."
+                            UiMessage.Text(R.string.lyrics_folders_scan_failed)
                         }
                     )
                 }

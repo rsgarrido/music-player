@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Album
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -184,7 +186,7 @@ private fun PocketFlipDisplayHeader(
         )
         Spacer(modifier = Modifier.width(5.dp))
         Text(
-            text = "PWR",
+            text = stringResource(R.string.player_flip_power),
             color = PocketFlipColors.bezelTextMuted,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -193,7 +195,7 @@ private fun PocketFlipDisplayHeader(
         )
         Spacer(modifier = Modifier.width(if (compact) 7.dp else 10.dp))
         Text(
-            text = "POCKET FLIP // AUDIO",
+            text = stringResource(R.string.player_flip_audio_brand),
             color = PocketFlipColors.bezelText,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -288,7 +290,7 @@ private fun PocketFlipArtwork(
         if (renderContent && song?.albumArtUri != null) {
             RetainedArtworkImage(
                 model = song.albumArtUri,
-                contentDescription = "Current album artwork",
+            contentDescription = stringResource(R.string.player_current_album_artwork),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxSize()
@@ -340,7 +342,7 @@ private fun PocketFlipMetadata(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = currentSong?.title ?: "No track loaded",
+            text = currentSong?.title ?: stringResource(R.string.player_no_track_loaded),
                 color = PocketFlipColors.screenText,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
@@ -354,7 +356,7 @@ private fun PocketFlipMetadata(
             )
             Spacer(modifier = Modifier.height(if (compact) 2.dp else 3.dp))
             Text(
-                text = currentSong?.artist?.ifBlank { "Unknown artist" } ?: "",
+            text = currentSong?.artist?.ifBlank { stringResource(R.string.player_unknown_artist) } ?: "",
                 color = PocketFlipColors.screenText,
                 fontFamily = FontFamily.Monospace,
                 fontSize = if (compact) 9.sp else 10.sp,
@@ -365,7 +367,7 @@ private fun PocketFlipMetadata(
                     .then(if (renderSharedContent) Modifier else Modifier.clearAndSetSemantics { })
             )
             Text(
-                text = currentSong?.album?.ifBlank { "Unknown album" } ?: "",
+            text = currentSong?.album?.ifBlank { stringResource(R.string.player_unknown_album) } ?: "",
                 color = PocketFlipColors.screenTextMuted,
                 fontFamily = FontFamily.Monospace,
                 fontSize = if (compact) 8.sp else 9.sp,
@@ -374,7 +376,7 @@ private fun PocketFlipMetadata(
                 modifier = if (onOpenAlbumClick != null) {
                     Modifier.clickable(
                         role = Role.Button,
-                        onClickLabel = "Open current album",
+            onClickLabel = stringResource(R.string.player_open_current_album),
                         onClick = onOpenAlbumClick
                     )
                 } else Modifier
@@ -515,7 +517,7 @@ private fun PocketFlipSeekBar(
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "TRACK POSITION",
+            text = stringResource(R.string.player_track_position),
                 color = PocketFlipColors.bezelTextMuted,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,

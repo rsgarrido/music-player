@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.background
 import androidx.glance.action.actionStartActivity
@@ -506,6 +507,7 @@ private fun PocketCassetteLabelMetadata(
     modifier: GlanceModifier,
     compact: Boolean
 ) {
+    val context = LocalContext.current
     val linePolicy = retroWidgetMetadataLinePolicyFor(
         if (compact) NowPlayingWidgetLayout.COMPACT else NowPlayingWidgetLayout.STANDARD,
         standardTitleMaxLines = 3
@@ -515,7 +517,7 @@ private fun PocketCassetteLabelMetadata(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = snapshot.title.uppercase(Locale.ROOT),
+            text = snapshot.localizedTitle(context).uppercase(Locale.ROOT),
             style = TextStyle(
                 color = appearance.metadataPrimaryText.asGlanceColorProvider(),
                 fontSize = if (compact) 10.sp else 12.sp,
@@ -524,7 +526,7 @@ private fun PocketCassetteLabelMetadata(
             maxLines = linePolicy.titleMaxLines
         )
         Text(
-            text = snapshot.artist.uppercase(Locale.ROOT),
+            text = snapshot.localizedArtist(context).uppercase(Locale.ROOT),
             style = TextStyle(
                 color = appearance.metadataSecondaryText.asGlanceColorProvider(),
                 fontSize = if (compact) 8.sp else 9.sp
@@ -632,6 +634,7 @@ private fun RetroMetadata(
     modifier: GlanceModifier,
     compact: Boolean
 ) {
+    val context = LocalContext.current
     val linePolicy = retroWidgetMetadataLinePolicyFor(
         if (compact) NowPlayingWidgetLayout.COMPACT else NowPlayingWidgetLayout.STANDARD
     )
@@ -640,7 +643,7 @@ private fun RetroMetadata(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = snapshot.title.uppercase(Locale.ROOT),
+            text = snapshot.localizedTitle(context).uppercase(Locale.ROOT),
             style = TextStyle(
                 color = appearance.metadataPrimaryText.asGlanceColorProvider(),
                 fontSize = if (compact) 12.sp else 14.sp,
@@ -652,7 +655,7 @@ private fun RetroMetadata(
             Spacer(GlanceModifier.height(2.dp))
         }
         Text(
-            text = snapshot.artist.uppercase(Locale.ROOT),
+            text = snapshot.localizedArtist(context).uppercase(Locale.ROOT),
             style = TextStyle(
                 color = appearance.metadataSecondaryText.asGlanceColorProvider(),
                 fontSize = if (compact) 10.sp else 11.sp

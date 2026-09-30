@@ -64,6 +64,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.onClick
@@ -82,6 +83,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import coil.compose.AsyncImage
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.lyrics.LyricCueContent
 import io.github.rsgarrido.sazanami.lyrics.LyricAnchorGeometry
@@ -301,6 +303,7 @@ private fun LyricsHeader(
     onPlayPause: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val playbackStateDescription = stringResource(if (isPlaying) R.string.lyrics_playing else R.string.lyrics_paused)
     Row(
         modifier = modifier
             .testTag(LyricsHeaderTag)
@@ -339,7 +342,7 @@ private fun LyricsHeader(
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Close lyrics",
+                contentDescription = stringResource(R.string.lyrics_close),
                 tint = Color.White
             )
         }
@@ -351,7 +354,7 @@ private fun LyricsHeader(
         ) {
             AsyncImage(
                 model = song.albumArtUri,
-                contentDescription = "Album artwork",
+                contentDescription = stringResource(R.string.lyrics_album_artwork),
                 contentScale = ContentScale.Crop
             )
         }
@@ -369,7 +372,7 @@ private fun LyricsHeader(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = song.artist.ifBlank { "Unknown artist" },
+                text = song.artist.ifBlank { stringResource(R.string.lyrics_unknown_artist) },
                 color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
@@ -383,12 +386,12 @@ private fun LyricsHeader(
             modifier = Modifier
                 .testTag(LyricsPlayPauseTag)
                 .semantics {
-                    stateDescription = if (isPlaying) "Playing" else "Paused"
+                    stateDescription = playbackStateDescription
                 }
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription = stringResource(if (isPlaying) R.string.lyrics_pause else R.string.lyrics_play),
                 tint = Color.White
             )
         }
@@ -418,7 +421,7 @@ private fun androidx.compose.foundation.layout.BoxScope.BoxScopeSyncedReturnActi
         ) {
             Icon(Icons.Default.MyLocation, contentDescription = null)
             Spacer(Modifier.width(8.dp))
-            Text("Return to current line", fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.lyrics_return_to_current), fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -544,13 +547,17 @@ private fun SyncedLyricRow(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
+    val currentLyricDescription = stringResource(R.string.lyrics_current_lyric)
+    val seekDescription = stringResource(R.string.lyrics_seek_to_lyric)
+    val lyricActionDescription = stringResource(R.string.lyrics_line_seek_description,
+        group.lines.joinToString(" "))
     val color by animateColorAsState(
         targetValue = when {
             isActive -> Color.White
             isPast -> Color.White.copy(alpha = 0.58f)
             else -> Color.White.copy(alpha = 0.38f)
         },
-        label = "lyric emphasis"
+        label = stringResource(R.string.lyrics_emphasis)
     )
     Text(
         text = group.lines.joinToString("\n"),
@@ -569,9 +576,9 @@ private fun SyncedLyricRow(
             .semantics {
                 role = Role.Button
                 selected = isActive
-                if (isActive) stateDescription = "Current lyric"
-                contentDescription = "${group.lines.joinToString(" ")}. Seek to lyric."
-                onClick(label = "Seek to this lyric") {
+                if (isActive) stateDescription = currentLyricDescription
+                contentDescription = lyricActionDescription
+                onClick(label = seekDescription) {
                     onClick()
                     true
                 }
@@ -584,7 +591,7 @@ private fun SyncedLyricRow(
 private fun UnsyncedLyricsList(document: LyricsDocument.Unsynced) {
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
-            text = "Unsynced lyrics",
+            text = stringResource(R.string.lyrics_unsynced),
             color = Color.White.copy(alpha = 0.62f),
             style = MaterialTheme.typography.labelLarge,
             modifier = Modifier.padding(horizontal = 28.dp, vertical = 10.dp)
@@ -622,7 +629,7 @@ private fun LyricsLoading() {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             CircularProgressIndicator(color = Color.White)
             Spacer(Modifier.height(14.dp))
-            Text("Loading local lyrics…", color = Color.White.copy(alpha = 0.76f))
+            Text(stringResource(R.string.lyrics_loading), color = Color.White.copy(alpha = 0.76f))
         }
     }
 }
@@ -647,21 +654,22 @@ private fun LyricsUnavailable(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = content.title,
+                text = stringResource(content.titleRes),
                 color = Color.White,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = content.detail,
+                text = content.detailArg?.let { stringResource(content.detailRes, it) }
+                    ?: stringResource(content.detailRes),
                 color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyLarge
             )
             content.candidates.forEach { candidate ->
                 Text(
-                    text = candidate.displayName +
-                            candidate.relativeDirectory.takeIf(String::isNotBlank)
-                                ?.let { " — $it" }.orEmpty(),
+                    text = if (candidate.relativeDirectory.isBlank()) candidate.displayName
+                        else stringResource(R.string.lyrics_candidate_path,
+                            candidate.displayName, candidate.relativeDirectory),
                     color = Color.White.copy(alpha = 0.62f),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 2,
@@ -673,13 +681,13 @@ private fun LyricsUnavailable(
                     Button(onClick = onRescan) {
                         Icon(Icons.Default.Refresh, contentDescription = null)
                         Spacer(Modifier.width(6.dp))
-                        Text("Rescan")
+                        Text(stringResource(R.string.lyrics_rescan))
                     }
                 }
                 Button(onClick = onOpenSettings) {
                     Icon(Icons.Default.Settings, contentDescription = null)
                     Spacer(Modifier.width(6.dp))
-                    Text("Local Lyrics settings")
+                    Text(stringResource(R.string.lyrics_settings))
                 }
             }
         }
@@ -742,9 +750,10 @@ private suspend fun androidx.compose.foundation.lazy.LazyListState.anchorItem(
 private const val MAX_ANCHOR_CORRECTION_PASSES = 3
 
 private data class UnavailableContent(
-    val title: String,
-    val detail: String,
+    val titleRes: Int,
+    val detailRes: Int,
     val canRescan: Boolean,
+    val detailArg: String? = null,
     val candidates: List<LyricsCandidate> = emptyList()
 )
 
@@ -753,51 +762,47 @@ private fun unavailableContent(
     reason: LyricsUnavailableReason
 ): UnavailableContent = when (reason) {
     LyricsUnavailableReason.NoRootsConfigured -> UnavailableContent(
-        title = "No lyrics folder configured",
-        detail = "Select one or more folders containing local .lrc files.",
+        titleRes = R.string.lyrics_no_folder,
+        detailRes = R.string.lyrics_no_folder_detail,
         canRescan = false
     )
     LyricsUnavailableReason.NotFound -> UnavailableContent(
-        title = "No local lyrics found",
-        detail = buildString {
-            append("Tried names including:\n")
-            append(
-                generateLyricsNameCandidates(song.toLyricsIdentity())
-                    .take(4)
-                    .joinToString("\n") { "${it.displayStem}.lrc" }
-            )
-        },
+        titleRes = R.string.lyrics_not_found,
+        detailRes = R.string.lyrics_tried_names,
+        detailArg = generateLyricsNameCandidates(song.toLyricsIdentity())
+            .take(4).joinToString("\n") { "${it.displayStem}.lrc" },
         canRescan = true
     )
     is LyricsUnavailableReason.Ambiguous -> UnavailableContent(
-        title = "Multiple matching lyrics files",
-        detail = "Sazanami could not safely choose between these files.",
+        titleRes = R.string.lyrics_multiple_matches,
+        detailRes = R.string.lyrics_multiple_matches_detail,
         canRescan = true,
         candidates = reason.candidates.take(5)
     )
     is LyricsUnavailableReason.PermissionLost -> UnavailableContent(
-        title = "Lyrics folder access unavailable",
-        detail = "Android no longer grants access to a selected lyrics folder.",
+        titleRes = R.string.lyrics_folder_access_unavailable,
+        detailRes = R.string.lyrics_folder_access_detail,
         canRescan = true
     )
     is LyricsUnavailableReason.RootScanError -> UnavailableContent(
-        title = "Lyrics folder could not be scanned",
-        detail = "Check the folder provider and try again.",
+        titleRes = R.string.lyrics_folder_scan_failed,
+        detailRes = R.string.lyrics_folder_scan_detail,
         canRescan = true
     )
     is LyricsUnavailableReason.StaleFile -> UnavailableContent(
-        title = "Lyrics file moved or deleted",
-        detail = "The indexed sidecar file is no longer available.",
+        titleRes = R.string.lyrics_file_moved,
+        detailRes = R.string.lyrics_file_moved_detail,
         canRescan = true
     )
     is LyricsUnavailableReason.ReadError -> UnavailableContent(
-        title = "Lyrics file could not be read",
-        detail = "The matching local file could not be opened.",
+        titleRes = R.string.lyrics_file_read_failed,
+        detailRes = R.string.lyrics_file_read_detail,
         canRescan = true
     )
     is LyricsUnavailableReason.InvalidLyrics -> UnavailableContent(
-        title = "Lyrics file has no usable lyrics",
-        detail = reason.documentUri.substringAfterLast('/'),
+        titleRes = R.string.lyrics_file_invalid,
+        detailRes = R.string.lyrics_file_invalid_detail,
+        detailArg = reason.documentUri.substringAfterLast('/'),
         canRescan = true
     )
 }

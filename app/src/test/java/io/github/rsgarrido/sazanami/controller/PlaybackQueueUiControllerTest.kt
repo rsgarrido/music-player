@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.controller
 
 import android.net.Uri
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.local.PersistedQueueRepeatMode
 import io.github.rsgarrido.sazanami.data.local.PlaybackQueueEntity
@@ -40,8 +41,8 @@ class PlaybackQueueUiControllerTest {
         assertEquals("A", controller.state.value.selectedQueueId)
         assertTrue(controller.state.value.queues.first { it.queueId == "A" }.isActive)
         assertEquals(
-            "PLAYING",
-            controller.state.value.queues.first { it.queueId == "A" }.stateLabel
+            R.string.queue_state_playing,
+            controller.state.value.queues.first { it.queueId == "A" }.stateLabelRes
         )
         assertEquals(1, controller.state.value.queues.first { it.queueId == "A" }.currentPosition)
         assertEquals("Song 1", controller.state.value.queues.first { it.queueId == "A" }.currentTrack?.title)
@@ -51,7 +52,7 @@ class PlaybackQueueUiControllerTest {
         assertEquals("A", controller.state.value.activeQueueId)
         assertEquals("B", controller.state.value.selectedQueueId)
         assertFalse(controller.state.value.selectedQueue?.isActive == true)
-        assertEquals("VIEWING", controller.state.value.selectedQueue?.stateLabel)
+        assertEquals(R.string.queue_state_viewing, controller.state.value.selectedQueue?.stateLabelRes)
         assertEquals(0, operations.switchCount)
     }
 
@@ -467,7 +468,7 @@ class PlaybackQueueUiControllerTest {
         controller.removeEntry("A", "a").join()
 
         assertEquals(listOf("a"), controller.state.value.selectedEntries.map { it.entryId })
-        assertEquals("Unable to remove that queue entry.", controller.state.value.message)
+        assertEquals(R.string.queue_message_remove_failed, controller.state.value.message)
         assertTrue(requireNotNull(controller.state.value.swipeResetVersions["a"]) > resetBefore)
         assertEquals(setOf("a"), controller.state.value.swipeResetVersions.keys)
     }
@@ -572,7 +573,7 @@ class PlaybackQueueUiControllerTest {
         assertEquals("A", controller.state.value.activeQueueId)
         assertEquals("B", controller.state.value.selectedQueueId)
         assertEquals(
-            "Unable to switch queues. Current playback was kept.",
+            R.string.queue_message_switch_failed,
             controller.state.value.message
         )
     }
@@ -626,7 +627,7 @@ class PlaybackQueueUiControllerTest {
         assertEquals(listOf<String?>(null), completions)
         assertEquals("A", controller.state.value.activeQueueId)
         assertEquals("A", controller.state.value.selectedQueueId)
-        assertEquals("Unable to create the new queue.", controller.state.value.message)
+        assertEquals(R.string.queue_message_create_failed, controller.state.value.message)
     }
 
     @Test
@@ -664,7 +665,7 @@ class PlaybackQueueUiControllerTest {
         assertEquals(listOf(false), completions)
         assertEquals("A", controller.state.value.activeQueueId)
         assertEquals(
-            "Unable to add tracks to that queue.",
+            R.string.queue_message_add_failed,
             controller.state.value.message
         )
     }
@@ -681,7 +682,7 @@ class PlaybackQueueUiControllerTest {
         controller.renameQueue("A", "   ").join()
 
         assertEquals(1, operations.renameCount)
-        assertEquals("Queue name cannot be blank.", controller.state.value.message)
+        assertEquals(R.string.queue_message_name_blank, controller.state.value.message)
         assertEquals("Trimmed", validatedQueueName("  Trimmed "))
         assertNull(validatedQueueName("  "))
     }
@@ -696,7 +697,7 @@ class PlaybackQueueUiControllerTest {
 
         controller.deleteQueue("A").join()
         assertEquals(0, operations.deleteCount)
-        assertEquals("The active queue cannot be deleted.", controller.state.value.message)
+        assertEquals(R.string.queue_message_active_cannot_delete, controller.state.value.message)
 
         controller.deleteQueue("B").join()
         assertEquals(1, operations.deleteCount)
@@ -704,7 +705,7 @@ class PlaybackQueueUiControllerTest {
 
         controller.deleteQueue("A").join()
         assertEquals(1, operations.deleteCount)
-        assertEquals("The only remaining queue cannot be deleted.", controller.state.value.message)
+        assertEquals(R.string.queue_message_only_remaining, controller.state.value.message)
     }
 
     @Test

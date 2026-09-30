@@ -1,23 +1,31 @@
 package io.github.rsgarrido.sazanami.player.replaygain
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
+
 enum class ReplayGainMode(
-    val displayName: String,
-    val description: String
+    @StringRes val labelRes: Int,
+    @StringRes val descriptionRes: Int,
+    val diagnosticDisplayName: String
 ) {
     OFF(
-        displayName = "Off",
-        description = "Playback volume is unchanged."
+        R.string.replay_gain_off,
+        R.string.replay_gain_off_description,
+        "Off"
     ),
     TRACK(
-        displayName = "Track gain",
-        description = "Normalize each song individually using ReplayGain track tags."
+        R.string.replay_gain_track,
+        R.string.replay_gain_track_description,
+        "Track gain"
     ),
     ALBUM(
-        displayName = "Album gain",
-        description = "Use album gain when available to preserve album loudness differences."
+        R.string.replay_gain_album,
+        R.string.replay_gain_album_description,
+        "Album gain"
     ),
     SMART(
-        displayName = "Smart",
-        description = "Use album gain for album playback and track gain for mixed playback."
+        R.string.replay_gain_smart,
+        R.string.replay_gain_smart_description,
+        "Smart"
     )
 }

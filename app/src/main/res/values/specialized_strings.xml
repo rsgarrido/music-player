@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="rating_rate_stars">
+        <item quantity="one">Rate %d star</item>
+        <item quantity="other">Rate %d stars</item>
+    </plurals>
+    <string name="settings_offload_disabled_label">Disabled</string>
+    <string name="settings_offload_automatic_label">Automatic</string>
+    <string name="queue_state_playing">PLAYING</string>
+    <string name="queue_state_viewing">VIEWING</string>
+    <string name="queue_message_load_failed">Unable to load saved queues.</string>
+    <string name="queue_message_live_unavailable">Live queue updates are temporarily unavailable.</string>
+    <string name="queue_message_switch_failed">Unable to switch queues. Current playback was kept.</string>
+    <string name="queue_message_start_playback">Start playback before creating a queue from the current session.</string>
+    <string name="queue_message_name_blank">Queue name cannot be blank.</string>
+    <string name="queue_message_rename_failed">Unable to rename queue.</string>
+    <string name="queue_message_delete_failed">Unable to delete queue.</string>
+    <string name="queue_message_only_remaining">The only remaining queue cannot be deleted.</string>
+    <string name="queue_message_active_cannot_delete">The active queue cannot be deleted.</string>
+    <string name="queue_message_create_play_failed">Unable to create and play the new queue.</string>
+    <string name="queue_message_create_failed">Unable to create the new queue.</string>
+    <string name="queue_message_add_failed">Unable to add tracks to that queue.</string>
+    <string name="queue_message_remove_failed">Unable to remove that queue entry.</string>
+    <string name="queue_message_play_failed">Unable to play that queue entry.</string>
+    <string name="queue_message_restore_failed">Unable to restore that queue entry.</string>
+    <string name="queue_message_reorder_failed">Queue order could not be changed.</string>
+    <string name="queue_message_partial_load">Some queues could not be loaded.</string>
+    <string name="library_artwork_refresh_failed">Artwork refresh failed.</string>
+    <string name="library_audio_access_lost">Audio access is no longer available.</string>
+    <string name="library_query_failed">Library query failed.</string>
+    <string name="queue_generated_name">Queue %1$d</string>
+    <string name="widget_unknown_title">Unknown title</string>
+    <string name="widget_unknown_artist">Unknown artist</string>
+    <string name="widget_now_playing">NOW PLAYING</string>
+    <string name="auto_browse_playlists">Playlists</string>
+    <string name="auto_browse_albums">Albums</string>
+    <string name="auto_browse_artists">Artists</string>
+    <string name="auto_browse_songs">Songs</string>
+    <string name="auto_unknown_artist">Unknown Artist</string>
+    <string name="auto_unknown_title">Unknown Title</string>
+    <string name="auto_unknown_album">Unknown Album</string>
+    <string name="auto_various_artists">Various Artists</string>
+    <string name="auto_shuffle_on">Shuffle on</string>
+    <string name="auto_shuffle">Shuffle</string>
+    <string name="auto_repeat_all_on">Repeat all on</string>
+    <string name="auto_repeat_all">Repeat all</string>
+    <plurals name="auto_browse_song_count">
+        <item quantity="one">%1$d song</item>
+        <item quantity="other">%1$d songs</item>
+    </plurals>
+    <string name="replay_gain_off">Off</string>
+    <string name="replay_gain_off_description">Playback volume is unchanged.</string>
+    <string name="replay_gain_track">Track gain</string>
+    <string name="replay_gain_track_description">Normalize each song individually using ReplayGain track tags.</string>
+    <string name="replay_gain_album">Album gain</string>
+    <string name="replay_gain_album_description">Use album gain when available to preserve album loudness differences.</string>
+    <string name="replay_gain_smart">Smart</string>
+    <string name="replay_gain_smart_description">Use album gain for album playback and track gain for mixed playback.</string>
+    <string name="player_theme_default">Sazanami Default</string>
+    <string name="player_theme_classic_wheel" translatable="false">Classic Wheel</string>
+    <string name="player_theme_retro_rack" translatable="false">Retro Rack</string>
+    <string name="player_theme_pocket_flip" translatable="false">Pocket Flip</string>
+    <string name="player_theme_pocket_cassette" translatable="false">Pocket Cassette</string>
+    <string name="player_theme_pocket_disc" translatable="false">Pocket Disc</string>
+    <string name="modern_preset_sazanami_default">Sazanami Default</string>
+    <string name="modern_preset_artwork_focus">Artwork Focus</string>
+    <string name="modern_preset_minimal">Minimal</string>
+    <string name="modern_preset_colorful">Colorful</string>
+    <string name="modern_choice_my_player">My Player</string>
+    <string name="modern_choice_default">Default</string>
+    <string name="history_reason_metadata_match">Title, artist, and album match</string>
+    <string name="history_reason_title_formatting">Title formatting difference</string>
+    <string name="history_reason_punctuation">Punctuation difference</string>
+    <string name="history_reason_accent">Accent/diacritic difference</string>
+    <string name="history_reason_similar_title">Similar title</string>
+    <string name="history_reason_version">Title/version formatting</string>
+    <string name="history_reason_incomplete">Some imported metadata is missing</string>
+    <string name="history_reason_multiple">Multiple possible matches</string>
+    <string name="history_reason_no_match">No likely library match</string>
+    <string name="history_reason_linked">Linked to library</string>
+    <string name="lyrics_close">Close lyrics</string>
+    <string name="lyrics_album_artwork">Album artwork</string>
+    <string name="lyrics_unknown_artist">Unknown artist</string>
+    <string name="lyrics_playing">Playing</string>
+    <string name="lyrics_paused">Paused</string>
+    <string name="lyrics_pause">Pause</string>
+    <string name="lyrics_play">Play</string>
+    <string name="lyrics_return_to_current">Return to current line</string>
+    <string name="lyrics_current_lyric">Current lyric</string>
+    <string name="lyrics_seek_to_lyric">Seek to this lyric</string>
+    <string name="lyrics_line_seek_description">%1$s. Seek to lyric.</string>
+    <string name="lyrics_emphasis">lyric emphasis</string>
+    <string name="lyrics_unsynced">Unsynced lyrics</string>
+    <string name="lyrics_loading">Loading local lyrics…</string>
+    <string name="lyrics_rescan">Rescan</string>
+    <string name="lyrics_settings">Local Lyrics settings</string>
+    <string name="lyrics_no_folder">No lyrics folder configured</string>
+    <string name="lyrics_no_folder_detail">Select one or more folders containing local .lrc files.</string>
+    <string name="lyrics_not_found">No local lyrics found</string>
+    <string name="lyrics_tried_names">Tried names including:\n%1$s</string>
+    <string name="lyrics_multiple_matches">Multiple matching lyrics files</string>
+    <string name="lyrics_multiple_matches_detail">Sazanami could not safely choose between these files.</string>
+    <string name="lyrics_folder_access_unavailable">Lyrics folder access unavailable</string>
+    <string name="lyrics_folder_access_detail">Android no longer grants access to a selected lyrics folder.</string>
+    <string name="lyrics_folder_scan_failed">Lyrics folder could not be scanned</string>
+    <string name="lyrics_folder_scan_detail">Check the folder provider and try again.</string>
+    <string name="lyrics_file_moved">Lyrics file moved or deleted</string>
+    <string name="lyrics_file_moved_detail">The indexed sidecar file is no longer available.</string>
+    <string name="lyrics_file_read_failed">Lyrics file could not be read</string>
+    <string name="lyrics_file_read_detail">The matching local file could not be opened.</string>
+    <string name="lyrics_file_invalid">Lyrics file has no usable lyrics</string>
+    <string name="lyrics_file_invalid_detail">%1$s</string>
+    <string name="lyrics_candidate_path">%1$s — %2$s</string>
+    <string name="lyrics_no_folders_selected">No folders selected. Local .lrc files will not be indexed.</string>
+    <string name="lyrics_local_title">Local lyrics</string>
+    <string name="lyrics_local_description">Manage folders containing synced .lrc lyric files.</string>
+    <string name="lyrics_folders">Lyrics folders</string>
+    <string name="lyrics_persisted_access_missing">Persisted folder access is missing</string>
+    <string name="lyrics_remove">Remove</string>
+    <string name="lyrics_add_folder">Add folder</string>
+    <string name="lyrics_remove_folder_note">Removing a folder stops indexing it but does not revoke Android’s persisted folder permission.</string>
+    <string name="lyrics_retain_access_failed">Sazanami could not retain access to that folder.</string>
+    <string name="lyrics_folders_scan_failed">Lyrics folders could not be scanned.</string>
+    <plurals name="lyrics_folder_summary">
+        <item quantity="one">%1$d folder • %2$s</item>
+        <item quantity="other">%1$d folders • %2$s</item>
+    </plurals>
+    <plurals name="lyrics_lrc_file_count">
+        <item quantity="one">%1$d .lrc file</item>
+        <item quantity="other">%1$d .lrc files</item>
+    </plurals>
+    <plurals name="lyrics_missing_folder_permissions">
+        <item quantity="one">%1$d lyrics folder permission is missing.</item>
+        <item quantity="other">%1$d lyrics folder permissions are missing.</item>
+    </plurals>
+    <plurals name="lyrics_folder_scan_failures">
+        <item quantity="one">%1$d lyrics folder could not be scanned.</item>
+        <item quantity="other">%1$d lyrics folders could not be scanned.</item>
+    </plurals>
+    <string name="modern_back">Back</string>
+    <string name="modern_customize_default_player">Customize Default Player</string>
+    <string name="modern_changes_preview">Changes appear instantly in the preview and expanded player.</string>
+    <string name="modern_preview">Preview</string>
+    <string name="modern_preview_description">A compact view of the current Default player appearance.</string>
+    <string name="modern_presets">Presets</string>
+    <string name="modern_presets_description">Apply a coordinated look, then fine-tune any setting below.</string>
+    <string name="modern_current_appearance">Current appearance</string>
+    <string name="modern_seekbar">Seekbar</string>
+    <string name="modern_seekbar_description">Choose the progress style and waveform presentation.</string>
+    <string name="modern_style">Style</string>
+    <string name="modern_waveform_size">Waveform size</string>
+    <string name="modern_waveform_density">Waveform density</string>
+    <string name="modern_progress_color">Progress color</string>
+    <string name="modern_background">Background</string>
+    <string name="modern_background_description">Set the backdrop while keeping player details readable.</string>
+    <string name="modern_blur_strength">Blur strength</string>
+    <string name="modern_dimming">Dimming</string>
+    <string name="modern_artwork">Artwork</string>
+    <string name="modern_artwork_description">Adjust the album cover’s shape, scale, fit, and depth.</string>
+    <string name="modern_shape">Shape</string>
+    <string name="modern_size">Size</string>
+    <string name="modern_image_fit">Image fit</string>
+    <string name="modern_shadow">Shadow</string>
+    <string name="modern_playback_controls">Playback Controls</string>
+    <string name="modern_playback_controls_description">Choose the control treatment, scale, and active accent.</string>
+    <string name="modern_accent">Accent</string>
+    <string name="modern_layout">Layout</string>
+    <string name="modern_layout_description">Tune spacing, metadata alignment, and technical details.</string>
+    <string name="modern_density">Density</string>
+    <string name="modern_metadata_alignment">Metadata alignment</string>
+    <string name="modern_audio_quality_badge">Audio quality badge</string>
+    <string name="modern_audio_quality_badge_description">Show format and bit-depth details when available.</string>
+    <string name="modern_reset">Reset</string>
+    <string name="modern_reset_description">Restore Sazanami’s intended Modern player defaults.</string>
+    <string name="modern_reset_default_appearance">Reset Default Player Appearance</string>
+    <string name="modern_reset_confirm_title">Reset Default Player Appearance?</string>
+    <string name="modern_reset_confirm_body">This restores all Default player appearance settings. Other player themes are unchanged.</string>
+    <string name="modern_cancel">Cancel</string>
+    <string name="modern_solid_color">Solid color</string>
+    <string name="modern_hue">Hue</string>
+    <string name="modern_saturation">Saturation</string>
+    <string name="modern_brightness">Brightness</string>
+    <string name="modern_preview_title_fallback">Default Player Preview</string>
+    <string name="backup_export_success">Backup exported. %1$s, %2$s, %3$s, %4$s.</string>
+    <string name="backup_restore_success">Backup restored. %1$s, %2$s, %3$s, %4$s.</string>
+    <string name="backup_export_failure">Couldn’t export backup.</string>
+    <string name="backup_restore_failure">Couldn’t restore backup.</string>
+    <string name="backup_invalid_file">Couldn’t open backup. The file is invalid or uses an unsupported version.</string>
+    <string name="backup_restore_confirm_title">Restore backup?</string>
+    <string name="backup_restore_confirm_body">This will replace your current Sazanami app data:\n- Favorites\n- Playlists\n- Artist pictures and custom playlist artwork\n- Listening history, imported-track links, and ratings\n- Library folder selection\n- Player theme and ReplayGain setting\n\nSaved queues and current playback will be cleared.\nYour music files will not be changed.</string>
+    <string name="backup_restore_summary">- %1$s\n- %2$s\n- %3$s\n- %4$s\n- %5$s\n- %6$s</string>
+    <string name="backup_cancel">Cancel</string>
+    <string name="backup_restore_action">Restore</string>
+    <plurals name="backup_favorites"><item quantity="one">%1$d favorite</item><item quantity="other">%1$d favorites</item></plurals>
+    <plurals name="backup_playlists"><item quantity="one">%1$d playlist</item><item quantity="other">%1$d playlists</item></plurals>
+    <plurals name="backup_playlist_songs"><item quantity="one">%1$d playlist song</item><item quantity="other">%1$d playlist songs</item></plurals>
+    <plurals name="backup_history_entries"><item quantity="one">%1$d history entry</item><item quantity="other">%1$d history entries</item></plurals>
+    <plurals name="backup_selected_folders"><item quantity="one">%1$d selected folder</item><item quantity="other">%1$d selected folders</item></plurals>
+    <plurals name="backup_pictures"><item quantity="one">%1$d picture</item><item quantity="other">%1$d pictures</item></plurals>
+</resources>

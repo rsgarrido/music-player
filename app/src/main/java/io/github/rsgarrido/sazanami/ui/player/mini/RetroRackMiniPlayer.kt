@@ -76,7 +76,7 @@ fun RetroRackMiniPlayer(
                     .padding(horizontal = 7.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = displayedState.currentSong.miniTitle.uppercase(Locale.ROOT),
+                    text = displayedState.currentSong.localizedMiniTitle().uppercase(Locale.ROOT),
                     style = MaterialTheme.typography.labelMedium,
                     color = meterColor,
                     fontFamily = FontFamily.Monospace,
@@ -86,7 +86,7 @@ fun RetroRackMiniPlayer(
                     ,modifier = Modifier.onGloballyPositioned { morphBounds?.updateMiniTitle(it.boundsInRoot()) }
                 )
                 Text(
-                    text = displayedState.currentSong.miniArtist.uppercase(Locale.ROOT),
+                    text = displayedState.currentSong.localizedMiniArtist().uppercase(Locale.ROOT),
                     style = MaterialTheme.typography.labelSmall,
                     color = meterColor.copy(alpha = 0.62f),
                     fontFamily = FontFamily.Monospace,

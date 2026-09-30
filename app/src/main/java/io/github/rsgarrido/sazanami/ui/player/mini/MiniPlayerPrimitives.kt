@@ -1,6 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.mini
 
-import android.R
+import android.R as AndroidR
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -39,6 +39,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -46,6 +47,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import kotlin.math.abs
 
@@ -63,6 +65,7 @@ internal fun MiniPlayerScaffold(
     content: @Composable (MiniPlayerState) -> Unit
 ) {
     var isNextTransition by remember { mutableStateOf(true) }
+    val openDescription = stringResource(R.string.player_open_for, state.currentSong.localizedMiniTitle())
 
     Surface(
         onClick = callbacks.onExpandClick,
@@ -74,7 +77,7 @@ internal fun MiniPlayerScaffold(
             }
             .semantics {
                 role = Role.Button
-                contentDescription = miniPlayerOpenContentDescription(state.currentSong)
+                contentDescription = openDescription
             }
             .miniPlayerSwipeGestures(
                 onSwipeLeft = {
@@ -125,11 +128,11 @@ internal fun MiniPlayerArtwork(
 ) {
     AsyncImage(
         model = song.albumArtUri,
-        contentDescription = "Album art for ${song.miniTitle}",
+        contentDescription = stringResource(R.string.player_album_art_for, song.localizedMiniTitle()),
         modifier = modifier,
         contentScale = ContentScale.Crop,
-        error = painterResource(R.drawable.ic_media_play),
-        placeholder = painterResource(R.drawable.ic_media_play)
+        error = painterResource(AndroidR.drawable.ic_media_play),
+        placeholder = painterResource(AndroidR.drawable.ic_media_play)
     )
 }
 
@@ -152,7 +155,7 @@ internal fun MiniPlayerPlayPauseButton(
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = miniPlayerPlaybackContentDescription(isPlaying),
+                contentDescription = stringResource(miniPlayerPlaybackLabelRes(isPlaying)),
                 tint = iconTint
             )
         }
@@ -171,23 +174,20 @@ internal fun MiniPlayerQueueButton(
     ) {
         Icon(
             imageVector = Icons.Filled.QueueMusic,
-            contentDescription = "Open queues",
+            contentDescription = stringResource(R.string.player_open_queues),
             tint = iconTint
         )
     }
 }
 
-internal val Song.miniTitle: String
-    get() = title.ifBlank { "Unknown Title" }
+@Composable
+internal fun Song.localizedMiniTitle(): String = if (title.isBlank()) stringResource(R.string.player_unknown_title) else title
 
-internal val Song.miniArtist: String
-    get() = artist.ifBlank { "Unknown Artist" }
+@Composable
+internal fun Song.localizedMiniArtist(): String = if (artist.isBlank()) stringResource(R.string.player_unknown_artist) else artist
 
-internal fun miniPlayerOpenContentDescription(song: Song): String =
-    "Open player for ${song.miniTitle}"
-
-internal fun miniPlayerPlaybackContentDescription(isPlaying: Boolean): String =
-    if (isPlaying) "Pause" else "Play"
+internal fun miniPlayerPlaybackLabelRes(isPlaying: Boolean): Int =
+    if (isPlaying) R.string.player_pause else R.string.player_play
 
 internal fun normalizedMiniPlayerProgress(currentPosition: Int, duration: Int): Float {
     if (duration <= 0) return 0f

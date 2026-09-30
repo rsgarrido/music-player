@@ -198,7 +198,7 @@ object AndroidAutoSearchResolver {
             if (title == requestedTitle && artist.contains(requestedArtist)) return 115
         }
         if (title == normalizedQuery) return 110
-        if ("$title by $artist" == normalizedQuery) return 108
+        if (listOf("by", "por").any { marker -> "$title $marker $artist" == normalizedQuery }) return 108
         if (artist == normalizedQuery) return 100
         if (album == normalizedQuery) return 95
         if (title.startsWith(normalizedQuery)) return 90
@@ -248,22 +248,10 @@ object AndroidAutoSearchResolver {
 
     private fun parseTitleByArtist(query: String): Pair<String, String>? {
         val normalizedSpacing = query.trim().replace(Regex("\\s+"), " ")
-        val marker = Regex("\\s+by\\s+", RegexOption.IGNORE_CASE)
-        val match = marker.find(normalizedSpacing) ?: return null
-        val title = normalizedSpacing.substring(0, match.range.first).trim()
-        val artist = normalizedSpacing.substring(match.range.last + 1).trim()
-        return if (title.isNotBlank() && artist.isNotBlank()) title to artist else null
+        return normalizedSpacing.splitVoiceEntityByArtist()
     }
 
-    private fun String.isGenericLibraryRequest(): Boolean = normalized(this) in setOf(
-        "music",
-        "my music",
-        "songs",
-        "all songs",
-        "my songs",
-        "library",
-        "my library"
-    )
+    private fun String.isGenericLibraryRequest(): Boolean = isGenericVoiceQuery()
 
     private fun textMatches(actual: String, requested: String): Boolean {
         val actualNorm = normalized(actual)

@@ -1,5 +1,7 @@
 package io.github.rsgarrido.sazanami.controller
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationItem
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationSource
 import io.github.rsgarrido.sazanami.data.ListeningIdentityReconciliationCandidate
@@ -24,17 +26,17 @@ enum class ReconciliationReviewFilter {
 
 enum class ReconciliationTrackStatus { REVIEW, UNMATCHED, LINKED }
 
-enum class ReconciliationMatchReason(val label: String) {
-    METADATA_MATCH("Title, artist, and album match"),
-    TITLE_FORMATTING("Title formatting difference"),
-    PUNCTUATION("Punctuation difference"),
-    ACCENT_DIACRITIC("Accent/diacritic difference"),
-    SIMILAR_TITLE("Similar title"),
-    VERSION_FORMATTING("Title/version formatting"),
-    INCOMPLETE_METADATA("Some imported metadata is missing"),
-    MULTIPLE_MATCHES("Multiple possible matches"),
-    NO_LIKELY_MATCH("No likely library match"),
-    LINKED("Linked to library")
+enum class ReconciliationMatchReason(@StringRes val labelRes: Int) {
+    METADATA_MATCH(R.string.history_reason_metadata_match),
+    TITLE_FORMATTING(R.string.history_reason_title_formatting),
+    PUNCTUATION(R.string.history_reason_punctuation),
+    ACCENT_DIACRITIC(R.string.history_reason_accent),
+    SIMILAR_TITLE(R.string.history_reason_similar_title),
+    VERSION_FORMATTING(R.string.history_reason_version),
+    INCOMPLETE_METADATA(R.string.history_reason_incomplete),
+    MULTIPLE_MATCHES(R.string.history_reason_multiple),
+    NO_LIKELY_MATCH(R.string.history_reason_no_match),
+    LINKED(R.string.history_reason_linked)
 }
 
 data class ReconciliationAlbumKey(

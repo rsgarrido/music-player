@@ -1,5 +1,7 @@
 package io.github.rsgarrido.sazanami.controller
 
+import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.ui.state.UiMessage
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationItem
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationSource
 import io.github.rsgarrido.sazanami.data.ListeningIdentityReconciliationCandidateService
@@ -84,7 +86,7 @@ data class ReconciliationReviewContent(
     val confirmation: ReconciliationConfirmation? = null,
     val search: ReconciliationSearchState? = null,
     val isWorking: Boolean = false,
-    val message: String? = null,
+    val message: UiMessage? = null,
     val preparedDataset: ReconciliationPreparedDataset = prepareReconciliationDataset(
         reviewItems,
         linkedItems
@@ -134,7 +136,7 @@ data class ReconciliationReviewContent(
 sealed interface ListeningHistoryReconciliationUiState {
     data object Loading : ListeningHistoryReconciliationUiState
     data class Content(val value: ReconciliationReviewContent) : ListeningHistoryReconciliationUiState
-    data class Error(val message: String) : ListeningHistoryReconciliationUiState
+    data class Error(val message: UiMessage) : ListeningHistoryReconciliationUiState
 }
 
 interface ListeningHistoryReconciliationOperations {
@@ -284,7 +286,7 @@ class ListeningHistoryReconciliationController(
             skippedSourceIds = skippedSourceIds + sourceId,
             selectedSourceIds = selectedSourceIds - sourceId,
             expandedSourceId = if (expandedSourceId == sourceId) null else expandedSourceId,
-            message = "Skipped for now. It will return the next time you open this screen."
+            message = UiMessage.Text(R.string.history_match_skipped_message)
         )
     }
 
@@ -374,11 +376,7 @@ class ListeningHistoryReconciliationController(
             }
             when (result) {
                 is ListeningIdentityReconciliationLinkResult.Linked -> {
-                    val message = if (confirmation.sources.size == 1) {
-                        "History linked. Statistics will now combine it with the local track."
-                    } else {
-                        "${confirmation.sources.size} histories linked. Statistics will now combine them with the local track."
-                    }
+                    val message = UiMessage.Quantity(R.plurals.history_match_linked_result, confirmation.sources.size)
                     if (!applySuccessfulLink(content, confirmation, result, message)) {
                         reloadAfterMutation(message)
                     }
@@ -498,7 +496,7 @@ class ListeningHistoryReconciliationController(
         content: ReconciliationReviewContent,
         confirmation: ReconciliationConfirmation.Link,
         result: ListeningIdentityReconciliationLinkResult.Linked,
-        message: String
+        message: UiMessage
     ): Boolean {
         val linksBySource = result.links.associateBy { it.sourceIdentityId }
         if (linksBySource.keys != confirmation.sources.mapTo(mutableSetOf()) { it.identityId }) {
@@ -541,7 +539,7 @@ class ListeningHistoryReconciliationController(
         content: ReconciliationReviewContent,
         confirmation: ReconciliationConfirmation.Batch,
         result: LocalReconciliationBatchResult,
-        message: String
+        message: UiMessage
     ): Boolean {
         if (result.requested != confirmation.selections.size ||
             result.newlyLinked != confirmation.selections.size ||
@@ -591,8 +589,7 @@ class ListeningHistoryReconciliationController(
                 false
             }
             reloadAfterMutation(
-                if (unlinked) "History unlinked. Statistics now treats it separately."
-                else "This imported history was already unlinked. The list has been refreshed."
+                UiMessage.Text(if (unlinked) R.string.history_match_unlinked_result else R.string.history_match_already_unlinked_result)
             )
         }
     }
@@ -611,13 +608,13 @@ class ListeningHistoryReconciliationController(
                 Unit
             } catch (_: Throwable) {
                 _state.value = ListeningHistoryReconciliationUiState.Error(
-                    "Imported tracks couldn't be loaded. Try again."
+                    UiMessage.Text(R.string.history_match_load_failed)
                 )
             }
         }
     }
 
-    private suspend fun reloadAfterMutation(message: String) {
+    private suspend fun reloadAfterMutation(message: UiMessage) {
         try {
             val previous = contentOrNull()
             val snapshot = withContext(workDispatcher) { operations.load() }
@@ -638,7 +635,7 @@ class ListeningHistoryReconciliationController(
             )
         } catch (_: Throwable) {
             _state.value = ListeningHistoryReconciliationUiState.Error(
-                "The change was saved, but the list couldn't be refreshed. Try again."
+                UiMessage.Text(R.string.history_match_refresh_failed)
             )
         }
     }
@@ -652,7 +649,7 @@ class ListeningHistoryReconciliationController(
     }
 
     companion object {
-        const val GENERIC_REFRESH_MESSAGE = "The tracks changed before they could be linked. Review the matches again."
+        val GENERIC_REFRESH_MESSAGE = UiMessage.Text(R.string.history_match_generic_refresh)
     }
 }
 
@@ -673,33 +670,29 @@ private val currentTargetComparator = compareBy<LocalReconciliationTarget>(
 fun reconciliationFailureMessage(
     failure: ListeningIdentityReconciliationFailure,
     isMany: Boolean = false
-): String = when (failure) {
+): UiMessage = UiMessage.Text(when (failure) {
     ListeningIdentityReconciliationFailure.SOURCE_ALREADY_RECONCILED ->
-        if (isMany) "Some imported history has already been linked. Review the matches again."
-        else "This imported track has already been linked."
+        if (isMany) R.string.history_match_failure_already_many
+        else R.string.history_match_failure_already_one
     ListeningIdentityReconciliationFailure.TARGET_HAS_NO_LOCAL_BINDING,
     ListeningIdentityReconciliationFailure.TARGET_NOT_FOUND ->
-        "That song is no longer available in your library. Choose another track."
+        R.string.history_match_failure_target_missing
     ListeningIdentityReconciliationFailure.SOURCE_NOT_FOUND,
     ListeningIdentityReconciliationFailure.SOURCE_HAS_NO_IMPORTED_HISTORY ->
-        if (isMany) "Some imported history changed before it could be linked. Review the matches again."
-        else "This imported history is no longer available."
-    else -> ListeningHistoryReconciliationController.GENERIC_REFRESH_MESSAGE
-}
+        if (isMany) R.string.history_match_failure_source_many
+        else R.string.history_match_failure_source_one
+    else -> R.string.history_match_generic_refresh
+})
 
-fun batchResultMessage(result: LocalReconciliationBatchResult): String {
-    val parts = buildList {
-        if (result.newlyLinked > 0) add("${result.newlyLinked} linked")
-        if (result.alreadyLinked > 0) add("${result.alreadyLinked} already linked")
-        if (result.conflicts.isNotEmpty()) {
-            val count = result.conflicts.size
-            add("$count ${if (count == 1) "conflict" else "conflicts"}")
-        }
-        if (result.failures.isNotEmpty()) add("${result.failures.size} failed")
+fun batchResultMessage(result: LocalReconciliationBatchResult): UiMessage =
+    if (result.newlyLinked == 0 && result.alreadyLinked == 0 && result.conflicts.isEmpty() && result.failures.isEmpty()) {
+        UiMessage.Text(R.string.history_match_batch_no_change)
+    } else {
+        UiMessage.Text(
+            R.string.history_match_batch_result,
+            listOf(result.newlyLinked, result.alreadyLinked, result.conflicts.size, result.failures.size)
+        )
     }
-    return if (parts.isEmpty()) "No selected histories were changed."
-    else parts.joinToString(separator = " · ", postfix = ".")
-}
 
 fun ratingWarning(ratings: List<ListeningIdentityReconciliationRatings>): String? {
     val conflict = ratings.firstOrNull {

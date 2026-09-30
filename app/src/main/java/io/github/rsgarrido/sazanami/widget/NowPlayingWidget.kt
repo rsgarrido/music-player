@@ -321,12 +321,13 @@ private fun Metadata(
     layout: NowPlayingWidgetLayout
 ) {
     val linePolicy = widgetMetadataLinePolicyFor(layout)
+    val context = LocalContext.current
     Column(
         modifier = modifier.clickable(actionStartActivity<MainActivity>()),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = snapshot.title,
+            text = snapshot.localizedTitle(context),
             style = TextStyle(
                 color = appearance.metadataPrimaryText.asGlanceColorProvider(),
                 fontSize = 14.sp,
@@ -338,7 +339,7 @@ private fun Metadata(
             Spacer(GlanceModifier.height(2.dp))
         }
         Text(
-            text = snapshot.artist,
+            text = snapshot.localizedArtist(context),
             style = TextStyle(
                 color = appearance.metadataSecondaryText.asGlanceColorProvider(),
                 fontSize = 12.sp

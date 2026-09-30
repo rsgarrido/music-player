@@ -62,6 +62,8 @@ import io.github.rsgarrido.sazanami.mediaaccess.folderArtworkLocationLabel
 import io.github.rsgarrido.sazanami.ui.home.LocalHomePinUi
 import io.github.rsgarrido.sazanami.ui.state.LibraryRefreshSummary
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
+import io.github.rsgarrido.sazanami.ui.player.modern.descriptionRes
+import io.github.rsgarrido.sazanami.ui.player.modern.labelRes
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokenField
@@ -384,7 +386,7 @@ fun SettingsScreen(
 
             SettingsRow(
                 title = stringResource(R.string.settings_replay_gain),
-                summary = selectedReplayGainMode.displayName,
+                summary = stringResource(selectedReplayGainMode.labelRes),
                 icon = AppShellIcons.Gauge,
                 onClick = { isReplayGainDialogVisible = true },
                 emphasizeSummary = true,
@@ -395,7 +397,7 @@ fun SettingsScreen(
 
             SettingsRow(
                 title = stringResource(R.string.settings_audio_offload),
-                summary = selectedAudioOffloadPreference.displayName,
+                summary = stringResource(selectedAudioOffloadPreference.labelRes),
                 icon = AppShellIcons.AudioRoute,
                 onClick = { isAudioOffloadDialogVisible = true },
                 emphasizeSummary = true,
@@ -455,7 +457,7 @@ fun SettingsScreen(
 
             SettingsRow(
                 title = stringResource(R.string.settings_player_theme),
-                summary = selectedPlayerTheme.displayName,
+                summary = stringResource(selectedPlayerTheme.labelRes),
                 icon = AppShellIcons.Deck,
                 onClick = { isPlayerThemeDialogVisible = true },
                 emphasizeSummary = true,
@@ -467,7 +469,7 @@ fun SettingsScreen(
 
                 SettingsRow(
                     title = stringResource(R.string.settings_artwork_transition_style),
-                    summary = selectedModernArtworkTransitionStyle.displayName,
+                    summary = stringResource(selectedModernArtworkTransitionStyle.labelRes),
                     icon = AppShellIcons.Transition,
                     onClick = { isArtworkTransitionDialogVisible = true },
                     emphasizeSummary = true,
@@ -490,7 +492,7 @@ fun SettingsScreen(
 
                 SettingsRow(
                     title = stringResource(R.string.settings_customize_theme_colors),
-                    summary = stringResource(R.string.settings_theme_colors_summary, selectedPlayerTheme.displayName),
+                    summary = stringResource(R.string.settings_theme_colors_summary, stringResource(selectedPlayerTheme.labelRes)),
                     icon = AppShellIcons.Palette,
                     onClick = { isThemeCustomizationDialogVisible = true },
                     navigationContentDescription = stringResource(R.string.settings_customize_theme_colors)
@@ -722,10 +724,10 @@ fun SettingsScreen(
                             Column(
                                 modifier = Modifier.padding(start = 4.dp)
                             ) {
-                                Text(text = replayGainMode.displayName)
+                                Text(text = stringResource(replayGainMode.labelRes))
 
                                 Text(
-                                    text = replayGainMode.description,
+                                    text = stringResource(replayGainMode.descriptionRes),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
@@ -774,7 +776,7 @@ fun SettingsScreen(
                                 }
                             )
                             Column(modifier = Modifier.padding(start = 4.dp)) {
-                                Text(text = preference.displayName)
+                                Text(text = stringResource(preference.labelRes))
                                 Text(
                                     text = if (preference == AudioOffloadPreference.AUTOMATIC) {
                                         stringResource(R.string.settings_offload_automatic_description)
@@ -866,10 +868,10 @@ fun SettingsScreen(
                             Column(
                                 modifier = Modifier.padding(start = 4.dp)
                             ) {
-                                Text(text = transitionStyle.displayName)
+                                Text(text = stringResource(transitionStyle.labelRes))
 
                                 Text(
-                                    text = transitionStyle.description,
+                                    text = stringResource(transitionStyle.descriptionRes),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
@@ -917,7 +919,7 @@ fun SettingsScreen(
                                 }
                             )
 
-                            Text(text = playerTheme.displayName)
+                            Text(text = stringResource(playerTheme.labelRes))
                         }
                     }
                 }

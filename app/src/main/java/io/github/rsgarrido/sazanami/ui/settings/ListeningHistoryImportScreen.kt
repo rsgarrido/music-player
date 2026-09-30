@@ -39,11 +39,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.controller.ListeningHistoryImportFile
 import io.github.rsgarrido.sazanami.controller.SpotifyImportUiError
 import io.github.rsgarrido.sazanami.controller.SpotifyImportUiState
@@ -116,7 +119,7 @@ fun ListeningHistoryImportScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = ::requestBack, enabled = !blockedBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.history_import_back))
             }
             Column(
                 modifier = Modifier
@@ -124,12 +127,12 @@ fun ListeningHistoryImportScreen(
                     .padding(start = 4.dp)
             ) {
                 Text(
-                    text = "Import listening history",
+                    text = stringResource(R.string.history_import_title),
                     style = AppShellTypography.ScreenTitle,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "Spotify · Extended Streaming History",
+                    text = stringResource(R.string.history_import_spotify_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -139,13 +142,13 @@ fun ListeningHistoryImportScreen(
         when (state) {
             SpotifyImportUiState.Landing -> LandingContent(onSelect = { picker.launch(Unit) })
             SpotifyImportUiState.CheckingRecovery -> ProgressContent(
-                title = "Checking previous imports…",
-                description = "Making sure it is safe to start a new import."
+                title = stringResource(R.string.history_import_checking),
+                description = stringResource(R.string.history_import_checking_detail)
             )
             is SpotifyImportUiState.StaleImportRecovery -> RecoveryContent(state, actions)
             SpotifyImportUiState.CleaningStaleImport -> ProgressContent(
-                title = "Cleaning up unfinished import…",
-                description = "Published listening history will not be changed."
+                title = stringResource(R.string.history_import_cleaning),
+                description = stringResource(R.string.history_import_cleaning_detail)
             )
             is SpotifyImportUiState.FilesSelected -> FilesSelectedContent(
                 files = state.files,
@@ -157,8 +160,8 @@ fun ListeningHistoryImportScreen(
             is SpotifyImportUiState.Preview -> PreviewContent(state.preview, actions)
             is SpotifyImportUiState.Importing -> ImportProgressContent(state, actions)
             is SpotifyImportUiState.Cancelling -> ProgressContent(
-                title = "Cancelling import…",
-                description = "Sazanami is cleaning up unfinished changes."
+                title = stringResource(R.string.history_import_cancelling),
+                description = stringResource(R.string.history_import_cancelling_detail)
             )
             is SpotifyImportUiState.Cancelled -> CancelledContent(actions)
             is SpotifyImportUiState.Success -> ResultContent(state.result, actions)
@@ -170,18 +173,18 @@ fun ListeningHistoryImportScreen(
     if (showCancelDialog) {
         AlertDialog(
             onDismissRequest = { showCancelDialog = false },
-            title = { Text("Cancel import?") },
+            title = { Text(stringResource(R.string.history_import_cancel_confirm_title)) },
             text = {
-                Text("The current import will be stopped and unfinished changes will be cleaned up.")
+                Text(stringResource(R.string.history_import_cancel_confirm_detail))
             },
             confirmButton = {
                 TextButton(onClick = {
                     showCancelDialog = false
                     actions.onCancelImport()
-                }) { Text("Cancel import") }
+                }) { Text(stringResource(R.string.history_import_cancel_action)) }
             },
             dismissButton = {
-                TextButton(onClick = { showCancelDialog = false }) { Text("Keep importing") }
+                TextButton(onClick = { showCancelDialog = false }) { Text(stringResource(R.string.history_import_keep_importing)) }
             }
         )
     }
@@ -190,21 +193,20 @@ fun ListeningHistoryImportScreen(
 @Composable
 private fun LandingContent(onSelect: () -> Unit) {
     ImportCard(
-        title = "Spotify",
+        title = stringResource(R.string.history_import_spotify),
         icon = { Icon(Icons.Default.History, contentDescription = null) }
     ) {
         Text(
-            "Select the JSON files from Spotify's Extended Streaming History export. " +
-                "The simpler Account Data streaming-history files are not supported.",
+            stringResource(R.string.history_import_select_help),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            "Your history is processed locally on this device.",
+            stringResource(R.string.history_import_local_privacy),
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(top = 14.dp)
         )
         Button(onClick = onSelect, modifier = Modifier.padding(top = 20.dp)) {
-            Text("Select JSON files")
+            Text(stringResource(R.string.history_import_select_json))
         }
     }
 }
@@ -217,12 +219,12 @@ private fun FilesSelectedContent(
     onAnalyze: () -> Unit
 ) {
     ImportCard(
-        title = "${formatCount(files.size.toLong())} ${if (files.size == 1) "file" else "files"} selected",
+        title = pluralStringResource(R.plurals.history_import_files_selected, files.size, formatCount(files.size.toLong())),
         icon = { Icon(Icons.AutoMirrored.Filled.InsertDriveFile, contentDescription = null) }
     ) {
         if (cancellationMessage) {
             Text(
-                "Analysis was cancelled. No listening history was added.",
+                stringResource(R.string.history_import_analysis_cancelled),
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
@@ -240,9 +242,9 @@ private fun FilesSelectedContent(
             }
         }
         ActionRow(
-            primaryText = "Analyze",
+            primaryText = stringResource(R.string.history_import_analyze),
             onPrimary = onAnalyze,
-            secondaryText = "Change files",
+            secondaryText = stringResource(R.string.history_import_change_files),
             onSecondary = onChange
         )
     }
@@ -254,13 +256,13 @@ private fun AnalysisProgressContent(
     actions: SpotifyImportUiActions
 ) {
     ProgressContent(
-        title = "Analyzing listening history…",
+        title = stringResource(R.string.history_import_analyzing),
         description = if (state.recordsProcessed > 0) {
-            "${formatCount(state.recordsProcessed)} records processed"
+            pluralStringResource(R.plurals.history_import_records_processed, state.recordsProcessed.toInt(), formatCount(state.recordsProcessed))
         } else {
-            "Reading ${state.files.size} selected ${if (state.files.size == 1) "file" else "files"}."
+            pluralStringResource(R.plurals.history_import_reading_files, state.files.size, state.files.size)
         },
-        actionText = "Cancel",
+        actionText = stringResource(R.string.history_import_cancel_action),
         onAction = actions.onCancelAnalysis
     )
 }
@@ -272,43 +274,42 @@ private fun PreviewContent(
 ) {
     val analysis = preview.analysis
     val dedupe = preview.dedupe
-    ImportCard(title = "Preview") {
-        StatRow("Listening records found", analysis.totalRecords)
-        StatRow("Music records", analysis.validMusicRecords)
-        StatRow("New listening records", dedupe.newOccurrences, emphasize = true)
-        StatRow("Already imported", dedupe.alreadyImportedOccurrences)
-        StatRow("Overlap ignored", dedupe.overlappingOccurrencesSuppressed)
+    ImportCard(title = stringResource(R.string.history_import_preview)) {
+        StatRow(stringResource(R.string.history_import_records_found), analysis.totalRecords)
+        StatRow(stringResource(R.string.history_import_music_records), analysis.validMusicRecords)
+        StatRow(stringResource(R.string.history_import_new_records), dedupe.newOccurrences, emphasize = true)
+        StatRow(stringResource(R.string.history_import_already_imported), dedupe.alreadyImportedOccurrences)
+        StatRow(stringResource(R.string.history_import_overlap_ignored), dedupe.overlappingOccurrencesSuppressed)
         StatRow(
-            "Unsupported / non-music",
+            stringResource(R.string.history_import_unsupported),
             analysis.podcastRecords + analysis.audiobookRecords +
                 analysis.videoRecords + analysis.unknownRecords
         )
-        StatRow("Invalid records", analysis.invalidRecords)
+        StatRow(stringResource(R.string.history_import_invalid_records), analysis.invalidRecords)
         DateRangeRow(analysis.earliestAt, analysis.latestAt)
         if (dedupe.newOccurrences == 0L) {
             Text(
-                "Everything in these files has already been imported.",
+                stringResource(R.string.history_import_everything_imported),
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(top = 16.dp)
             )
             ActionRow(
-                primaryText = "Done",
+                primaryText = stringResource(R.string.history_import_done),
                 onPrimary = actions.onDone,
-                secondaryText = "Change files",
+                secondaryText = stringResource(R.string.history_import_change_files),
                 onSecondary = actions.onChangeFiles
             )
         } else {
             Text(
-                "${formatCount(dedupe.newOccurrences)} new listening records will be added. " +
-                    "They will affect Statistics and remain on this device.",
+                pluralStringResource(R.plurals.history_import_preview_summary, dedupe.newOccurrences.toInt(), formatCount(dedupe.newOccurrences)),
                 modifier = Modifier.padding(top = 16.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             ActionRow(
-                primaryText = "Import history",
+                primaryText = stringResource(R.string.history_import_import_history),
                 onPrimary = actions.onImport,
-                secondaryText = "Change files",
+                secondaryText = stringResource(R.string.history_import_change_files),
                 onSecondary = actions.onChangeFiles
             )
         }
@@ -322,14 +323,19 @@ private fun ImportProgressContent(
 ) {
     val progress = state.progress
     val phase = when (progress?.phase) {
-        null, ListeningImportExecutionPhase.ANALYZING -> "Preparing…"
-        ListeningImportExecutionPhase.IMPORTING -> "Importing history…"
-        ListeningImportExecutionPhase.PUBLISHING -> "Publishing…"
-        ListeningImportExecutionPhase.COMPLETED -> "Finishing…"
+        null, ListeningImportExecutionPhase.ANALYZING -> stringResource(R.string.history_import_preparing)
+        ListeningImportExecutionPhase.IMPORTING -> stringResource(R.string.history_import_importing)
+        ListeningImportExecutionPhase.PUBLISHING -> stringResource(R.string.history_import_publishing)
+        ListeningImportExecutionPhase.COMPLETED -> stringResource(R.string.history_import_finishing)
     }
     val total = state.preview.analysis.totalRecords
     val determinate = progress?.phase == ListeningImportExecutionPhase.ANALYZING ||
         progress?.phase == ListeningImportExecutionPhase.IMPORTING
+    val progressDescription = stringResource(
+        R.string.history_import_progress_description,
+        formatCount(progress?.recordsProcessed?.coerceIn(0L, total) ?: 0L),
+        formatCount(total)
+    )
     ImportCard(title = phase) {
         if (determinate && total > 0L) {
             val current = progress?.recordsProcessed?.coerceIn(0L, total) ?: 0L
@@ -338,7 +344,7 @@ private fun ImportProgressContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .semantics {
-                        contentDescription = "${formatCount(current)} of ${formatCount(total)} records"
+                        contentDescription = progressDescription
                     }
             )
             Text(
@@ -354,33 +360,33 @@ private fun ImportProgressContent(
             )
         }
         OutlinedButton(onClick = actions.onCancelImport, modifier = Modifier.padding(top = 20.dp)) {
-            Text("Cancel")
+            Text(stringResource(R.string.history_import_cancel_action))
         }
     }
 }
 
 @Composable
 private fun ResultContent(result: ListeningImportExecutionResult, actions: SpotifyImportUiActions) {
-    ImportCard(title = "Import complete") {
+    ImportCard(title = stringResource(R.string.history_import_complete)) {
         Text(
             if (result.newPublished == 0L) {
-                "No new listening records were added. Everything selected was already in your history."
+                stringResource(R.string.history_import_no_new_records)
             } else {
-                "${formatCount(result.newPublished)} listening records were added to your history."
+                pluralStringResource(R.plurals.history_import_added_records, result.newPublished.toInt(), formatCount(result.newPublished))
             },
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold
         )
-        StatRow("Imported", result.newPublished, emphasize = true)
-        StatRow("Already imported", result.alreadyImported)
-        StatRow("Overlap ignored", result.overlappingOccurrencesSuppressed)
-        StatRow("Skipped non-music", result.unsupportedMedia)
-        StatRow("Invalid records", result.invalid)
+        StatRow(stringResource(R.string.history_import_imported), result.newPublished, emphasize = true)
+        StatRow(stringResource(R.string.history_import_already_imported), result.alreadyImported)
+        StatRow(stringResource(R.string.history_import_overlap_ignored), result.overlappingOccurrencesSuppressed)
+        StatRow(stringResource(R.string.history_import_skipped_non_music), result.unsupportedMedia)
+        StatRow(stringResource(R.string.history_import_invalid_records), result.invalid)
         DateRangeRow(result.sourceRangeStart, result.sourceRangeEnd)
         ActionRow(
-            primaryText = "Done",
+            primaryText = stringResource(R.string.history_import_done),
             onPrimary = actions.onDone,
-            secondaryText = "Import more",
+            secondaryText = stringResource(R.string.history_import_more),
             onSecondary = actions.onImportMore
         )
     }
@@ -388,12 +394,12 @@ private fun ResultContent(result: ListeningImportExecutionResult, actions: Spoti
 
 @Composable
 private fun CancelledContent(actions: SpotifyImportUiActions) {
-    ImportCard(title = "Import cancelled") {
-        Text("No new history from this import was added. Previously imported history is unchanged.")
+    ImportCard(title = stringResource(R.string.history_import_cancelled)) {
+        Text(stringResource(R.string.history_import_cancelled_detail))
         ActionRow(
-            primaryText = "Done",
+            primaryText = stringResource(R.string.history_import_done),
             onPrimary = actions.onDone,
-            secondaryText = "Try again",
+            secondaryText = stringResource(R.string.history_import_try_again),
             onSecondary = actions.onChangeFiles
         )
     }
@@ -404,26 +410,25 @@ private fun RecoveryContent(
     state: SpotifyImportUiState.StaleImportRecovery,
     actions: SpotifyImportUiActions
 ) {
-    ImportCard(title = "An earlier import didn't finish") {
+    ImportCard(title = stringResource(R.string.history_import_recovery_title)) {
         Text(
             if (state.pendingBatchCount == null) {
-                "Sazanami couldn't verify or clean up an earlier import. Try again before starting a new import."
+                stringResource(R.string.history_import_recovery_unverified)
             } else {
-                "Sazanami can clean up its unfinished changes before starting another import. " +
-                    "Published history will remain unchanged."
+                stringResource(R.string.history_import_recovery_detail)
             }
         )
         if (state.cleanupFailed) {
             Text(
-                "Cleanup couldn't be completed. Try again.",
+                stringResource(R.string.history_import_cleanup_failed),
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(top = 12.dp)
             )
         }
         ActionRow(
-            primaryText = if (state.cleanupFailed) "Try again" else "Clean up",
+            primaryText = if (state.cleanupFailed) stringResource(R.string.history_import_try_again) else stringResource(R.string.history_import_clean_up),
             onPrimary = actions.onCleanStaleImport,
-            secondaryText = "Back",
+            secondaryText = stringResource(R.string.history_import_back),
             onSecondary = actions.onBack
         )
     }
@@ -435,33 +440,33 @@ private fun ErrorContent(
     actions: SpotifyImportUiActions,
     onChangeFiles: () -> Unit
 ) {
-    val base = when (state.error) {
+    val baseRes = when (state.error) {
         SpotifyImportUiError.ACCOUNT_DATA_FORMAT ->
-            "This looks like Spotify's Account Data streaming history. Sazanami currently supports Extended Streaming History instead."
+            R.string.history_import_error_account_data
         SpotifyImportUiError.UNKNOWN_JSON ->
-            "These files don't appear to contain supported Spotify Extended Streaming History."
+            R.string.history_import_error_unknown_json
         SpotifyImportUiError.MALFORMED_JSON ->
-            "One of the selected files couldn't be read as valid JSON."
+            R.string.history_import_error_malformed_json
         SpotifyImportUiError.FILE_ACCESS ->
-            "Sazanami could no longer access one of the selected files. Select the files again and retry."
+            R.string.history_import_error_file_access
         SpotifyImportUiError.NO_MUSIC ->
-            "No music listening history was found in these files."
+            R.string.history_import_error_no_music
         SpotifyImportUiError.IMPORT_FAILED ->
-            "The import couldn't be completed. Unfinished changes were cleaned up and it is safe to try again."
+            R.string.history_import_error_failed
     }
-    ImportCard(title = "Import couldn't continue") {
-        Text(base, color = MaterialTheme.colorScheme.error)
+    ImportCard(title = stringResource(R.string.history_import_error_title)) {
+        Text(stringResource(baseRes), color = MaterialTheme.colorScheme.error)
         state.failedDisplayName?.let { name ->
             Text(
-                "File: $name",
+                stringResource(R.string.history_import_file_name, name),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp)
             )
         }
         ActionRow(
-            primaryText = "Try again",
+            primaryText = stringResource(R.string.history_import_try_again),
             onPrimary = actions.onRetry,
-            secondaryText = "Change files",
+            secondaryText = stringResource(R.string.history_import_change_files),
             onSecondary = onChangeFiles
         )
     }
@@ -571,7 +576,7 @@ private fun DateRangeRow(earliest: Instant?, latest: Instant?) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            "Date range",
+            stringResource(R.string.history_import_date_range),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )

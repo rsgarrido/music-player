@@ -1,6 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.tageditor
 
-import android.R
+import android.R as AndroidR
 import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,9 +38,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.EditableSongTags
 import io.github.rsgarrido.sazanami.data.EditableMetadataField
 import io.github.rsgarrido.sazanami.data.Song
@@ -106,12 +108,12 @@ fun TagEditorScreen(
             ) {
                 Icon(
                     imageVector = Icons.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = stringResource(R.string.metadata_back)
                 )
             }
 
             Text(
-                text = "Edit Tags",
+                text = stringResource(R.string.metadata_edit_tags),
                 style = MaterialTheme.typography.headlineSmall
             )
         }
@@ -123,13 +125,13 @@ fun TagEditorScreen(
         ) {
             AsyncImage(
                 model = artworkPreviewUri,
-                contentDescription = "Artwork for ${song.title}",
+                contentDescription = stringResource(R.string.metadata_artwork_for_song, song.title),
                 modifier = Modifier
                     .size(96.dp)
                     .clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop,
-                error = painterResource(R.drawable.ic_media_play),
-                placeholder = painterResource(R.drawable.ic_media_play)
+                error = painterResource(AndroidR.drawable.ic_media_play),
+                placeholder = painterResource(AndroidR.drawable.ic_media_play)
             )
 
             Spacer(modifier = Modifier.width(16.dp))
@@ -138,7 +140,7 @@ fun TagEditorScreen(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = song.title.ifBlank { "Unknown Title" },
+                    text = song.title.ifBlank { stringResource(R.string.metadata_unknown_title) },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 2
                 )
@@ -146,7 +148,7 @@ fun TagEditorScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = song.artist.ifBlank { "Unknown Artist" },
+                    text = song.artist.ifBlank { stringResource(R.string.metadata_unknown_artist) },
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -159,11 +161,8 @@ fun TagEditorScreen(
                     enabled = canEditFields
                 ) {
                     Text(
-                        text = if (selectedArtworkUri == null) {
-                            "Change Artwork"
-                        } else {
-                            "Choose Different Artwork"
-                        }
+                        text = stringResource(if (selectedArtworkUri == null)
+                            R.string.metadata_change_artwork else R.string.metadata_choose_different_artwork)
                     )
                 }
             }
@@ -173,7 +172,7 @@ fun TagEditorScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "New artwork selected. Tap Save to write it into the audio file.",
+                text = stringResource(R.string.metadata_new_artwork_selected),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -201,7 +200,7 @@ fun TagEditorScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "This song is currently playing. If playback behaves strangely after saving, pause the song before editing next time.",
+                text = stringResource(R.string.metadata_current_song_warning),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -215,14 +214,14 @@ fun TagEditorScreen(
                 currentTags = currentTags.copy(title = value)
             },
             label = {
-                Text(text = "Title")
+                Text(text = stringResource(R.string.metadata_title))
             },
             singleLine = true,
             enabled = canEditFields,
             isError = titleError,
             supportingText = {
                 if (titleError) {
-                    Text(text = "Title cannot be empty.")
+                    Text(text = stringResource(R.string.metadata_title_required))
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -236,16 +235,16 @@ fun TagEditorScreen(
                 currentTags = currentTags.copy(artist = value)
             },
             label = {
-                Text(text = "Artist")
+                Text(text = stringResource(R.string.metadata_artist))
             },
             singleLine = true,
             enabled = canEditFields,
             isError = artistError,
             supportingText = {
                 if (artistError) {
-                    Text(text = "Artist cannot be empty.")
+                    Text(text = stringResource(R.string.metadata_artist_required))
                 } else {
-                    Text(text = MULTI_VALUE_HELP)
+                    Text(text = stringResource(R.string.metadata_multi_value_help))
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -259,14 +258,14 @@ fun TagEditorScreen(
                 currentTags = currentTags.copy(album = value)
             },
             label = {
-                Text(text = "Album")
+                Text(text = stringResource(R.string.metadata_album))
             },
             singleLine = true,
             enabled = canEditFields,
             isError = albumError,
             supportingText = {
                 if (albumError) {
-                    Text(text = "Album cannot be empty.")
+                    Text(text = stringResource(R.string.metadata_album_required))
                 }
             },
             modifier = Modifier.fillMaxWidth()
@@ -280,7 +279,7 @@ fun TagEditorScreen(
                 currentTags = currentTags.copy(trackNumber = value)
             },
             label = {
-                Text(text = "Track number")
+                Text(text = stringResource(R.string.metadata_track_number))
             },
             singleLine = true,
             enabled = canEditFields,
@@ -298,7 +297,7 @@ fun TagEditorScreen(
                 currentTags = currentTags.copy(year = value)
             },
             label = {
-                Text(text = "Date / year")
+                Text(text = stringResource(R.string.metadata_date_year))
             },
             singleLine = true,
             enabled = canEditFields,
@@ -318,7 +317,7 @@ fun TagEditorScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Advanced metadata",
+                text = stringResource(R.string.metadata_advanced),
                 modifier = Modifier.weight(1f)
             )
             Icon(
@@ -327,11 +326,8 @@ fun TagEditorScreen(
                 } else {
                     Icons.Filled.KeyboardArrowDown
                 },
-                contentDescription = if (isAdvancedMetadataExpanded) {
-                    "Collapse advanced metadata"
-                } else {
-                    "Expand advanced metadata"
-                }
+                contentDescription = stringResource(if (isAdvancedMetadataExpanded)
+                    R.string.metadata_collapse_advanced else R.string.metadata_expand_advanced)
             )
         }
 
@@ -354,7 +350,7 @@ fun TagEditorScreen(
                 enabled = !isSaving,
                 modifier = Modifier.weight(1f)
             ) {
-                Text(text = "Cancel")
+                Text(text = stringResource(R.string.metadata_cancel))
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -374,9 +370,9 @@ fun TagEditorScreen(
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    Text(text = "Saving")
+                    Text(text = stringResource(R.string.metadata_saving))
                 } else {
-                    Text(text = "Save")
+                    Text(text = stringResource(R.string.metadata_save))
                 }
             }
         }
@@ -393,11 +389,11 @@ private fun AdvancedMetadataFields(
     AdvancedMetadataTextField(
         value = tags.albumArtist,
         onValueChange = { onTagsChanged(tags.copy(albumArtist = it)) },
-        label = "Album artist",
+        label = stringResource(R.string.metadata_album_artist),
         field = EditableMetadataField.ALBUM_ARTIST,
         tags = tags,
         canEditFields = canEditFields,
-        supportingMessage = MULTI_VALUE_HELP
+        supportingMessage = stringResource(R.string.metadata_multi_value_help)
     )
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -406,7 +402,7 @@ private fun AdvancedMetadataFields(
         AdvancedMetadataTextField(
             value = tags.trackTotal,
             onValueChange = { onTagsChanged(tags.copy(trackTotal = it)) },
-            label = "Track total",
+            label = stringResource(R.string.metadata_track_total),
             field = EditableMetadataField.TRACK_TOTAL,
             tags = tags,
             canEditFields = canEditFields,
@@ -419,7 +415,7 @@ private fun AdvancedMetadataFields(
         AdvancedMetadataTextField(
             value = tags.discNumber,
             onValueChange = { onTagsChanged(tags.copy(discNumber = it)) },
-            label = "Disc number",
+            label = stringResource(R.string.metadata_disc_number),
             field = EditableMetadataField.DISC_NUMBER,
             tags = tags,
             canEditFields = canEditFields,
@@ -433,7 +429,7 @@ private fun AdvancedMetadataFields(
     AdvancedMetadataTextField(
         value = tags.discTotal,
         onValueChange = { onTagsChanged(tags.copy(discTotal = it)) },
-        label = "Disc total",
+        label = stringResource(R.string.metadata_disc_total),
         field = EditableMetadataField.DISC_TOTAL,
         tags = tags,
         canEditFields = canEditFields,
@@ -445,11 +441,11 @@ private fun AdvancedMetadataFields(
     AdvancedMetadataTextField(
         value = tags.genre,
         onValueChange = { onTagsChanged(tags.copy(genre = it)) },
-        label = "Genre",
+        label = stringResource(R.string.metadata_genre),
         field = EditableMetadataField.GENRE,
         tags = tags,
         canEditFields = canEditFields,
-        supportingMessage = MULTI_VALUE_HELP
+        supportingMessage = stringResource(R.string.metadata_multi_value_help)
     )
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -457,11 +453,11 @@ private fun AdvancedMetadataFields(
     AdvancedMetadataTextField(
         value = tags.composer,
         onValueChange = { onTagsChanged(tags.copy(composer = it)) },
-        label = "Composer",
+        label = stringResource(R.string.metadata_composer),
         field = EditableMetadataField.COMPOSER,
         tags = tags,
         canEditFields = canEditFields,
-        supportingMessage = MULTI_VALUE_HELP
+        supportingMessage = stringResource(R.string.metadata_multi_value_help)
     )
 
     Spacer(modifier = Modifier.height(12.dp))
@@ -469,7 +465,7 @@ private fun AdvancedMetadataFields(
     AdvancedMetadataTextField(
         value = tags.comment,
         onValueChange = { onTagsChanged(tags.copy(comment = it)) },
-        label = "Comment",
+        label = stringResource(R.string.metadata_comment),
         field = EditableMetadataField.COMMENT,
         tags = tags,
         canEditFields = canEditFields,
@@ -482,7 +478,7 @@ private fun AdvancedMetadataFields(
     AdvancedMetadataTextField(
         value = tags.publisher,
         onValueChange = { onTagsChanged(tags.copy(publisher = it)) },
-        label = "Publisher / Label",
+        label = stringResource(R.string.metadata_publisher),
         field = EditableMetadataField.PUBLISHER,
         tags = tags,
         canEditFields = canEditFields
@@ -493,7 +489,7 @@ private fun AdvancedMetadataFields(
     AdvancedMetadataTextField(
         value = tags.copyright,
         onValueChange = { onTagsChanged(tags.copy(copyright = it)) },
-        label = "Copyright",
+        label = stringResource(R.string.metadata_copyright),
         field = EditableMetadataField.COPYRIGHT,
         tags = tags,
         canEditFields = canEditFields
@@ -504,13 +500,13 @@ private fun AdvancedMetadataFields(
     AdvancedMetadataTextField(
         value = tags.bpm,
         onValueChange = { onTagsChanged(tags.copy(bpm = it)) },
-        label = "BPM",
+        label = stringResource(R.string.metadata_bpm),
         field = EditableMetadataField.BPM,
         tags = tags,
         canEditFields = canEditFields,
         keyboardType = KeyboardType.Number,
         isError = bpmError,
-        supportingMessage = if (bpmError) BPM_ERROR_MESSAGE else null
+        supportingMessage = if (bpmError) stringResource(R.string.metadata_bpm_error) else null
     )
 }
 
@@ -530,7 +526,8 @@ private fun AdvancedMetadataTextField(
     supportingMessage: String? = null
 ) {
     val isSupported = tags.capabilities.supports(field)
-    val message = if (isSupported) supportingMessage else UNSUPPORTED_FIELD_MESSAGE
+    val message = if (isSupported) supportingMessage
+        else stringResource(R.string.metadata_unsupported_field)
 
     OutlinedTextField(
         value = value,
@@ -555,7 +552,3 @@ internal fun isValidEditableBpm(value: String): Boolean {
 internal fun hasInvalidChangedBpm(originalBpm: String, editedBpm: String): Boolean {
     return originalBpm.trim() != editedBpm.trim() && !isValidEditableBpm(editedBpm)
 }
-
-private const val MULTI_VALUE_HELP = "Separate multiple values with semicolons."
-private const val BPM_ERROR_MESSAGE = "Enter a whole number from 1 to 999, or leave blank."
-private const val UNSUPPORTED_FIELD_MESSAGE = "This field is not supported for this file format."

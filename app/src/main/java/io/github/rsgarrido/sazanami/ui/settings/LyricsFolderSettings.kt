@@ -19,9 +19,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.AppShellIcons
+import io.github.rsgarrido.sazanami.ui.state.resolve
 
 @Composable
 fun LyricsFolderSettings(modifier: Modifier = Modifier) {
@@ -36,23 +40,24 @@ fun LyricsFolderSettings(modifier: Modifier = Modifier) {
         if (uri != null) controller.addRoot(uri)
     }
 
-    val folderCountLabel = if (state.roots.size == 1) "folder" else "folders"
-    val fileCountLabel = if (state.indexedFileCount == 1) "file" else "files"
     val folderSummary = when {
         state.roots.isEmpty() ->
-            "No folders selected. Local .lrc files will not be indexed."
+            stringResource(R.string.lyrics_no_folders_selected)
         else ->
-            "${state.roots.size} $folderCountLabel • ${state.indexedFileCount} .lrc $fileCountLabel"
+            pluralStringResource(R.plurals.lyrics_folder_summary, state.roots.size,
+                state.roots.size,
+                pluralStringResource(R.plurals.lyrics_lrc_file_count,
+                    state.indexedFileCount, state.indexedFileCount))
     }
 
     SettingsSection(
-        title = "Local lyrics",
-        description = "Manage folders containing synced .lrc lyric files.",
+        title = stringResource(R.string.lyrics_local_title),
+        description = stringResource(R.string.lyrics_local_description),
         icon = AppShellIcons.Lyrics,
         modifier = modifier
     ) {
         SettingsRow(
-            title = "Lyrics folders",
+            title = stringResource(R.string.lyrics_folders),
             summary = folderSummary,
             icon = AppShellIcons.Lyrics,
             emphasizeSummary = state.roots.isNotEmpty()
@@ -66,13 +71,13 @@ fun LyricsFolderSettings(modifier: Modifier = Modifier) {
                 summary = if (item.hasPersistedAccess) {
                     item.root.uri
                 } else {
-                    "Persisted folder access is missing"
+                    stringResource(R.string.lyrics_persisted_access_missing)
                 },
                 icon = AppShellIcons.Folder,
                 emphasizeSummary = !item.hasPersistedAccess,
                 trailingContent = {
                     TextButton(onClick = { controller.removeRoot(item.root.uri) }) {
-                        Text("Remove")
+                        Text(stringResource(R.string.lyrics_remove))
                     }
                 }
             )
@@ -91,14 +96,14 @@ fun LyricsFolderSettings(modifier: Modifier = Modifier) {
                 enabled = !state.isScanning,
                 onClick = { picker.launch(null) }
             ) {
-                Text("Add folder")
+                Text(stringResource(R.string.lyrics_add_folder))
             }
 
             OutlinedButton(
                 enabled = !state.isScanning && state.roots.isNotEmpty(),
                 onClick = controller::rescan
             ) {
-                Text("Rescan")
+                Text(stringResource(R.string.lyrics_rescan))
             }
 
             if (state.isScanning) {
@@ -111,7 +116,7 @@ fun LyricsFolderSettings(modifier: Modifier = Modifier) {
 
         state.message?.let { message ->
             Text(
-                text = message,
+                text = message.resolve(),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp)
@@ -119,8 +124,7 @@ fun LyricsFolderSettings(modifier: Modifier = Modifier) {
         }
 
         SettingsFooterNote(
-            text = "Removing a folder stops indexing it but does not revoke Android's " +
-                    "persisted folder permission."
+            text = stringResource(R.string.lyrics_remove_folder_note)
         )
     }
 }

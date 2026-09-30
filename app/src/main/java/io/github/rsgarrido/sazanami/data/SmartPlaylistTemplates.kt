@@ -1,19 +1,22 @@
 package io.github.rsgarrido.sazanami.data
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
+
 const val SMART_PLAYLIST_GENERATED_REFRESH_INTERVAL_MILLIS = 5L * 24L * 60L * 60L * 1_000L
 
 enum class SmartPlaylistTemplate(
     val key: String,
-    val displayName: String,
-    val description: String,
+    @StringRes val nameRes: Int,
+    @StringRes val descriptionRes: Int,
     val generated: Boolean,
     val membershipMode: String,
     val draft: SmartPlaylistDraft
 ) {
     HEAVY_ROTATION(
         key = "heavy_rotation",
-        displayName = "Heavy Rotation",
-        description = "Your strongest listening activity from the last 30 days.",
+        nameRes = R.string.smart_template_heavy_rotation,
+        descriptionRes = R.string.smart_template_heavy_rotation_description,
         generated = true,
         membershipMode = GeneratedPlaylistMembershipMode.SNAPSHOT,
         draft = SmartPlaylistDraft(
@@ -32,8 +35,8 @@ enum class SmartPlaylistTemplate(
     ),
     FORGOTTEN_FAVORITES(
         key = "forgotten_favorites",
-        displayName = "Forgotten Favorites",
-        description = "Historically well-played songs you have not heard for 90 days.",
+        nameRes = R.string.smart_template_forgotten_favorites,
+        descriptionRes = R.string.smart_template_forgotten_favorites_description,
         generated = true,
         membershipMode = GeneratedPlaylistMembershipMode.SNAPSHOT,
         draft = SmartPlaylistDraft(
@@ -57,8 +60,8 @@ enum class SmartPlaylistTemplate(
     ),
     TOP_RATED(
         key = "top_rated",
-        displayName = "Top Rated",
-        description = "Songs rated four stars or higher.",
+        nameRes = R.string.smart_template_top_rated,
+        descriptionRes = R.string.smart_template_top_rated_description,
         generated = true,
         membershipMode = GeneratedPlaylistMembershipMode.LIVE_DERIVED,
         draft = SmartPlaylistDraft(
@@ -75,8 +78,8 @@ enum class SmartPlaylistTemplate(
     ),
     NEVER_PLAYED(
         key = "never_played",
-        displayName = "Never Played",
-        description = "Local songs with no authoritative play history.",
+        nameRes = R.string.smart_template_never_played,
+        descriptionRes = R.string.smart_template_never_played_description,
         generated = true,
         membershipMode = GeneratedPlaylistMembershipMode.LIVE_DERIVED,
         draft = SmartPlaylistDraft(

@@ -37,9 +37,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.ui.state.resolve
 import io.github.rsgarrido.sazanami.player.equalizer.MAX_EQUALIZER_BAND_DB
 import io.github.rsgarrido.sazanami.player.equalizer.MAX_EQUALIZER_PREAMP_DB
 import io.github.rsgarrido.sazanami.player.equalizer.MIN_EQUALIZER_BAND_DB
@@ -48,6 +52,7 @@ import io.github.rsgarrido.sazanami.player.equalizer.EqualizerMode
 import io.github.rsgarrido.sazanami.player.equalizer.UserEqualizerPreset
 import io.github.rsgarrido.sazanami.player.equalizer.dsp.GraphicEqualizerDefaults
 import io.github.rsgarrido.sazanami.player.equalizer.normalizeEqualizerDb
+import io.github.rsgarrido.sazanami.player.equalizer.toDspConfiguration
 import io.github.rsgarrido.sazanami.player.equalizer.limiter.MAX_LIMITER_CEILING_DBFS
 import io.github.rsgarrido.sazanami.player.equalizer.limiter.MIN_LIMITER_CEILING_DBFS
 import java.util.Locale
@@ -59,6 +64,15 @@ internal fun EqualizerScreen(
     actions: EqualizerUiActions,
     modifier: Modifier = Modifier
 ) {
+    val resources = LocalResources.current
+    val modeLabel = stringResource(state.editablePreferences.mode.labelRes)
+    val presetLabel = state.presetMatch.localizedLabel()
+    val statusText = when {
+        !state.editablePreferences.enabled -> stringResource(R.string.eq_status_off, modeLabel, presetLabel)
+        state.editablePreferences.toDspConfiguration(enabledOverride = true).isEffectivelyFlat -> stringResource(R.string.eq_status_flat)
+        state.comparisonBypassed -> stringResource(R.string.eq_status_bypass)
+        else -> stringResource(R.string.eq_status_active, presetLabel)
+    }
     if (state.importPreview != null) {
         EqualizerImportPreviewScreen(
             state = state,
@@ -126,19 +140,19 @@ internal fun EqualizerScreen(
             IconButton(onClick = actions.onBack) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = stringResource(R.string.eq_back)
                 )
             }
             Text(
-                text = "Equalizer",
+                text = stringResource(R.string.eq_title),
                 style = MaterialTheme.typography.titleLarge
             )
         }
 
         ListItem(
-            headlineContent = { Text("Equalizer") },
+            headlineContent = { Text(stringResource(R.string.eq_title)) },
             supportingContent = {
-                Text(state.statusText)
+                Text(statusText)
             },
             trailingContent = {
                 Switch(
@@ -146,14 +160,14 @@ internal fun EqualizerScreen(
                     onCheckedChange = actions.onEnabledChanged,
                     modifier = Modifier.semantics {
                         contentDescription =
-                            "Equalizer enabled"
+                            resources.getString(R.string.eq_enabled)
                     }
                 )
             }
         )
 
         Text(
-            text = "Equalizer mode",
+            text = stringResource(R.string.eq_mode_heading),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(
                 start = 16.dp,
@@ -165,24 +179,26 @@ internal fun EqualizerScreen(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .semantics {
-                    contentDescription = "Equalizer mode selector"
+                    contentDescription = resources.getString(R.string.eq_mode_selector)
                 }
         ) {
             EqualizerMode.entries.forEach { mode ->
+                val modeName = stringResource(mode.labelRes)
+                val modeDescription = stringResource(R.string.eq_mode_description, modeName)
                 FilterChip(
                     selected = preferences.mode == mode,
                     onClick = { actions.onModeChanged(mode) },
-                    label = { Text(mode.displayName) },
+                    label = { Text(modeName) },
                     modifier = Modifier.semantics {
                         contentDescription =
-                            "${mode.displayName} equalizer mode"
+                            modeDescription
                     }
                 )
             }
         }
 
         Text(
-            text = "Import and export",
+            text = stringResource(R.string.eq_import_export),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(
                 start = 16.dp,
@@ -199,18 +215,18 @@ internal fun EqualizerScreen(
             OutlinedButton(
                 onClick = actions.onImportFromFile,
                 modifier = Modifier.semantics {
-                    contentDescription = "Import EQ from file"
+                    contentDescription = resources.getString(R.string.eq_import_from_file_description)
                 }
             ) {
-                Text("Import from file")
+                Text(stringResource(R.string.eq_import_from_file))
             }
             OutlinedButton(
                 onClick = actions.onPasteEqText,
                 modifier = Modifier.semantics {
-                    contentDescription = "Paste EQ text"
+                    contentDescription = resources.getString(R.string.eq_paste_text)
                 }
             ) {
-                Text("Paste EQ text")
+                Text(stringResource(R.string.eq_paste_text))
             }
         }
         Row(
@@ -223,10 +239,10 @@ internal fun EqualizerScreen(
                     EqualizerMode.PARAMETRIC,
                 modifier = Modifier.semantics {
                     contentDescription =
-                        "Export current Parametric EQ text"
+                        resources.getString(R.string.eq_export_current_description)
                 }
             ) {
-                Text("Export current EQ")
+                Text(stringResource(R.string.eq_export_current))
             }
             OutlinedButton(
                 onClick = actions.onCopyCurrentEqText,
@@ -234,10 +250,10 @@ internal fun EqualizerScreen(
                     EqualizerMode.PARAMETRIC,
                 modifier = Modifier.semantics {
                     contentDescription =
-                        "Copy Parametric EQ text"
+                        resources.getString(R.string.eq_copy_text_description)
                 }
             ) {
-                Text("Copy EQ text")
+                Text(stringResource(R.string.eq_copy_text))
             }
         }
         Row(
@@ -253,10 +269,10 @@ internal fun EqualizerScreen(
                     EqualizerMode.PARAMETRIC,
                 modifier = Modifier.semantics {
                     contentDescription =
-                        "Export current native Sazanami preset"
+                        resources.getString(R.string.eq_export_native_description)
                 }
             ) {
-                Text("Export native")
+                Text(stringResource(R.string.eq_export_native))
             }
             OutlinedButton(
                 onClick = {
@@ -266,21 +282,17 @@ internal fun EqualizerScreen(
                     state.parametricUserPresets.isNotEmpty(),
                 modifier = Modifier.semantics {
                     contentDescription =
-                        "Export saved Parametric preset"
+                        resources.getString(R.string.eq_export_preset_description)
                 }
             ) {
-                Text("Export preset")
+                Text(stringResource(R.string.eq_export_preset))
             }
         }
         Text(
             text = if (preferences.mode == EqualizerMode.GRAPHIC) {
-                "Current export is unavailable in Graphic mode. " +
-                    "Sazanami does not convert Graphic bands into " +
-                    "Parametric filters."
+                stringResource(R.string.eq_export_graphic_unavailable)
             } else {
-                "Text export is Equalizer APO-compatible. Native " +
-                    ".sazeq preserves automatic headroom, IDs, and " +
-                    "all stored parameters losslessly."
+                stringResource(R.string.eq_export_format_help)
             },
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(horizontal = 16.dp)
@@ -292,16 +304,14 @@ internal fun EqualizerScreen(
                     .padding(16.dp)
                     .semantics {
                         contentDescription =
-                            "Reading EQ import"
+                            resources.getString(R.string.eq_reading_import)
                     }
             )
         }
         state.importMessage?.let { message ->
             Text(
-                message,
-                color = if (
-                    message.startsWith("Couldn't")
-                ) {
+                message.resolve(),
+                color = if (state.importMessageIsError) {
                     MaterialTheme.colorScheme.error
                 } else {
                     MaterialTheme.colorScheme.primary
@@ -315,19 +325,19 @@ internal fun EqualizerScreen(
 
         if (preferences.mode == EqualizerMode.GRAPHIC) {
             ListItem(
-                headlineContent = { Text("Preset") },
-                supportingContent = { Text(state.presetLabel) },
+                headlineContent = { Text(stringResource(R.string.eq_preset)) },
+                supportingContent = { Text(presetLabel) },
                 trailingContent = {
                     Icon(
                         Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Choose equalizer preset"
+                        contentDescription = stringResource(R.string.eq_choose_preset)
                     )
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .semantics {
                         contentDescription =
-                            "Equalizer preset, ${state.presetLabel}"
+                            resources.getString(R.string.eq_preset_description, presetLabel)
                     }
                     .padding(horizontal = 4.dp)
             )
@@ -335,7 +345,7 @@ internal fun EqualizerScreen(
                 onClick = { presetSelectorVisible = true },
                 modifier = Modifier.padding(horizontal = 12.dp)
             ) {
-                Text("Choose or manage presets")
+                Text(stringResource(R.string.eq_manage_presets))
             }
         } else {
             ParametricEqualizerEditor(
@@ -367,7 +377,7 @@ internal fun EqualizerScreen(
             modifier = Modifier.padding(vertical = 8.dp)
         )
         Text(
-            text = "Preamp",
+            text = stringResource(R.string.eq_preamp),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
@@ -399,16 +409,13 @@ internal fun EqualizerScreen(
                     .weight(1f)
                     .semantics {
                         contentDescription =
-                            "Equalizer preamp, " +
-                                formatEqualizerDb(
-                                    activePreampDb
-                                )
+                            resources.getString(R.string.eq_preamp_description, formatEqualizerDb(activePreampDb))
                     }
             )
             TextButton(
                 onClick = {
                     fineEditTarget = FineEditTarget(
-                        title = "Preamp",
+                        title = resources.getString(R.string.eq_preamp),
                         initialValueDb =
                             activePreampDb,
                         minimumDb =
@@ -425,7 +432,7 @@ internal fun EqualizerScreen(
 
         if (preferences.mode == EqualizerMode.GRAPHIC) {
             Text(
-                text = "Graphic bands",
+                text = stringResource(R.string.eq_graphic_bands),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(
                     start = 16.dp,
@@ -475,14 +482,11 @@ internal fun EqualizerScreen(
 
         ListItem(
             headlineContent = {
-                Text("Automatic headroom")
+                Text(stringResource(R.string.eq_automatic_headroom))
             },
             supportingContent = {
                 Text(
-                    "Primary gain-safety stage. Reduces the signal " +
-                        "before equalization when " +
-                        "the combined curve is predicted to exceed " +
-                        "digital full scale."
+                    stringResource(R.string.eq_automatic_headroom_help)
                 )
             },
             trailingContent = {
@@ -493,7 +497,7 @@ internal fun EqualizerScreen(
                         actions.onAutomaticHeadroomChanged,
                     modifier = Modifier.semantics {
                         contentDescription =
-                            "Automatic equalizer headroom"
+                            resources.getString(R.string.eq_automatic_headroom_description)
                     }
                 )
             }
@@ -503,8 +507,7 @@ internal fun EqualizerScreen(
             state.analysis.predictedMaximumDb > 0.0
         ) {
             Text(
-                text = "The predicted response exceeds 0 dB. " +
-                    "PCM16 saturation is not a limiter.",
+                text = stringResource(R.string.eq_predicted_response_warning),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -515,16 +518,15 @@ internal fun EqualizerScreen(
             modifier = Modifier.padding(vertical = 8.dp)
         )
         Text(
-            text = "Limiter",
+            text = stringResource(R.string.eq_limiter),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
         ListItem(
-            headlineContent = { Text("Sample-peak limiter") },
+            headlineContent = { Text(stringResource(R.string.eq_sample_peak_limiter)) },
             supportingContent = {
                 Text(
-                    "Channel-linked gain safety after the equalizer. " +
-                        "Enabling it adds 5 ms of audio latency."
+                    stringResource(R.string.eq_sample_peak_limiter_help)
                 )
             },
             trailingContent = {
@@ -534,7 +536,7 @@ internal fun EqualizerScreen(
                         actions.onLimiterEnabledChanged,
                     modifier = Modifier.semantics {
                         contentDescription =
-                            "Sample-peak limiter enabled"
+                            resources.getString(R.string.eq_sample_peak_limiter_enabled)
                     }
                 )
             }
@@ -575,11 +577,7 @@ internal fun EqualizerScreen(
                     .weight(1f)
                     .semantics {
                         contentDescription =
-                            "Limiter ceiling, " +
-                                formatLimiterDb(
-                                    preferences
-                                        .limiterCeilingDbfs
-                                )
+                            resources.getString(R.string.eq_limiter_ceiling_description, formatLimiterDb(preferences.limiterCeilingDbfs))
                     }
             )
             TextButton(
@@ -602,14 +600,12 @@ internal fun EqualizerScreen(
             onReset = actions.onResetLimiterMeters
         )
         Text(
-            text = "Fixed lookahead: 5 ms · Release: 100 ms",
+            text = stringResource(R.string.eq_limiter_lookahead),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
         Text(
-            text = "This is a sample-peak safety limiter, not a " +
-                "true-peak limiter. Inter-sample peaks can still exceed " +
-                "the selected ceiling.",
+            text = stringResource(R.string.eq_limiter_disclaimer),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier
                 .padding(
@@ -618,8 +614,7 @@ internal fun EqualizerScreen(
                 )
                 .semantics {
                     contentDescription =
-                        "Sample-peak limiter disclaimer. " +
-                            "This is not a true-peak limiter."
+                        resources.getString(R.string.eq_limiter_disclaimer_description)
                 }
         )
         if (
@@ -627,8 +622,7 @@ internal fun EqualizerScreen(
             state.runtimeState.saturatedSampleCount > 0L
         ) {
             Text(
-                text = "PCM16 output saturation has been observed. " +
-                    "Saturation is not limiting.",
+                text = stringResource(R.string.eq_saturation_warning),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -637,7 +631,7 @@ internal fun EqualizerScreen(
 
         if (state.comparisonAvailable) {
             Text(
-                text = "A/B comparison",
+                text = stringResource(R.string.eq_ab_comparison),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(
                     start = 16.dp,
@@ -656,7 +650,7 @@ internal fun EqualizerScreen(
                                 .onComparisonBypassedChanged(false)
                         }
                     ) {
-                        Text("A · Equalized")
+                        Text(stringResource(R.string.eq_ab_equalized))
                     }
                 } else {
                     OutlinedButton(
@@ -665,7 +659,7 @@ internal fun EqualizerScreen(
                                 .onComparisonBypassedChanged(false)
                         }
                     ) {
-                        Text("A · Equalized")
+                        Text(stringResource(R.string.eq_ab_equalized))
                     }
                 }
                 if (state.comparisonBypassed) {
@@ -675,7 +669,7 @@ internal fun EqualizerScreen(
                                 .onComparisonBypassedChanged(true)
                         }
                     ) {
-                        Text("B · Bypass")
+                        Text(stringResource(R.string.eq_ab_bypass))
                     }
                 } else {
                     OutlinedButton(
@@ -684,19 +678,18 @@ internal fun EqualizerScreen(
                                 .onComparisonBypassedChanged(true)
                         }
                     ) {
-                        Text("B · Bypass")
+                        Text(stringResource(R.string.eq_ab_bypass))
                     }
                 }
             }
             Text(
-                text = "B uses exact DSP bypass while keeping decoded " +
-                    "PCM active to avoid offload or renderer churn.",
+                text = stringResource(R.string.eq_ab_help),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
         } else if (preferences.limiterEnabled) {
             Text(
-                text = "Disable the limiter for exact A/B comparison.",
+                text = stringResource(R.string.eq_ab_disable_limiter),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(
                     horizontal = 16.dp,
@@ -707,7 +700,7 @@ internal fun EqualizerScreen(
 
         FilledTonalButton(
             onClick = {
-                if (state.presetLabel == "Flat") {
+                if (state.isFlatBuiltInPreset) {
                     actions.onResetToFlat()
                 } else {
                     resetConfirmationVisible = true
@@ -715,16 +708,14 @@ internal fun EqualizerScreen(
             },
             modifier = Modifier.padding(16.dp)
         ) {
-            Text("Reset to Flat")
+            Text(stringResource(R.string.eq_reset_flat))
         }
 
         Card(
             modifier = Modifier.padding(16.dp)
         ) {
             Text(
-                text = "An active equalizer requires decoded PCM. " +
-                    "Sazanami does not claim bit-perfect or " +
-                    "high-resolution output while processing.",
+                text = stringResource(R.string.eq_pcm_disclaimer),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(16.dp)
             )
@@ -757,7 +748,7 @@ internal fun EqualizerScreen(
             onDismissRequest = {
                 exportPresetSelectorVisible = false
             },
-            title = { Text("Export Parametric preset") },
+            title = { Text(stringResource(R.string.eq_export_parametric_preset)) },
             text = {
                 Column(
                     modifier = Modifier.verticalScroll(
@@ -784,7 +775,7 @@ internal fun EqualizerScreen(
                                         )
                                 }
                             ) {
-                                Text("Text")
+                                Text(stringResource(R.string.eq_text_format))
                             }
                             TextButton(
                                 onClick = {
@@ -796,7 +787,7 @@ internal fun EqualizerScreen(
                                         )
                                 }
                             ) {
-                                Text("Native")
+                                Text(stringResource(R.string.eq_native_format))
                             }
                         }
                     }
@@ -808,17 +799,17 @@ internal fun EqualizerScreen(
                         exportPresetSelectorVisible = false
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.eq_cancel))
                 }
             }
         )
     }
     if (saveDialogVisible) {
         EqualizerPresetNameDialog(
-            title = "Save as preset",
+            title = stringResource(R.string.eq_save_as_preset),
             initialName = "",
             userPresets = state.userPresets,
-            confirmText = "Save",
+            confirmText = stringResource(R.string.eq_save),
             onDismiss = { saveDialogVisible = false },
             onConfirm = { name ->
                 actions.onSaveUserPreset(name)
@@ -828,11 +819,11 @@ internal fun EqualizerScreen(
     }
     renamePreset?.let { preset ->
         EqualizerPresetNameDialog(
-            title = "Rename preset",
+            title = stringResource(R.string.eq_rename_preset),
             initialName = preset.name,
             userPresets = state.userPresets,
             excludingPresetId = preset.id,
-            confirmText = "Rename",
+            confirmText = stringResource(R.string.eq_rename),
             onDismiss = { renamePreset = null },
             onConfirm = { name ->
                 actions.onRenameUserPreset(preset.id, name)
@@ -842,9 +833,9 @@ internal fun EqualizerScreen(
     }
     deletePreset?.let { preset ->
         ConfirmEqualizerActionDialog(
-            title = "Delete ${preset.name}?",
-            message = "The active equalizer curve will not change.",
-            confirmText = "Delete",
+            title = stringResource(R.string.eq_delete_preset_confirm, preset.name),
+            message = stringResource(R.string.eq_delete_preset_help),
+            confirmText = stringResource(R.string.eq_delete),
             onDismiss = { deletePreset = null },
             onConfirm = {
                 actions.onDeleteUserPreset(preset.id)
@@ -854,17 +845,15 @@ internal fun EqualizerScreen(
     }
     if (resetConfirmationVisible) {
         ConfirmEqualizerActionDialog(
-            title = "Reset to Flat?",
+            title = stringResource(R.string.eq_reset_flat_confirm),
             message = if (
                 preferences.mode == EqualizerMode.GRAPHIC
             ) {
-                "Preamp and all band gains will reset. " +
-                    "Your saved presets will remain."
+                stringResource(R.string.eq_reset_graphic_help)
             } else {
-                "Parametric preamp and filters will reset. " +
-                    "Your saved presets will remain."
+                stringResource(R.string.eq_reset_parametric_help)
             },
-            confirmText = "Reset",
+            confirmText = stringResource(R.string.eq_reset),
             onDismiss = {
                 resetConfirmationVisible = false
             },
@@ -906,7 +895,7 @@ internal fun EqualizerScreen(
     }
     if (limiterCeilingDialogVisible) {
         EqualizerValueDialog(
-            title = "Limiter ceiling",
+            title = stringResource(R.string.eq_limiter_ceiling),
             initialValueDb =
                 limiterCeilingDialogInitialValue,
             minimumDb = MIN_LIMITER_CEILING_DBFS,
@@ -933,6 +922,7 @@ private fun LimiterMeters(
     limiterEnabled: Boolean,
     onReset: () -> Unit
 ) {
+    val resources = LocalResources.current
     val runtime = state.runtimeState
     Column(
         modifier = Modifier.padding(
@@ -941,17 +931,17 @@ private fun LimiterMeters(
         )
     ) {
         LimiterMeter(
-            label = "Pre-limiter peak",
+            label = stringResource(R.string.eq_pre_limiter_peak),
             valueDb = runtime.preLimiterPeakDbfs,
             progress = meterProgress(runtime.preLimiterPeakDbfs)
         )
         LimiterMeter(
-            label = "Post-limiter peak",
+            label = stringResource(R.string.eq_post_limiter_peak),
             valueDb = runtime.postLimiterPeakDbfs,
             progress = meterProgress(runtime.postLimiterPeakDbfs)
         )
         LimiterMeter(
-            label = "Gain reduction",
+            label = stringResource(R.string.eq_gain_reduction),
             valueDb = runtime.currentGainReductionDb,
             progress =
                 (runtime.currentGainReductionDb / 12.0)
@@ -960,34 +950,24 @@ private fun LimiterMeters(
             positive = true
         )
         Text(
-            "Recent maximum reduction: " +
-                formatLimiterDb(
-                    runtime.maximumRecentGainReductionDb,
-                    positive = true
-                )
+            stringResource(R.string.eq_recent_max_reduction, formatLimiterDb(runtime.maximumRecentGainReductionDb, positive = true))
         )
         Text(
-            "Over-range samples: ${runtime.overRangeSampleCount} · " +
-                "Saturated samples: ${runtime.saturatedSampleCount}",
+            stringResource(R.string.eq_sample_counts, runtime.overRangeSampleCount, runtime.saturatedSampleCount),
             modifier = Modifier.semantics {
                 contentDescription =
-                    "Over-range sample count, " +
-                        "${runtime.overRangeSampleCount}. " +
-                        "Saturated sample count, " +
-                        runtime.saturatedSampleCount
+                    resources.getString(R.string.eq_sample_counts_description, runtime.overRangeSampleCount, runtime.saturatedSampleCount)
             }
         )
         Text(
-            "Active/reduced frames: " +
-                "${runtime.limiterActiveFrameCount} / " +
-                runtime.limiterReducedFrameCount
+            stringResource(R.string.eq_active_reduced_frames, runtime.limiterActiveFrameCount, runtime.limiterReducedFrameCount)
         )
         if (limiterEnabled) {
             Text(
                 if (runtime.limiterPrimed) {
-                    "Limiter primed"
+                    stringResource(R.string.eq_limiter_primed)
                 } else {
-                    "Limiter priming"
+                    stringResource(R.string.eq_limiter_priming)
                 }
             )
         }
@@ -995,10 +975,10 @@ private fun LimiterMeters(
             onClick = onReset,
             modifier = Modifier.semantics {
                 contentDescription =
-                    "Reset limiter meters and counters"
+                    resources.getString(R.string.eq_reset_meters_description)
             }
         ) {
-            Text("Reset limiter meters")
+            Text(stringResource(R.string.eq_reset_meters))
         }
     }
 }
@@ -1010,8 +990,10 @@ private fun LimiterMeter(
     progress: Float,
     positive: Boolean = false
 ) {
+    val formattedValue = formatLimiterDb(valueDb, positive)
+    val meterDescription = stringResource(R.string.eq_meter_description, label, formattedValue)
     Text(
-        "$label: ${formatLimiterDb(valueDb, positive)}",
+        stringResource(R.string.eq_meter_value, label, formattedValue),
         style = MaterialTheme.typography.bodyMedium
     )
     LinearProgressIndicator(
@@ -1020,7 +1002,7 @@ private fun LimiterMeter(
             .fillMaxWidth()
             .semantics {
                 contentDescription =
-                    "$label, ${formatLimiterDb(valueDb, positive)}"
+                    meterDescription
             }
     )
 }
@@ -1049,12 +1031,11 @@ private fun EqualizerAnalysisStatus(
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                "Analysis",
+                stringResource(R.string.eq_analysis),
                 style = MaterialTheme.typography.titleSmall
             )
             Text(
-                "User preamp: " +
-                    formatEqualizerDb(
+                stringResource(R.string.eq_user_preamp, formatEqualizerDb(
                         when (
                             state.editablePreferences.mode
                         ) {
@@ -1064,39 +1045,28 @@ private fun EqualizerAnalysisStatus(
                                 state.editablePreferences
                                     .parametricState.preampDb
                         }
-                    )
+                    ))
             )
             Text(
-                "Automatic attenuation: " +
-                    formatEqualizerDb(
+                stringResource(R.string.eq_automatic_attenuation, formatEqualizerDb(
                         state.analysis.automaticHeadroom
                             .attenuationDb,
                         includePlus = false
-                    )
+                    ))
             )
             Text(
-                "Effective preamp: " +
-                    formatEqualizerDb(
+                stringResource(R.string.eq_effective_preamp, formatEqualizerDb(
                         state.analysis.automaticHeadroom
                             .effectivePreampDb
-                    )
+                    ))
             )
             Text(
-                "Predicted maximum: " +
-                    formatEqualizerDb(
+                stringResource(R.string.eq_predicted_maximum, formatEqualizerDb(
                         state.analysis.predictedMaximumDb
-                    )
+                    ))
             )
             Text(
-                "Sample rate: " +
-                    "${state.analysis.sampleRateHz} Hz" +
-                    if (
-                        state.analysis.usesFallbackSampleRate
-                    ) {
-                        " (preview fallback)"
-                    } else {
-                        ""
-                    }
+                stringResource(if (state.analysis.usesFallbackSampleRate) R.string.eq_sample_rate_fallback else R.string.eq_sample_rate, state.analysis.sampleRateHz)
             )
             if (state.analysis.ignoredBandIndices.isNotEmpty()) {
                 val labels = state.analysis.ignoredBandIndices
@@ -1120,7 +1090,7 @@ private fun EqualizerAnalysisStatus(
                         }
                     }
                 Text(
-                    text = "Unavailable for current source: $labels",
+                    text = stringResource(R.string.eq_unavailable_for_source, labels),
                     color = MaterialTheme.colorScheme.error
                 )
             }

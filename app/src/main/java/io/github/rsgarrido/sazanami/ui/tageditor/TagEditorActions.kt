@@ -5,6 +5,7 @@ import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -17,6 +18,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.EditableSongTags
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.TagEditorResult
@@ -45,6 +48,7 @@ fun rememberTagEditorActions(
     onCloseEditor: () -> Unit
 ): TagEditorActions {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
 
     var pendingTagSave by remember {
@@ -131,7 +135,7 @@ fun rememberTagEditorActions(
             )
         } else {
             onSavingChanged(false)
-            showMessage("Write permission was denied.")
+            showMessage(resources.getString(R.string.metadata_write_permission_denied))
         }
     }
 
@@ -166,12 +170,11 @@ fun rememberTagEditorActions(
                         ).build()
                     )
                 } catch (exception: Exception) {
+                    Log.w("TagEditor", "Could not request write permission", exception)
                     pendingTagSave = null
                     onSavingChanged(false)
 
-                    showMessage(
-                        exception.message ?: "Could not request write permission."
-                    )
+                    showMessage(resources.getString(R.string.metadata_write_permission_request_failed))
                 }
             } else {
                 writeTagsAfterPermission(

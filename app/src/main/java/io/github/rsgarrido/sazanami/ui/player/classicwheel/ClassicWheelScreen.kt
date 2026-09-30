@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.player.classicwheel.ClassicWheelMorphBounds
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.player.RepeatMode
@@ -95,7 +97,7 @@ fun ClassicWheelScreen(
 
                 ClassicWheelMenuScreen.MainMenu -> {
                     ClassicWheelMenuDisplay(
-                        title = "Music",
+                        title = stringResource(R.string.player_wheel_music),
                         menuItems = mainMenuItems,
                         selectedIndex = menuState.selectedIndex,
                         modifier = Modifier.fillMaxSize()
@@ -104,7 +106,7 @@ fun ClassicWheelScreen(
 
                 ClassicWheelMenuScreen.Songs -> {
                     ClassicWheelMenuDisplay(
-                        title = "Songs",
+                        title = stringResource(R.string.player_wheel_songs),
                         menuItems = songMenuItems,
                         selectedIndex = menuState.selectedIndex,
                         modifier = Modifier.fillMaxSize()
@@ -113,7 +115,7 @@ fun ClassicWheelScreen(
 
                 ClassicWheelMenuScreen.Artists -> {
                     ClassicWheelMenuDisplay(
-                        title = "Artists",
+                        title = stringResource(R.string.player_wheel_artists),
                         menuItems = artistMenuItems,
                         selectedIndex = menuState.selectedIndex,
                         modifier = Modifier.fillMaxSize()
@@ -177,7 +179,7 @@ private fun ClassicScreenStatusBar(
         ) {
             Icon(
                 imageVector = Icons.Filled.KeyboardArrowDown,
-                contentDescription = "Collapse player",
+                contentDescription = stringResource(R.string.player_collapse),
                 tint = ClassicWheelColors.screenText
             )
         }
@@ -186,16 +188,19 @@ private fun ClassicScreenStatusBar(
     }
 }
 
+@Composable
 private fun buildClassicWheelStatusTitle(
     screen: ClassicWheelMenuScreen
 ): String {
     return when (screen) {
-        ClassicWheelMenuScreen.NowPlaying -> "Now Playing"
-        ClassicWheelMenuScreen.MainMenu -> "Music"
-        ClassicWheelMenuScreen.Songs -> "Songs"
-        ClassicWheelMenuScreen.Artists -> "Artists"
-        is ClassicWheelMenuScreen.ArtistSongs -> screen.artistName
-        ClassicWheelMenuScreen.Albums -> "Albums"
+        ClassicWheelMenuScreen.NowPlaying -> stringResource(R.string.player_wheel_now_playing)
+        ClassicWheelMenuScreen.MainMenu -> stringResource(R.string.player_wheel_music)
+        ClassicWheelMenuScreen.Songs -> stringResource(R.string.player_wheel_songs)
+        ClassicWheelMenuScreen.Artists -> stringResource(R.string.player_wheel_artists)
+        is ClassicWheelMenuScreen.ArtistSongs -> screen.artistName.ifBlank {
+            stringResource(R.string.player_unknown_artist)
+        }
+        ClassicWheelMenuScreen.Albums -> stringResource(R.string.player_wheel_albums)
         is ClassicWheelMenuScreen.AlbumSongs -> screen.albumTitle
     }
 }

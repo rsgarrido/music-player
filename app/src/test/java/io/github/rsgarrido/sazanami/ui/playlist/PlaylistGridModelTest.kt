@@ -20,7 +20,7 @@ class PlaylistGridModelTest {
             generatedLastRefreshedAt = now - 61_000L
         )
 
-        assertEquals("1m", compactRelativeUpdatedText(playlist.generatedLastRefreshedAt!!, now))
+        assertEquals(RelativePlaylistAge(PlaylistAgeUnit.MINUTE, 1), relativePlaylistAge(playlist.generatedLastRefreshedAt!!, now))
     }
 
     @Test

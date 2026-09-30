@@ -177,7 +177,7 @@ fun QuickRatingControl(
                     } else {
                         Icons.Outlined.StarOutline
                     },
-                    contentDescription = "Rate $value stars",
+                    contentDescription = pluralStringResource(R.plurals.rating_rate_stars, value, value),
                     modifier = Modifier.size(19.dp),
                     tint = if (rating != null && value <= rating) {
                         MaterialTheme.colorScheme.primary
@@ -192,7 +192,7 @@ fun QuickRatingControl(
             enabled = rating != null,
             modifier = Modifier.size(30.dp)
         ) {
-            Icon(Icons.Filled.Clear, contentDescription = "Clear rating", modifier = Modifier.size(18.dp))
+            Icon(Icons.Filled.Clear, contentDescription = stringResource(R.string.rating_clear), modifier = Modifier.size(18.dp))
         }
     }
 }

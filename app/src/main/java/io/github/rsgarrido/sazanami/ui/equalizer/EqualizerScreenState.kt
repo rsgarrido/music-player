@@ -1,8 +1,11 @@
 package io.github.rsgarrido.sazanami.ui.equalizer
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.player.equalizer.EqualizerMode
 import io.github.rsgarrido.sazanami.player.equalizer.EqualizerPreferencesState
 import io.github.rsgarrido.sazanami.player.equalizer.EqualizerPresetMatch
+import io.github.rsgarrido.sazanami.player.equalizer.EqualizerBuiltInPresetId
 import io.github.rsgarrido.sazanami.player.equalizer.EqualizerRuntimeState
 import io.github.rsgarrido.sazanami.player.equalizer.GraphicEqualizerPresets
 import io.github.rsgarrido.sazanami.player.equalizer.UserEqualizerPreset
@@ -10,6 +13,7 @@ import io.github.rsgarrido.sazanami.player.equalizer.toDspConfiguration
 import io.github.rsgarrido.sazanami.player.equalizer.parametric.ParametricEqualizerPreset
 import io.github.rsgarrido.sazanami.player.equalizer.parametric.ParametricEqualizerPresetMatcher
 import io.github.rsgarrido.sazanami.player.equalizer.parametric.ParametricFilter
+import io.github.rsgarrido.sazanami.ui.state.UiMessage
 
 internal data class EqualizerScreenState(
     val durablePreferences: EqualizerPreferencesState =
@@ -17,7 +21,7 @@ internal data class EqualizerScreenState(
     val editablePreferences: EqualizerPreferencesState =
         EqualizerPreferencesState(),
     val presetMatch: EqualizerPresetMatch =
-        EqualizerPresetMatch("Flat"),
+        EqualizerPresetMatch("Flat", builtInId = EqualizerBuiltInPresetId.FLAT),
     val analysis: EqualizerAnalysisResult =
         EqualizerAnalysisResult(),
     val runtimeState: EqualizerRuntimeState =
@@ -26,7 +30,8 @@ internal data class EqualizerScreenState(
     val importAnalysis: EqualizerAnalysisResult =
         EqualizerAnalysisResult(),
     val importInProgress: Boolean = false,
-    val importMessage: String? = null,
+    val importMessage: UiMessage? = null,
+    val importMessageIsError: Boolean = false,
     val selectedParametricFilterId: String? = null,
     val comparisonBypassed: Boolean = false,
     val hasUncommittedPreview: Boolean = false,
@@ -34,6 +39,9 @@ internal data class EqualizerScreenState(
 ) {
     val presetLabel: String
         get() = presetMatch.name
+
+    val isFlatBuiltInPreset: Boolean
+        get() = presetMatch.builtInId == EqualizerBuiltInPresetId.FLAT
 
     val userPresets: List<UserEqualizerPreset>
         get() = editablePreferences.userPresets
@@ -86,6 +94,13 @@ internal val EqualizerMode.displayName: String
     get() = when (this) {
         EqualizerMode.GRAPHIC -> "Graphic"
         EqualizerMode.PARAMETRIC -> "Parametric"
+    }
+
+@get:StringRes
+internal val EqualizerMode.labelRes: Int
+    get() = when (this) {
+        EqualizerMode.GRAPHIC -> R.string.eq_mode_graphic
+        EqualizerMode.PARAMETRIC -> R.string.eq_mode_parametric
     }
 
 internal data class EqualizerUiActions(
@@ -153,7 +168,7 @@ internal fun presetMatchFor(
                 state.parametricState
             )
     }
-        ?: EqualizerPresetMatch("Custom")
+        ?: EqualizerPresetMatch("Custom", builtInId = EqualizerBuiltInPresetId.CUSTOM)
 }
 
 internal val builtInEqualizerPresets

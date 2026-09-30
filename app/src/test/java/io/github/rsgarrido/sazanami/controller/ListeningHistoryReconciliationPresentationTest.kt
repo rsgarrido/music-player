@@ -1,5 +1,6 @@
 package io.github.rsgarrido.sazanami.controller
 
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationItem
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationMetrics
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationSource
@@ -84,7 +85,7 @@ class ListeningHistoryReconciliationPresentationTest {
 
         assertEquals(ReconciliationMatchReason.PUNCTUATION, reconciliationMatchReason(queen))
         assertEquals(ReconciliationMatchReason.PUNCTUATION, reconciliationMatchReason(shake))
-        assertEquals("Punctuation difference", reconciliationMatchReason(queen).label)
+        assertEquals(R.string.history_reason_punctuation, reconciliationMatchReason(queen).labelRes)
         assertFalse(shake.isDeterministic)
         assertEquals(ReconciliationMatchReason.ACCENT_DIACRITIC, reconciliationMatchReason(accent))
         assertEquals(ReconciliationMatchReason.SIMILAR_TITLE, reconciliationMatchReason(similar))

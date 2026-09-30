@@ -29,18 +29,3 @@ internal fun formatEqualizerFrequency(
 } else {
     "${frequencyHz.toInt()} Hz"
 }
-
-internal fun equalizerBandAccessibilityText(
-    frequencyHz: Double,
-    gainDb: Double,
-    unavailable: Boolean
-): String {
-    val availability = if (unavailable) {
-        ", unavailable for the current source"
-    } else {
-        ""
-    }
-    return "${formatEqualizerFrequency(frequencyHz)}, " +
-        "${formatEqualizerDb(gainDb)}$availability, " +
-        "range minus 12 to plus 12 decibels"
-}

@@ -1,8 +1,21 @@
 package io.github.rsgarrido.sazanami.player.equalizer
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import java.util.UUID
 
+enum class EqualizerBuiltInPresetId(@StringRes val labelRes: Int) {
+    FLAT(R.string.eq_flat),
+    BASS_LIFT(R.string.eq_preset_bass_lift),
+    TREBLE_LIFT(R.string.eq_preset_treble_lift),
+    VOCAL_FOCUS(R.string.eq_preset_vocal_focus),
+    WARM(R.string.eq_preset_warm),
+    REDUCED_BASS(R.string.eq_preset_reduced_bass),
+    CUSTOM(R.string.eq_preset_custom)
+}
+
 internal data class BuiltInEqualizerPreset(
+    val id: EqualizerBuiltInPresetId,
     val name: String,
     val preampDb: Double,
     val automaticHeadroomEnabled: Boolean,
@@ -11,17 +24,18 @@ internal data class BuiltInEqualizerPreset(
 
 data class EqualizerPresetMatch(
     val name: String,
-    val userPresetId: String? = null
+    val userPresetId: String? = null,
+    val builtInId: EqualizerBuiltInPresetId? = null
 )
 
 internal object GraphicEqualizerPresets {
     val builtIns: List<BuiltInEqualizerPreset> = listOf(
-        builtIn("Flat", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
-        builtIn("Bass Lift", 4.0, 3.5, 2.5, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
-        builtIn("Treble Lift", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.5, 3.5, 4.0),
-        builtIn("Vocal Focus", -2.0, -1.5, -0.5, 1.0, 2.0, 2.5, 2.0, 0.5, -1.0, -2.0),
-        builtIn("Warm", 2.5, 2.0, 1.5, 1.0, 0.5, 0.0, -0.5, -1.0, -1.5, -1.5),
-        builtIn("Reduced Bass", -4.0, -3.5, -2.5, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+        builtIn(EqualizerBuiltInPresetId.FLAT, "Flat", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+        builtIn(EqualizerBuiltInPresetId.BASS_LIFT, "Bass Lift", 4.0, 3.5, 2.5, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+        builtIn(EqualizerBuiltInPresetId.TREBLE_LIFT, "Treble Lift", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.5, 3.5, 4.0),
+        builtIn(EqualizerBuiltInPresetId.VOCAL_FOCUS, "Vocal Focus", -2.0, -1.5, -0.5, 1.0, 2.0, 2.5, 2.0, 0.5, -1.0, -2.0),
+        builtIn(EqualizerBuiltInPresetId.WARM, "Warm", 2.5, 2.0, 1.5, 1.0, 0.5, 0.0, -0.5, -1.0, -1.5, -1.5),
+        builtIn(EqualizerBuiltInPresetId.REDUCED_BASS, "Reduced Bass", -4.0, -3.5, -2.5, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     )
 
     val builtInNamesLowercase: Set<String> =
@@ -92,9 +106,11 @@ internal object GraphicEqualizerPresets {
     }
 
     private fun builtIn(
+        id: EqualizerBuiltInPresetId,
         name: String,
         vararg bandGainsDb: Double
     ): BuiltInEqualizerPreset = BuiltInEqualizerPreset(
+        id = id,
         name = name,
         preampDb = 0.0,
         automaticHeadroomEnabled = true,
@@ -117,7 +133,7 @@ internal object EqualizerPresetMatcher {
                 bandGainsDb = preset.bandGainsDb
             )
         }?.let { preset ->
-            return EqualizerPresetMatch(name = preset.name)
+            return EqualizerPresetMatch(name = preset.name, builtInId = preset.id)
         }
 
         return state.userPresets

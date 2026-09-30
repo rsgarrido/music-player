@@ -18,8 +18,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.backup.AppBackup
 import io.github.rsgarrido.sazanami.data.backup.BackupRestoreResult
 import io.github.rsgarrido.sazanami.data.backup.BackupRestoreSummary
@@ -36,6 +39,7 @@ fun rememberBackupRestoreActions(
     onSummarize: (AppBackup) -> BackupRestoreSummary,
     onRestore: (AppBackup, (Result<BackupRestoreResult>) -> Unit) -> Unit
 ): BackupRestoreActions {
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
     var pendingRestore by remember {
         mutableStateOf<PendingBackupRestore?>(null)
@@ -67,7 +71,7 @@ fun rememberBackupRestoreActions(
                         )
                     },
                     onFailure = {
-                        showMessage(invalidBackupErrorMessage())
+                        showMessage(resources.getString(R.string.backup_invalid_file))
                     }
                 )
             }
@@ -84,16 +88,16 @@ fun rememberBackupRestoreActions(
                 }
             },
             title = {
-                Text(text = "Restore backup?")
+                Text(text = stringResource(R.string.backup_restore_confirm_title))
             },
             text = {
                 Column {
-                    Text(text = backupRestoreConfirmationText())
+                    Text(text = stringResource(R.string.backup_restore_confirm_body))
 
                     Spacer(modifier = Modifier.height(12.dp))
 
                     Text(
-                        text = backupRestoreSummaryText(selectedRestore.summary),
+                        text = resources.backupRestoreSummaryText(selectedRestore.summary),
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -105,7 +109,7 @@ fun rememberBackupRestoreActions(
                         pendingRestore = null
                     }
                 ) {
-                    Text(text = "Cancel")
+                    Text(text = stringResource(R.string.backup_cancel))
                 }
             },
             confirmButton = {
@@ -121,17 +125,17 @@ fun rememberBackupRestoreActions(
                             result.fold(
                                 onSuccess = { restoreResult ->
                                     showMessage(
-                                        backupRestoreSuccessMessage(restoreResult)
+                                        resources.backupRestoreSuccessMessage(restoreResult)
                                     )
                                 },
                                 onFailure = {
-                                    showMessage("Couldn't restore backup.")
+                                    showMessage(resources.getString(R.string.backup_restore_failure))
                                 }
                             )
                         }
                     }
                 ) {
-                    Text(text = "Restore")
+                    Text(text = stringResource(R.string.backup_restore_action))
                 }
             }
         )
@@ -150,54 +154,6 @@ fun rememberBackupRestoreActions(
             )
         }
     )
-}
-
-internal fun backupRestoreConfirmationText(): String {
-    return """
-        This will replace your current Sazanami app data:
-        - Favorites
-        - Playlists
-        - Artist pictures and custom playlist artwork
-        - Listening history, imported-track links, and ratings
-        - Library folder selection
-        - Player theme and ReplayGain setting
-
-        Saved queues and current playback will be cleared.
-        Your music files will not be changed.
-    """.trimIndent()
-}
-
-internal fun backupRestoreSummaryText(summary: BackupRestoreSummary): String {
-    return listOf(
-        restoreCountLabel(summary.favoriteCount, "favorite"),
-        restoreCountLabel(summary.playlistCount, "playlist"),
-        restoreCountLabel(summary.playlistSongCount, "playlist song"),
-        restoreCountLabel(summary.listeningHistoryCount, "history entry"),
-        restoreCountLabel(summary.selectedFolderCount, "selected folder"),
-        restoreCountLabel(summary.visualAssetCount, "picture")
-    ).joinToString(separator = "\n") { count -> "- $count" }
-}
-
-internal fun backupRestoreSuccessMessage(result: BackupRestoreResult): String {
-    return "Backup restored. " +
-        "${restoreCountLabel(result.playlistCount, "playlist")}, " +
-        "${restoreCountLabel(result.favoriteCount, "favorite")}, " +
-        "${restoreCountLabel(result.listeningHistoryCount, "history entry")}, " +
-        "${restoreCountLabel(result.visualAssetCount, "picture")}."
-}
-
-internal fun invalidBackupErrorMessage(): String {
-    return "Couldn't open backup. The file is invalid or uses an unsupported version."
-}
-
-private fun restoreCountLabel(count: Int, singularLabel: String): String {
-    val label = when {
-        count == 1 -> singularLabel
-        singularLabel == "history entry" -> "history entries"
-        else -> "${singularLabel}s"
-    }
-
-    return "$count $label"
 }
 
 private data class PendingBackupRestore(

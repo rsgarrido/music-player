@@ -15,34 +15,16 @@ class BackupExportActionsTest {
     }
 
     @Test
-    fun backupExportSuccessMessage_includesExportCounts() {
+    fun backupExportPresentation_preservesAllCountsForLocalizedFormatting() {
         assertEquals(
-            "Backup exported. 3 playlists, 24 favorites, 86 history entries, 4 pictures.",
-            backupExportSuccessMessage(
-                BackupExportResult(
-                    favoriteCount = 24,
-                    playlistCount = 3,
-                    playlistSongCount = 120,
-                    listeningHistoryCount = 86,
-                    visualAssetCount = 4
-                )
-            )
-        )
-    }
-
-    @Test
-    fun backupExportSuccessMessage_usesSingularLabels() {
-        assertEquals(
-            "Backup exported. 1 playlist, 1 favorite, 1 history entry, 1 picture.",
-            backupExportSuccessMessage(
-                BackupExportResult(
-                    favoriteCount = 1,
-                    playlistCount = 1,
-                    playlistSongCount = 1,
-                    listeningHistoryCount = 1,
-                    visualAssetCount = 1
-                )
-            )
+            BackupPresentationCounts(24, 3, 120, 86, 0, 4),
+            BackupExportResult(
+                favoriteCount = 24,
+                playlistCount = 3,
+                playlistSongCount = 120,
+                listeningHistoryCount = 86,
+                visualAssetCount = 4
+            ).presentationCounts()
         )
     }
 }

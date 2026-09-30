@@ -1,4 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.pocketflip
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -162,7 +164,7 @@ private fun PocketFlipSharedContent(
         if (song.albumArtUri != null) {
             RetainedArtworkImage(
                 model = song.albumArtUri,
-                contentDescription = "Current album artwork",
+                contentDescription = stringResource(R.string.player_current_album_artwork),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .fillMaxSize()
@@ -186,7 +188,7 @@ private fun PocketFlipSharedContent(
     }
 
     Text(
-        text = song.title.ifBlank { "Unknown title" },
+        text = song.title.ifBlank { stringResource(R.string.player_unknown_title) },
         color = PocketFlipColors.screenText,
         fontFamily = FontFamily.Monospace,
         fontWeight = FontWeight.Bold,
@@ -198,7 +200,7 @@ private fun PocketFlipSharedContent(
     )
 
     Text(
-        text = song.artist.ifBlank { "Unknown artist" },
+        text = song.artist.ifBlank { stringResource(R.string.player_unknown_artist) },
         color = PocketFlipColors.screenText.copy(alpha = 0.76f),
         fontFamily = FontFamily.Monospace,
         fontSize = (9f + progress).sp,
@@ -233,7 +235,7 @@ private fun PocketFlipSharedContent(
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                 tint = lerp(
                     start = tokens.displayTextColor,
                     stop = PocketFlipColors.actionIcon,

@@ -1,34 +1,36 @@
 package io.github.rsgarrido.sazanami.data
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import org.jaudiotagger.tag.FieldKey
 
 enum class BatchMetadataField(
-    val label: String,
+    @StringRes val labelRes: Int,
     val isMultiValue: Boolean,
     internal val fieldKey: FieldKey,
     internal val requiredCapability: EditableMetadataField
 ) {
-    ALBUM("Album", false, FieldKey.ALBUM, EditableMetadataField.ALBUM),
+    ALBUM(R.string.metadata_album, false, FieldKey.ALBUM, EditableMetadataField.ALBUM),
     ALBUM_ARTIST(
-        "Album Artist",
+        R.string.metadata_album_artist,
         true,
         FieldKey.ALBUM_ARTIST,
         EditableMetadataField.ALBUM_ARTIST
     ),
-    DATE("Date / year", false, FieldKey.YEAR, EditableMetadataField.DATE),
-    GENRE("Genre", true, FieldKey.GENRE, EditableMetadataField.GENRE),
-    COMPOSER("Composer", true, FieldKey.COMPOSER, EditableMetadataField.COMPOSER),
-    COMMENT("Comment", false, FieldKey.COMMENT, EditableMetadataField.COMMENT),
+    DATE(R.string.metadata_date_year, false, FieldKey.YEAR, EditableMetadataField.DATE),
+    GENRE(R.string.metadata_genre, true, FieldKey.GENRE, EditableMetadataField.GENRE),
+    COMPOSER(R.string.metadata_composer, true, FieldKey.COMPOSER, EditableMetadataField.COMPOSER),
+    COMMENT(R.string.metadata_comment, false, FieldKey.COMMENT, EditableMetadataField.COMMENT),
     PUBLISHER(
-        "Publisher / Label",
+        R.string.metadata_publisher,
         false,
         FieldKey.RECORD_LABEL,
         EditableMetadataField.PUBLISHER
     ),
-    COPYRIGHT("Copyright", false, FieldKey.COPYRIGHT, EditableMetadataField.COPYRIGHT),
-    BPM("BPM", false, FieldKey.BPM, EditableMetadataField.BPM),
-    DISC_NUMBER("Disc number", false, FieldKey.DISC_NO, EditableMetadataField.DISC_NUMBER),
-    DISC_TOTAL("Disc total", false, FieldKey.DISC_TOTAL, EditableMetadataField.DISC_TOTAL)
+    COPYRIGHT(R.string.metadata_copyright, false, FieldKey.COPYRIGHT, EditableMetadataField.COPYRIGHT),
+    BPM(R.string.metadata_bpm, false, FieldKey.BPM, EditableMetadataField.BPM),
+    DISC_NUMBER(R.string.metadata_disc_number, false, FieldKey.DISC_NO, EditableMetadataField.DISC_NUMBER),
+    DISC_TOTAL(R.string.metadata_disc_total, false, FieldKey.DISC_TOTAL, EditableMetadataField.DISC_TOTAL)
 }
 
 sealed interface BatchMetadataValue {

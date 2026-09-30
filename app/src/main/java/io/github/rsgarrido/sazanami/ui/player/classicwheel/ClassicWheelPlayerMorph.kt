@@ -1,4 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.classicwheel
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -180,7 +182,7 @@ private fun ClassicWheelMorphSharedContent(
     val artworkRadius = (8f - 5f * progress).coerceAtLeast(3f).dp
     RetainedArtworkImage(
         model = song.albumArtUri,
-        contentDescription = "Album art for ${song.title}",
+        contentDescription = stringResource(R.string.player_album_art_for, song.title),
         modifier = Modifier
             .offset { IntOffset(geometry.artwork.left.roundToInt(), geometry.artwork.top.roundToInt()) }
             .size(with(density) { geometry.artwork.width.toDp() }, with(density) { geometry.artwork.height.toDp() })
@@ -195,7 +197,7 @@ private fun ClassicWheelMorphSharedContent(
             .size(with(density) { geometry.title.width.toDp() }, with(density) { geometry.title.height.toDp() })
     ) {
         Text(
-            text = song.title.ifBlank { "Unknown Title" },
+            text = song.title.ifBlank { stringResource(R.string.player_unknown_title) },
             style = if (progress < .5f) MaterialTheme.typography.titleSmall else MaterialTheme.typography.titleLarge,
             fontWeight = if (progress < .5f) FontWeight.SemiBold else FontWeight.Bold,
             color = lerp(tokens.displayTextColor, ClassicWheelColors.screenText, progress),
@@ -204,7 +206,7 @@ private fun ClassicWheelMorphSharedContent(
         )
     }
     Text(
-        text = song.artist.ifBlank { "Unknown Artist" },
+        text = song.artist.ifBlank { stringResource(R.string.player_unknown_artist) },
         modifier = Modifier
             .offset { IntOffset(geometry.artist.left.roundToInt(), geometry.artist.top.roundToInt()) }
             .size(with(density) { geometry.artist.width.toDp() }, with(density) { geometry.artist.height.toDp() }),

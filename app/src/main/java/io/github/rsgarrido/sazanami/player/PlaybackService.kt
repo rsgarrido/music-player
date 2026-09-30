@@ -38,6 +38,7 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import io.github.rsgarrido.sazanami.MainActivity
 import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.data.UNKNOWN_ARTIST_IDENTITY
 import io.github.rsgarrido.sazanami.data.LibraryCacheRepository
 import io.github.rsgarrido.sazanami.data.ListeningEventRepository
 import io.github.rsgarrido.sazanami.data.ListeningNativeTrackResolver
@@ -731,6 +732,7 @@ class PlaybackService : MediaLibraryService() {
                     )
                 }
             ),
+            generatedQueueName = { number -> getString(R.string.queue_generated_name, number) },
             onActiveQueueChanged = PlaybackQueueRuntimeBridge::updateActiveQueueId
         )
         PlaybackQueueRuntimeBridge.register(playbackQueueCoordinator)
@@ -1260,6 +1262,29 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private fun AutoBrowseNode.toMediaItem(): MediaItem {
+        // The browse tree keeps stable IDs and media data; app-owned presentation is
+        // resolved in the service's current locale, including after a locale refresh.
+        val presentationTitle = when (id) {
+            PLAYLISTS_ID -> getString(R.string.auto_browse_playlists)
+            ALBUMS_ID -> getString(R.string.auto_browse_albums)
+            ARTISTS_ID -> getString(R.string.auto_browse_artists)
+            SONGS_ID -> getString(R.string.auto_browse_songs)
+            "artist:${UNKNOWN_ARTIST_IDENTITY.key}" -> getString(R.string.auto_unknown_artist)
+            else -> when {
+                id.startsWith("album:") && children.firstOrNull()?.song?.album.isNullOrBlank() ->
+                    getString(R.string.auto_unknown_album)
+                song != null && song.title.isBlank() -> getString(R.string.auto_unknown_title)
+                else -> title
+            }
+        }
+        val presentationSubtitle = when {
+            subtitleFallback == AutoBrowseSubtitleFallback.VARIOUS_ARTISTS ->
+                getString(R.string.auto_various_artists)
+            id.startsWith("playlist:") || id.startsWith("artist:") ->
+                resources.getQuantityString(R.plurals.auto_browse_song_count, children.size, children.size)
+            song != null && song.artist.isBlank() -> getString(R.string.auto_unknown_artist)
+            else -> subtitle
+        }
         val extras = Bundle().apply {
             browsableChildrenStyle?.let { style ->
                 putInt(
@@ -1275,8 +1300,8 @@ class PlaybackService : MediaLibraryService() {
             }
         }
         val metadataBuilder = MediaMetadata.Builder()
-            .setTitle(title)
-            .setArtist(subtitle)
+            .setTitle(presentationTitle)
+            .setArtist(presentationSubtitle)
             .setIsBrowsable(isBrowsable)
             .setIsPlayable(isPlayable)
             .setArtworkUri(artworkUri)
@@ -1303,8 +1328,8 @@ class PlaybackService : MediaLibraryService() {
             )
             .setMediaMetadata(
                 MediaMetadata.Builder()
-                    .setTitle(title)
-                    .setArtist(artist.ifBlank { "Unknown Artist" })
+                    .setTitle(title.ifBlank { getString(R.string.auto_unknown_title) })
+                    .setArtist(artist.ifBlank { getString(R.string.auto_unknown_artist) })
                     .setAlbumTitle(album)
                     .setArtworkUri(albumArtUri)
                     .setIsBrowsable(false)
@@ -1601,7 +1626,7 @@ class PlaybackService : MediaLibraryService() {
         CommandButton.Builder(
             if (shuffleEnabled) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF
         )
-            .setDisplayName(if (shuffleEnabled) "Shuffle on" else "Shuffle")
+            .setDisplayName(getString(if (shuffleEnabled) R.string.auto_shuffle_on else R.string.auto_shuffle))
             .setSessionCommand(AUTO_TOGGLE_SHUFFLE_COMMAND)
             .setSlots(CommandButton.SLOT_BACK_SECONDARY, CommandButton.SLOT_OVERFLOW)
             .build(),
@@ -1612,7 +1637,7 @@ class PlaybackService : MediaLibraryService() {
                 CommandButton.ICON_REPEAT_OFF
             }
         )
-            .setDisplayName(if (repeatMode == RepeatMode.ALL) "Repeat all on" else "Repeat all")
+            .setDisplayName(getString(if (repeatMode == RepeatMode.ALL) R.string.auto_repeat_all_on else R.string.auto_repeat_all))
             .setSessionCommand(AUTO_TOGGLE_REPEAT_ALL_COMMAND)
             .setSlots(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW)
             .build()

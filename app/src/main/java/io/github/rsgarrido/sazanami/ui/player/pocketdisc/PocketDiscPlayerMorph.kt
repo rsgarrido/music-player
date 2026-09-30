@@ -1,6 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.player.pocketdisc
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
-import android.R
+import android.R as AndroidR
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -177,10 +179,10 @@ private fun SharedPocketDiscArtwork(
     ) {
         RetainedArtworkImage(
             model = song.albumArtUri,
-            contentDescription = "Current album artwork",
+            contentDescription = stringResource(R.string.player_current_album_artwork),
             contentScale = ContentScale.Fit,
-            error = painterResource(R.drawable.ic_media_play),
-            placeholder = painterResource(R.drawable.ic_media_play),
+            error = painterResource(AndroidR.drawable.ic_media_play),
+            placeholder = painterResource(AndroidR.drawable.ic_media_play),
             modifier = Modifier
                 .fillMaxSize()
                 .padding((4f * progress).dp)
@@ -204,7 +206,7 @@ private fun SharedPocketDiscForeground(
 
     geometry.title?.let { titleRect ->
         Text(
-            text = song.title.ifBlank { "Unknown title" },
+            text = song.title.ifBlank { stringResource(R.string.player_unknown_title) },
             color = lerp(tokens.displayTextColor, colors.lcdText, progress),
             style = TextStyle(
                 fontFamily = FontFamily.Monospace,
@@ -220,7 +222,7 @@ private fun SharedPocketDiscForeground(
 
     geometry.artist?.let { artistRect ->
         Text(
-            text = song.artist.ifBlank { "Unknown artist" },
+            text = song.artist.ifBlank { stringResource(R.string.player_unknown_artist) },
             color = lerp(tokens.displayTextColor.copy(alpha = 0.66f), colors.lcdTextMuted, progress),
             fontFamily = FontFamily.Monospace,
             fontSize = (8f + 2f * progress).sp,
@@ -258,7 +260,7 @@ private fun SharedPocketDiscForeground(
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                 tint = colors.lcdText,
                 modifier = Modifier.fillMaxSize(0.48f)
             )

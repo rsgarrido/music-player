@@ -1,5 +1,7 @@
 package io.github.rsgarrido.sazanami.controller
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.PlaybackQueueRepository
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.membershipKey
@@ -33,10 +35,10 @@ data class PlaybackQueueCardUiState(
     val isActive: Boolean,
     val isSelected: Boolean
 ) {
-    val stateLabel: String?
+    @get:StringRes val stateLabelRes: Int?
         get() = when {
-            isActive -> "PLAYING"
-            isSelected -> "VIEWING"
+            isActive -> R.string.queue_state_playing
+            isSelected -> R.string.queue_state_viewing
             else -> null
         }
 }
@@ -57,7 +59,7 @@ data class PlaybackQueueHubUiState(
     val selectedQueueEntryCount: Int = 0,
     val isSwitching: Boolean = false,
     val isCreating: Boolean = false,
-    val message: String? = null,
+    @StringRes val message: Int? = null,
     val removalUndoEventId: Long? = null,
     val swipeResetVersions: Map<String, Long> = emptyMap()
 ) {
@@ -242,7 +244,7 @@ internal class PlaybackQueueUiController(
             } catch (_: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    message = "Unable to load saved queues."
+                    message = R.string.queue_message_load_failed
                 )
             }
         }
@@ -256,7 +258,7 @@ internal class PlaybackQueueUiController(
                 throw cancelled
             } catch (_: Exception) {
                 _state.value = _state.value.copy(
-                    message = "Live queue updates are temporarily unavailable."
+                    message = R.string.queue_message_live_unavailable
                 )
             }
         }
@@ -282,7 +284,7 @@ internal class PlaybackQueueUiController(
         }
         _state.value = _state.value.copy(
             isSwitching = false,
-            message = if (switched) null else "Unable to switch queues. Current playback was kept."
+            message = if (switched) null else R.string.queue_message_switch_failed
         )
         if (switched) {
             latestLiveActiveQueue = null
@@ -304,7 +306,7 @@ internal class PlaybackQueueUiController(
         _state.value = _state.value.copy(
             isCreating = false,
             message = if (createdQueueId == null) {
-                "Start playback before creating a queue from the current session."
+                R.string.queue_message_start_playback
             } else {
                 null
             }
@@ -315,7 +317,7 @@ internal class PlaybackQueueUiController(
     fun renameQueue(queueId: String, proposedName: String): Job = scope.launch {
         val validated = validatedQueueName(proposedName)
         if (validated == null) {
-            _state.value = _state.value.copy(message = "Queue name cannot be blank.")
+            _state.value = _state.value.copy(message = R.string.queue_message_name_blank)
             return@launch
         }
         val renamed = try {
@@ -326,7 +328,7 @@ internal class PlaybackQueueUiController(
             false
         }
         _state.value = _state.value.copy(
-            message = if (renamed) null else "Unable to rename queue."
+            message = if (renamed) null else R.string.queue_message_rename_failed
         )
     }
 
@@ -340,15 +342,15 @@ internal class PlaybackQueueUiController(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
-            _state.value = current.copy(message = "Unable to delete queue.")
+            _state.value = current.copy(message = R.string.queue_message_delete_failed)
             return@launch
         }
         when {
             queues.size <= 1 -> {
-                _state.value = current.copy(message = "The only remaining queue cannot be deleted.")
+                _state.value = current.copy(message = R.string.queue_message_only_remaining)
             }
             queueId == activeQueueId -> {
-                _state.value = current.copy(message = "The active queue cannot be deleted.")
+                _state.value = current.copy(message = R.string.queue_message_active_cannot_delete)
             }
             else -> {
                 val deleted = try {
@@ -359,7 +361,7 @@ internal class PlaybackQueueUiController(
                     false
                 }
                 _state.value = _state.value.copy(
-                    message = if (deleted) null else "Unable to delete queue."
+                    message = if (deleted) null else R.string.queue_message_delete_failed
                 )
             }
         }
@@ -378,7 +380,7 @@ internal class PlaybackQueueUiController(
             latestLiveActiveQueue = LiveActiveQueueForUi(songs = songs, queueId = createdId)
         }
         _state.value = _state.value.copy(
-            message = if (createdId == null) "Unable to create and play the new queue." else null
+            message = if (createdId == null) R.string.queue_message_create_play_failed else null
         )
         refreshSelection()
     }
@@ -399,7 +401,7 @@ internal class PlaybackQueueUiController(
         _state.value = _state.value.copy(
             isCreating = false,
             message = if (createdId == null) {
-                "Unable to create the new queue."
+                R.string.queue_message_create_failed
             } else {
                 null
             }
@@ -421,7 +423,7 @@ internal class PlaybackQueueUiController(
             false
         }
         _state.value = _state.value.copy(
-            message = if (added) null else "Unable to add tracks to that queue."
+            message = if (added) null else R.string.queue_message_add_failed
         )
         onComplete(added)
         refreshSelection()
@@ -456,7 +458,7 @@ internal class PlaybackQueueUiController(
             _state.value.swipeResetVersions
         }
         _state.value = _state.value.copy(
-            message = if (removed) null else "Unable to remove that queue entry.",
+            message = if (removed) null else R.string.queue_message_remove_failed,
             removalUndoEventId = if (removed) nextRemovalUndoEventId else null,
             swipeResetVersions = swipeResetVersions
         )
@@ -483,7 +485,7 @@ internal class PlaybackQueueUiController(
             false
         }
         if (!played) {
-            _state.value = _state.value.copy(message = "Unable to play that queue entry.")
+            _state.value = _state.value.copy(message = R.string.queue_message_play_failed)
         }
     }
 
@@ -506,7 +508,7 @@ internal class PlaybackQueueUiController(
         }
         _state.value = _state.value.copy(
             removalUndoEventId = null,
-            message = if (restored) null else "Unable to restore that queue entry.",
+            message = if (restored) null else R.string.queue_message_restore_failed,
             swipeResetVersions = swipeResetVersions
         )
         if (restored && removal.queueId == _state.value.activeQueueId) {
@@ -568,7 +570,7 @@ internal class PlaybackQueueUiController(
                 false
             }
             _state.value = _state.value.copy(
-                message = if (reordered) null else "Queue order could not be changed."
+                message = if (reordered) null else R.string.queue_message_reorder_failed
             )
             if (reordered && activeFromIndex != null) {
                 latestLiveActiveQueue = latestLiveActiveQueue?.let { live ->
@@ -635,7 +637,7 @@ internal class PlaybackQueueUiController(
             previous = _state.value
         ).let { state ->
             if (loadFailed && state.message == null) {
-                state.copy(message = "Some queues could not be loaded.")
+                state.copy(message = R.string.queue_message_partial_load)
             } else {
                 state
             }

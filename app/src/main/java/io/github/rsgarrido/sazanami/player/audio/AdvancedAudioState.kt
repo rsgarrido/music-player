@@ -1,13 +1,16 @@
 package io.github.rsgarrido.sazanami.player.audio
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.player.replaygain.ReplayGainMode
 import io.github.rsgarrido.sazanami.player.equalizer.EqualizerRuntimeState
 
 enum class AudioOffloadPreference(
-    val displayName: String
+    val displayName: String,
+    @StringRes val labelRes: Int
 ) {
-    DISABLED("Disabled"),
-    AUTOMATIC("Automatic");
+    DISABLED("Disabled", R.string.settings_offload_disabled_label),
+    AUTOMATIC("Automatic", R.string.settings_offload_automatic_label);
 
     companion object {
         fun fromStorageValue(value: String?): AudioOffloadPreference =
