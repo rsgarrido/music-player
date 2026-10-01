@@ -5,6 +5,10 @@
 <h1 align="center">Sazanami</h1>
 
 <p align="center">
+  <strong>English</strong> | <a href="README.es.md">Español</a>
+</p>
+
+<p align="center">
   <strong>An offline, privacy-first Android music player for your own music library.</strong>
 </p>
 
@@ -33,7 +37,8 @@ Sazanami is designed around local playback and privacy. Your music library does 
 ## Highlights
 
 - **Your local music library** — Browse songs, albums, artists, playlists, folders, and genres with sorting, filtering, ratings, favorites, search, and recently played/added views.
-- **Six player experiences** — Choose between the customizable Sazanami Default player and five retro-inspired interfaces.
+- **Six player experiences** — Choose between the customizable Sazanami Default player and five retro-inspired interfaces. Save your Default-player setup as My Player.
+- **English and Spanish** — Use the app in English or neutral Latin American Spanish, with a language choice independent of your device language.
 - **Multiple persistent queues** — Create, rename, switch between, preview, and reorder separate playback queues without losing your place.
 - **Manual and Smart Playlists** — Build traditional playlists or create rule-based collections using metadata, ratings, listening history, dates, play counts, and more.
 - **Real metadata editing** — Edit supported tags and artwork directly in your music files rather than maintaining app-only metadata.
@@ -87,6 +92,8 @@ Sazanami includes six expanded-player designs built on the same playback system.
 ### Make the Default player yours
 
 The Sazanami Default player can be customized with different artwork layouts, seekbar styles, waveform density, backgrounds, progress colors, artwork shape and sizing, control styles, metadata alignment, layout density, and more.
+
+Your custom configuration is saved as **My Player**, so you can return to it after trying any of the four built-in presets.
 
 Retro themes also provide their own configurable color schemes.
 
@@ -227,6 +234,7 @@ Sazanami intentionally focuses on local music ownership rather than turning your
 - Multiple named persistent queues
 - Queue reordering
 - Playback-position restoration
+- Jump to the current song's album from Now Playing in supported player themes
 - Crossfade
 - Album-transition preservation
 - Smooth play/pause
@@ -278,7 +286,10 @@ Sazanami intentionally focuses on local music ownership rather than turning your
 <summary><strong>Personalization</strong></summary>
 
 - Six player themes
-- Four Default-player presets
+- Four built-in Default-player presets
+- Saved custom Default-player configuration: My Player
+- System / Light / Dark app appearance
+- App language: System default / English / Español
 - Multiple artwork-transition styles
 - Seekbar and waveform customization
 - Artwork sizing, shape, fit, and shadow
@@ -395,7 +406,10 @@ The repository also maintains internal architecture/status documentation used du
 
 ## Feedback and Issues
 
-Bug reports and feature suggestions are welcome through GitHub Issues.
+Bug reports, feature requests, and change suggestions are welcome through GitHub Issues. Use the dedicated templates to share the details:
+
+- [Bug report](https://github.com/rsgarrido/sazanami/issues/new?template=bug_report.md) — Describe the problem, steps to reproduce it, and your app and Android versions.
+- [Feature request or change suggestion](https://github.com/rsgarrido/sazanami/issues/new?template=feature_request.md) — Describe your idea and how it would improve Sazanami.
 
 ## License
 
