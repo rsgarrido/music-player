@@ -86,7 +86,7 @@
     <string name="metadata_bulk_permission_version">El permiso de escritura por lotes requiere Android 11 o posterior.</string>
     <string name="metadata_write_permission_request_failed">No se pudo solicitar el permiso de escritura.</string>
     <string name="metadata_previous_batch_interrupted">Se interrumpió el lote anterior</string>
-    <string name="metadata_previous_batch_detail">Un lote anterior de metadatos terminó sin poder confirmar el resultado. Algunos archivos podrían haberse completado. Sazanami no lo repetirá automáticamente. Explora la biblioteca de nuevo y revisa los archivos afectados antes de crear otro lote.</string>
+    <string name="metadata_previous_batch_detail">Un lote anterior de metadatos terminó sin poder confirmar el resultado. Algunos archivos podrían haberse completado. Sazanami no lo repetirá automáticamente. Vuelve a actualizar la biblioteca y revisa los archivos afectados antes de crear otro lote.</string>
     <string name="metadata_acknowledge">Entendido</string>
     <string name="metadata_preparing_batch">Preparando lote</string>
     <string name="metadata_requesting_access">Solicitando acceso de escritura</string>

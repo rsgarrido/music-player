@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="modern_option_artwork_transition_slide_description">La portada actual se desliza de forma natural junto a la siguiente.</string>
-    <string name="modern_option_artwork_transition_depth_scale_description">Las portadas se alejan y desvanecen al moverse, y luego vuelven a crecer al entrar.</string>
+    <string name="modern_option_artwork_transition_depth_scale_description">Las portadas se alejan y se desvanecen al salir, y vuelven a aumentar de tamaño al entrar.</string>
     <string name="modern_option_artwork_transition_cover_flow_description">Las portadas giran con una perspectiva marcada al salir del centro.</string>
     <string name="modern_option_artwork_transition_stack_reveal_description">La portada actual se aparta para revelar la siguiente debajo.</string>
     <string name="modern_option_artwork_transition_style_slide">Deslizamiento</string>

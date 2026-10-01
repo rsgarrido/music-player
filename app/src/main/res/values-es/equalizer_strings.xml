@@ -15,11 +15,11 @@
     <string name="eq_import_export">Importar y exportar</string>
     <string name="eq_import_from_file_description">Importar ecualización desde un archivo</string>
     <string name="eq_import_from_file">Importar desde archivo</string>
-    <string name="eq_paste_text">Pegar texto de ecualización</string>
-    <string name="eq_export_current_description">Exportar el texto de la ecualización paramétrica actual</string>
-    <string name="eq_export_current">Exportar ecualización actual</string>
-    <string name="eq_copy_text_description">Copiar texto de ecualización paramétrica</string>
-    <string name="eq_copy_text">Copiar texto de ecualización</string>
+    <string name="eq_paste_text">Pegar configuración</string>
+    <string name="eq_export_current_description">Exportar la configuración actual del ecualizador paramétrico como texto</string>
+    <string name="eq_export_current">Exportar configuración</string>
+    <string name="eq_copy_text_description">Copiar configuración del ecualizador paramétrico como texto</string>
+    <string name="eq_copy_text">Copiar configuración</string>
     <string name="eq_export_native_description">Exportar el preajuste nativo actual de Sazanami</string>
     <string name="eq_export_native">Exportar en formato nativo</string>
     <string name="eq_export_preset_description">Exportar preajuste paramétrico guardado</string>

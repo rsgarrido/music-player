@@ -50,7 +50,7 @@
     <string name="replay_gain_smart_description">Usa la ganancia del álbum al reproducir un álbum y la ganancia por canción en la reproducción mixta.</string>
     <string name="player_theme_default">Predeterminado de Sazanami</string>
     <string name="modern_preset_sazanami_default">Predeterminado de Sazanami</string>
-    <string name="modern_preset_artwork_focus">Portada protagonista</string>
+    <string name="modern_preset_artwork_focus">Portada destacada</string>
     <string name="modern_preset_minimal">Minimalista</string>
     <string name="modern_preset_colorful">Colorido</string>
     <string name="modern_choice_my_player">Mi reproductor</string>
@@ -64,7 +64,7 @@
     <string name="history_reason_incomplete">Faltan algunos metadatos importados</string>
     <string name="history_reason_multiple">Varias coincidencias posibles</string>
     <string name="history_reason_no_match">No hay una coincidencia probable en la biblioteca</string>
-    <string name="history_reason_linked">Vinculado a la biblioteca</string>
+    <string name="history_reason_linked">Vinculada a la biblioteca</string>
     <string name="lyrics_close">Cerrar letras</string>
     <string name="lyrics_album_artwork">Portada del álbum</string>
     <string name="lyrics_unknown_artist">Artista desconocido</string>
@@ -79,8 +79,8 @@
     <string name="lyrics_emphasis">énfasis de la letra</string>
     <string name="lyrics_unsynced">Letras sin sincronizar</string>
     <string name="lyrics_loading">Cargando letras locales…</string>
-    <string name="lyrics_rescan">Explorar de nuevo</string>
-    <string name="lyrics_settings">Configuración de letras locales</string>
+    <string name="lyrics_rescan">Escanear de nuevo</string>
+    <string name="lyrics_settings">Letras</string>
     <string name="lyrics_no_folder">No hay una carpeta de letras configurada</string>
     <string name="lyrics_no_folder_detail">Selecciona una o más carpetas con archivos .lrc locales.</string>
     <string name="lyrics_not_found">No se encontraron letras locales</string>

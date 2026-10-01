@@ -141,9 +141,9 @@
         <item quantity="other">artistas</item>
     </plurals>
     <plurals name="playlist_label">
-        <item quantity="one">lista de reproducción</item>
-        <item quantity="many">listas de reproducción</item>
-        <item quantity="other">listas de reproducción</item>
+        <item quantity="one">Lista</item>
+        <item quantity="many">Listas</item>
+        <item quantity="other">Listas</item>
     </plurals>
     <plurals name="sleep_timer_minutes_option">
         <item quantity="one">%d minuto</item>

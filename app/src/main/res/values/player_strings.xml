@@ -45,7 +45,7 @@
     <string name="player_flip_queue">QUEUE</string>
     <string name="player_flip_close">CLOSE</string>
     <string name="player_flip_power">PWR</string>
-    <string name="player_flip_audio_brand">POCKET FLIP // AUDIO</string>
+    <string name="player_flip_audio_brand">POCKET FLIP</string>
     <string name="player_flip_play">PLAY</string>
     <string name="player_flip_pause">PAUSE</string>
     <string name="player_flip_format">FORMAT %1$s</string>
@@ -56,7 +56,7 @@
     <string name="player_no_track_loaded">No track loaded</string>
     <string name="player_open_current_album">Open current album</string>
     <string name="player_track_position">TRACK POSITION</string>
-    <string name="player_cassette_audio_brand">Pocket Cassette // Audio</string>
+    <string name="player_cassette_audio_brand">Pocket Cassette</string>
     <string name="player_cassette_stereo_local_tape">STEREO  •  LOCAL  •  TAPE MODE</string>
     <string name="player_cassette_run">RUN</string>
     <string name="player_cassette_deck_mark">DC // 01</string>

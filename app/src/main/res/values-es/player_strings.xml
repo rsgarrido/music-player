@@ -22,7 +22,7 @@
     <string name="player_cassette_next">SIG. / AVANZAR</string>
     <string name="player_cassette_pause">PAUSA</string>
     <string name="player_cassette_play">REPRODUCIR</string>
-    <string name="player_cassette_mix">MEZCLA</string>
+    <string name="player_cassette_mix">ALEAT.</string>
     <string name="player_cassette_loop">REPETIR</string>
     <string name="player_cassette_all">TODO</string>
     <string name="player_cassette_one">UNA</string>
@@ -45,7 +45,7 @@
     <string name="player_flip_queue">COLA</string>
     <string name="player_flip_close">CERRAR</string>
     <string name="player_flip_power">ENC.</string>
-    <string name="player_flip_audio_brand">POCKET FLIP // AUDIO</string>
+    <string name="player_flip_audio_brand">POCKET FLIP</string>
     <string name="player_flip_play">REPRODUCIR</string>
     <string name="player_flip_pause">PAUSA</string>
     <string name="player_flip_format">FORMATO %1$s</string>
@@ -56,7 +56,7 @@
     <string name="player_no_track_loaded">No hay una canción cargada</string>
     <string name="player_open_current_album">Abrir álbum actual</string>
     <string name="player_track_position">POSICIÓN DE LA CANCIÓN</string>
-    <string name="player_cassette_audio_brand">Pocket Cassette // Audio</string>
+    <string name="player_cassette_audio_brand">Pocket Cassette</string>
     <string name="player_cassette_stereo_local_tape">ESTÉREO  •  LOCAL  •  MODO CASETE</string>
     <string name="player_cassette_run">REPRODUCIENDO</string>
     <string name="player_cassette_deck_mark">DC // 01</string>
@@ -108,12 +108,12 @@
     <string name="player_wheel_no_song_selected">No hay una canción seleccionada</string>
     <string name="player_wheel_choose_song">Elige una canción</string>
     <string name="player_wheel_volume">Volumen</string>
-    <string name="player_wheel_shuffle_on_repeat_off">Aleatorio activado • Repetición desactivada</string>
-    <string name="player_wheel_shuffle_on_repeat_all">Aleatorio activado • Repetir todo</string>
-    <string name="player_wheel_shuffle_on_repeat_one">Aleatorio activado • Repetir una</string>
-    <string name="player_wheel_shuffle_off_repeat_off">Aleatorio desactivado • Repetición desactivada</string>
-    <string name="player_wheel_shuffle_off_repeat_all">Aleatorio desactivado • Repetir todo</string>
-    <string name="player_wheel_shuffle_off_repeat_one">Aleatorio desactivado • Repetir una</string>
+    <string name="player_wheel_shuffle_on_repeat_off">Aleat. sí • Rep. no</string>
+    <string name="player_wheel_shuffle_on_repeat_all">Aleat. sí • Rep. todo</string>
+    <string name="player_wheel_shuffle_on_repeat_one">Aleat. sí • Rep. una</string>
+    <string name="player_wheel_shuffle_off_repeat_off">Aleat. no • Rep. no</string>
+    <string name="player_wheel_shuffle_off_repeat_all">Aleat. no • Rep. todo</string>
+    <string name="player_wheel_shuffle_off_repeat_one">Aleat. no • Rep. una</string>
     <plurals name="player_rack_playback_tracks">
         <item quantity="one">REPRODUCTOR // %1$s CANCIÓN</item>
         <item quantity="many">REPRODUCTOR // %1$s CANCIONES</item>

@@ -10,7 +10,7 @@
     <string name="library_tab_genres">Géneros</string>
     <string name="library_tab_favorites">Favoritos</string>
     <string name="library_tab_rated">Con calificación</string>
-    <string name="library_tab_playlists">Listas de reproducción</string>
+    <string name="library_tab_playlists">Listas</string>
     <string name="library_tab_recently_added">Agregadas recientemente</string>
     <string name="library_tab_recently_played">Reproducidas recientemente</string>
     <string name="library_tab_most_played">Más reproducidas</string>
@@ -30,7 +30,7 @@
     <string name="library_search_songs">Canciones</string>
     <string name="library_search_albums">Álbumes</string>
     <string name="library_search_artists">Artistas</string>
-    <string name="library_search_playlists">Listas de reproducción</string>
+    <string name="library_search_playlists">Listas</string>
     <string name="library_view_list">Lista</string>
     <string name="library_view_grid_columns">Cuadrícula: %1$d columnas</string>
     <string name="library_view_grid_responsive">Cuadrícula adaptable</string>
@@ -76,8 +76,8 @@
     <string name="settings_choose_folder_artwork_location">Elegir carpeta de portadas</string>
     <string name="settings_embedded_artwork_only">Usar solo portadas integradas</string>
     <string name="settings_embedded_artwork_only_summary">Quitar la carpeta seleccionada y dejar de leer archivos como cover.jpg</string>
-    <string name="settings_scanning_library">Explorando la biblioteca</string>
-    <string name="settings_scan_library">Explorar biblioteca</string>
+    <string name="settings_scanning_library">Actualizando biblioteca</string>
+    <string name="settings_scan_library">Actualizar biblioteca</string>
     <string name="settings_songs">Canciones</string>
     <string name="settings_home_section">Inicio</string>
     <string name="settings_home_section_summary">Elige qué secciones automáticas aparecen en Inicio.</string>
@@ -88,12 +88,12 @@
     <string name="settings_playback_section">Reproducción y audio</string>
     <string name="settings_playback_section_summary">Controla el procesamiento de sonido, el volumen, las transiciones y el consumo de energía.</string>
     <string name="settings_smooth_play_pause">Inicio y pausa suaves</string>
-    <string name="settings_smooth_play_pause_summary">Aplica un fundido breve al iniciar o pausar la reproducción</string>
-    <string name="settings_crossfade">Fundido entre canciones</string>
+    <string name="settings_smooth_play_pause_summary">Aplica una transición suave al iniciar o pausar la reproducción</string>
+    <string name="settings_crossfade">Transición entre canciones</string>
     <string name="settings_crossfade_summary">Superpone las transiciones automáticas entre canciones</string>
-    <string name="settings_crossfade_duration">Duración del fundido</string>
+    <string name="settings_crossfade_duration">Duración de la transición</string>
     <string name="settings_preserve_album_transitions">Conservar transiciones del álbum</string>
-    <string name="settings_preserve_album_transitions_summary">No aplicar fundido entre canciones consecutivas del mismo álbum cuando la secuencia sea clara</string>
+    <string name="settings_preserve_album_transitions_summary">No aplicar la transición entre canciones consecutivas del mismo álbum cuando la secuencia sea clara</string>
     <string name="settings_equalizer">Ecualizador</string>
     <string name="settings_open_equalizer">Abrir configuración del ecualizador</string>
     <string name="settings_replay_gain">ReplayGain</string>
@@ -131,7 +131,7 @@
     <string name="settings_restore_backup_summary">Reemplaza los datos de la aplicación con un archivo de copia de seguridad de Sazanami.</string>
     <string name="settings_restore_backup_action">Restaurar copia de seguridad</string>
     <string name="settings_theme_colors_summary">Elige colores predefinidos para %1$s</string>
-    <string name="settings_audio_offload_note">El procesamiento de audio por hardware puede reducir el consumo de energía durante reproducciones largas en segundo plano. Si no está disponible o no es compatible con una función de audio activa, Sazanami usa la reproducción normal. Mientras el fundido entre canciones esté activado, se usa la reproducción normal.</string>
+    <string name="settings_audio_offload_note">El procesamiento de audio por hardware puede reducir el consumo de energía durante reproducciones largas en segundo plano. Si no está disponible o no es compatible con una función de audio activa, Sazanami usa la reproducción normal. Mientras la transición entre canciones esté activada, se usa la reproducción normal.</string>
     <string name="settings_folder_roots_selected_and_excluded">%1$d seleccionadas · %2$d excluidas</string>
     <string name="settings_scan_in_progress">Buscando música agregada, modificada, movida o eliminada…</string>
     <string name="settings_scan_idle">Revisa la biblioteca del dispositivo sin reiniciar Sazanami</string>
@@ -145,7 +145,7 @@
     <string name="settings_device_font">Fuente del dispositivo</string>
     <string name="settings_sazanami_font_description">Space Grotesk, la fuente predeterminada de Sazanami.</string>
     <string name="settings_device_font_description">Usa la fuente configurada en tu dispositivo.</string>
-    <string name="settings_scan_incomplete">La exploración quedó incompleta · se conservó la biblioteca actual</string>
+    <string name="settings_scan_incomplete">La actualización quedó incompleta · se conservó la biblioteca actual</string>
     <string name="settings_scan_no_changes">No se encontraron cambios en la biblioteca</string>
     <string name="playlist_sort_name">Nombre</string>
     <string name="playlist_sort_created">Fecha de creación</string>
@@ -228,7 +228,7 @@
     <string name="folder_selection_empty_onboarding">No seleccionaste ninguna carpeta. Puedes continuar con una biblioteca vacía.</string>
     <string name="folder_selection_all_included">Se incluyen todas las carpetas detectadas.</string>
     <string name="folder_selection_none_included">No se incluye ninguna carpeta de música.</string>
-    <string name="folder_selection_parent_note">Si seleccionas una carpeta principal, también se incluirán sus subcarpetas actuales y futuras después de explorar la biblioteca.</string>
+    <string name="folder_selection_parent_note">Si seleccionas una carpeta principal, también se incluirán sus subcarpetas actuales y futuras después de actualizar la biblioteca.</string>
     <string name="folder_selection_include_all">Incluir todo</string>
     <string name="folder_selection_clear">Limpiar</string>
     <string name="folder_selection_artwork_optional">Portadas de carpetas (opcional)</string>
@@ -242,8 +242,8 @@
     <string name="folder_selection_saving">Guardando…</string>
     <string name="folder_selection_continue">Continuar</string>
     <string name="folder_selection_finding">Buscando carpetas de música…</string>
-    <string name="folder_selection_no_folders_onboarding">No se encontraron carpetas de música. Puedes continuar con una biblioteca vacía y volver a explorar después de agregar música.</string>
-    <string name="folder_selection_no_folders">No se encontraron carpetas de música. Después de agregar música al dispositivo, selecciona Explorar biblioteca.</string>
+    <string name="folder_selection_no_folders_onboarding">No se encontraron carpetas de música. Puedes continuar con una biblioteca vacía y volver a actualizarla después de agregar música.</string>
+    <string name="folder_selection_no_folders">No se encontraron carpetas de música. Después de agregar música al dispositivo, selecciona Actualizar biblioteca.</string>
     <string name="folder_selection_collapse">Contraer %1$s</string>
     <string name="folder_selection_expand">Expandir %1$s</string>
     <string name="folder_selection_artwork_explanation">Las portadas integradas en tus archivos de audio funcionan automáticamente. Permite el acceso solo si también quieres que Sazanami use imágenes independientes como cover.jpg y folder.jpg guardadas junto a la música.</string>
@@ -329,7 +329,7 @@
     <string name="playlist_folder_artwork_for">Carpeta %1$s</string>
     <string name="playlist_folder_rename_action">Cambiar nombre de la carpeta</string>
     <string name="playlist_folder_back">Volver a listas de reproducción</string>
-    <string name="playlist_your_playlists">Tus listas de reproducción</string>
+    <string name="playlist_your_playlists">Tus listas</string>
     <string name="playlist_sort_ascending">Ascendente</string>
     <string name="playlist_sort_descending">Descendente</string>
     <string name="playlist_sort_direction_description">Orden %1$s de listas de reproducción</string>

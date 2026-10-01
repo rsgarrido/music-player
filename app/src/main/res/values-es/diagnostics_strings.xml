@@ -24,7 +24,7 @@
     <string name="diag_eq_active">Activo</string>
     <string name="diag_eq_unconfigured">Sin configurar</string>
     <string name="diag_eq_pcm_format">PCM16, %1$s, %2$s</string>
-    <string name="diag_eq_crossfade">Fundido de %1$s ms (%2$d tramas a %3$s; última aplicación completada)</string>
+    <string name="diag_eq_crossfade">Transición de %1$s ms (%2$d tramas a %3$s; última aplicación completada)</string>
     <string name="diag_eq_unknown_rate">frecuencia desconocida</string>
     <string name="diag_eq_direct_after_flush">Directo después de vaciar los búferes de Media3</string>
     <string name="diag_eq_direct_bypass">Actualización directa sin procesamiento (sin cambio de DSP)</string>
@@ -77,7 +77,7 @@
     <string name="diag_limiter_samples">Muestras fuera de rango / saturadas del limitador</string>
     <string name="diag_limiter_frames">Tramas activas / con reducción del limitador</string>
     <string name="diag_limiter_reprimes">Reinicializaciones del limitador</string>
-    <string name="diag_dsp_timing_note">La medición de tiempos DSP termina cuando el procesador escribe la transición. El PCM ya almacenado en búferes de Media3, AudioTrack o la ruta activa puede retrasar cuándo se oye ese fundido de 20 ms. Cambiar la disponibilidad del procesamiento por hardware también puede vaciar los búferes de Media3.</string>
+    <string name="diag_dsp_timing_note">La medición de tiempos DSP termina cuando el procesador escribe la transición. El PCM ya almacenado en búferes de Media3, AudioTrack o la ruta activa puede retrasar cuándo se oye esa transición de 20 ms. Cambiar la disponibilidad del procesamiento por hardware también puede vaciar los búferes de Media3.</string>
     <string name="diag_replay_gain_value">Valor de ReplayGain</string>
     <string name="diag_applied_volume">Volumen aplicado del reproductor</string>
     <string name="diag_audio_session">Sesión de audio</string>
