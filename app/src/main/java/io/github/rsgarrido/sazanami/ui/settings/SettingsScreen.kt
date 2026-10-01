@@ -455,6 +455,10 @@ fun SettingsScreen(
 
             SettingsDivider()
 
+            SettingsLanguageRow()
+
+            SettingsDivider()
+
             SettingsRow(
                 title = stringResource(R.string.settings_player_theme),
                 summary = stringResource(selectedPlayerTheme.labelRes),

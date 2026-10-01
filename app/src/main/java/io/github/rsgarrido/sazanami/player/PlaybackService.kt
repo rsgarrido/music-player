@@ -38,6 +38,8 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import io.github.rsgarrido.sazanami.MainActivity
 import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.localization.AppLocalePresentationRefresh
+import io.github.rsgarrido.sazanami.localization.appLanguageContext
 import io.github.rsgarrido.sazanami.data.UNKNOWN_ARTIST_IDENTITY
 import io.github.rsgarrido.sazanami.data.LibraryCacheRepository
 import io.github.rsgarrido.sazanami.data.ListeningEventRepository
@@ -732,7 +734,7 @@ class PlaybackService : MediaLibraryService() {
                     )
                 }
             ),
-            generatedQueueName = { number -> getString(R.string.queue_generated_name, number) },
+            generatedQueueName = { number -> appLanguageContext().getString(R.string.queue_generated_name, number) },
             onActiveQueueChanged = PlaybackQueueRuntimeBridge::updateActiveQueueId
         )
         PlaybackQueueRuntimeBridge.register(playbackQueueCoordinator)
@@ -791,6 +793,11 @@ class PlaybackService : MediaLibraryService() {
             override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) = refreshAutoArtwork()
         })
         observeAndroidAutoCatalog()
+        serviceScope.launch {
+            AppLocalePresentationRefresh.changes.collectLatest {
+                refreshLocalePresentation()
+            }
+        }
         PlaybackLibraryBridge.registerPlaybackPolicyListener { shuffleEnabled, repeatMode ->
             serviceScope.launch {
                 sessionPlayer.setLogicalShuffleModeEnabled(shuffleEnabled)
@@ -1186,7 +1193,7 @@ class PlaybackService : MediaLibraryService() {
     private fun buildBrowseTree(catalog: AndroidAutoCatalogSnapshot): AutoBrowseNode {
         val started = SystemClock.elapsedRealtime()
         return tracePerformance("CDP.Auto.browseIndex") {
-            catalog.browseTree(getString(R.string.app_name))
+            catalog.browseTree(appLanguageContext().getString(R.string.app_name))
         }.also {
             AndroidAutoDiagnostics.log("browseIndex elapsedMs=${SystemClock.elapsedRealtime() - started} songs=${catalog.songs.size}")
         }
@@ -1264,25 +1271,26 @@ class PlaybackService : MediaLibraryService() {
     private fun AutoBrowseNode.toMediaItem(): MediaItem {
         // The browse tree keeps stable IDs and media data; app-owned presentation is
         // resolved in the service's current locale, including after a locale refresh.
+        val presentationContext = appLanguageContext()
         val presentationTitle = when (id) {
-            PLAYLISTS_ID -> getString(R.string.auto_browse_playlists)
-            ALBUMS_ID -> getString(R.string.auto_browse_albums)
-            ARTISTS_ID -> getString(R.string.auto_browse_artists)
-            SONGS_ID -> getString(R.string.auto_browse_songs)
-            "artist:${UNKNOWN_ARTIST_IDENTITY.key}" -> getString(R.string.auto_unknown_artist)
+            PLAYLISTS_ID -> presentationContext.getString(R.string.auto_browse_playlists)
+            ALBUMS_ID -> presentationContext.getString(R.string.auto_browse_albums)
+            ARTISTS_ID -> presentationContext.getString(R.string.auto_browse_artists)
+            SONGS_ID -> presentationContext.getString(R.string.auto_browse_songs)
+            "artist:${UNKNOWN_ARTIST_IDENTITY.key}" -> presentationContext.getString(R.string.auto_unknown_artist)
             else -> when {
                 id.startsWith("album:") && children.firstOrNull()?.song?.album.isNullOrBlank() ->
-                    getString(R.string.auto_unknown_album)
-                song != null && song.title.isBlank() -> getString(R.string.auto_unknown_title)
+                    presentationContext.getString(R.string.auto_unknown_album)
+                song != null && song.title.isBlank() -> presentationContext.getString(R.string.auto_unknown_title)
                 else -> title
             }
         }
         val presentationSubtitle = when {
             subtitleFallback == AutoBrowseSubtitleFallback.VARIOUS_ARTISTS ->
-                getString(R.string.auto_various_artists)
+                presentationContext.getString(R.string.auto_various_artists)
             id.startsWith("playlist:") || id.startsWith("artist:") ->
-                resources.getQuantityString(R.plurals.auto_browse_song_count, children.size, children.size)
-            song != null && song.artist.isBlank() -> getString(R.string.auto_unknown_artist)
+                presentationContext.resources.getQuantityString(R.plurals.auto_browse_song_count, children.size, children.size)
+            song != null && song.artist.isBlank() -> presentationContext.getString(R.string.auto_unknown_artist)
             else -> subtitle
         }
         val extras = Bundle().apply {
@@ -1319,6 +1327,7 @@ class PlaybackService : MediaLibraryService() {
     }
 
     private fun Song.toAndroidAutoSearchMediaItem(query: String): MediaItem {
+        val presentationContext = appLanguageContext()
         return MediaItem.Builder()
             .setMediaId("song:search:$id")
             .setRequestMetadata(
@@ -1328,8 +1337,8 @@ class PlaybackService : MediaLibraryService() {
             )
             .setMediaMetadata(
                 MediaMetadata.Builder()
-                    .setTitle(title.ifBlank { getString(R.string.auto_unknown_title) })
-                    .setArtist(artist.ifBlank { getString(R.string.auto_unknown_artist) })
+                    .setTitle(title.ifBlank { presentationContext.getString(R.string.auto_unknown_title) })
+                    .setArtist(artist.ifBlank { presentationContext.getString(R.string.auto_unknown_artist) })
                     .setAlbumTitle(album)
                     .setArtworkUri(albumArtUri)
                     .setIsBrowsable(false)
@@ -1626,7 +1635,7 @@ class PlaybackService : MediaLibraryService() {
         CommandButton.Builder(
             if (shuffleEnabled) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF
         )
-            .setDisplayName(getString(if (shuffleEnabled) R.string.auto_shuffle_on else R.string.auto_shuffle))
+            .setDisplayName(appLanguageContext().getString(if (shuffleEnabled) R.string.auto_shuffle_on else R.string.auto_shuffle))
             .setSessionCommand(AUTO_TOGGLE_SHUFFLE_COMMAND)
             .setSlots(CommandButton.SLOT_BACK_SECONDARY, CommandButton.SLOT_OVERFLOW)
             .build(),
@@ -1637,7 +1646,7 @@ class PlaybackService : MediaLibraryService() {
                 CommandButton.ICON_REPEAT_OFF
             }
         )
-            .setDisplayName(getString(if (repeatMode == RepeatMode.ALL) R.string.auto_repeat_all_on else R.string.auto_repeat_all))
+            .setDisplayName(appLanguageContext().getString(if (repeatMode == RepeatMode.ALL) R.string.auto_repeat_all_on else R.string.auto_repeat_all))
             .setSessionCommand(AUTO_TOGGLE_REPEAT_ALL_COMMAND)
             .setSlots(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW)
             .build()
@@ -1650,6 +1659,23 @@ class PlaybackService : MediaLibraryService() {
         mediaSession?.setMediaButtonPreferences(
             buildAndroidAutoMediaButtonPreferences(shuffleEnabled, repeatMode)
         )
+    }
+
+    private suspend fun refreshLocalePresentation() {
+        // Only re-publish presentation. Never prepare/replace media, restart the service, or
+        // apply shuffle/repeat here. A host that caches item titles may still need to reconnect.
+        updateAndroidAutoMediaButtonPreferences(
+            shuffleEnabled = PlaybackLibraryBridge.currentShuffleEnabled()
+                ?: playerStateStorage.getShuffleMode().isEnabled,
+            repeatMode = PlaybackLibraryBridge.currentRepeatMode()
+                ?: playerStateStorage.getRepeatMode()
+        )
+        if (autoSubscriptions.isNotEmpty()) {
+            val tree = withContext(Dispatchers.Default) { buildBrowseTree(androidAutoCatalogSnapshot) }
+            autoSubscriptions.forEach { parentId ->
+                mediaSession?.notifyChildrenChanged(parentId, tree.findNode(parentId)?.children?.size ?: 0, null)
+            }
+        }
     }
 
     private fun <T> serviceFuture(block: suspend () -> T): ListenableFuture<T> {
