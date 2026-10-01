@@ -17,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.player.equalizer.normalizeEqualizerDb
 
 @Composable
@@ -40,7 +42,7 @@ internal fun EqualizerValueDialog(
     val error = if (valueText.isBlank() || parsed != null) {
         null
     } else {
-        "Enter a finite value from $minimumDb to $maximumDb dB."
+        stringResource(R.string.eq_value_range_error, minimumDb, maximumDb)
     }
 
     AlertDialog(
@@ -58,7 +60,7 @@ internal fun EqualizerValueDialog(
                             maximumDb
                         )?.let(onPreview)
                     },
-                    label = { Text("Decibels") },
+                    label = { Text(stringResource(R.string.eq_decibels)) },
                     supportingText = error?.let { message ->
                         { Text(message) }
                     },
@@ -86,7 +88,7 @@ internal fun EqualizerValueDialog(
                             onPreview(next)
                         }
                     ) {
-                        Text("−0.1")
+                        Text(stringResource(R.string.eq_decrease_tenth))
                     }
                     TextButton(
                         onClick = {
@@ -94,7 +96,7 @@ internal fun EqualizerValueDialog(
                             onPreview(0.0)
                         }
                     ) {
-                        Text("Reset to 0 dB")
+                        Text(stringResource(R.string.eq_reset_zero))
                     }
                     TextButton(
                         onClick = {
@@ -108,14 +110,14 @@ internal fun EqualizerValueDialog(
                             onPreview(next)
                         }
                     ) {
-                        Text("+0.1")
+                        Text(stringResource(R.string.eq_increase_tenth))
                     }
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onCancel) {
-                Text("Cancel")
+                Text(stringResource(R.string.eq_cancel))
             }
         },
         confirmButton = {
@@ -125,7 +127,7 @@ internal fun EqualizerValueDialog(
                     parsed?.let(onApply)
                 }
             ) {
-                Text("Apply")
+                Text(stringResource(R.string.eq_apply))
             }
         }
     )

@@ -1,4 +1,9 @@
 package io.github.rsgarrido.sazanami.ui.playlist
+import android.util.Log
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.platform.LocalResources
+import io.github.rsgarrido.sazanami.R
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -108,6 +113,7 @@ fun PlaylistDetailScreen(
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
+    val resources = LocalResources.current
     val homePinUi = LocalHomePinUi.current
     val libraryQueueUi = LocalLibraryQueueUi.current
     var actionSheetTarget by remember { mutableStateOf<LibraryItemActionSheetTarget?>(null) }
@@ -117,7 +123,7 @@ fun PlaylistDetailScreen(
     var movePlaylistVisible by remember { mutableStateOf(false) }
     var isEditingOrder by remember { mutableStateOf(false) }
     var smartEditorData by remember(playlist.playlistId) { mutableStateOf<io.github.rsgarrido.sazanami.controller.SmartPlaylistUiData?>(null) }
-    var smartActionError by remember(playlist.playlistId) { mutableStateOf<String?>(null) }
+    var smartActionError by remember(playlist.playlistId) { mutableStateOf<Int?>(null) }
     var isRefreshingSnapshot by remember(playlist.playlistId) { mutableStateOf(false) }
     val smartUi = LocalSmartPlaylistUi.current
     var sortFieldName by rememberSaveable(playlist.playlistId) {
@@ -147,65 +153,71 @@ fun PlaylistDetailScreen(
     fun showPlaylistActions() {
         actionSheetTarget = LibraryItemActionSheetTarget(
             title = playlist.name,
-            subtitle = playlistMetadataText(playlist),
+            subtitle = playlistMetadataText(resources, playlist),
             artworkUri = null,
-            artworkDescription = "Artwork for ${playlist.name}",
+            artworkDescription = resources.getString(R.string.playlist_artwork_for, playlist.name),
             actions = buildList {
                 add(homePinUi.actionForPlaylist(playlist))
-                addAll(playlistQueueActions(playlist, libraryQueueUi, onAddPlaylistToQueueClick))
+                addAll(playlistQueueActions(playlist, libraryQueueUi, onAddPlaylistToQueueClick, resources::getString))
                 if (!isLoading && allowsManualPlaylistActions(playlist)) {
-                    add(LibraryItemAction("Add songs", Icons.AutoMirrored.Filled.PlaylistAdd) {
+                    add(LibraryItemAction(resources.getString(R.string.playlist_add_songs_title), Icons.AutoMirrored.Filled.PlaylistAdd) {
                         addSongsVisible = true
                     })
-                    add(LibraryItemAction("Edit order", Icons.Filled.DragHandle) {
+                    add(LibraryItemAction(resources.getString(R.string.playlist_edit_order), Icons.Filled.DragHandle) {
                         sortFieldName = PlaylistSongSortField.CUSTOM.name
                         isEditingOrder = true
                     })
                 }
                 if (playlist.membershipBehavior == PlaylistMembershipBehavior.USER_SMART_LIVE) {
-                    add(LibraryItemAction("Edit Smart Playlist", Icons.Filled.AutoAwesome) {
+                    add(LibraryItemAction(resources.getString(R.string.smart_playlist_edit_action), Icons.Filled.AutoAwesome) {
                         smartActionError = null
                         smartUi.onLoad(playlist.playlistId) { result ->
                             result.onSuccess { smartEditorData = it }
-                                .onFailure { smartActionError = it.message ?: "Unable to load Smart Playlist rules." }
+                                .onFailure { failure ->
+                                    Log.w("SmartPlaylist", "Unable to load rules", failure)
+                                    smartActionError = R.string.smart_playlist_load_rules_failed
+                                }
                         }
                     })
                 }
                 if (playlist.membershipBehavior == PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT) {
-                    add(LibraryItemAction("Refresh", Icons.Filled.Refresh) {
+                    add(LibraryItemAction(resources.getString(R.string.smart_playlist_refresh_action), Icons.Filled.Refresh) {
                         isRefreshingSnapshot = true
                         smartActionError = null
                         smartUi.onRefresh(playlist.playlistId) { result ->
                             isRefreshingSnapshot = false
-                            result.onFailure { smartActionError = it.message ?: "Unable to refresh this playlist." }
+                            result.onFailure { failure ->
+                                Log.w("SmartPlaylist", "Unable to refresh playlist", failure)
+                                smartActionError = R.string.smart_playlist_refresh_failed
+                            }
                         }
                     })
                 }
-                add(LibraryItemAction("Rename", Icons.Filled.Edit) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_rename_action), Icons.Filled.Edit) {
                     renameDialogVisible = true
                 })
-                add(LibraryItemAction("Move to folder", Icons.AutoMirrored.Filled.DriveFileMove) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_move_to_folder), Icons.AutoMirrored.Filled.DriveFileMove) {
                     movePlaylistVisible = true
                 })
-                add(LibraryItemAction("Change artwork", Icons.Filled.Image) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_change_artwork), Icons.Filled.Image) {
                     onChangeArtworkClick(playlist)
                 })
                 if (playlist.artworkMode == PlaylistArtworkMode.CUSTOM) {
-                    add(LibraryItemAction("Reset to automatic artwork", Icons.Filled.Restore) {
+                    add(LibraryItemAction(resources.getString(R.string.playlist_reset_artwork), Icons.Filled.Restore) {
                         onResetArtworkClick(playlist)
                     })
                 }
-                add(LibraryItemAction("Export as M3U8", Icons.Filled.Share) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_export_m3u8), Icons.Filled.Share) {
                     onExportPlaylistClick(playlist)
                 })
-                add(LibraryItemAction("Delete", Icons.Filled.Delete, isDestructive = true) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_delete_action), Icons.Filled.Delete, isDestructive = true) {
                     deleteDialogVisible = true
                 })
             },
             artworkContent = {
                 PlaylistArtwork(
                     playlist = playlist,
-                    contentDescription = "Artwork for ${playlist.name}",
+                    contentDescription = stringResource(R.string.playlist_artwork_for, playlist.name),
                     modifier = Modifier.fillMaxSize(),
                     variant = VisualAssetVariant.DISPLAY
                 )
@@ -230,7 +242,7 @@ fun PlaylistDetailScreen(
                 {
                     TextButton(onClick = { isEditingOrder = false }) {
                         Text(
-                            text = "DONE",
+                            text = stringResource(R.string.playlist_done_uppercase),
                             style = AppShellTypography.CompactAction,
                             color = AppShellAccent
                         )
@@ -290,23 +302,24 @@ fun PlaylistDetailScreen(
                                 smartActionError = null
                                 smartUi.onRefresh(playlist.playlistId) { result ->
                                     isRefreshingSnapshot = false
-                                    result.onFailure {
-                                        smartActionError = it.message ?: "Unable to refresh this playlist."
+                                    result.onFailure { failure ->
+                                        Log.w("SmartPlaylist", "Unable to refresh playlist", failure)
+                                        smartActionError = R.string.smart_playlist_refresh_failed
                                     }
                                 }
                             }
                         } else null
                     )
-                    playlist.smartResolutionError?.let { error ->
+                    playlist.smartResolutionError?.let {
                         Text(
-                            text = error,
+                            text = stringResource(R.string.smart_playlist_unsupported_rules),
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                         )
                     }
-                    smartActionError?.let { error ->
+                    smartActionError?.let { errorRes ->
                         Text(
-                            text = error,
+                            text = stringResource(errorRes),
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                         )
@@ -351,8 +364,8 @@ fun PlaylistDetailScreen(
 
     if (renameDialogVisible) {
         PlaylistNameDialog(
-            title = "Rename Playlist",
-            confirmButtonText = "Rename",
+            title = stringResource(R.string.playlist_rename_title),
+            confirmButtonText = stringResource(R.string.playlist_rename_action),
             initialName = playlist.name,
             originalName = playlist.name,
             existingPlaylistNames = allPlaylists.map(Playlist::name),
@@ -429,7 +442,7 @@ private fun PlaylistDetailHero(
     ) {
         PlaylistArtwork(
             playlist = playlist,
-            contentDescription = "Artwork for ${playlist.name}",
+            contentDescription = stringResource(R.string.playlist_artwork_for, playlist.name),
             modifier = Modifier
                 .fillMaxWidth(0.72f)
                 .widthIn(max = 320.dp)
@@ -454,12 +467,13 @@ private fun PlaylistDetailHero(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = playlistMetadataText(playlist),
+                text = playlistMetadataText(LocalResources.current, playlist),
                 style = AppShellTypography.SongSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = playlistKindText(playlist),
+                text = if (playlist.membershipBehavior == PlaylistMembershipBehavior.MANUAL)
+                    stringResource(R.string.playlist_kind_manual) else playlistKindText(playlist),
                 style = MaterialTheme.typography.labelMedium,
                 color = AppShellAccent
             )
@@ -472,20 +486,20 @@ private fun PlaylistDetailHero(
         ) {
             LibraryDetailAction(
                 icon = Icons.Filled.PlayArrow,
-                label = "Play",
+                label = stringResource(R.string.playlist_play),
                 enabled = hasSongs,
                 onClick = onPlayClick
             )
             LibraryDetailAction(
                 icon = Icons.Filled.Shuffle,
-                label = "Shuffle",
+                label = stringResource(R.string.playlist_shuffle),
                 enabled = hasSongs,
                 onClick = onShuffleClick
             )
             onRefreshClick?.let { refresh ->
                 LibraryDetailAction(
                     icon = Icons.Filled.Refresh,
-                    label = if (isRefreshingSnapshot) "Refreshing" else "Refresh",
+                    label = stringResource(if (isRefreshingSnapshot) R.string.smart_playlist_refreshing else R.string.smart_playlist_refresh_action),
                     enabled = !isRefreshingSnapshot,
                     onClick = refresh
                 )
@@ -497,7 +511,7 @@ private fun PlaylistDetailHero(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Songs",
+                text = stringResource(R.string.playlist_songs_heading),
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
@@ -511,7 +525,7 @@ private fun PlaylistDetailHero(
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
-                    Text(sortField.label)
+                    Text(stringResource(sortField.labelRes))
                 }
                 DropdownMenu(
                     expanded = sortMenuExpanded,
@@ -519,10 +533,10 @@ private fun PlaylistDetailHero(
                 ) {
                     PlaylistSongSortField.entries.forEach { field ->
                         DropdownMenuItem(
-                            text = { Text(field.label) },
+                            text = { Text(stringResource(field.labelRes)) },
                             leadingIcon = {
                                 if (field == sortField) {
-                                    Icon(Icons.Filled.Check, contentDescription = "Selected")
+                                    Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.playlist_selected))
                                 }
                             },
                             onClick = {
@@ -537,9 +551,9 @@ private fun PlaylistDetailHero(
                         val directionTitle = if (
                             sortDirection == LibrarySortDirection.ASCENDING
                         ) {
-                            "Ascending"
+                            stringResource(R.string.playlist_sort_ascending)
                         } else {
-                            "Descending"
+                            stringResource(R.string.playlist_sort_descending)
                         }
                         DropdownMenuItem(
                             text = { Text(directionTitle) },
@@ -553,7 +567,7 @@ private fun PlaylistDetailHero(
                                         Icons.Filled.ArrowDownward
                                     },
                                     contentDescription =
-                                        "$directionTitle playlist song sort direction",
+                                        stringResource(R.string.playlist_song_sort_direction_description, directionTitle),
                                     tint = AppShellAccent
                                 )
                             },
@@ -580,14 +594,16 @@ private fun PlaylistDetailEmptyState(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = playlist.smartResolutionError ?: if (playlist.songCount == 0) {
+            text = if (playlist.smartResolutionError != null) {
+                stringResource(R.string.smart_playlist_unsupported_rules)
+            } else if (playlist.songCount == 0) {
                 if (playlist.type == PlaylistType.SMART) {
-                    "No songs currently match this Smart Playlist."
+                    stringResource(R.string.smart_playlist_no_matching_songs)
                 } else {
-                    "This playlist is empty."
+                    stringResource(R.string.playlist_empty_detail)
                 }
             } else {
-                "The songs in this playlist are not currently available on this device."
+                stringResource(R.string.playlist_songs_unavailable)
             },
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -595,33 +611,47 @@ private fun PlaylistDetailEmptyState(
     }
 }
 
+@Composable
 internal fun playlistKindText(playlist: Playlist): String = when (playlist.membershipBehavior) {
-    PlaylistMembershipBehavior.MANUAL -> "Manual playlist"
-    PlaylistMembershipBehavior.USER_SMART_LIVE -> "Smart Playlist • Updates automatically"
-    PlaylistMembershipBehavior.GENERATED_SMART_LIVE -> "Smart Playlist • Updates automatically"
-    PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT -> buildString {
-        append("Smart Playlist")
-        playlist.generatedLastRefreshedAt?.let { refreshedAt ->
-            append(" • Updated ")
-            append(relativeUpdatedText(refreshedAt))
+    PlaylistMembershipBehavior.MANUAL -> stringResource(playlistKindBaseRes(playlist.membershipBehavior))
+    PlaylistMembershipBehavior.USER_SMART_LIVE,
+    PlaylistMembershipBehavior.GENERATED_SMART_LIVE -> stringResource(playlistKindBaseRes(playlist.membershipBehavior))
+    PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT -> playlist.generatedLastRefreshedAt?.let {
+        val age = relativePlaylistAge(it)
+        when (age.unit) {
+            PlaylistAgeUnit.NOW -> stringResource(R.string.smart_playlist_updated_just_now)
+            PlaylistAgeUnit.MINUTE -> pluralStringResource(R.plurals.smart_playlist_updated_minutes, age.count, age.count)
+            PlaylistAgeUnit.HOUR -> pluralStringResource(R.plurals.smart_playlist_updated_hours, age.count, age.count)
+            PlaylistAgeUnit.DAY -> pluralStringResource(R.plurals.smart_playlist_updated_days, age.count, age.count)
         }
-    }
+    } ?: stringResource(R.string.smart_playlist_kind)
+}
+
+internal fun playlistKindBaseRes(behavior: PlaylistMembershipBehavior): Int = when (behavior) {
+    PlaylistMembershipBehavior.MANUAL -> R.string.playlist_kind_manual
+    PlaylistMembershipBehavior.USER_SMART_LIVE,
+    PlaylistMembershipBehavior.GENERATED_SMART_LIVE -> R.string.smart_playlist_updates_automatically
+    PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT -> R.string.smart_playlist_kind
 }
 
 internal fun allowsManualPlaylistActions(playlist: Playlist): Boolean =
     playlist.type == PlaylistType.MANUAL &&
         playlist.membershipBehavior == PlaylistMembershipBehavior.MANUAL
 
-internal fun relativeUpdatedText(timestamp: Long, now: Long = System.currentTimeMillis()): String {
+internal enum class PlaylistAgeUnit { NOW, MINUTE, HOUR, DAY }
+
+internal data class RelativePlaylistAge(val unit: PlaylistAgeUnit, val count: Int = 0)
+
+internal fun relativePlaylistAge(timestamp: Long, now: Long = System.currentTimeMillis()): RelativePlaylistAge {
     val elapsed = (now - timestamp).coerceAtLeast(0L)
     val minutes = elapsed / 60_000L
     val hours = minutes / 60L
     val days = hours / 24L
     return when {
-        minutes < 1L -> "just now"
-        minutes < 60L -> "$minutes min ago"
-        hours < 24L -> "$hours hr ago"
-        else -> "$days day${if (days == 1L) "" else "s"} ago"
+        minutes < 1L -> RelativePlaylistAge(PlaylistAgeUnit.NOW)
+        minutes < 60L -> RelativePlaylistAge(PlaylistAgeUnit.MINUTE, minutes.toInt())
+        hours < 24L -> RelativePlaylistAge(PlaylistAgeUnit.HOUR, hours.toInt())
+        else -> RelativePlaylistAge(PlaylistAgeUnit.DAY, days.coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
     }
 }
 
@@ -637,7 +667,7 @@ private fun PlaylistLoadingState(modifier: Modifier = Modifier) {
         ) {
             CircularProgressIndicator(modifier = Modifier.size(22.dp))
             Text(
-                text = "Loading playlist\u2026",
+                text = stringResource(R.string.playlist_loading),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }

@@ -1,4 +1,5 @@
 package io.github.rsgarrido.sazanami.ui.library
+import androidx.compose.ui.res.stringResource
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -75,6 +76,7 @@ fun RatedSongFilterRow(
                 animationSpec = tween(180),
                 label = "ratedFilterBorderColor"
             )
+            val filterLabel = filter.displayLabel()
             Surface(
                 modifier = Modifier
                     .height(32.dp)
@@ -85,7 +87,7 @@ fun RatedSongFilterRow(
                         onClick = { onFilterSelected(filter) }
                     )
                     .semantics(mergeDescendants = true) {
-                        contentDescription = filter.label
+                        contentDescription = filterLabel
                     },
                 shape = shape,
                 color = containerColor,
@@ -105,7 +107,7 @@ fun RatedSongFilterRow(
                         )
                     }
                     Text(
-                        text = filter.exactRating?.toString() ?: filter.label,
+                        text = filter.exactRating?.toString() ?: filterLabel,
                         style = AppShellTypography.ControlLabel,
                         maxLines = 1
                     )

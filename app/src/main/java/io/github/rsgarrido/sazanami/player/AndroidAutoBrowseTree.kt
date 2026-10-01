@@ -4,12 +4,17 @@ import android.net.Uri
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.ui.library.buildLibraryAlbumGroups
 import io.github.rsgarrido.sazanami.ui.library.buildLibraryArtistGroups
+import io.github.rsgarrido.sazanami.ui.library.hasRepresentativeArtist
 import java.security.MessageDigest
 import java.util.Locale
 
 enum class AutoBrowseContentStyle {
     LIST,
     GRID
+}
+
+enum class AutoBrowseSubtitleFallback {
+    VARIOUS_ARTISTS
 }
 
 data class AutoPlaylistEntry(
@@ -23,6 +28,7 @@ data class AutoBrowseNode(
     val id: String,
     val title: String,
     val subtitle: String? = null,
+    val subtitleFallback: AutoBrowseSubtitleFallback? = null,
     val song: Song? = null,
     val artworkUri: Uri? = song?.albumArtUri,
     val children: List<AutoBrowseNode> = emptyList(),
@@ -68,6 +74,8 @@ fun buildAndroidAutoBrowseTree(
                 id = parentId,
                 title = album.title,
                 subtitle = album.artistText,
+                subtitleFallback = if (album.hasRepresentativeArtist()) null
+                    else AutoBrowseSubtitleFallback.VARIOUS_ARTISTS,
                 artworkUri = firstArtworkUri(album.songs),
                 children = album.songs.map { song -> songNode(song, parentId) },
                 playableChildrenStyle = AutoBrowseContentStyle.LIST

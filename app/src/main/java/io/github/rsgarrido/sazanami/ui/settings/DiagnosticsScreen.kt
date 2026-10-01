@@ -351,7 +351,7 @@ internal fun DiagnosticsScreen(
         librarySongCount = librarySongCount,
         selectedFolderCount = selectedFolderCount,
         playerTheme = selectedPlayerTheme.displayName,
-        replayGainMode = selectedReplayGainMode.displayName,
+        replayGainMode = selectedReplayGainMode.diagnosticDisplayName,
         isPlaybackConnected = isPlaybackConnected,
         currentSongTitle = currentSong?.title,
         currentSongArtist = currentSong?.artist,
@@ -399,56 +399,56 @@ internal fun DiagnosticsScreen(
         DiagnosticValue(stringResource(R.string.diagnostics_unresolved_favorites), unresolvedFavoriteCount.toString())
         DiagnosticValue(stringResource(R.string.diagnostics_unresolved_playlist_rows), unresolvedPlaylistRowCount.toString())
         DiagnosticValue(stringResource(R.string.diagnostics_unresolved_history_rows), unresolvedListeningHistoryCount.toString())
-        DiagnosticValue(stringResource(R.string.diagnostics_player_theme), selectedPlayerTheme.displayName)
-        DiagnosticValue(stringResource(R.string.diagnostics_replay_gain), selectedReplayGainMode.displayName)
+        DiagnosticValue(stringResource(R.string.diagnostics_player_theme), stringResource(selectedPlayerTheme.labelRes))
+        DiagnosticValue(stringResource(R.string.diagnostics_replay_gain), stringResource(selectedReplayGainMode.labelRes))
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
         Text(
-            text = "Audio output",
+            text = stringResource(R.string.diag_audio_output),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )
-        DiagnosticValue("Source format", formatAudioSource(audioOutputUiState.sourceFormat))
-        DiagnosticValue("Route", formatAudioRoute(audioOutputUiState.routeInfo))
+        DiagnosticValue(stringResource(R.string.diag_source_format), formatAudioSourceUi(audioOutputUiState.sourceFormat))
+        DiagnosticValue(stringResource(R.string.diag_route), formatAudioRouteUi(audioOutputUiState.routeInfo))
         DiagnosticValue(
-            "Route scope",
-            if (audioOutputUiState.routeInfo.isLocalPlayback) "Local" else "Remote"
+            stringResource(R.string.diag_route_scope),
+            stringResource(if (audioOutputUiState.routeInfo.isLocalPlayback) R.string.diag_local else R.string.diag_remote)
         )
         DiagnosticValue(
-            "Audio offload preference",
-            audioOutputUiState.offloadState.requestedPreference.displayName
+            stringResource(R.string.diag_offload_preference),
+            stringResource(audioOutputUiState.offloadState.requestedPreference.labelRes)
         )
         DiagnosticValue(
-            "Audio offload",
-            formatAudioOffloadStatus(audioOutputUiState.offloadState)
+            stringResource(R.string.diag_offload),
+            formatAudioOffloadStatusUi(audioOutputUiState.offloadState)
         )
-        DiagnosticValue("Compatibility", formatAudioCompatibility(audioOutputUiState))
+        DiagnosticValue(stringResource(R.string.diag_compatibility), formatAudioCompatibilityUi(audioOutputUiState))
         val equalizer = audioOutputUiState.equalizerRuntimeState
-        DiagnosticValue("Equalizer", formatEqualizerStatus(equalizer))
+        DiagnosticValue(stringResource(R.string.diag_equalizer), formatEqualizerStatusUi(equalizer))
         DiagnosticValue(
-            "Equalizer processor format",
-            formatEqualizerProcessorFormat(equalizer)
+            stringResource(R.string.diag_eq_processor_format),
+            formatEqualizerProcessorFormatUi(equalizer)
         )
         DiagnosticValue(
-            "Equalizer requested/prepared/applied version",
+            stringResource(R.string.diag_eq_versions),
             "${equalizer.configurationVersion} / " +
-                (equalizer.preparedPlanVersion?.toString() ?: "None") +
+                (equalizer.preparedPlanVersion?.toString() ?: stringResource(R.string.diag_none)) +
                 " / " +
-                (equalizer.appliedPlanVersion?.toString() ?: "None")
+                (equalizer.appliedPlanVersion?.toString() ?: stringResource(R.string.diag_none))
         )
         DiagnosticValue(
-            "Equalizer DSP adoption",
-            formatEqualizerPlanApplication(equalizer)
+            stringResource(R.string.diag_eq_dsp_adoption),
+            formatEqualizerPlanApplicationUi(equalizer)
         )
         DiagnosticValue(
-            "Equalizer control → DSP timing",
-            formatEqualizerPlanLatency(equalizer)
+            stringResource(R.string.diag_eq_control_timing),
+            formatEqualizerPlanLatencyUi(equalizer)
         )
         DiagnosticValue(
-            "Equalizer valid/ignored filters",
+            stringResource(R.string.diag_eq_filters),
             "${equalizer.validFilterCount} / ${equalizer.ignoredFilterCount}"
         )
         DiagnosticValue(
-            "Automatic headroom",
+            stringResource(R.string.diag_automatic_headroom),
             String.format(
                 Locale.ROOT,
                 "%.2f dB",
@@ -456,19 +456,19 @@ internal fun DiagnosticsScreen(
             )
         )
         DiagnosticValue(
-            "Audio path",
+            stringResource(R.string.diag_audio_path),
             if (equalizer.requiresDecodedPcm) {
-                "Decoded PCM required by equalizer"
+                stringResource(R.string.diag_decoded_pcm_required)
             } else {
-                "User offload preference allowed"
+                stringResource(R.string.diag_offload_allowed)
             }
         )
         DiagnosticValue(
-            "Equalizer scratch growth",
+            stringResource(R.string.diag_eq_scratch_growth),
             equalizer.scratchBufferGrowthCount.toString()
         )
         DiagnosticValue(
-            "Stale prepared plans discarded",
+            stringResource(R.string.diag_stale_plans_discarded),
             equalizer.stalePreparedPlanDiscardCount.toString()
         )
         if (BuildConfig.DEBUG) {
@@ -479,25 +479,25 @@ internal fun DiagnosticsScreen(
                     .processorPerformanceTelemetryEnabled ||
                     processorPerformance.totalCallCount > 0L
             DiagnosticValue(
-                "Processor timing",
+                stringResource(R.string.diag_processor_timing),
                 when {
                     equalizer
                         .processorPerformanceTelemetryEnabled ->
-                        "Running (explicit diagnostics opt-in)"
+                        stringResource(R.string.diag_timing_running)
                     processorPerformance.totalCallCount > 0L ->
-                        "Stopped (completed window retained)"
-                    else -> "Stopped (no retained window)"
+                        stringResource(R.string.diag_timing_retained)
+                    else -> stringResource(R.string.diag_timing_stopped)
                 }
             )
             if (hasProcessorPerformance) {
                 DiagnosticValue(
-                    "Processor window / calls / frames",
+                    stringResource(R.string.diag_processor_window_calls_frames),
                     "${processorPerformance.windowSampleCount} / " +
                         "${processorPerformance.totalCallCount} / " +
                         processorPerformance.totalFrameCount
                 )
                 DiagnosticValue(
-                    "Processor median / p90 / p95 / p99 / max",
+                    stringResource(R.string.diag_processor_latency),
                     String.format(
                         Locale.ROOT,
                         "%.3f / %.3f / %.3f / %.3f / %.3f ms",
@@ -509,7 +509,7 @@ internal fun DiagnosticsScreen(
                     )
                 )
                 DiagnosticValue(
-                    "Processor median / p95 / p99 / max RTF",
+                    stringResource(R.string.diag_processor_rtf),
                     String.format(
                         Locale.ROOT,
                         "%.4f / %.4f / %.4f / %.4f",
@@ -520,18 +520,18 @@ internal fun DiagnosticsScreen(
                     )
                 )
                 DiagnosticValue(
-                    "Processor deadline misses",
+                    stringResource(R.string.diag_processor_deadline_misses),
                     processorPerformance.deadlineMissCount.toString()
                 )
                 DiagnosticValue(
-                    "Processor bypass / EQ / transition / limiter calls",
+                    stringResource(R.string.diag_processor_call_types),
                     "${processorPerformance.exactBypassCallCount} / " +
                         "${processorPerformance.equalizedCallCount} / " +
                         "${processorPerformance.transitionCallCount} / " +
                         processorPerformance.limiterCallCount
                 )
                 DiagnosticValue(
-                    "Processor configure / flush preparation",
+                    stringResource(R.string.diag_processor_prepare_time),
                     String.format(
                         Locale.ROOT,
                         "%.3f / %.3f ms",
@@ -540,7 +540,7 @@ internal fun DiagnosticsScreen(
                     )
                 )
                 DiagnosticValue(
-                    "Processor configure / synchronous format preparations",
+                    stringResource(R.string.diag_processor_prepare_count),
                     "${processorPerformance.configurePreparationCount} / " +
                         processorPerformance
                             .synchronousFormatPreparationCount
@@ -571,9 +571,9 @@ internal fun DiagnosticsScreen(
                             equalizer
                                 .processorPerformanceTelemetryEnabled
                         ) {
-                            "Stop timing"
+                            stringResource(R.string.diag_stop_timing)
                         } else {
-                            "Start timing"
+                            stringResource(R.string.diag_start_timing)
                         }
                     )
                 }
@@ -588,23 +588,23 @@ internal fun DiagnosticsScreen(
                             processorPerformance.totalCallCount > 0L,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Reset timing")
+                    Text(stringResource(R.string.diag_reset_timing))
                 }
             }
         } else {
             DiagnosticValue(
-                "Processor timing",
-                "Unavailable in release builds"
+                stringResource(R.string.diag_processor_timing),
+                stringResource(R.string.diag_timing_unavailable)
             )
         }
         DiagnosticValue(
-            "Limiter requested / active / primed",
+            stringResource(R.string.diag_limiter_states),
             "${equalizer.limiterRequestedEnabled} / " +
                 "${equalizer.limiterEffectivelyActive} / " +
                 equalizer.limiterPrimed
         )
         DiagnosticValue(
-            "Limiter ceiling",
+            stringResource(R.string.diag_limiter_ceiling),
             String.format(
                 Locale.ROOT,
                 "%.1f dBFS",
@@ -612,7 +612,7 @@ internal fun DiagnosticsScreen(
             )
         )
         DiagnosticValue(
-            "Limiter lookahead / release",
+            stringResource(R.string.diag_limiter_lookahead_release),
             String.format(
                 Locale.ROOT,
                 "%d frames (%.2f ms) / %.1f ms",
@@ -622,7 +622,7 @@ internal fun DiagnosticsScreen(
             )
         )
         DiagnosticValue(
-            "Limiter pre / post peak",
+            stringResource(R.string.diag_limiter_peaks),
             String.format(
                 Locale.ROOT,
                 "%.1f / %.1f dBFS",
@@ -631,7 +631,7 @@ internal fun DiagnosticsScreen(
             )
         )
         DiagnosticValue(
-            "Limiter current / recent max reduction",
+            stringResource(R.string.diag_limiter_reduction),
             String.format(
                 Locale.ROOT,
                 "%.1f / %.1f dB",
@@ -640,24 +640,21 @@ internal fun DiagnosticsScreen(
             )
         )
         DiagnosticValue(
-            "Limiter over-range / saturated samples",
+            stringResource(R.string.diag_limiter_samples),
             "${equalizer.overRangeSampleCount} / " +
                 equalizer.saturatedSampleCount
         )
         DiagnosticValue(
-            "Limiter active / reduced frames",
+            stringResource(R.string.diag_limiter_frames),
             "${equalizer.limiterActiveFrameCount} / " +
                 equalizer.limiterReducedFrameCount
         )
         DiagnosticValue(
-            "Limiter reprimes",
+            stringResource(R.string.diag_limiter_reprimes),
             equalizer.limiterReprimeCount.toString()
         )
         Text(
-            text = "DSP timing ends when the processor writes the transition. " +
-                "PCM already buffered by Media3, AudioTrack, or the active route " +
-                "can delay when that 20 ms crossfade is heard. Switching offload " +
-                "eligibility can additionally cause a Media3 flush.",
+            text = stringResource(R.string.diag_dsp_timing_note),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(
                 horizontal = 16.dp,
@@ -665,21 +662,19 @@ internal fun DiagnosticsScreen(
             )
         )
         audioOutputUiState.replayGainDb?.let { gain ->
-            DiagnosticValue("ReplayGain value", String.format(Locale.ROOT, "%.2f dB", gain))
+            DiagnosticValue(stringResource(R.string.diag_replay_gain_value), String.format(Locale.ROOT, "%.2f dB", gain))
         }
         audioOutputUiState.appliedVolumeMultiplier?.let { multiplier ->
             DiagnosticValue(
-                "Applied player volume",
+                stringResource(R.string.diag_applied_volume),
                 String.format(Locale.ROOT, "%.3fx", multiplier)
             )
         }
         audioOutputUiState.audioSessionId?.let { sessionId ->
-            DiagnosticValue("Audio session", sessionId.toString())
+            DiagnosticValue(stringResource(R.string.diag_audio_session), sessionId.toString())
         }
         Text(
-            text = "Source information describes the current audio file/renderer input. " +
-                "Android and the connected device may still mix, process, resample, or " +
-                "transmit audio through a different format.",
+            text = stringResource(R.string.diag_source_note),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
         )

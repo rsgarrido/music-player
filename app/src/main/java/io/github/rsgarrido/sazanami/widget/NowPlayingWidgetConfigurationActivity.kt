@@ -3,6 +3,12 @@ package io.github.rsgarrido.sazanami.widget
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Intent
+import android.content.Context
+import android.content.res.Configuration
+import android.view.View
+import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatDelegate
+import io.github.rsgarrido.sazanami.localization.AppLocalePresentationRefresh
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -48,8 +54,79 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class NowPlayingWidgetConfigurationActivity : ComponentActivity() {
+    // Direct delegate integration preserves ComponentActivity and its Compose/state owners.
+    private val appLocaleDelegate by lazy { AppCompatDelegate.create(this, null) }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(appLocaleDelegate.attachBaseContext2(newBase))
+    }
+
+    override fun setTheme(resId: Int) {
+        super.setTheme(resId)
+        appLocaleDelegate.setTheme(resId)
+    }
+
+    override fun onPostCreate(savedInstanceState: Bundle?) {
+        super.onPostCreate(savedInstanceState)
+        appLocaleDelegate.onPostCreate(savedInstanceState)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        appLocaleDelegate.onStart()
+    }
+
+    override fun onPostResume() {
+        super.onPostResume()
+        appLocaleDelegate.onPostResume()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        appLocaleDelegate.onStop()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        appLocaleDelegate.onSaveInstanceState(outState)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        appLocaleDelegate.onConfigurationChanged(newConfig)
+        AppLocalePresentationRefresh.request(this)
+    }
+
+    override fun onTitleChanged(title: CharSequence?, color: Int) {
+        super.onTitleChanged(title, color)
+        appLocaleDelegate.setTitle(title)
+    }
+
+    override fun setContentView(layoutResID: Int) {
+        initializeViewTreeOwners()
+        appLocaleDelegate.setContentView(layoutResID)
+    }
+
+    override fun setContentView(view: View) {
+        initializeViewTreeOwners()
+        appLocaleDelegate.setContentView(view)
+    }
+
+    override fun setContentView(view: View, params: ViewGroup.LayoutParams) {
+        initializeViewTreeOwners()
+        appLocaleDelegate.setContentView(view, params)
+    }
+
+    override fun addContentView(view: View, params: ViewGroup.LayoutParams) {
+        initializeViewTreeOwners()
+        appLocaleDelegate.addContentView(view, params)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        appLocaleDelegate.installViewFactory()
+        appLocaleDelegate.onCreate(savedInstanceState)
         super.onCreate(savedInstanceState)
+        AppLocalePresentationRefresh.request(this)
         setResult(RESULT_CANCELED)
 
         val glanceManager = GlanceAppWidgetManager(this)
@@ -126,6 +203,11 @@ class NowPlayingWidgetConfigurationActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        appLocaleDelegate.onDestroy()
     }
 }
 

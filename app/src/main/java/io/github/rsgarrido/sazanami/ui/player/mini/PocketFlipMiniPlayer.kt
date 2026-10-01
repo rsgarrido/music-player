@@ -118,7 +118,7 @@ fun PocketFlipMiniPlayer(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = displayedState.currentSong.miniTitle,
+                        text = displayedState.currentSong.localizedMiniTitle(),
                         style = MaterialTheme.typography.labelMedium,
                         color = displayText,
                         fontFamily = FontFamily.Monospace,
@@ -140,7 +140,7 @@ fun PocketFlipMiniPlayer(
                             )
                     )
                     Text(
-                        text = displayedState.currentSong.miniArtist,
+                        text = displayedState.currentSong.localizedMiniArtist(),
                         style = MaterialTheme.typography.labelSmall,
                         color = displayText.copy(alpha = 0.68f),
                         fontFamily = FontFamily.Monospace,

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -25,6 +26,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import io.github.rsgarrido.sazanami.MainActivity
+import io.github.rsgarrido.sazanami.R
 
 @Composable
 internal fun ClassicWheelCompactWidgetContent(
@@ -224,7 +226,7 @@ private fun ClassicWheelStatusBar(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "NOW PLAYING",
+            text = LocalContext.current.getString(R.string.widget_now_playing),
             style = TextStyle(
                 color = appearance.metadataPrimaryText.asGlanceColorProvider(),
                 fontSize = 6.sp,
@@ -936,7 +938,7 @@ private fun DeviceMetadata(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = snapshot.title,
+            text = snapshot.localizedTitle(LocalContext.current),
             style = TextStyle(
                 color = appearance.metadataPrimaryText.asGlanceColorProvider(),
                 fontSize = if (compact) 12.sp else 14.sp,
@@ -948,7 +950,7 @@ private fun DeviceMetadata(
             Spacer(GlanceModifier.height(2.dp))
         }
         Text(
-            text = snapshot.artist,
+            text = snapshot.localizedArtist(LocalContext.current),
             style = TextStyle(
                 color = appearance.metadataSecondaryText.asGlanceColorProvider(),
                 fontSize = if (compact) 10.sp else 12.sp

@@ -35,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import io.github.rsgarrido.sazanami.data.PlaylistSong
+import io.github.rsgarrido.sazanami.R as AppR
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.data.stableKey
@@ -111,11 +113,11 @@ internal fun PlaylistAddSongsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(AppR.string.common_back))
                     }
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Add songs",
+                            text = stringResource(AppR.string.playlist_add_songs_title),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -142,7 +144,7 @@ internal fun PlaylistAddSongsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No matching songs.",
+                            text = stringResource(AppR.string.playlist_add_no_matching),
                             modifier = Modifier.padding(24.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -172,7 +174,7 @@ internal fun PlaylistAddSongsScreen(
                                 },
                                 headlineContent = {
                                     Text(
-                                        text = song.title.ifBlank { "Unknown Title" },
+                                        text = song.title.ifBlank { stringResource(AppR.string.playlist_unknown_title) },
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -180,11 +182,11 @@ internal fun PlaylistAddSongsScreen(
                                 supportingContent = {
                                     Text(
                                         text = if (alreadyInPlaylist) {
-                                            "Already in playlist"
+                                            stringResource(AppR.string.playlist_already_in)
                                         } else {
                                             listOf(
-                                                song.artist.ifBlank { "Unknown Artist" },
-                                                song.album.ifBlank { "Unknown Album" }
+                                                song.artist.ifBlank { stringResource(AppR.string.playlist_unknown_artist) },
+                                                song.album.ifBlank { stringResource(AppR.string.playlist_unknown_album) }
                                             ).joinToString(" \u2022 ")
                                         },
                                         color = if (alreadyInPlaylist) {
@@ -200,7 +202,7 @@ internal fun PlaylistAddSongsScreen(
                                     if (alreadyInPlaylist) {
                                         Icon(
                                             Icons.Filled.CheckCircle,
-                                            contentDescription = "Already in playlist",
+                                            contentDescription = stringResource(AppR.string.playlist_already_in),
                                             tint = AppShellAccent
                                         )
                                     } else {
@@ -232,7 +234,7 @@ internal fun PlaylistAddSongsScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
-                    Text("Add (${selectedSongs.size})")
+                    Text(stringResource(AppR.string.playlist_add_selected, selectedSongs.size))
                 }
             }
         }

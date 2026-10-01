@@ -51,6 +51,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -87,6 +89,7 @@ fun ArtistDetailScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val libraryAlbums = remember(librarySongs) {
         buildLibraryAlbumGroups(librarySongs)
     }
@@ -186,7 +189,9 @@ fun ArtistDetailScreen(
                     onAddToPlaylistClick = { _, songs ->
                         onAddSongsToPlaylistClick(songs)
                     },
-                    homePinAction = homePinUi.actionForArtist(artistGroup)
+                    homePinAction = homePinUi.actionForArtist(artistGroup),
+                    resolveString = resources::getString,
+                    resolveArtworkDescription = { resources.getString(R.string.library_artist_artwork_for, it) }
                 )
             }
         )
@@ -221,7 +226,7 @@ fun ArtistDetailScreen(
                         ArtistPicture(
                             identity = artistGroup.identity,
                             fallbackModel = artistSongs.firstOrNull()?.albumArtUri,
-                            contentDescription = "Picture of $artistName",
+                            contentDescription = stringResource(R.string.library_artist_picture_of, artistName),
                             modifier = Modifier
                                 .size(artistImageSize)
                                 .librarySharedArtwork(
@@ -252,7 +257,7 @@ fun ArtistDetailScreen(
                     ) {
                         LibraryDetailAction(
                             icon = Icons.Filled.PlayArrow,
-                            label = "Play",
+                            label = stringResource(R.string.playlist_play),
                             enabled = artistSongs.isNotEmpty(),
                             onClick = onPlayAllClick
                         )
@@ -260,7 +265,7 @@ fun ArtistDetailScreen(
                         Box {
                             LibraryDetailAction(
                                 icon = Icons.Filled.Shuffle,
-                                label = "Shuffle",
+                                label = stringResource(R.string.playlist_shuffle),
                                 enabled = artistSongs.isNotEmpty(),
                                 trailingIcon = Icons.Filled.KeyboardArrowDown,
                                 onClick = {
@@ -282,8 +287,8 @@ fun ArtistDetailScreen(
                                 DropdownMenuItem(
                                     text = {
                                         ShuffleModeMenuText(
-                                            title = "Shuffle songs",
-                                            subtitle = "Play all tracks in random order"
+                                            title = stringResource(R.string.library_artist_shuffle_songs),
+                                            subtitle = stringResource(R.string.library_artist_shuffle_songs_summary)
                                         )
                                     },
                                     onClick = {
@@ -294,8 +299,8 @@ fun ArtistDetailScreen(
                                 DropdownMenuItem(
                                     text = {
                                         ShuffleModeMenuText(
-                                            title = "Shuffle albums",
-                                            subtitle = "Play full albums in a random order"
+                                            title = stringResource(R.string.library_artist_shuffle_albums),
+                                            subtitle = stringResource(R.string.library_artist_shuffle_albums_summary)
                                         )
                                     },
                                     onClick = {
@@ -306,8 +311,8 @@ fun ArtistDetailScreen(
                                 DropdownMenuItem(
                                     text = {
                                         ShuffleModeMenuText(
-                                            title = "Shuffle albums + songs",
-                                            subtitle = "Randomize albums and tracks within them"
+                                            title = stringResource(R.string.library_artist_shuffle_both),
+                                            subtitle = stringResource(R.string.library_artist_shuffle_both_summary)
                                         )
                                     },
                                     onClick = {
@@ -322,7 +327,7 @@ fun ArtistDetailScreen(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "ALBUMS",
+                        text = stringResource(R.string.library_artist_albums_heading),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = AppShellAccent
@@ -380,7 +385,9 @@ fun ArtistDetailScreen(
                             onAddToPlaylistClick = { _, songs ->
                                 onAddSongsToPlaylistClick(songs)
                             },
-                            homePinAction = homePinUi.actionForAlbum(album)
+                            homePinAction = homePinUi.actionForAlbum(album),
+                            resolveString = resources::getString,
+                            resolveArtworkDescription = { resources.getString(R.string.library_album_art_for, it) }
                         )
                     }
                 )
@@ -443,7 +450,7 @@ private fun ArtistAlbumCard(
         modifier = modifier
             .fillMaxWidth()
             .libraryItemActions(
-                clickLabel = "Open ${album.title}",
+                clickLabel = stringResource(R.string.library_album_open, album.title),
                 onClick = onClick,
                 onShowActions = onShowActions
             ),
@@ -466,7 +473,7 @@ private fun ArtistAlbumCard(
             )
             AsyncImage(
                 model = album.songs.firstOrNull()?.albumArtUri,
-                contentDescription = "Album art for ${album.title}",
+                contentDescription = stringResource(R.string.library_album_art_for, album.title),
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop
             )
@@ -519,7 +526,7 @@ internal fun LibraryDetailTopBar(
         IconButton(onClick = onBackClick) {
             Icon(
                 imageVector = Icons.Filled.ArrowBack,
-                contentDescription = "Back"
+                contentDescription = stringResource(R.string.common_back)
             )
         }
 
@@ -542,7 +549,7 @@ internal fun LibraryDetailTopBar(
             IconButton(onClick = onMoreClick) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
-                    contentDescription = "More options"
+                    contentDescription = stringResource(R.string.library_detail_more_options)
                 )
             }
         }

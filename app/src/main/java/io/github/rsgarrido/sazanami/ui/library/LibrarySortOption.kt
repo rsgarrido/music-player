@@ -2,17 +2,19 @@ package io.github.rsgarrido.sazanami.ui.library
 
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import java.util.Locale
 
-enum class LibrarySortOption(val title: String) {
-    TITLE("Title"),
-    ARTIST("Artist"),
-    ALBUM("Album"),
-    YEAR("Year"),
-    RATING("Rating"),
-    DATE_ADDED("Date added"),
-    NAME("Name"),
-    SONG_COUNT("Song count")
+enum class LibrarySortOption(@StringRes val titleRes: Int) {
+    TITLE(R.string.library_sort_title),
+    ARTIST(R.string.library_sort_artist),
+    ALBUM(R.string.library_sort_album),
+    YEAR(R.string.library_sort_year),
+    RATING(R.string.library_sort_rating),
+    DATE_ADDED(R.string.library_sort_date_added),
+    NAME(R.string.library_sort_name),
+    SONG_COUNT(R.string.library_sort_song_count)
 }
 
 enum class LibrarySortDirection {
@@ -134,4 +136,5 @@ internal fun librarySortOptionsFor(
 internal fun LibraryTab.showsQuickRateAction(ratingFeaturesEnabled: Boolean = true): Boolean =
     this == LibraryTab.RATED && ratingFeaturesEnabled
 
-internal fun LibrarySortOption.displayTitleFor(tab: LibraryTab): String = title
+@StringRes
+internal fun LibrarySortOption.displayTitleFor(tab: LibraryTab): Int = titleRes

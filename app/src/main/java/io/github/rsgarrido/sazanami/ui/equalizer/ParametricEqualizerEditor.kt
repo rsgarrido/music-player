@@ -38,6 +38,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -72,6 +76,7 @@ internal fun ParametricEqualizerEditor(
     state: EqualizerScreenState,
     actions: EqualizerUiActions
 ) {
+    val resources = LocalResources.current
     var presetDialogVisible by remember { mutableStateOf(false) }
     var saveNameDialogVisible by remember { mutableStateOf(false) }
     var renamePreset by remember {
@@ -87,23 +92,24 @@ internal fun ParametricEqualizerEditor(
         mutableStateOf<ParametricFilter?>(null)
     }
     val parametric = state.editablePreferences.parametricState
+    val presetLabel = state.presetMatch.localizedLabel()
 
     ListItem(
-        headlineContent = { Text("Parametric preset") },
-        supportingContent = { Text(state.presetLabel) },
+        headlineContent = { Text(stringResource(R.string.eq_parametric_preset)) },
+        supportingContent = { Text(presetLabel) },
         modifier = Modifier
             .fillMaxWidth()
             .clickable { presetDialogVisible = true }
             .semantics {
                 contentDescription =
-                    "Parametric preset, ${state.presetLabel}"
+                    resources.getString(R.string.eq_parametric_preset_description, presetLabel)
             }
     )
     TextButton(
         onClick = { presetDialogVisible = true },
         modifier = Modifier.padding(horizontal = 12.dp)
     ) {
-        Text("Choose or manage presets")
+        Text(stringResource(R.string.eq_manage_presets))
     }
 
     Row(
@@ -116,27 +122,27 @@ internal fun ParametricEqualizerEditor(
             enabled =
                 parametric.filters.size < MAX_PARAMETRIC_FILTER_COUNT,
             modifier = Modifier.semantics {
-                contentDescription = "Add parametric filter"
+                contentDescription = resources.getString(R.string.eq_add_parametric_filter_description)
             }
         ) {
             Icon(Icons.Default.Add, contentDescription = null)
-            Text("Add Filter")
+            Text(stringResource(R.string.eq_add_filter))
         }
         Text(
-            "${parametric.filters.size}/$MAX_PARAMETRIC_FILTER_COUNT filters",
+            pluralStringResource(R.plurals.eq_filter_capacity, parametric.filters.size, parametric.filters.size, MAX_PARAMETRIC_FILTER_COUNT),
             style = MaterialTheme.typography.bodyMedium
         )
     }
     if (parametric.filters.size == MAX_PARAMETRIC_FILTER_COUNT) {
         Text(
-            "Maximum of ten filters reached.",
+            stringResource(R.string.eq_max_filters_reached),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
     }
     if (parametric.filters.isEmpty()) {
         Text(
-            "Flat: no parametric filters. Add a filter to begin.",
+            stringResource(R.string.eq_no_parametric_filters),
             modifier = Modifier.padding(16.dp)
         )
     }
@@ -181,10 +187,10 @@ internal fun ParametricEqualizerEditor(
     }
     if (saveNameDialogVisible) {
         ParametricPresetNameDialog(
-            title = "Save parametric preset",
+            title = stringResource(R.string.eq_save_parametric_preset),
             initialName = "",
             presets = state.parametricUserPresets,
-            confirmText = "Save",
+            confirmText = stringResource(R.string.eq_save),
             onDismiss = { saveNameDialogVisible = false },
             onConfirm = {
                 actions.onSaveParametricUserPreset(it)
@@ -194,11 +200,11 @@ internal fun ParametricEqualizerEditor(
     }
     renamePreset?.let { preset ->
         ParametricPresetNameDialog(
-            title = "Rename parametric preset",
+            title = stringResource(R.string.eq_rename_parametric_preset),
             initialName = preset.name,
             presets = state.parametricUserPresets,
             excludingPresetId = preset.id,
-            confirmText = "Rename",
+            confirmText = stringResource(R.string.eq_rename),
             onDismiss = { renamePreset = null },
             onConfirm = {
                 actions.onRenameParametricUserPreset(preset.id, it)
@@ -208,9 +214,9 @@ internal fun ParametricEqualizerEditor(
     }
     deletePreset?.let { preset ->
         ConfirmEqualizerActionDialog(
-            title = "Delete ${preset.name}?",
-            message = "The active parametric curve will not change.",
-            confirmText = "Delete",
+            title = stringResource(R.string.eq_delete_preset_confirm, preset.name),
+            message = stringResource(R.string.eq_delete_parametric_preset_help),
+            confirmText = stringResource(R.string.eq_delete),
             onDismiss = { deletePreset = null },
             onConfirm = {
                 actions.onDeleteParametricUserPreset(preset.id)
@@ -220,9 +226,9 @@ internal fun ParametricEqualizerEditor(
     }
     deleteFilter?.let { filter ->
         ConfirmEqualizerActionDialog(
-            title = "Delete ${filter.type.displayName} filter?",
-            message = "This filter will be removed from the active curve.",
-            confirmText = "Delete",
+            title = stringResource(R.string.eq_delete_filter_confirm, stringResource(filter.type.labelRes)),
+            message = stringResource(R.string.eq_delete_filter_help),
+            confirmText = stringResource(R.string.eq_delete),
             onDismiss = { deleteFilter = null },
             onConfirm = {
                 actions.onDeleteParametricFilter(filter.id)
@@ -264,6 +270,7 @@ private fun ParametricFilterCard(
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val resources = LocalResources.current
     val description = filterAccessibilityDescription(
         index, filter, unavailable
     )
@@ -284,20 +291,19 @@ private fun ParametricFilterCard(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "${index + 1}. ${filter.type.displayName}" +
-                            if (selected) " · Selected" else "",
+                        stringResource(if (selected) R.string.eq_filter_row_selected else R.string.eq_filter_row, index + 1, stringResource(filter.type.labelRes)),
                         style = MaterialTheme.typography.titleSmall
                     )
                     Text(filterParameterSummary(filter))
                     if (unavailable) {
                         Text(
-                            "Unavailable for current source",
+                            stringResource(R.string.eq_unavailable_current_source),
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall
                         )
                     } else if (!filter.enabled) {
                         Text(
-                            "Bypassed",
+                            stringResource(R.string.eq_bypassed),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -307,7 +313,7 @@ private fun ParametricFilterCard(
                     onCheckedChange = onToggle,
                     modifier = Modifier.semantics {
                         contentDescription =
-                            "Filter ${index + 1} enabled"
+                            resources.getString(R.string.eq_filter_enabled_description, index + 1)
                     }
                 )
             }
@@ -318,7 +324,7 @@ private fun ParametricFilterCard(
                 ) {
                     Icon(
                         Icons.Default.ArrowUpward,
-                        contentDescription = "Move filter ${index + 1} up"
+                        contentDescription = stringResource(R.string.eq_move_filter_up, index + 1)
                     )
                 }
                 IconButton(
@@ -327,19 +333,19 @@ private fun ParametricFilterCard(
                 ) {
                     Icon(
                         Icons.Default.ArrowDownward,
-                        contentDescription = "Move filter ${index + 1} down"
+                        contentDescription = stringResource(R.string.eq_move_filter_down, index + 1)
                     )
                 }
                 IconButton(onClick = onEdit) {
                     Icon(
                         Icons.Default.Edit,
-                        contentDescription = "Edit filter ${index + 1}"
+                        contentDescription = stringResource(R.string.eq_edit_filter, index + 1)
                     )
                 }
                 IconButton(onClick = onDelete) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Delete filter ${index + 1}"
+                        contentDescription = stringResource(R.string.eq_delete_filter, index + 1)
                     )
                 }
             }
@@ -355,6 +361,7 @@ internal fun ParametricFilterEditorDialog(
     onCancel: () -> Unit,
     onApply: (ParametricFilter) -> Unit
 ) {
+    val resources = LocalResources.current
     var draft by remember(original) { mutableStateOf(original) }
     var typeMenuVisible by remember { mutableStateOf(false) }
     var frequencyText by remember(original) {
@@ -383,20 +390,20 @@ internal fun ParametricFilterEditorDialog(
 
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text("Edit ${draft.type.displayName} filter") },
+        title = { Text(stringResource(R.string.eq_edit_filter_type, stringResource(draft.type.labelRes))) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Enabled", Modifier.weight(1f))
+                    Text(stringResource(R.string.eq_enabled_label), Modifier.weight(1f))
                     Checkbox(
                         checked = draft.enabled,
                         onCheckedChange = {
                             update(draft.withEnabled(it))
                         },
                         modifier = Modifier.semantics {
-                            contentDescription = "Filter enabled"
+                            contentDescription = resources.getString(R.string.eq_filter_enabled)
                         }
                     )
                 }
@@ -406,10 +413,10 @@ internal fun ParametricFilterEditorDialog(
                         .fillMaxWidth()
                         .semantics {
                             contentDescription =
-                                "Filter type, ${draft.type.displayName}"
+                                resources.getString(R.string.eq_filter_type_description, resources.getString(draft.type.labelRes))
                         }
                 ) {
-                    Text("Type: ${draft.type.displayName}")
+                    Text(stringResource(R.string.eq_filter_type, stringResource(draft.type.labelRes)))
                 }
                 DropdownMenu(
                     expanded = typeMenuVisible,
@@ -417,7 +424,7 @@ internal fun ParametricFilterEditorDialog(
                 ) {
                     ParametricFilterType.entries.forEach { type ->
                         DropdownMenuItem(
-                            text = { Text(type.displayName) },
+                            text = { Text(stringResource(type.labelRes)) },
                             onClick = {
                                 val changed = draft.changeType(type)
                                 update(changed)
@@ -435,9 +442,9 @@ internal fun ParametricFilterEditorDialog(
                     }
                 }
                 ParametricNumberField(
-                    label = "Frequency (Hz)",
+                    label = stringResource(R.string.eq_frequency),
                     value = frequencyText,
-                    range = "20.0 to 20,000.0 Hz",
+                    range = stringResource(R.string.eq_frequency_range),
                     step = frequencyStep(draft.frequencyHz),
                     minimum = MIN_PARAMETRIC_FREQUENCY_HZ,
                     maximum = MAX_PARAMETRIC_FREQUENCY_HZ,
@@ -451,9 +458,9 @@ internal fun ParametricFilterEditorDialog(
                 )
                 draft.gainDbOrNull?.let {
                     ParametricNumberField(
-                        label = "Gain (dB)",
+                        label = stringResource(R.string.eq_gain),
                         value = gainText,
-                        range = "−15.0 to +15.0 dB",
+                        range = stringResource(R.string.eq_gain_range),
                         step = 0.1,
                         minimum = MIN_PARAMETRIC_GAIN_DB,
                         maximum = MAX_PARAMETRIC_GAIN_DB,
@@ -468,9 +475,9 @@ internal fun ParametricFilterEditorDialog(
                 }
                 draft.qOrNull?.let {
                     ParametricNumberField(
-                        label = "Q",
+                        label = stringResource(R.string.eq_q),
                         value = qText,
-                        range = "0.10 to 20.00",
+                        range = stringResource(R.string.eq_q_range),
                         step = 0.01,
                         minimum = MIN_PARAMETRIC_Q,
                         maximum = MAX_PARAMETRIC_Q,
@@ -483,9 +490,9 @@ internal fun ParametricFilterEditorDialog(
                 }
                 draft.slopeOrNull?.let {
                     ParametricNumberField(
-                        label = "Shelf slope S",
+                        label = stringResource(R.string.eq_shelf_slope),
                         value = slopeText,
-                        range = "0.10 to 1.00",
+                        range = stringResource(R.string.eq_shelf_slope_range),
                         step = 0.01,
                         minimum = MIN_PARAMETRIC_SHELF_SLOPE,
                         maximum = MAX_PARAMETRIC_SHELF_SLOPE,
@@ -500,9 +507,7 @@ internal fun ParametricFilterEditorDialog(
                 }
                 if (unavailable) {
                     Text(
-                        "This frequency is unavailable for the current " +
-                            "sample rate. It remains saved and will become " +
-                            "active for a compatible source.",
+                        stringResource(R.string.eq_frequency_unavailable_help),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -523,12 +528,12 @@ internal fun ParametricFilterEditorDialog(
                             ?.let { formatEditable(it, 2) } ?: ""
                     }
                 ) {
-                    Text("Reset parameter values")
+                    Text(stringResource(R.string.eq_reset_parameters))
                 }
             }
         },
         dismissButton = {
-            TextButton(onClick = onCancel) { Text("Cancel") }
+            TextButton(onClick = onCancel) { Text(stringResource(R.string.eq_cancel)) }
         },
         confirmButton = {
             TextButton(
@@ -558,7 +563,7 @@ internal fun ParametricFilterEditorDialog(
                                 MAX_PARAMETRIC_SHELF_SLOPE
                             ) != null)
             ) {
-                Text("Apply")
+                Text(stringResource(R.string.eq_apply))
             }
         }
     )
@@ -576,6 +581,8 @@ private fun ParametricNumberField(
     onValueChanged: (String, Double?) -> Unit
 ) {
     val parsed = parseInRange(value, minimum, maximum)
+    val decreaseDescription = stringResource(R.string.eq_decrease_parameter, label)
+    val increaseDescription = stringResource(R.string.eq_increase_parameter, label)
     Column(Modifier.padding(top = 8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(
@@ -588,9 +595,9 @@ private fun ParametricNumberField(
                     )
                 },
                 modifier = Modifier.semantics {
-                    contentDescription = "Decrease $label"
+                    contentDescription = decreaseDescription
                 }
-            ) { Text("−") }
+            ) { Text(stringResource(R.string.eq_decrease_symbol)) }
             OutlinedTextField(
                 value = value,
                 onValueChange = { text ->
@@ -601,7 +608,7 @@ private fun ParametricNumberField(
                 },
                 label = { Text(label) },
                 supportingText = {
-                    Text(if (parsed == null) "Enter $range" else range)
+                    Text(if (parsed == null) stringResource(R.string.eq_enter_range, range) else range)
                 },
                 isError = parsed == null,
                 singleLine = true,
@@ -620,9 +627,9 @@ private fun ParametricNumberField(
                     )
                 },
                 modifier = Modifier.semantics {
-                    contentDescription = "Increase $label"
+                    contentDescription = increaseDescription
                 }
-            ) { Text("+") }
+            ) { Text(stringResource(R.string.eq_increase_symbol)) }
         }
     }
 }
@@ -639,12 +646,12 @@ private fun ParametricPresetSelectorDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Choose parametric preset") },
+        title = { Text(stringResource(R.string.eq_choose_parametric_preset)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 ListItem(
-                    headlineContent = { Text("Flat") },
-                    supportingContent = { Text("0 dB · No filters") },
+                    headlineContent = { Text(stringResource(R.string.eq_flat)) },
+                    supportingContent = { Text(stringResource(R.string.eq_flat_no_filters)) },
                     modifier = Modifier.clickable {
                         onApplyFlat()
                         onDismiss()
@@ -654,20 +661,20 @@ private fun ParametricPresetSelectorDialog(
                     ListItem(
                         headlineContent = { Text(preset.name) },
                         supportingContent = {
-                            Text("${preset.filters.size} filters")
+                            Text(pluralStringResource(R.plurals.eq_filter_count, preset.filters.size, preset.filters.size))
                         },
                         trailingContent = {
                             Row {
                                 IconButton(onClick = { onRename(preset) }) {
                                     Icon(
                                         Icons.Default.Edit,
-                                        "Rename ${preset.name}"
+                                        stringResource(R.string.eq_rename_named_preset, preset.name)
                                     )
                                 }
                                 IconButton(onClick = { onDelete(preset) }) {
                                     Icon(
                                         Icons.Default.Delete,
-                                        "Delete ${preset.name}"
+                                        stringResource(R.string.eq_delete_named_preset, preset.name)
                                     )
                                 }
                             }
@@ -681,7 +688,7 @@ private fun ParametricPresetSelectorDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Close") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.eq_close)) }
         },
         confirmButton = {
             TextButton(
@@ -689,7 +696,7 @@ private fun ParametricPresetSelectorDialog(
                     onDismiss()
                     onSaveAs()
                 }
-            ) { Text("Save as preset") }
+            ) { Text(stringResource(R.string.eq_save_as_preset)) }
         }
     )
 }
@@ -706,15 +713,15 @@ private fun ParametricPresetNameDialog(
 ) {
     var name by remember(initialName) { mutableStateOf(initialName) }
     val normalized = name.trim()
-    val error = when {
-        normalized.isBlank() -> "Name cannot be blank."
-        normalized.length > 40 -> "Name must be 40 characters or fewer."
+    val errorRes = when {
+        normalized.isBlank() -> R.string.eq_name_blank
+        normalized.length > 40 -> R.string.eq_name_too_long
         normalized.equals("Flat", ignoreCase = true) ->
-            "Flat is a built-in preset."
+            R.string.eq_flat_builtin
         presets.any {
             it.id != excludingPresetId &&
                 it.name.equals(normalized, ignoreCase = true)
-        } -> "A preset with that name already exists."
+        } -> R.string.eq_name_duplicate
         else -> null
     }
     AlertDialog(
@@ -724,36 +731,36 @@ private fun ParametricPresetNameDialog(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Preset name") },
-                supportingText = error?.let { message ->
-                    { Text(message) }
+                label = { Text(stringResource(R.string.eq_preset_name)) },
+                supportingText = errorRes?.let { message ->
+                    { Text(stringResource(message)) }
                 },
-                isError = error != null,
+                isError = errorRes != null,
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancel") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.eq_cancel)) }
         },
         confirmButton = {
             TextButton(
                 onClick = { onConfirm(normalized) },
-                enabled = error == null
+                enabled = errorRes == null
             ) { Text(confirmText) }
         }
     )
 }
 
-internal val ParametricFilterType.displayName: String
+internal val ParametricFilterType.labelRes: Int
     get() = when (this) {
-        ParametricFilterType.PEAKING -> "Peaking"
-        ParametricFilterType.LOW_SHELF -> "Low shelf"
-        ParametricFilterType.HIGH_SHELF -> "High shelf"
-        ParametricFilterType.LOW_PASS -> "Low pass"
-        ParametricFilterType.HIGH_PASS -> "High pass"
-        ParametricFilterType.NOTCH -> "Notch"
-        ParametricFilterType.BAND_PASS -> "Band pass"
+        ParametricFilterType.PEAKING -> R.string.eq_type_peaking
+        ParametricFilterType.LOW_SHELF -> R.string.eq_type_low_shelf
+        ParametricFilterType.HIGH_SHELF -> R.string.eq_type_high_shelf
+        ParametricFilterType.LOW_PASS -> R.string.eq_type_low_pass
+        ParametricFilterType.HIGH_PASS -> R.string.eq_type_high_pass
+        ParametricFilterType.NOTCH -> R.string.eq_type_notch
+        ParametricFilterType.BAND_PASS -> R.string.eq_type_band_pass
     }
 
 internal fun filterParameterSummary(filter: ParametricFilter): String =
@@ -773,26 +780,18 @@ internal fun filterParameterSummary(filter: ParametricFilter): String =
         }
     }
 
+@Composable
 private fun filterAccessibilityDescription(
     index: Int,
     filter: ParametricFilter,
     unavailable: Boolean
-): String = buildString {
-    append("Filter ${index + 1}, ")
-    append(filter.type.displayName.lowercase())
-    append(if (filter.enabled) ", enabled" else ", bypassed")
-    append(", ${formatEqualizerFrequency(filter.frequencyHz)}")
-    filter.gainDbOrNull?.let {
-        append(", ${formatEqualizerDb(it)}")
-    }
-    filter.qOrNull?.let {
-        append(", Q ${formatEditable(it, 2)}")
-    }
-    filter.slopeOrNull?.let {
-        append(", shelf slope S ${formatEditable(it, 2)}")
-    }
-    if (unavailable) append(", unavailable for current source")
-}
+): String = stringResource(
+    if (unavailable) R.string.eq_filter_access_unavailable else R.string.eq_filter_access,
+    index + 1,
+    stringResource(filter.type.labelRes),
+    stringResource(if (filter.enabled) R.string.eq_enabled_label else R.string.eq_bypassed),
+    filterParameterSummary(filter)
+)
 
 private fun frequencyStep(frequencyHz: Double): Double = when {
     frequencyHz < 100.0 -> 1.0

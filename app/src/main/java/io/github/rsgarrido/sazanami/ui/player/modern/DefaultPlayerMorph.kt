@@ -29,6 +29,8 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.RoundRect
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -270,7 +272,7 @@ private fun DefaultMorphTitleArtist(
                     }
                 ) {
                     Text(
-                        text = item.song.title.ifBlank { "Unknown Title" },
+                text = item.song.title.ifBlank { stringResource(R.string.player_unknown_title) },
                         style = titleStyle,
                         color = lerpColor(
                             MaterialTheme.colorScheme.onSurface,
@@ -283,7 +285,7 @@ private fun DefaultMorphTitleArtist(
                     )
                     Spacer(modifier = Modifier.height((6f * progress).dp))
                     Text(
-                        text = item.song.artist.ifBlank { "Unknown Artist" },
+                text = item.song.artist.ifBlank { stringResource(R.string.player_unknown_artist) },
                         style = artistStyle,
                         color = lerpColor(
                             MaterialTheme.colorScheme.onSurfaceVariant,
@@ -371,7 +373,7 @@ private fun DefaultMorphPlayPause(
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                 tint = lerpColor(
                     MaterialTheme.colorScheme.onSurface,
                     if (appearance.style == ModernControlStyle.TONAL) {

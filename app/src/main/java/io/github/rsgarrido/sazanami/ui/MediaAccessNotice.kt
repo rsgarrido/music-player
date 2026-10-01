@@ -11,7 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.mediaaccess.MediaAccessState
 import io.github.rsgarrido.sazanami.mediaaccess.PermissionAccess
 
@@ -29,26 +31,26 @@ internal fun MediaAccessNotice(
     ) {
         if (!state.hasAudioAccess) {
             Text(
-                text = "Audio access needed",
+                text = stringResource(R.string.media_access_audio_needed),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() }
             )
             Text(
                 text = if (state.audioPermissionRequested) {
-                    "Sazanami still needs access to audio files to build your music library."
+                    stringResource(R.string.media_access_audio_still_needed)
                 } else {
-                    "Sazanami needs access to audio files on this device to build your music library."
+                    stringResource(R.string.media_access_audio_explanation)
                 },
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             when (state.audioAccess) {
                 PermissionAccess.PERMANENTLY_DENIED -> {
                     Text(
-                        text = "Audio access is disabled. Enable it in Android app settings.",
+                        text = stringResource(R.string.media_access_audio_disabled),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     OutlinedButton(onClick = onOpenAppSettings) {
-                        Text("Open app settings")
+                        Text(stringResource(R.string.settings_open_app_settings))
                     }
                 }
                 PermissionAccess.REQUESTABLE,
@@ -56,9 +58,9 @@ internal fun MediaAccessNotice(
                     Button(onClick = onRequestAudioAccess) {
                         Text(
                             if (state.audioPermissionRequested) {
-                                "Try again"
+                                stringResource(R.string.media_access_try_again)
                             } else {
-                                "Grant audio access"
+                                stringResource(R.string.media_access_grant_audio)
                             }
                         )
                     }
@@ -68,25 +70,25 @@ internal fun MediaAccessNotice(
             }
         } else if (!state.hasArtworkAccess) {
             Text(
-                text = "Folder artwork access is optional",
+                text = stringResource(R.string.media_access_folder_optional),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.semantics { heading() }
             )
             Text(
-                text = "Songs and embedded cover art remain available. Allow image access only to find standalone folder covers.",
+                text = stringResource(R.string.media_access_folder_explanation),
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (state.artworkAccess == PermissionAccess.PERMANENTLY_DENIED) {
                 OutlinedButton(onClick = onOpenAppSettings) {
-                    Text("Open app settings")
+                    Text(stringResource(R.string.settings_open_app_settings))
                 }
             } else {
                 OutlinedButton(onClick = onRequestArtworkAccess) {
                     Text(
                         if (state.artworkPermissionRequested) {
-                            "Try folder artwork again"
+                            stringResource(R.string.media_access_try_folder_again)
                         } else {
-                            "Allow folder artwork"
+                            stringResource(R.string.media_access_allow_folder)
                         }
                     )
                 }
@@ -102,7 +104,7 @@ internal fun LibraryLoadingNotice(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         CircularProgressIndicator()
-        Text("Loading music library")
+        Text(stringResource(R.string.media_access_loading_library))
     }
 }
 
@@ -113,12 +115,12 @@ internal fun EmptyLibraryNotice(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = "No music found",
+            text = stringResource(R.string.media_access_no_music),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.semantics { heading() }
         )
         Text(
-            text = "Check that music files are in shared storage, Android has indexed them, and your selected library folders include them.",
+            text = stringResource(R.string.media_access_no_music_explanation),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -134,7 +136,7 @@ internal fun LibraryErrorNotice(
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Text(
-            text = "Music library unavailable",
+            text = stringResource(R.string.media_access_library_unavailable),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.semantics { heading() }
         )

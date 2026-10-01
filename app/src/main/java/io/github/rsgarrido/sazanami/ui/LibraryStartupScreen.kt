@@ -53,22 +53,22 @@ internal fun LibraryStartupScreen(
         when {
             !mediaAccessState.hasAudioAccess -> {
                 Text(
-                    text = "Find your music",
+                    text = stringResource(R.string.startup_find_music),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.size(10.dp))
                 Text(
-                    text = "Sazanami needs access to audio files on this device to build your local music library. Your music stays on your device.",
+                    text = stringResource(R.string.startup_audio_explanation),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.size(22.dp))
                 if (mediaAccessState.audioAccess == PermissionAccess.PERMANENTLY_DENIED) {
-                    Button(onClick = onOpenAppSettings) { Text("Open app settings") }
+                    Button(onClick = onOpenAppSettings) { Text(stringResource(R.string.settings_open_app_settings)) }
                 } else {
                     Button(onClick = onRequestAudioAccess) {
-                        Text(if (mediaAccessState.audioPermissionRequested) "Grant music access" else "Grant music access")
+                        Text(stringResource(R.string.startup_grant_music_access))
                     }
                 }
             }
@@ -77,12 +77,12 @@ internal fun LibraryStartupScreen(
                 CircularProgressIndicator()
                 Spacer(Modifier.size(18.dp))
                 Text(
-                    text = "Finding your music…",
+                    text = stringResource(R.string.startup_finding_music),
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(Modifier.size(6.dp))
                 Text(
-                    text = "Songs will appear as soon as the device music index is ready. Artwork can continue loading afterward.",
+                    text = stringResource(R.string.startup_index_explanation),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -90,22 +90,22 @@ internal fun LibraryStartupScreen(
 
             !folderArtworkOnboardingComplete -> {
                 Text(
-                    text = "Optional folder artwork",
+                    text = stringResource(R.string.startup_optional_folder_artwork),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(Modifier.size(10.dp))
                 Text(
-                    text = "If your music folders contain files such as cover.jpg, folder.jpg, or front.png, choose your Music folder and Sazanami can use them. Embedded album artwork works without this access.",
+                    text = stringResource(R.string.startup_folder_artwork_explanation),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.size(22.dp))
                 Button(onClick = onChooseFolderArtwork) {
-                    Text("Allow folder artwork access")
+                    Text(stringResource(R.string.startup_allow_folder_artwork))
                 }
                 Spacer(Modifier.size(10.dp))
-                OutlinedButton(onClick = onSkipFolderArtwork) { Text("Not now") }
+                OutlinedButton(onClick = onSkipFolderArtwork) { Text(stringResource(R.string.folder_selection_not_now)) }
             }
         }
     }

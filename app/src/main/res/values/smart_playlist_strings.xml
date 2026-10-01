@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="smart_playlist_load_rules_failed">Unable to load Smart Playlist rules.</string>
+    <string name="smart_playlist_refresh_failed">Unable to refresh this playlist.</string>
+    <string name="smart_playlist_unsupported_rules">Some rules are not supported by this app version.</string>
+    <string name="smart_playlist_no_matching_songs">No songs currently match this Smart Playlist.</string>
+    <string name="smart_playlist_edit_action">Edit Smart Playlist</string>
+    <string name="smart_playlist_refresh_action">Refresh</string>
+    <string name="smart_playlist_refreshing">Refreshing</string>
+    <string name="smart_playlist_kind">Smart Playlist</string>
+    <string name="smart_playlist_updates_automatically">Smart Playlist • Updates automatically</string>
+    <string name="smart_playlist_updated_just_now">Smart Playlist • Updated just now</string>
+    <plurals name="smart_playlist_updated_minutes">
+        <item quantity="one">Smart Playlist • Updated %d min ago</item>
+        <item quantity="other">Smart Playlist • Updated %d min ago</item>
+    </plurals>
+    <plurals name="smart_playlist_updated_hours">
+        <item quantity="one">Smart Playlist • Updated %d hr ago</item>
+        <item quantity="other">Smart Playlist • Updated %d hr ago</item>
+    </plurals>
+    <plurals name="smart_playlist_updated_days">
+        <item quantity="one">Smart Playlist • Updated %d day ago</item>
+        <item quantity="other">Smart Playlist • Updated %d days ago</item>
+    </plurals>
+    <string name="smart_playlist_collection_manual">Manual</string>
+    <string name="smart_playlist_collection_smart">Smart</string>
+    <string name="smart_playlist_collection_updated_now">Smart • Updated just now</string>
+    <plurals name="smart_playlist_collection_updated_minutes">
+        <item quantity="one">Smart • Updated %d min ago</item>
+        <item quantity="other">Smart • Updated %d min ago</item>
+    </plurals>
+    <plurals name="smart_playlist_collection_updated_hours">
+        <item quantity="one">Smart • Updated %d hr ago</item>
+        <item quantity="other">Smart • Updated %d hr ago</item>
+    </plurals>
+    <plurals name="smart_playlist_collection_updated_days">
+        <item quantity="one">Smart • Updated %d day ago</item>
+        <item quantity="other">Smart • Updated %d days ago</item>
+    </plurals>
+    <string name="smart_playlist_grid_updated_now">Smart • Updated now</string>
+    <plurals name="smart_playlist_grid_updated_minutes">
+        <item quantity="one">Smart • Updated %dm</item>
+        <item quantity="other">Smart • Updated %dm</item>
+    </plurals>
+    <plurals name="smart_playlist_grid_updated_hours">
+        <item quantity="one">Smart • Updated %dh</item>
+        <item quantity="other">Smart • Updated %dh</item>
+    </plurals>
+    <plurals name="smart_playlist_grid_updated_days">
+        <item quantity="one">Smart • Updated %dd</item>
+        <item quantity="other">Smart • Updated %dd</item>
+    </plurals>
+    <string name="smart_group_listening">Listening</string>
+    <string name="smart_group_metadata">Metadata</string>
+    <string name="smart_group_library_file">Library / File</string>
+    <string name="smart_op_equals">equals</string>
+    <string name="smart_op_is_not">is not</string>
+    <string name="smart_op_at_least">at least</string>
+    <string name="smart_op_at_most">at most</string>
+    <string name="smart_op_between">between</string>
+    <string name="smart_op_within_last_days">within last N days</string>
+    <string name="smart_op_more_than_days_ago">more than N days ago</string>
+    <string name="smart_op_unrated">unrated</string>
+    <string name="smart_op_never_played">Never played</string>
+    <string name="smart_op_played_within_last">Played within last</string>
+    <string name="smart_op_not_played_for">Not played for</string>
+    <string name="smart_op_is">is</string>
+    <string name="smart_op_contains">contains</string>
+    <string name="smart_op_before">before</string>
+    <string name="smart_op_after">after</string>
+    <string name="smart_op_greater_than">greater than</string>
+    <string name="smart_op_less_than">less than</string>
+    <string name="smart_op_shorter_than">shorter than</string>
+    <string name="smart_op_longer_than">longer than</string>
+    <string name="smart_op_about">about</string>
+    <string name="smart_op_does_not_contain">does not contain</string>
+    <string name="smart_field_rating">Rating</string>
+    <string name="smart_field_total_play_count">Total play count</string>
+    <string name="smart_field_play_count">Play count</string>
+    <string name="smart_field_listening_history">Listening history</string>
+    <string name="smart_field_title">Title</string>
+    <string name="smart_field_artist">Artist</string>
+    <string name="smart_field_album">Album</string>
+    <string name="smart_field_genre">Genre</string>
+    <string name="smart_field_composer">Composer</string>
+    <string name="smart_field_publisher">Publisher</string>
+    <string name="smart_field_year">Year</string>
+    <string name="smart_field_bpm">BPM</string>
+    <string name="smart_field_duration">Duration</string>
+    <string name="smart_field_date_added">Date added</string>
+    <string name="smart_sort_recent_play_count">Recent play count</string>
+    <string name="smart_sort_historical_strength">Historical strength and rating</string>
+    <string name="smart_sort_last_played">Last played</string>
+    <string name="smart_sort_ascending">Ascending</string>
+    <string name="smart_sort_descending">Descending</string>
+    <string name="smart_unsupported_value">Unsupported (%1$s)</string>
+    <string name="smart_error_name_required">Enter a playlist name.</string>
+    <string name="smart_error_name_duplicate">A playlist with that name already exists.</string>
+    <string name="smart_error_limit_whole">Enter a whole-number limit.</string>
+    <string name="smart_error_limit_range">Limit must be between 1 and 10,000.</string>
+    <string name="smart_error_rule_required">Add at least one rule.</string>
+    <string name="smart_error_recent_rule_required">Recent play-count sorting needs a recent play-count rule.</string>
+    <string name="smart_error_unsupported_field">This rule field is not supported by this version.</string>
+    <string name="smart_error_unsupported_operator">This operator is not supported for this field.</string>
+    <string name="smart_error_value_required">Enter a value.</string>
+    <string name="smart_error_rating_range">Choose 1 to 5 stars.</string>
+    <string name="smart_error_positive_days">Enter a positive number of days.</string>
+    <string name="smart_error_positive_window">Enter a positive listening window.</string>
+    <string name="smart_error_valid_whole">Enter a valid whole number.</string>
+    <string name="smart_error_upper_whole">Enter a whole-number upper value at least as large as the first.</string>
+    <string name="smart_error_valid_number">Enter a valid number.</string>
+    <string name="smart_error_upper_number">Enter an upper value at least as large as the first.</string>
+    <string name="smart_new_playlist">New playlist</string>
+    <string name="smart_manual_playlist">Manual Playlist</string>
+    <string name="smart_playlist">Smart Playlist</string>
+    <string name="smart_playlist_ideas">Smart Playlist ideas</string>
+    <string name="smart_cancel">Cancel</string>
+    <string name="smart_close_editor">Close editor</string>
+    <string name="smart_new_smart_playlist">New Smart Playlist</string>
+    <string name="smart_edit_smart_playlist">Edit Smart Playlist</string>
+    <string name="smart_saving">Saving…</string>
+    <string name="smart_save">Save</string>
+    <string name="smart_name">Name</string>
+    <string name="smart_rules">Rules</string>
+    <string name="smart_songs_must_match">Songs must match:</string>
+    <string name="smart_all_conditions">All conditions</string>
+    <string name="smart_any_condition">Any condition</string>
+    <string name="smart_every_condition">Every condition must match.</string>
+    <string name="smart_at_least_one_condition">At least one condition must match.</string>
+    <string name="smart_add_rule">Add rule</string>
+    <string name="smart_results">Results</string>
+    <string name="smart_sort_field">Sort field</string>
+    <string name="smart_direction">Direction</string>
+    <string name="smart_limit_optional">Limit (optional)</string>
+    <string name="smart_field_label">Field</string>
+    <string name="smart_choose_rule_field">Choose rule field</string>
+    <string name="smart_remove_rule">Remove rule</string>
+    <string name="smart_unsupported_field">Unsupported field: %1$s</string>
+    <string name="smart_choose_genre">Choose a genre</string>
+    <string name="smart_stars">Stars</string>
+    <string name="smart_minutes">Minutes</string>
+    <string name="smart_days">Days</string>
+    <string name="smart_value">Value</string>
+    <string name="smart_and_minutes">And (minutes)</string>
+    <string name="smart_and">And</string>
+    <string name="smart_within_last_days">Within the last (days)</string>
+    <string name="smart_choose_field">Choose a field</string>
+    <string name="smart_selected">Selected</string>
+    <string name="smart_matches">Matches</string>
+    <string name="smart_nearest_minute_help">Uses the nearest-minute bucket; for example, about 4 minutes matches 3:30–4:29.</string>
+    <string name="smart_checking_matches">Checking matching songs…</string>
+    <string name="smart_no_recent_matches">0 songs match. Recent windows use dated qualified plays; undated legacy totals do not qualify.</string>
+    <string name="smart_preview_song">%1$s — %2$s</string>
+    <string name="smart_and_more">and %1$d more</string>
+    <string name="smart_rule_summary_value">%1$s | %2$s | %3$s</string>
+    <string name="smart_rule_summary_no_value">%1$s | %2$s</string>
+    <string name="smart_rule_duration_between">%1$s | between | %2$s and %3$s minutes</string>
+    <string name="smart_rule_between">%1$s | between | %2$s and %3$s</string>
+    <string name="smart_error_invalid_definition">This Smart Playlist definition is invalid.</string>
+    <string name="smart_error_update_failed">Unable to update this Smart Playlist.</string>
+    <plurals name="smart_song_matches">
+        <item quantity="one">%1$d song matches</item>
+        <item quantity="other">%1$d songs match</item>
+    </plurals>
+    <plurals name="smart_rule_played_within_days">
+        <item quantity="one">%1$s | played within last %2$s day</item>
+        <item quantity="other">%1$s | played within last %2$s days</item>
+    </plurals>
+    <plurals name="smart_rule_not_played_days">
+        <item quantity="one">%1$s | not played for %2$s day</item>
+        <item quantity="other">%1$s | not played for %2$s days</item>
+    </plurals>
+    <plurals name="smart_rule_within_days">
+        <item quantity="one">%1$s | within last %2$s day</item>
+        <item quantity="other">%1$s | within last %2$s days</item>
+    </plurals>
+    <plurals name="smart_rule_days_ago">
+        <item quantity="one">%1$s | more than %2$s day ago</item>
+        <item quantity="other">%1$s | more than %2$s days ago</item>
+    </plurals>
+    <plurals name="smart_rule_recent_count">
+        <item quantity="one">%1$s | %2$s | %3$s in %4$s day</item>
+        <item quantity="other">%1$s | %2$s | %3$s in %4$s days</item>
+    </plurals>
+    <plurals name="smart_rule_duration">
+        <item quantity="one">%1$s | %2$s | %3$s minute</item>
+        <item quantity="other">%1$s | %2$s | %3$s minutes</item>
+    </plurals>
+    <string name="smart_template_heavy_rotation">Heavy Rotation</string>
+    <string name="smart_template_heavy_rotation_description">Your strongest listening activity from the last 30 days.</string>
+    <string name="smart_template_forgotten_favorites">Forgotten Favorites</string>
+    <string name="smart_template_forgotten_favorites_description">Historically well-played songs you have not heard for 90 days.</string>
+    <string name="smart_template_top_rated">Top Rated</string>
+    <string name="smart_template_top_rated_description">Songs rated four stars or higher.</string>
+    <string name="smart_template_never_played">Never Played</string>
+    <string name="smart_template_never_played_description">Local songs with no authoritative play history.</string>
+    <string name="smart_template_selected">%1$s template</string>
+</resources>

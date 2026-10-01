@@ -2,6 +2,9 @@ package io.github.rsgarrido.sazanami.ui.library
 
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.UNKNOWN_GENRE_KEY
 import io.github.rsgarrido.sazanami.data.UNKNOWN_GENRE_NAME
@@ -97,9 +100,10 @@ internal fun availableLibraryYears(songs: List<Song>): List<Int> = songs
     .distinct()
     .sortedDescending()
 
+@Composable
 internal fun LibraryYearFilter.displayName(): String = when (this) {
-    LibraryYearFilter.All -> "All years"
-    LibraryYearFilter.Unknown -> "Unknown Year"
+    LibraryYearFilter.All -> stringResource(R.string.library_year_all)
+    LibraryYearFilter.Unknown -> stringResource(R.string.library_year_unknown)
     is LibraryYearFilter.Exact -> year.toString()
 }
 

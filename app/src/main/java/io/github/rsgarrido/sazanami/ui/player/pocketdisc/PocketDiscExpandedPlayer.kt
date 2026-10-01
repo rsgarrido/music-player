@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.player.pocketdisc
 
-import android.R
+import android.R as AndroidR
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.background
@@ -62,6 +63,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -312,10 +314,10 @@ private fun PocketDiscHeader(
         Spacer(modifier = Modifier.width(if (compact) 8.dp else 12.dp))
         Text(
             text = when {
-                repeatMode == RepeatMode.ONE -> "REPEAT 1"
-                repeatMode != RepeatMode.OFF -> "REPEAT ALL"
-                isShuffleEnabled -> "SHUFFLE"
-                else -> "STEREO"
+                repeatMode == RepeatMode.ONE -> stringResource(R.string.player_disc_repeat_one)
+                repeatMode != RepeatMode.OFF -> stringResource(R.string.player_disc_repeat_all)
+                isShuffleEnabled -> stringResource(R.string.player_disc_shuffle)
+                else -> stringResource(R.string.player_disc_stereo)
             },
             color = colors.lcdTextMuted,
             fontFamily = FontFamily.Monospace,
@@ -324,7 +326,7 @@ private fun PocketDiscHeader(
         )
         Spacer(modifier = Modifier.width(if (compact) 8.dp else 12.dp))
         Text(
-            text = "QUEUE ${activeQueueName.uppercase(Locale.ROOT)}",
+            text = stringResource(R.string.player_disc_queue_name, activeQueueName.uppercase(Locale.ROOT)),
             color = colors.lcdTextMuted,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -349,7 +351,7 @@ private fun PocketDiscHeader(
         ) {
             Icon(
                 imageVector = Icons.Filled.Close,
-                contentDescription = "Collapse player",
+                contentDescription = stringResource(R.string.player_collapse),
                 tint = colors.buttonIcon,
                 modifier = Modifier.size(if (compact) 17.dp else 19.dp)
             )
@@ -380,10 +382,10 @@ private fun PocketDiscArtwork(
         if (!transitionOwnsArtwork) {
             RetainedArtworkImage(
                 model = song?.albumArtUri,
-                contentDescription = "Current album artwork",
+            contentDescription = stringResource(R.string.player_current_album_artwork),
                 contentScale = ContentScale.Fit,
-                error = painterResource(R.drawable.ic_media_play),
-                placeholder = painterResource(R.drawable.ic_media_play),
+                error = painterResource(AndroidR.drawable.ic_media_play),
+                placeholder = painterResource(AndroidR.drawable.ic_media_play),
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -409,10 +411,10 @@ private fun PocketDiscMetadataPanel(
     val discNumber = currentSong?.knownDiscNumber()
     val discTotal = currentSong?.discTotal?.takeIf { it > 0 }
     val discLabel = when {
-        discNumber != null && discTotal != null -> "DISC $discNumber/$discTotal"
-        discNumber != null -> "DISC $discNumber"
-        discTotal != null -> "DISC --/$discTotal"
-        else -> "DISC --"
+        discNumber != null && discTotal != null -> stringResource(R.string.player_disc_number_total, discNumber, discTotal)
+        discNumber != null -> stringResource(R.string.player_disc_number, discNumber)
+        discTotal != null -> stringResource(R.string.player_disc_unknown_number_total, discTotal)
+        else -> stringResource(R.string.player_disc_unknown_number)
     }
 
     Column(
@@ -435,7 +437,7 @@ private fun PocketDiscMetadataPanel(
             )
             Spacer(modifier = Modifier.width(if (compact) 7.dp else 9.dp))
             Text(
-                text = currentSong?.title?.ifBlank { "Unknown title" } ?: "NO DISC LOADED",
+            text = currentSong?.title?.ifBlank { stringResource(R.string.player_unknown_title) } ?: stringResource(R.string.player_disc_no_disc_loaded),
                 color = colors.lcdText,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
@@ -453,7 +455,7 @@ private fun PocketDiscMetadataPanel(
             )
         }
         Text(
-            text = currentSong?.artist?.ifBlank { "Unknown artist" } ?: "",
+            text = currentSong?.artist?.ifBlank { stringResource(R.string.player_unknown_artist) } ?: "",
             color = colors.lcdTextMuted,
             fontFamily = FontFamily.Monospace,
             fontSize = if (compact) 9.sp else 11.sp,
@@ -467,7 +469,7 @@ private fun PocketDiscMetadataPanel(
                 .graphicsLayer { alpha = artistAlpha }
         )
         Text(
-            text = currentSong?.album?.ifBlank { "Unknown album" } ?: "",
+            text = currentSong?.album?.ifBlank { stringResource(R.string.player_unknown_album) } ?: "",
             color = colors.lcdTextMuted.copy(alpha = 0.76f),
             fontFamily = FontFamily.Monospace,
             fontSize = if (compact) 8.sp else 9.sp,
@@ -479,7 +481,7 @@ private fun PocketDiscMetadataPanel(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "TRACK $trackNumber",
+            text = stringResource(R.string.player_disc_track_number, trackNumber),
                 color = colors.lcdTextMuted.copy(alpha = 0.84f),
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
@@ -495,7 +497,7 @@ private fun PocketDiscMetadataPanel(
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = "STEREO",
+            text = stringResource(R.string.player_disc_stereo),
                 color = colors.lcdTextMuted.copy(alpha = 0.64f),
                 fontFamily = FontFamily.Monospace,
                 fontSize = if (compact) 6.sp else 7.sp
@@ -563,7 +565,7 @@ private fun PocketDiscPositionPanel(
                     }
             )
             Text(
-                text = "TRACK POSITION",
+            text = stringResource(R.string.player_track_position),
                 color = colors.lcdTextMuted.copy(alpha = 0.62f),
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
@@ -609,12 +611,12 @@ private fun PocketDiscTransportControls(
         verticalAlignment = Alignment.CenterVertically
     ) {
         PocketDiscTransportButton(Modifier.weight(1f), enabled, onPreviousClick) {
-            Icon(Icons.Filled.SkipPrevious, "Previous", tint = colors.buttonIcon)
+            Icon(Icons.Filled.SkipPrevious, stringResource(R.string.player_previous_song), tint = colors.buttonIcon)
         }
         PocketDiscTransportButton(Modifier.weight(1f), enabled, {
             onSeekChange((currentPosition - SEEK_STEP_MS).coerceAtLeast(0))
         }) {
-            Icon(Icons.Filled.FastRewind, "Seek backward", tint = colors.buttonIcon)
+            Icon(Icons.Filled.FastRewind, stringResource(R.string.player_seek_backward_hold), tint = colors.buttonIcon)
         }
         Box(
             modifier = Modifier
@@ -633,7 +635,7 @@ private fun PocketDiscTransportControls(
             ) {
                 Icon(
                     imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                     tint = colors.lcdText,
                     modifier = Modifier.size(if (compact) 24.dp else 28.dp)
                 )
@@ -643,10 +645,10 @@ private fun PocketDiscTransportControls(
             val upper = duration.coerceAtLeast(0)
             onSeekChange((currentPosition + SEEK_STEP_MS).coerceAtMost(upper))
         }) {
-            Icon(Icons.Filled.FastForward, "Seek forward", tint = colors.buttonIcon)
+            Icon(Icons.Filled.FastForward, stringResource(R.string.player_seek_forward_hold), tint = colors.buttonIcon)
         }
         PocketDiscTransportButton(Modifier.weight(1f), enabled, onNextClick) {
-            Icon(Icons.Filled.SkipNext, "Next", tint = colors.buttonIcon)
+            Icon(Icons.Filled.SkipNext, stringResource(R.string.player_next_song), tint = colors.buttonIcon)
         }
     }
 }
@@ -687,16 +689,16 @@ private fun PocketDiscUtilityControls(
         horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 9.dp)
     ) {
         PocketDiscUtilityButton(
-            label = "SHUFFLE",
+            label = stringResource(R.string.player_disc_shuffle),
             active = isShuffleEnabled,
             enabled = enabled,
             onClick = onShuffleClick,
             modifier = Modifier.weight(1f)
-        ) { Icon(Icons.Filled.Shuffle, "Shuffle", tint = it) }
+        ) { Icon(Icons.Filled.Shuffle, stringResource(if (isShuffleEnabled) R.string.player_disable_shuffle else R.string.player_enable_shuffle), tint = it) }
         PocketDiscUtilityButton(
             label = when (repeatMode) {
-                RepeatMode.ONE -> "REPEAT 1"
-                else -> "REPEAT"
+            RepeatMode.ONE -> stringResource(R.string.player_disc_repeat_one)
+            else -> stringResource(R.string.player_disc_repeat)
             },
             active = repeatMode != RepeatMode.OFF,
             enabled = enabled,
@@ -705,19 +707,23 @@ private fun PocketDiscUtilityControls(
         ) { tint ->
             Icon(
                 if (repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
-                "Repeat",
+            stringResource(when (repeatMode) {
+                RepeatMode.OFF -> R.string.player_enable_repeat_all
+                RepeatMode.ALL -> R.string.player_enable_repeat_one
+                RepeatMode.ONE -> R.string.player_disable_repeat
+            }),
                 tint = tint
             )
         }
         PocketDiscUtilityButton(
-            label = "QUEUES",
+            label = stringResource(R.string.player_disc_queues),
             active = false,
             enabled = enabled,
             onClick = onOpenQueueHubClick,
             modifier = Modifier.weight(1f)
-        ) { Icon(Icons.Filled.QueueMusic, "Open queues", tint = it) }
+        ) { Icon(Icons.Filled.QueueMusic, stringResource(R.string.player_open_queues), tint = it) }
         PocketDiscUtilityButton(
-            label = "FAVORITE",
+            label = stringResource(R.string.player_disc_favorite),
             active = isCurrentSongFavorite,
             enabled = enabled && currentSong != null,
             onClick = { currentSong?.let(onToggleFavoriteClick) },
@@ -725,7 +731,7 @@ private fun PocketDiscUtilityControls(
         ) { tint ->
             Icon(
                 if (isCurrentSongFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                "Favorite",
+            stringResource(if (isCurrentSongFavorite) R.string.player_remove_favorite else R.string.player_add_favorite),
                 tint = tint
             )
         }
@@ -799,7 +805,7 @@ private fun PocketDiscLevelMeter(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "LEVEL",
+            text = stringResource(R.string.player_disc_level),
                 color = colors.lcdTextMuted,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,

@@ -16,12 +16,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Playlist
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.membershipKey
@@ -62,6 +66,7 @@ fun LibrarySearchContent(
     bottomContentPadding: Dp,
     modifier: Modifier = Modifier
 ) {
+    val resources = LocalResources.current
     val selection = LocalLibrarySelectionUi.current
     // A snapshot is independent of the query: grouping and normalization never run per row.
     val index by produceState<LibrarySearchIndex?>(null, songs, playlists) {
@@ -127,7 +132,7 @@ fun LibrarySearchContent(
                     if (category == SearchCategory.ALL && matches.size > SEARCH_PREVIEW_LIMIT) {
                         item(key = "search-more-$section") {
                             TextButton(onClick = { selectCategory(section) }) {
-                                Text("See all ${matches.size} ${section.label.lowercase()}")
+                                Text(pluralStringResource(section.seeAllPluralRes(), matches.size, matches.size))
                             }
                         }
                     }
@@ -141,13 +146,13 @@ fun LibrarySearchContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SearchCategory.entries.forEach { option ->
                     FilterChip(selected = category == option, onClick = { selectCategory(option) },
-                        label = { Text(option.label) })
+                        label = { Text(stringResource(option.labelRes)) })
                 }
             }
         }
         // Do not attach the restored scroll state to a temporarily empty list while rebuilding.
         if (searching && !idle) {
-            Text("Searching…", Modifier.padding(24.dp))
+            Text(stringResource(R.string.library_search_searching), Modifier.padding(24.dp))
             return@Column
         }
         SongList(
@@ -167,20 +172,19 @@ fun LibrarySearchContent(
             showOverflowActions = true,
             additionalSongActions = { song -> buildList {
                 findLibraryAlbumGroupForSong(song, index?.albums.orEmpty())?.let { album ->
-                    add(LibraryItemAction("Go to album", Icons.Filled.Album, onClick = { onAlbumSelected(album.key) }))
+                    add(LibraryItemAction(resources.getString(R.string.library_search_go_album), Icons.Filled.Album, onClick = { onAlbumSelected(album.key) }))
                 }
-                add(LibraryItemAction("Go to artist", Icons.Filled.Person, onClick = { onArtistSelected(song.artist) }))
+                add(LibraryItemAction(resources.getString(R.string.library_search_go_artist), Icons.Filled.Person, onClick = { onArtistSelected(song.artist) }))
             } },
             listState = listState,
             bottomContentPadding = bottomContentPadding,
             modifier = Modifier.weight(1f),
             headerContent = {
                 when {
-                    idle -> Text("Search your library", Modifier.padding(24.dp))
-                    searching -> Text("Searching…", Modifier.padding(24.dp))
+                    idle -> Text(stringResource(R.string.library_search_prompt), Modifier.padding(24.dp))
+                    searching -> Text(stringResource(R.string.library_search_searching), Modifier.padding(24.dp))
                     results.inCategory(category).isEmpty() -> Text(
-                        if (category == SearchCategory.ALL) "No results for \"$query\""
-                        else "No ${category.label.lowercase()} for \"$query\"",
+                        stringResource(category.emptyResultRes(), query),
                         Modifier.padding(24.dp))
                     visibleSongs.isNotEmpty() -> SearchSectionTitle(SearchCategory.SONGS)
                 }
@@ -191,7 +195,7 @@ fun LibrarySearchContent(
                     if (category == SearchCategory.ALL && matchingSongs.size > SEARCH_PREVIEW_LIMIT) {
                         item(key = "search-more-songs") {
                             TextButton(onClick = { selectCategory(SearchCategory.SONGS) }) {
-                                Text("See all ${matchingSongs.size} songs")
+                                Text(pluralStringResource(R.plurals.library_search_see_all_songs, matchingSongs.size, matchingSongs.size))
                             }
                         }
                     }
@@ -204,7 +208,7 @@ fun LibrarySearchContent(
 
 @Composable
 private fun SearchSectionTitle(category: SearchCategory) {
-    Text(category.label, style = MaterialTheme.typography.titleMedium,
+    Text(stringResource(category.labelRes), style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
 }
 
@@ -222,6 +226,12 @@ private fun SearchEntityRow(
     onAddPlaylistToQueueClick: (Playlist) -> Unit,
     onExportPlaylistClick: (Playlist) -> Unit
 ) {
+    val resources = LocalResources.current
+    val artistActionSubtitle = if (result is LibrarySearchResult.Artist) {
+        pluralStringResource(R.plurals.core_song_count, result.artist.songs.size, result.artist.songs.size)
+    } else {
+        ""
+    }
     var actionTarget by remember(result) { mutableStateOf<LibraryItemActionSheetTarget?>(null) }
     val queueUi = LocalLibraryQueueUi.current
     val pictureUi = LocalArtistPictureUi.current
@@ -230,20 +240,20 @@ private fun SearchEntityRow(
     ListItem(
         headlineContent = { Text(result.title) },
         supportingContent = { Text(when (result) {
-            is LibrarySearchResult.Album -> "Album · ${result.album.artistText}"
-            is LibrarySearchResult.Artist -> "Artist · ${result.artist.songs.size} songs"
-            is LibrarySearchResult.PlaylistItem -> "Playlist · ${result.playlist.songCount} songs"
-            is LibrarySearchResult.Track -> "Song"
+            is LibrarySearchResult.Album -> stringResource(R.string.library_search_album_subtitle, result.album.artistText)
+            is LibrarySearchResult.Artist -> pluralStringResource(R.plurals.library_search_artist_subtitle, result.artist.songs.size, result.artist.songs.size)
+            is LibrarySearchResult.PlaylistItem -> pluralStringResource(R.plurals.library_search_playlist_subtitle, result.playlist.songCount, result.playlist.songCount)
+            is LibrarySearchResult.Track -> stringResource(R.string.library_search_track_subtitle)
         }) },
         leadingContent = {
             when (result) {
                 is LibrarySearchResult.Album -> AsyncImage(result.album.songs.firstOrNull()?.albumArtUri,
-                    "Artwork for ${result.title}", modifier = artworkModifier, contentScale = ContentScale.Crop,
+                    stringResource(R.string.core_artwork_for, result.title), modifier = artworkModifier, contentScale = ContentScale.Crop,
                     error = painterResource(android.R.drawable.ic_media_play),
                     placeholder = painterResource(android.R.drawable.ic_media_play))
                 is LibrarySearchResult.Artist -> ArtistPicture(result.artist.identity,
-                    result.artist.songs.firstOrNull()?.albumArtUri, "Artwork for ${result.title}", artworkModifier)
-                is LibrarySearchResult.PlaylistItem -> PlaylistArtwork(result.playlist, "Artwork for ${result.title}", artworkModifier)
+                    result.artist.songs.firstOrNull()?.albumArtUri, stringResource(R.string.core_artwork_for, result.title), artworkModifier)
+                is LibrarySearchResult.PlaylistItem -> PlaylistArtwork(result.playlist, stringResource(R.string.core_artwork_for, result.title), artworkModifier)
                 is LibrarySearchResult.Track -> Unit
             }
         },
@@ -262,11 +272,13 @@ private fun SearchEntityRow(
                             onAddToQueueClick = onAddSongsToQueueClick,
                             onAddToAnotherQueueClick = queueUi.onAddToAnotherQueue,
                             onPlayInNewQueueClick = queueUi.onPlayInNewQueue,
-                            onAddToPlaylistClick = { _, tracks -> onAddSongsToPlaylistClick(tracks) }
+                            onAddToPlaylistClick = { _, tracks -> onAddSongsToPlaylistClick(tracks) },
+                            resolveString = resources::getString,
+                            resolveArtworkDescription = { resources.getString(R.string.library_album_art_for, it) }
                         )
                         is LibrarySearchResult.Artist -> artistActionSheetTarget(
                             artistName = result.title,
-                            subtitle = "${result.artist.songs.size} songs",
+                            subtitle = artistActionSubtitle,
                             artworkUri = result.artist.songs.firstOrNull()?.albumArtUri,
                             artistIdentity = result.artist.identity,
                             hasCustomPicture = result.artist.key in pictureUi.assignments,
@@ -279,25 +291,27 @@ private fun SearchEntityRow(
                             onAddToQueueClick = onAddSongsToQueueClick,
                             onAddToAnotherQueueClick = queueUi.onAddToAnotherQueue,
                             onPlayInNewQueueClick = queueUi.onPlayInNewQueue,
-                            onAddToPlaylistClick = { _, tracks -> onAddSongsToPlaylistClick(tracks) }
+                            onAddToPlaylistClick = { _, tracks -> onAddSongsToPlaylistClick(tracks) },
+                            resolveString = resources::getString,
+                            resolveArtworkDescription = { resources.getString(R.string.library_artist_artwork_for, it) }
                         )
                         is LibrarySearchResult.PlaylistItem -> LibraryItemActionSheetTarget(
                             title = result.title,
-                            subtitle = playlistMetadataText(result.playlist),
+                            subtitle = playlistMetadataText(resources, result.playlist),
                             artworkUri = null,
-                            artworkDescription = "Artwork for ${result.title}",
+                            artworkDescription = resources.getString(R.string.core_artwork_for, result.title),
                             artworkContent = {
-                                PlaylistArtwork(result.playlist, "Artwork for ${result.title}", Modifier.fillMaxSize())
+                                PlaylistArtwork(result.playlist, stringResource(R.string.core_artwork_for, result.title), Modifier.fillMaxSize())
                             },
                             actions = listOf(homeUi.actionForPlaylist(result.playlist)) +
-                                playlistQueueActions(result.playlist, queueUi, onAddPlaylistToQueueClick) +
-                                LibraryItemAction("Export as M3U8", Icons.Filled.Share) {
+                                playlistQueueActions(result.playlist, queueUi, onAddPlaylistToQueueClick, resources::getString) +
+                                LibraryItemAction(resources.getString(R.string.library_search_export_m3u8), Icons.Filled.Share) {
                                     onExportPlaylistClick(result.playlist)
                                 }
                         )
                         else -> null
                     }
-                }) { Icon(Icons.Filled.MoreVert, "Actions for ${result.title}") }
+                }) { Icon(Icons.Filled.MoreVert, stringResource(R.string.core_actions_for, result.title)) }
             }
         },
         modifier = Modifier.clickable(enabled = enabled) {
@@ -310,4 +324,19 @@ private fun SearchEntityRow(
         }
     )
     actionTarget?.let { LibraryItemActionSheet(it, onDismissRequest = { actionTarget = null }) }
+}
+
+private fun SearchCategory.seeAllPluralRes(): Int = when (this) {
+    SearchCategory.ALL, SearchCategory.SONGS -> R.plurals.library_search_see_all_songs
+    SearchCategory.ALBUMS -> R.plurals.library_search_see_all_albums
+    SearchCategory.ARTISTS -> R.plurals.library_search_see_all_artists
+    SearchCategory.PLAYLISTS -> R.plurals.library_search_see_all_playlists
+}
+
+private fun SearchCategory.emptyResultRes(): Int = when (this) {
+    SearchCategory.ALL -> R.string.library_search_no_results
+    SearchCategory.SONGS -> R.string.library_search_no_songs
+    SearchCategory.ALBUMS -> R.string.library_search_no_albums
+    SearchCategory.ARTISTS -> R.string.library_search_no_artists
+    SearchCategory.PLAYLISTS -> R.string.library_search_no_playlists
 }

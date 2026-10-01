@@ -413,7 +413,12 @@ private fun StatisticsOverviewGrid(
     val lightShell = scheme.background.luminance() > 0.5f
     val recordedLabel = stringResource(R.string.statistics_recorded_listening)
     val recordedSupport = stringResource(R.string.statistics_recorded_listening_support)
-    val recordedAccessibility = "$recordedLabel, ${duration.second}. $recordedSupport"
+    val recordedAccessibility = stringResource(
+        R.string.statistics_recorded_accessibility,
+        recordedLabel,
+        duration.second,
+        recordedSupport
+    )
     Card(
         modifier = Modifier
             .padding(horizontal = 16.dp)
@@ -541,14 +546,19 @@ private fun CompactOverviewMetric(
     accessibleSupportingText: String? = supportingText,
     emphasized: Boolean = true
 ) {
+    val accessibility = if (accessibleSupportingText == null) {
+        stringResource(R.string.statistics_metric_accessibility, title, value)
+    } else {
+        stringResource(
+            R.string.statistics_metric_with_support_accessibility,
+            title,
+            value,
+            accessibleSupportingText
+        )
+    }
     Column(
         modifier = modifier.semantics(mergeDescendants = true) {
-            contentDescription = buildString {
-                append(title)
-                append(", ")
-                append(value)
-                accessibleSupportingText?.let { append(". "); append(it) }
-            }
+            contentDescription = accessibility
         },
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
@@ -587,11 +597,17 @@ private fun MutedOverviewMetric(
     accessibleSupportingText: String,
     modifier: Modifier = Modifier
 ) {
+    val accessibility = stringResource(
+        R.string.statistics_metric_with_support_accessibility,
+        title,
+        value,
+        accessibleSupportingText
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {
-                contentDescription = "$title, $value. $accessibleSupportingText"
+                contentDescription = accessibility
             },
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically

@@ -1,5 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.equalizer
 
+import android.util.Log
+import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.ui.state.UiMessage
 import io.github.rsgarrido.sazanami.data.preferences.AppPreferencesRepository
 import io.github.rsgarrido.sazanami.player.equalizer.EqualizerMode
 import io.github.rsgarrido.sazanami.player.equalizer.EqualizerPreferencesState
@@ -516,11 +519,11 @@ internal class EqualizerUiController(
                     refreshImportAnalysis(preview)
                 },
                 onFailure = { error ->
+                    Log.w("EqualizerImport", "Could not parse EQ profile", error)
                     _state.value = _state.value.copy(
                         importInProgress = false,
-                        importMessage =
-                            error.message
-                                ?: "Couldn't parse EQ profile."
+                        importMessage = UiMessage.Text(R.string.eq_import_parse_failed),
+                        importMessageIsError = true
                     )
                 }
             )
@@ -620,12 +623,13 @@ internal class EqualizerUiController(
                     _state.value = _state.value.copy(
                         importPreview = null,
                         importInProgress = false,
-                        importMessage = when {
+                        importMessage = UiMessage.Text(when {
                             presetName != null && apply ->
-                                "Preset saved and applied."
-                            presetName != null -> "Preset saved."
-                            else -> "Imported profile applied."
-                        },
+                                R.string.eq_import_saved_applied
+                            presetName != null -> R.string.eq_import_saved
+                            else -> R.string.eq_import_applied
+                        }),
+                        importMessageIsError = false,
                         selectedParametricFilterId =
                             if (apply) {
                                 curve.filters.firstOrNull()?.id
@@ -636,11 +640,11 @@ internal class EqualizerUiController(
                     )
                 },
                 onFailure = { error ->
+                    Log.w("EqualizerImport", "Could not save imported profile", error)
                     _state.value = _state.value.copy(
                         importInProgress = false,
-                        importMessage =
-                            error.message
-                                ?: "Couldn't save imported profile."
+                        importMessage = UiMessage.Text(R.string.eq_import_save_failed),
+                        importMessageIsError = true
                     )
                 }
             )

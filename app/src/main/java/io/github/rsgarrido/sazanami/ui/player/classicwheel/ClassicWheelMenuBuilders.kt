@@ -1,24 +1,26 @@
 package io.github.rsgarrido.sazanami.ui.player.classicwheel
 
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.ui.library.buildLibraryAlbumGroups
+import io.github.rsgarrido.sazanami.ui.state.UiMessage
 
 fun buildClassicWheelMainMenuItems(): List<ClassicWheelMenuItem> {
     return listOf(
         ClassicWheelMenuItem(
-            title = "Now Playing",
+            title = UiMessage.Text(R.string.player_wheel_now_playing),
             action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
         ),
         ClassicWheelMenuItem(
-            title = "Songs",
+            title = UiMessage.Text(R.string.player_wheel_songs),
             action = ClassicWheelMenuAction.OPEN_SONGS
         ),
         ClassicWheelMenuItem(
-            title = "Artists",
+            title = UiMessage.Text(R.string.player_wheel_artists),
             action = ClassicWheelMenuAction.OPEN_ARTISTS
         ),
         ClassicWheelMenuItem(
-            title = "Albums",
+            title = UiMessage.Text(R.string.player_wheel_albums),
             action = ClassicWheelMenuAction.OPEN_ALBUMS
         )
     )
@@ -31,8 +33,8 @@ fun buildClassicWheelSongMenuItems(
     if (songs.isEmpty()) {
         return listOf(
             ClassicWheelMenuItem(
-                title = "No songs found",
-                subtitle = "Check your library",
+                title = UiMessage.Text(R.string.player_wheel_no_songs),
+                subtitle = UiMessage.Text(R.string.player_wheel_check_library),
                 action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
             )
         )
@@ -40,8 +42,10 @@ fun buildClassicWheelSongMenuItems(
 
     return songs.map { song ->
         ClassicWheelMenuItem(
-            title = song.title.ifBlank { "Unknown Title" },
-            subtitle = song.artist.ifBlank { "Unknown Artist" },
+            title = song.title.takeIf(String::isNotBlank)?.let { UiMessage.Literal(it) }
+                ?: UiMessage.Text(R.string.player_unknown_title),
+            subtitle = song.artist.takeIf(String::isNotBlank)?.let { UiMessage.Literal(it) }
+                ?: UiMessage.Text(R.string.player_unknown_artist),
             action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
         )
     }
@@ -52,7 +56,7 @@ fun buildClassicWheelArtistGroups(
 ): List<ClassicWheelArtistGroup> {
     return songs
         .groupBy { song ->
-            song.artist.ifBlank { "Unknown Artist" }
+            song.artist
         }
         .map { entry ->
             ClassicWheelArtistGroup(
@@ -71,8 +75,8 @@ fun buildClassicWheelArtistMenuItems(
     if (artistGroups.isEmpty()) {
         return listOf(
             ClassicWheelMenuItem(
-                title = "No artists found",
-                subtitle = "Check your library",
+                title = UiMessage.Text(R.string.player_wheel_no_artists),
+                subtitle = UiMessage.Text(R.string.player_wheel_check_library),
                 action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
             )
         )
@@ -80,8 +84,9 @@ fun buildClassicWheelArtistMenuItems(
 
     return artistGroups.map { artistGroup ->
         ClassicWheelMenuItem(
-            title = artistGroup.name,
-            subtitle = "${artistGroup.songs.size} songs",
+            title = artistGroup.name.takeIf(String::isNotBlank)?.let { UiMessage.Literal(it) }
+                ?: UiMessage.Text(R.string.player_unknown_artist),
+            subtitle = UiMessage.Quantity(R.plurals.player_wheel_song_count, artistGroup.songs.size),
             action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
         )
     }
@@ -110,8 +115,8 @@ fun buildClassicWheelAlbumMenuItems(
     if (albumGroups.isEmpty()) {
         return listOf(
             ClassicWheelMenuItem(
-                title = "No albums found",
-                subtitle = "Check your library",
+                title = UiMessage.Text(R.string.player_wheel_no_albums),
+                subtitle = UiMessage.Text(R.string.player_wheel_check_library),
                 action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
             )
         )
@@ -119,8 +124,8 @@ fun buildClassicWheelAlbumMenuItems(
 
     return albumGroups.map { albumGroup ->
         ClassicWheelMenuItem(
-            title = albumGroup.title,
-            subtitle = albumGroup.artist,
+            title = UiMessage.Literal(albumGroup.title),
+            subtitle = UiMessage.Literal(albumGroup.artist),
             action = ClassicWheelMenuAction.OPEN_NOW_PLAYING
         )
     }

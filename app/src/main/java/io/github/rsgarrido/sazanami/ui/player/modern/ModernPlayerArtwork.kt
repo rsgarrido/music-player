@@ -1,6 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.player.modern
 
-import android.R
+import android.R as AndroidR
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
@@ -141,7 +143,7 @@ internal fun ModernPlayerArtworkPages(
                     }
                 }
                 val contentDescription = if (item.isCurrent) {
-                    "Album art for ${item.song.title}"
+                    stringResource(R.string.player_album_art_for, item.song.title)
                 } else {
                     null
                 }
@@ -366,8 +368,8 @@ internal fun ModernPlayerAlbumImage(
         ImageRequest.Builder(context)
             .data(currentSong.albumArtUri)
             .crossfade(transitionDurationMillis)
-            .placeholder(R.drawable.ic_media_play)
-            .error(R.drawable.ic_media_play)
+            .placeholder(AndroidR.drawable.ic_media_play)
+            .error(AndroidR.drawable.ic_media_play)
             .apply {
                 requestPolicy.targetSizePx?.let { targetSize ->
                     size(targetSize)

@@ -35,9 +35,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import android.content.Intent
 import android.net.Uri
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.EditableSongTags
 import io.github.rsgarrido.sazanami.data.BatchArtworkReference
 import io.github.rsgarrido.sazanami.data.BatchMetadataEditorState
@@ -327,6 +329,8 @@ internal fun MusicScreen(
     spotifyImportActions: SpotifyImportUiActions
 ) {
     val context = LocalContext.current
+    val addPlaylistToQueueFailedText = stringResource(R.string.queue_add_playlist_failed)
+    val librarySelectionSource = stringResource(R.string.library_selection_source)
     val librarySelectionUi = LocalLibrarySelectionUi.current
     val librarySelectionHeaderState = remember { LibrarySelectionHeaderState() }
     val navigationState = rememberMusicNavigationState()
@@ -468,7 +472,7 @@ internal fun MusicScreen(
                 queueSnackbarActions.addSongsToQueue(playlist.name, customOrderSongs)
             }.onFailure {
                 coroutineScope.launch {
-                    snackbarHostState.showSnackbar("Unable to add playlist to queue")
+                    snackbarHostState.showSnackbar(addPlaylistToQueueFailedText)
                 }
             }
         }
@@ -834,10 +838,10 @@ internal fun MusicScreen(
         LocalLibrarySelectionUi provides librarySelectionUi.copy(
             headerState = librarySelectionHeaderState,
             onPlayNext = { selectedSongs ->
-                queueSnackbarActions.playNextSongs("Selection", selectedSongs)
+                queueSnackbarActions.playNextSongs(librarySelectionSource, selectedSongs)
             },
             onAddToQueue = { selectedSongs ->
-                queueSnackbarActions.addSongsToQueue("Selection", selectedSongs)
+                queueSnackbarActions.addSongsToQueue(librarySelectionSource, selectedSongs)
             }
         )
     ) {

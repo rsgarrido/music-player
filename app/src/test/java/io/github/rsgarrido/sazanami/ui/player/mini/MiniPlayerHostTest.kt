@@ -1,12 +1,10 @@
 package io.github.rsgarrido.sazanami.ui.player.mini
 
-import android.net.Uri
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.PlayerTheme
-import io.github.rsgarrido.sazanami.data.Song
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.mockito.Mockito.mock
 
 class MiniPlayerHostTest {
     @Test
@@ -62,22 +60,8 @@ class MiniPlayerHostTest {
     }
 
     @Test
-    fun accessibilityLabelsDescribeOpenAndPlaybackActions() {
-        val song = Song(
-            id = 1L,
-            title = "",
-            artist = "",
-            album = "",
-            trackNumber = 1,
-            duration = 0L,
-            uri = mock(Uri::class.java),
-            filePath = "song.mp3",
-            folderPath = "",
-            albumArtUri = null
-        )
-
-        assertEquals("Open player for Unknown Title", miniPlayerOpenContentDescription(song))
-        assertEquals("Play", miniPlayerPlaybackContentDescription(isPlaying = false))
-        assertEquals("Pause", miniPlayerPlaybackContentDescription(isPlaying = true))
+    fun accessibilityPlaybackActionsUseStableResources() {
+        assertEquals(R.string.player_play, miniPlayerPlaybackLabelRes(isPlaying = false))
+        assertEquals(R.string.player_pause, miniPlayerPlaybackLabelRes(isPlaying = true))
     }
 }

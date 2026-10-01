@@ -61,7 +61,7 @@ fun MusicScreenHeader(
     onBackClick: (() -> Unit)? = null,
     onSettingsClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
-    backContentDescription: String = "Back to Home",
+    backContentDescription: String = stringResource(R.string.shell_back_home),
     backTitleSpacing: Dp = 0.dp,
     batchMetadataAction: (@Composable () -> Unit)? = null,
     viewModeAction: (@Composable () -> Unit)? = null,
@@ -110,7 +110,7 @@ fun MusicScreenHeader(
                 AppShellIconButton(
                     onClick = onSettingsClick,
                     imageVector = Icons.Rounded.Settings,
-                    contentDescription = "Settings"
+                    contentDescription = stringResource(R.string.settings_screen_title)
                 )
             }
         }
@@ -338,9 +338,9 @@ fun LibraryOrganizeAction(
                         Icons.Outlined.StarOutline
                     },
                     contentDescription = if (ratingUi.quickRateMode) {
-                        "Exit Quick Rate"
+                        stringResource(R.string.shell_exit_quick_rate)
                     } else {
-                        "Start Quick Rate"
+                        stringResource(R.string.shell_start_quick_rate)
                     },
                     accented = ratingUi.quickRateMode
                 )

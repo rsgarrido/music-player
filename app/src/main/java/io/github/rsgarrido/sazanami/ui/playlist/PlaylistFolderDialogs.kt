@@ -21,7 +21,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Playlist
 import io.github.rsgarrido.sazanami.data.PlaylistFolder
 
@@ -42,8 +45,8 @@ fun PlaylistFolderNameDialog(
             !it.equals(originalName, ignoreCase = true)
     }
     val error = when {
-        trimmedName.isBlank() -> "Folder name cannot be empty."
-        duplicate -> "A folder with this name already exists."
+        trimmedName.isBlank() -> stringResource(R.string.playlist_folder_name_empty)
+        duplicate -> stringResource(R.string.playlist_folder_name_duplicate)
         else -> null
     }
 
@@ -54,7 +57,7 @@ fun PlaylistFolderNameDialog(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Folder name") },
+                label = { Text(stringResource(R.string.playlist_folder_name_label)) },
                 singleLine = true,
                 isError = error != null,
                 supportingText = { error?.let { Text(it) } }
@@ -66,7 +69,7 @@ fun PlaylistFolderNameDialog(
                 onClick = { onConfirmClick(trimmedName) }
             ) { Text(confirmButtonText) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_cancel)) } }
     )
 }
 
@@ -78,16 +81,19 @@ fun DeletePlaylistFolderDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete folder?") },
+        title = { Text(stringResource(R.string.playlist_folder_delete_title)) },
         text = {
             Text(
-                "\"${folder.name}\" will be removed. Its ${folder.playlistCount} " +
-                    "playlist${if (folder.playlistCount == 1) "" else "s"} will move to the " +
-                    "playlist root; no playlists will be deleted."
+                pluralStringResource(
+                    R.plurals.playlist_folder_delete_explanation,
+                    folder.playlistCount,
+                    folder.name,
+                    folder.playlistCount
+                )
             )
         },
-        confirmButton = { Button(onClick = onConfirm) { Text("Delete folder") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        confirmButton = { Button(onClick = onConfirm) { Text(stringResource(R.string.playlist_folder_delete_action)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_cancel)) } }
     )
 }
 
@@ -100,12 +106,12 @@ fun MovePlaylistToFolderDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Move ${playlist.name}") },
+        title = { Text(stringResource(R.string.playlist_folder_move_title, playlist.name)) },
         text = {
             LazyColumn(modifier = Modifier.heightIn(max = 420.dp)) {
                 item(key = PLAYLIST_ROOT_FOLDER_LAZY_LIST_KEY) {
                     FolderDestinationRow(
-                        name = "Playlist root",
+                        name = stringResource(R.string.playlist_folder_root),
                         selected = playlist.folderId == null,
                         icon = { Icon(Icons.Filled.Home, contentDescription = null) },
                         onClick = { onFolderSelected(null) }
@@ -125,7 +131,7 @@ fun MovePlaylistToFolderDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_cancel)) } }
     )
 }
 
@@ -140,7 +146,7 @@ private fun FolderDestinationRow(
         headlineContent = { Text(name) },
         leadingContent = icon,
         trailingContent = {
-            if (selected) Icon(Icons.Filled.Check, contentDescription = "Current location")
+            if (selected) Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.playlist_folder_current_location))
         },
         modifier = Modifier.clickable(enabled = !selected, onClick = onClick)
     )

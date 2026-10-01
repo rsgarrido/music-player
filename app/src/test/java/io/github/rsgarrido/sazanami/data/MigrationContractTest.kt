@@ -29,7 +29,7 @@ class MigrationContractTest {
         assertEquals(18, DatabaseProvider.MIGRATION_17_18.endVersion)
         assertEquals(18, DatabaseProvider.MIGRATION_18_19.startVersion)
         assertEquals(19, DatabaseProvider.MIGRATION_18_19.endVersion)
-        assertEquals(15, AppBackupJson.CURRENT_SCHEMA_VERSION)
+        assertEquals(17, AppBackupJson.CURRENT_SCHEMA_VERSION)
         assertEquals(2, io.github.rsgarrido.sazanami.data.backup.BackupListeningHistoryV2.CURRENT_FORMAT_VERSION)
         assertEquals(1, BackupSongRatings.CURRENT_FORMAT_VERSION)
     }

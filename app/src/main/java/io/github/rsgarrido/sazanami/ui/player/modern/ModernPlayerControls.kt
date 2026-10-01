@@ -30,6 +30,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.player.RepeatMode
 
 @Composable
@@ -76,7 +78,7 @@ internal fun ModernPlayerControls(
         ) {
             Icon(
                 imageVector = Icons.Filled.Shuffle,
-                contentDescription = if (isShuffleEnabled) "Shuffle on" else "Shuffle off",
+                contentDescription = stringResource(if (isShuffleEnabled) R.string.player_shuffle_on else R.string.player_shuffle_off),
                 tint = if (isShuffleEnabled) {
                     accentColor
                 } else {
@@ -95,7 +97,7 @@ internal fun ModernPlayerControls(
         ) {
             Icon(
                 imageVector = Icons.Filled.SkipPrevious,
-                contentDescription = "Previous song",
+                contentDescription = stringResource(R.string.player_previous_song),
                 tint = style.contentColor,
                 modifier = Modifier.size(
                     (appearance.size.navigationIconSizeDp * safeControlScale).dp
@@ -123,7 +125,7 @@ internal fun ModernPlayerControls(
         ) {
             Icon(
                 imageVector = Icons.Filled.SkipNext,
-                contentDescription = "Next song",
+                contentDescription = stringResource(R.string.player_next_song),
                 tint = style.contentColor,
                 modifier = Modifier.size(
                     (appearance.size.navigationIconSizeDp * safeControlScale).dp
@@ -146,9 +148,9 @@ internal fun ModernPlayerControls(
                     Icons.Filled.Repeat
                 },
                 contentDescription = when (repeatMode) {
-                    RepeatMode.OFF -> "Repeat off"
-                    RepeatMode.ALL -> "Repeat all"
-                    RepeatMode.ONE -> "Repeat one"
+                    RepeatMode.OFF -> stringResource(R.string.player_repeat_off)
+                    RepeatMode.ALL -> stringResource(R.string.player_repeat_all)
+                    RepeatMode.ONE -> stringResource(R.string.player_repeat_one)
                 },
                 tint = if (repeatMode == RepeatMode.OFF) {
                     style.inactiveControlColor
@@ -224,7 +226,7 @@ private fun ModernPlayerPlayPauseButton(
                 } else {
                     Icons.Filled.PlayArrow
                 },
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                 tint = iconColor,
                 modifier = Modifier.size(
                     (appearance.size.primarySizeDp * 0.61f * controlScale).dp

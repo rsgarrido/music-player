@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -75,6 +76,7 @@ fun SongGrid(
     fastScrollEnabled: Boolean = false,
     fastScrollSessionKey: Any? = null
 ) {
+    val resources = LocalResources.current
     val gridMetrics = libraryGridMetrics(gridColumnCount)
     var actionSheetTarget by remember {
         mutableStateOf<LibraryItemActionSheetTarget?>(null)
@@ -113,7 +115,9 @@ fun SongGrid(
                             onEditSongTagsClick = onEditSongTagsClick,
                             rateSongLabel = rateSongLabel,
                             onRateSongClick = ratingUi.onOpen,
-                            homePinAction = homePinUi.actionForSong(selectedSong)
+                            homePinAction = homePinUi.actionForSong(selectedSong),
+                            resolveString = resources::getString,
+                            resolveArtworkDescription = { resources.getString(R.string.library_song_album_art_for, it) }
                         )
                     }
                     songSelectionActionSheetTarget(
@@ -124,7 +128,9 @@ fun SongGrid(
                         onAddToAnotherQueue = selectionUi.onAddToAnotherQueue,
                         onPlayInNewQueue = selectionUi.onPlayInNewQueue,
                         onApplyFavoriteBatch = selectionUi.onApplyFavoriteBatch,
-                        onClearSelection = selectionUi.onClear
+                        onClearSelection = selectionUi.onClear,
+                        resolveString = resources::getString,
+                        resolvePlural = { id, count -> resources.getQuantityString(id, count, count) }
                     )
                 }
             )
@@ -158,10 +164,10 @@ fun SongGrid(
             LibraryGridCard(
                 artworkUri = song.albumArtUri,
                 unresolvedNull = song.hasUnresolvedLibraryArtwork(),
-                artworkDescription = "Album art for ${song.title}",
-                title = song.title.ifBlank { "Unknown Title" },
-                subtitle = song.artist.ifBlank { "Unknown Artist" },
-                clickLabel = "Play ${song.title}",
+                artworkDescription = stringResource(R.string.library_song_album_art_for, song.title),
+                title = song.title.ifBlank { stringResource(R.string.library_song_unknown_title) },
+                subtitle = song.artist.ifBlank { stringResource(R.string.library_song_unknown_artist) },
+                clickLabel = stringResource(R.string.library_song_play, song.title),
                 gridMetrics = gridMetrics,
                 selected = isCurrentSong,
                 selectionEnabled = selectionEnabled,
@@ -195,7 +201,9 @@ fun SongGrid(
                         onEditSongTagsClick = onEditSongTagsClick,
                         rateSongLabel = rateSongLabel,
                         onRateSongClick = ratingUi.onOpen,
-                        homePinAction = homePinUi.actionForSong(song)
+                        homePinAction = homePinUi.actionForSong(song),
+                        resolveString = resources::getString,
+                        resolveArtworkDescription = { resources.getString(R.string.library_song_album_art_for, it) }
                     )
                 },
                 modifier = Modifier.animateItem(
@@ -246,6 +254,7 @@ fun AlbumGridScreen(
     modifier: Modifier = Modifier,
     fastScrollSessionKey: Any? = null
 ) {
+    val resources = LocalResources.current
     val albums = remember(songs, sortState) {
         sortedLibraryAlbumGroups(songs, sortState)
     }
@@ -288,7 +297,9 @@ fun AlbumGridScreen(
                             onPlayNextClick = onAlbumPlayNextClick,
                             onAddToQueueClick = onAlbumAddToQueueClick,
                             onAddToPlaylistClick = onAlbumAddToPlaylistClick,
-                            homePinAction = homePinUi.actionForAlbum(album)
+                            homePinAction = homePinUi.actionForAlbum(album),
+                            resolveString = resources::getString,
+                            resolveArtworkDescription = { resources.getString(R.string.library_album_art_for, it) }
                         )
                     }
                     albumSelectionActionSheetTarget(
@@ -296,7 +307,9 @@ fun AlbumGridScreen(
                         singleAlbumTarget = singleAlbumTarget,
                         onAddToAnotherQueue = selectionUi.onAddToAnotherQueue,
                         onPlayInNewQueue = selectionUi.onPlayInNewQueue,
-                        onClearSelection = selectionUi.onClear
+                        onClearSelection = selectionUi.onClear,
+                        resolveString = resources::getString,
+                        resolvePlural = { id, count -> resources.getQuantityString(id, count, count) }
                     )
                 }
             )
@@ -338,7 +351,7 @@ fun AlbumGridScreen(
             )
             LibraryGridCard(
                 artworkUri = artworkModel,
-                artworkDescription = "Album art for ${album.title}",
+                artworkDescription = stringResource(R.string.library_album_art_for, album.title),
                 artworkContent = {
                     LibrarySharedArtworkSource(
                         key = LibrarySharedArtworkKey.Album(
@@ -356,7 +369,7 @@ fun AlbumGridScreen(
                             model = artworkRequest,
                             unresolvedNull = album.songs.firstOrNull()
                                 .hasUnresolvedLibraryArtwork(),
-                            contentDescription = "Album art for ${album.title}",
+                            contentDescription = stringResource(R.string.library_album_art_for, album.title),
                             modifier = artworkModifier
                         ) {
                             LibraryGridArtworkFallback(gridMetrics)
@@ -365,7 +378,7 @@ fun AlbumGridScreen(
                 },
                 title = album.title,
                 subtitle = "${album.artistText} • $songCountText",
-                clickLabel = "Open ${album.title}",
+                clickLabel = stringResource(R.string.library_album_open, album.title),
                 gridMetrics = gridMetrics,
                 selectionEnabled = selectionEnabled,
                 selectionActive = selectionActive,
@@ -394,7 +407,9 @@ fun AlbumGridScreen(
                         onAddToAnotherQueueClick = libraryQueueUi.onAddToAnotherQueue,
                         onPlayInNewQueueClick = libraryQueueUi.onPlayInNewQueue,
                         onAddToPlaylistClick = onAlbumAddToPlaylistClick,
-                        homePinAction = homePinUi.actionForAlbum(album)
+                        homePinAction = homePinUi.actionForAlbum(album),
+                        resolveString = resources::getString,
+                        resolveArtworkDescription = { resources.getString(R.string.library_album_art_for, it) }
                     )
                 },
                 modifier = Modifier.animateItem(
@@ -412,7 +427,7 @@ fun AlbumGridScreen(
             LibrarySelectionActionBar(
                 selectedSongs = resolvedSelectedSongs,
                 onAddToPlaylist = { selectedSongs ->
-                    onAlbumAddToPlaylistClick("Selected albums", selectedSongs)
+                    onAlbumAddToPlaylistClick(resources.getString(R.string.library_selected_albums), selectedSongs)
                 },
                 modifier = Modifier.padding(bottom = bottomContentPadding)
             )
@@ -445,6 +460,7 @@ fun ArtistGridScreen(
     modifier: Modifier = Modifier,
     fastScrollSessionKey: Any? = null
 ) {
+    val resources = LocalResources.current
     val artists = remember(songs, sortState) {
         sortedLibraryArtistGroups(songs, sortState)
     }
@@ -484,7 +500,7 @@ fun ArtistGridScreen(
             )
             LibraryGridCard(
                 artworkUri = artist.songs.firstOrNull()?.albumArtUri,
-                artworkDescription = "Artwork for ${artist.name}",
+                artworkDescription = stringResource(R.string.library_artist_artwork_for, artist.name),
                 artworkContent = {
                     LibrarySharedArtworkSource(
                         key = LibrarySharedArtworkKey.Artist(
@@ -506,7 +522,7 @@ fun ArtistGridScreen(
                             unresolvedFallbackArtwork = artist.songs.firstOrNull()
                                 .hasUnresolvedLibraryArtwork(),
                             neutralWhileLoading = true,
-                            contentDescription = "Artwork for ${artist.name}",
+                            contentDescription = stringResource(R.string.library_artist_artwork_for, artist.name),
                             modifier = artworkModifier,
                             variant = VisualAssetVariant.THUMBNAIL
                         )
@@ -514,7 +530,7 @@ fun ArtistGridScreen(
                 },
                 title = artist.name,
                 subtitle = songCountText,
-                clickLabel = "Open ${artist.name}",
+                clickLabel = stringResource(R.string.library_artist_open, artist.name),
                 gridMetrics = gridMetrics,
                 onClick = { onArtistClick(artist.name) },
                 onShowActions = {
@@ -534,7 +550,9 @@ fun ArtistGridScreen(
                         onAddToAnotherQueueClick = libraryQueueUi.onAddToAnotherQueue,
                         onPlayInNewQueueClick = libraryQueueUi.onPlayInNewQueue,
                         onAddToPlaylistClick = onArtistAddToPlaylistClick,
-                        homePinAction = homePinUi.actionForArtist(artist)
+                        homePinAction = homePinUi.actionForArtist(artist),
+                        resolveString = resources::getString,
+                        resolveArtworkDescription = { resources.getString(R.string.library_artist_artwork_for, it) }
                     )
                 },
                 modifier = Modifier.animateItem(

@@ -14,6 +14,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import io.github.rsgarrido.sazanami.viewmodel.MusicViewModel
 import io.github.rsgarrido.sazanami.ui.state.displayText
 import io.github.rsgarrido.sazanami.ui.playlist.rememberPlaylistExportActions
@@ -67,6 +68,7 @@ internal fun MusicRoute(
     snackbarHostState: SnackbarHostState,
     modifier: Modifier = Modifier
 ) {
+    val resources = LocalResources.current
     val playbackUiState by musicViewModel.playbackUiState.collectAsStateWithLifecycle()
     val playbackQueueHubUiState by
         musicViewModel.playbackQueueHubUiState.collectAsStateWithLifecycle()
@@ -217,6 +219,7 @@ internal fun MusicRoute(
     val homePinUiEnvironment = HomePinUiEnvironment(
         pins = resolvedHomePins,
         showRecentlyAddedOnHome = homeCustomizationUiState.showRecentlyAddedOnHome,
+        resolveString = resources::getString,
         onPinRequested = { pin ->
             if (homeCustomizationUiState.pins.size < HomePin.MAX_COUNT) {
                 musicViewModel.addHomePin(pin)
@@ -617,7 +620,7 @@ internal fun MusicRoute(
                 )
             },
             isSleepTimerActive = sleepTimerUiState.isActive,
-            sleepTimerDisplayText = sleepTimerUiState.displayText(),
+            sleepTimerDisplayText = sleepTimerUiState.displayText(resources),
             onStartSleepTimerClick = { minutes ->
                 musicViewModel.startSleepTimer(minutes)
             },

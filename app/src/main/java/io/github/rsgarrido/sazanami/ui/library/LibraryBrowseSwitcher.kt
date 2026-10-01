@@ -371,7 +371,7 @@ private fun LibraryPrimaryTab(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = tab.title.uppercase(),
+                text = stringResource(tab.titleRes).uppercase(),
                 style = AppShellTypography.ControlLabel,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
                 maxLines = 1
@@ -389,12 +389,12 @@ private fun LibraryFilterPill(
     modifier: Modifier = Modifier
 ) {
     val label = when (tab) {
-        LibraryTab.SONGS -> "All"
+        LibraryTab.SONGS -> stringResource(R.string.library_filter_all)
         LibraryTab.RECENTLY_ADDED -> stringResource(R.string.recently_added_filter)
-        LibraryTab.RECENTLY_PLAYED -> "Recent"
-        LibraryTab.MOST_PLAYED -> "Most played"
-        LibraryTab.RATED -> "Rated"
-        else -> tab.title
+        LibraryTab.RECENTLY_PLAYED -> stringResource(R.string.library_filter_recent)
+        LibraryTab.MOST_PLAYED -> stringResource(R.string.library_filter_most_played)
+        LibraryTab.RATED -> stringResource(R.string.library_tab_rated)
+        else -> stringResource(tab.titleRes)
     }
 
     val shape = RoundedCornerShape(14.dp)

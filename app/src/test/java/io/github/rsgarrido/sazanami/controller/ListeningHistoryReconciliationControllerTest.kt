@@ -1,5 +1,7 @@
 package io.github.rsgarrido.sazanami.controller
 
+import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.ui.state.UiMessage
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationItem
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationMetrics
 import io.github.rsgarrido.sazanami.data.HistoricalReconciliationSource
@@ -66,7 +68,7 @@ class ListeningHistoryReconciliationControllerTest {
         operations.loadFailure = IllegalStateException("private sql")
         controller.enter()
         val state = controller.state.value as ListeningHistoryReconciliationUiState.Error
-        assertEquals("Imported tracks couldn't be loaded. Try again.", state.message)
+        assertEquals(UiMessage.Text(R.string.history_match_load_failed), state.message)
     }
 
     @Test fun linkedSourceAppearsOnlyInLinked() {
@@ -235,7 +237,7 @@ class ListeningHistoryReconciliationControllerTest {
         assertEquals(1, operations.loadCalls)
         assertEquals(listOf(source.identityId), operations.lastLinkedSources)
         assertEquals(2, content().linkedCount)
-        assertTrue(content().message!!.startsWith("History linked"))
+        assertEquals(UiMessage.Quantity(R.plurals.history_match_linked_result, 1), content().message)
     }
 
     @Test fun oneExternalAutomaticBatchCommitTriggersOneOpenScreenRefresh() {
@@ -265,7 +267,7 @@ class ListeningHistoryReconciliationControllerTest {
         assertEquals(1, operations.linkCalls)
         assertEquals(listOf(1L, 2L), operations.lastLinkedSources)
         assertEquals(0, content().linkedCount)
-        assertTrue(content().message!!.contains("Some imported history"))
+        assertEquals(UiMessage.Text(R.string.history_match_failure_already_many), content().message)
     }
 
     @Test fun staleUnavailableTargetMapsToHumanReadableMessageAndRefreshes() {
@@ -277,7 +279,7 @@ class ListeningHistoryReconciliationControllerTest {
         )
         controller.confirm()
         assertEquals(
-            "That song is no longer available in your library. Choose another track.",
+            UiMessage.Text(R.string.history_match_failure_target_missing),
             content().message
         )
     }
@@ -366,7 +368,7 @@ class ListeningHistoryReconciliationControllerTest {
         assertEquals(1, operations.batchCalls)
         assertEquals(2, operations.loadCalls)
         assertTrue(content().selectedSourceIds.isEmpty())
-        assertTrue(content().message!!.contains("already linked"))
+        assertEquals(UiMessage.Text(R.string.history_match_batch_result, listOf(0, 1, 0, 0)), content().message)
     }
 
     @Test fun batchConflictDoesNotMoveOrDropTheReviewIdentity() {
@@ -398,7 +400,7 @@ class ListeningHistoryReconciliationControllerTest {
         assertEquals(listOf(source.identityId), content().reviewItems.map { it.source.identityId })
         assertEquals(0, content().linkedCount)
         assertTrue(content().selectedSourceIds.isEmpty())
-        assertTrue(content().message!!.contains("conflict"))
+        assertEquals(UiMessage.Text(R.string.history_match_batch_result, listOf(0, 0, 1, 0)), content().message)
     }
 
     @Test fun mixedBatchResultReloadsAuthoritativeCountsAndClearsSelectionOnce() {
@@ -452,10 +454,7 @@ class ListeningHistoryReconciliationControllerTest {
         assertEquals(0, content().unmatchedCount)
         assertEquals(2, content().linkedCount)
         assertTrue(content().selectedSourceIds.isEmpty())
-        assertTrue(content().message!!.contains("1 linked"))
-        assertTrue(content().message!!.contains("already linked"))
-        assertTrue(content().message!!.contains("conflict"))
-        assertTrue(content().message!!.contains("failed"))
+        assertEquals(UiMessage.Text(R.string.history_match_batch_result, listOf(1, 1, 1, 1)), content().message)
     }
 
     @Test fun ratingWarningsCoverNoRatingTargetOnlySourceOnlyAndConflict() {

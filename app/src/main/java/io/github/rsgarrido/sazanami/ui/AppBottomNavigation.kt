@@ -33,7 +33,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.navigation.MainDestination
 
 val AppBottomNavigationHeight = 82.dp
@@ -44,14 +47,14 @@ private val AppBottomNavigationItemSpacing = 6.dp
 
 private data class AppNavigationItem(
     val destination: MainDestination,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector
 )
 
 private val appNavigationItems = listOf(
-    AppNavigationItem(MainDestination.HOME, "Home", AppShellIcons.Deck),
-    AppNavigationItem(MainDestination.LIBRARY, "Library", AppShellIcons.AlbumStack),
-    AppNavigationItem(MainDestination.SEARCH, "Search", AppShellIcons.Search)
+    AppNavigationItem(MainDestination.HOME, R.string.navigation_home, AppShellIcons.Deck),
+    AppNavigationItem(MainDestination.LIBRARY, R.string.navigation_library, AppShellIcons.AlbumStack),
+    AppNavigationItem(MainDestination.SEARCH, R.string.navigation_search, AppShellIcons.Search)
 )
 
 @Composable
@@ -144,6 +147,7 @@ private fun AppBottomNavigationItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val label = stringResource(item.labelRes)
     val itemShape = RoundedCornerShape(20.dp)
     val contentColor by animateColorAsState(
         targetValue = if (selected) {
@@ -175,12 +179,12 @@ private fun AppBottomNavigationItem(
         ) {
             Icon(
                 imageVector = item.icon,
-                contentDescription = item.label,
+                contentDescription = label,
                 modifier = Modifier.size(21.dp),
                 tint = contentColor
             )
             Text(
-                text = item.label.uppercase(),
+                text = label.uppercase(),
                 style = AppShellTypography.NavigationLabel,
                 color = contentColor,
                 maxLines = 1

@@ -26,6 +26,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import kotlin.math.PI
 import kotlin.math.atan2
 
@@ -121,7 +123,7 @@ fun ClassicControlWheel(
         ) {}
 
         Text(
-            text = "MENU",
+            text = stringResource(R.string.player_wheel_menu),
             color = ClassicWheelColors.wheelContent,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
@@ -142,7 +144,7 @@ fun ClassicControlWheel(
         ) {
             Icon(
                 imageVector = Icons.Filled.SkipPrevious,
-                contentDescription = "Previous",
+                contentDescription = stringResource(R.string.player_previous_song),
                 tint = ClassicWheelColors.wheelContent,
                 modifier = Modifier.size(42.dp)
             )
@@ -157,7 +159,7 @@ fun ClassicControlWheel(
         ) {
             Icon(
                 imageVector = Icons.Filled.SkipNext,
-                contentDescription = "Next",
+                contentDescription = stringResource(R.string.player_next_song),
                 tint = ClassicWheelColors.wheelContent,
                 modifier = Modifier.size(42.dp)
             )
@@ -177,11 +179,7 @@ fun ClassicControlWheel(
                 } else {
                     Icons.Filled.PlayArrow
                 },
-                contentDescription = if (isPlaying) {
-                    "Pause"
-                } else {
-                    "Play"
-                },
+                contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                 tint = ClassicWheelColors.wheelContent,
                 modifier = Modifier.size(ClassicWheelPlayPauseVisualSize)
             )

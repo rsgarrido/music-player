@@ -1,5 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.settings
 
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.LocalReconciliationTarget
 import io.github.rsgarrido.sazanami.data.ReconciliationCandidateCategory
 import org.junit.Assert.assertEquals
@@ -9,34 +10,17 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ListeningHistoryReconciliationUiMappingTest {
-    @Test fun candidateCategoriesUseUserFacingCopyAndNeverEnumNamesOrPercentages() {
-        val copies = ReconciliationCandidateCategory.entries.map(::candidateEvidenceCopy)
-        assertEquals("Title, artist, and album match", copies[0])
-        assertTrue(candidateEvidenceCopy(ReconciliationCandidateCategory.CANONICAL_METADATA)
-            .contains("typography normalization"))
-        assertEquals(
-            "Similar title",
-            candidateEvidenceCopy(ReconciliationCandidateCategory.TYPOGRAPHY_VARIANT)
-        )
-        assertTrue(candidateEvidenceCopy(ReconciliationCandidateCategory.INCOMPLETE_EVIDENCE)
-            .contains("metadata is missing"))
-        assertTrue(candidateEvidenceCopy(ReconciliationCandidateCategory.VERSION_SENSITIVE)
-            .contains("different song version"))
-        assertTrue(candidateEvidenceCopy(ReconciliationCandidateCategory.AMBIGUOUS)
-            .contains("Multiple library versions"))
-        copies.forEach { copy ->
-            assertFalse(copy.contains('_'))
-            assertFalse(copy.contains('%'))
-        }
+    @Test fun candidateCategoriesHaveDistinctPresentationResources() {
+        val resources = ReconciliationCandidateCategory.entries.map { it.evidenceRes }
+        assertEquals(ReconciliationCandidateCategory.entries.size, resources.toSet().size)
+        assertEquals(R.string.history_match_evidence_strong, ReconciliationCandidateCategory.STRONG_METADATA.evidenceRes)
+        assertEquals(R.string.history_match_evidence_ambiguous, ReconciliationCandidateCategory.AMBIGUOUS.evidenceRes)
     }
 
     @Test fun versionAndAmbiguityWarningsExistIndependentlyOfColor() {
-        assertEquals(
-            "This may be a different version of the song.",
-            candidateWarningCopy(ReconciliationCandidateCategory.VERSION_SENSITIVE)
-        )
-        assertTrue(candidateWarningCopy(ReconciliationCandidateCategory.AMBIGUOUS)!!.contains("Multiple"))
-        assertNull(candidateWarningCopy(ReconciliationCandidateCategory.STRONG_METADATA))
+        assertEquals(R.string.history_match_warning_version, ReconciliationCandidateCategory.VERSION_SENSITIVE.warningRes)
+        assertEquals(R.string.history_match_warning_ambiguous, ReconciliationCandidateCategory.AMBIGUOUS.warningRes)
+        assertNull(ReconciliationCandidateCategory.STRONG_METADATA.warningRes)
     }
 
     @Test fun missingAlbumNeverLeavesDanglingSeparator() {

@@ -720,8 +720,28 @@ class PlaybackQueueCoordinatorTest {
 
     @Test
     fun generatedQueueNamesAdvancePastRenamedAndExistingGeneratedQueues() {
-        assertEquals("Queue 2", nextDefaultQueueName(listOf("Morning")))
-        assertEquals("Queue 4", nextDefaultQueueName(listOf("Queue 1", "Queue 3")))
+        assertEquals(2, nextDefaultQueueNumber(listOf("Morning")) { "Queue $it" })
+        assertEquals(4, nextDefaultQueueNumber(listOf("Queue 1", "Queue 3")) { "Queue $it" })
+        assertEquals(4, nextDefaultQueueNumber(listOf("Queue 1", "Queue 3")) { "Localized $it" })
+        assertEquals(4, nextDefaultQueueNumber(listOf("Morning", "Localized 3")) { "Localized $it" })
+    }
+
+    @Test
+    fun localizedNewQueueNameDoesNotRenamePersistedEnglishQueue() = runBlocking {
+        val persistence = FakePersistence(activeQueueId = "Queue 1").apply {
+            seed(queue("Queue 1", listOf(spec("one", 1L, 0, 0)), current = "one"))
+        }
+        val runtime = FakeRuntime(liveSnapshot(
+            ids = listOf("one" to 1L), currentEntryId = "one",
+            positionMs = 0L, shouldPlay = false
+        ))
+        val coordinator = coordinator(persistence, runtime) { number -> "Localized $number" }
+
+        coordinator.initialize()
+        val created = requireNotNull(coordinator.createQueueFromCurrent())
+
+        assertEquals("Queue 1", persistence.queue("Queue 1").queue.displayName)
+        assertEquals("Localized 2", created.queue.displayName)
     }
 
     @Test
@@ -1249,11 +1269,13 @@ class PlaybackQueueCoordinatorTest {
     private fun coordinator(
         persistence: FakePersistence,
         runtime: FakeRuntime,
-        access: FakeTrackAccess = FakeTrackAccess()
+        access: FakeTrackAccess = FakeTrackAccess(),
+        generatedQueueName: (Int) -> String = { "Queue $it" }
     ) = PlaybackQueueCoordinator(
         persistence = persistence,
         trackAccess = access,
         runtime = runtime,
+        generatedQueueName = generatedQueueName,
         queueIdFactory = { "generated-queue" }
     )
 

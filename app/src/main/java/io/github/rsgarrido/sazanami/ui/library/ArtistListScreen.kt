@@ -26,7 +26,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
 import io.github.rsgarrido.sazanami.data.ArtistIdentity
@@ -53,6 +55,7 @@ fun ArtistListScreen(
     bottomContentPadding: Dp = 0.dp,
     fastScrollSessionKey: Any? = null
 ) {
+    val resources = LocalResources.current
     val artists = remember(songs, sortState) {
         sortedLibraryArtistGroups(songs, sortState)
     }
@@ -108,7 +111,7 @@ fun ArtistListScreen(
                             fallbackModel = firstSong?.albumArtUri,
                             unresolvedFallbackArtwork = firstSong.hasUnresolvedLibraryArtwork(),
                             neutralWhileLoading = true,
-                            contentDescription = "Artwork for ${artist.name}",
+                            contentDescription = stringResource(AppR.string.library_artist_artwork_for, artist.name),
                             modifier = artworkModifier,
                             variant = VisualAssetVariant.THUMBNAIL
                         )
@@ -128,7 +131,7 @@ fun ArtistListScreen(
                         )
                     )
                     .libraryItemActions(
-                        clickLabel = "Open ${artist.name}",
+                        clickLabel = stringResource(AppR.string.library_artist_open, artist.name),
                         onClick = {
                             onArtistClick(artist.name)
                         },
@@ -151,7 +154,9 @@ fun ArtistListScreen(
                                     libraryQueueUi.onPlayInNewQueue(name, selectedSongs)
                                 },
                                 onAddToPlaylistClick = onArtistAddToPlaylistClick,
-                                homePinAction = homePinUi.actionForArtist(artist)
+                                homePinAction = homePinUi.actionForArtist(artist),
+                                resolveString = resources::getString,
+                                resolveArtworkDescription = { resources.getString(AppR.string.library_artist_artwork_for, it) }
                             )
                         }
                     )
@@ -221,66 +226,68 @@ internal fun artistActionSheetTarget(
     onAddToAnotherQueueClick: (List<Song>) -> Unit = {},
     onPlayInNewQueueClick: (String, List<Song>) -> Unit = { _, _ -> },
     onAddToPlaylistClick: (String, List<Song>) -> Unit,
-    homePinAction: LibraryItemAction? = null
+    homePinAction: LibraryItemAction? = null,
+    resolveString: (Int) -> String,
+    resolveArtworkDescription: (String) -> String
 ): LibraryItemActionSheetTarget {
     return LibraryItemActionSheetTarget(
         title = artistName,
         subtitle = subtitle,
         artworkUri = artworkUri,
-        artworkDescription = "Artwork for $artistName",
+        artworkDescription = resolveArtworkDescription(artistName),
         artworkContent = {
             ArtistPicture(
                 identity = artistIdentity,
                 fallbackModel = artworkUri,
-                contentDescription = "Artwork for $artistName",
+                contentDescription = resolveArtworkDescription(artistName),
                 modifier = Modifier.fillMaxSize()
             )
         },
         actions = buildList {
             add(LibraryItemAction(
-                label = "Play",
+                label = resolveString(AppR.string.playlist_play),
                 icon = Icons.Filled.PlayArrow,
                 onClick = { onPlayClick(artistName, artistSongs) }
             ))
             add(LibraryItemAction(
-                label = "Shuffle",
+                label = resolveString(AppR.string.playlist_shuffle),
                 icon = Icons.Filled.Shuffle,
                 onClick = { onShuffleClick(artistName, artistSongs) }
             ))
             add(LibraryItemAction(
-                label = "Play next",
+                label = resolveString(AppR.string.playlist_play_next),
                 icon = Icons.Filled.SkipNext,
                 onClick = { onPlayNextClick(artistName, artistSongs) }
             ))
             add(LibraryItemAction(
-                label = "Add to queue",
+                label = resolveString(AppR.string.playlist_add_to_queue),
                 icon = Icons.AutoMirrored.Filled.QueueMusic,
                 onClick = { onAddToQueueClick(artistName, artistSongs) }
             ))
             add(LibraryItemAction(
-                label = "Add to another queue...",
+                label = resolveString(AppR.string.playlist_add_to_another_queue),
                 icon = Icons.AutoMirrored.Filled.QueueMusic,
                 onClick = { onAddToAnotherQueueClick(artistSongs) }
             ))
             add(LibraryItemAction(
-                label = "Play in new queue",
+                label = resolveString(AppR.string.playlist_play_in_new_queue),
                 icon = Icons.Filled.PlayArrow,
                 onClick = { onPlayInNewQueueClick(artistName, artistSongs) }
             ))
             add(LibraryItemAction(
-                label = "Add to playlist",
+                label = resolveString(AppR.string.library_song_add_to_playlist),
                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
                 onClick = { onAddToPlaylistClick(artistName, artistSongs) }
             ))
             if (artistIdentity.supportsCustomPicture) {
                 add(LibraryItemAction(
-                    label = if (hasCustomPicture) "Change artist picture" else "Set artist picture",
+                    label = resolveString(if (hasCustomPicture) AppR.string.library_artist_picture_change else AppR.string.library_artist_picture_set),
                     icon = Icons.Filled.Image,
                     onClick = { onChoosePicture(artistIdentity) }
                 ))
                 if (hasCustomPicture) {
                     add(LibraryItemAction(
-                        label = "Remove artist picture",
+                        label = resolveString(AppR.string.library_artist_picture_remove),
                         icon = Icons.Filled.Delete,
                         isDestructive = true,
                         onClick = { onRemovePicture(artistIdentity) }

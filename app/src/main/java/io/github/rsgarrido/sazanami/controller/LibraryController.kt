@@ -3,6 +3,7 @@ package io.github.rsgarrido.sazanami.controller
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import io.github.rsgarrido.sazanami.R
 import android.os.SystemClock
 import android.content.pm.ApplicationInfo
 import androidx.room.withTransaction
@@ -419,11 +420,11 @@ class LibraryController(
                 throw cancellation
             } catch (exception: Exception) {
                 if (permissionGate.isCurrent(scanToken)) {
+                    Log.w("LibraryController", "Artwork refresh failed", exception)
                     updateState {
                         copy(
                             isRefreshing = false,
-                            errorMessage = exception.message?.let { "Artwork refresh failed: $it" }
-                                ?: "Artwork refresh failed."
+                            errorMessage = applicationContext.getString(R.string.library_artwork_refresh_failed)
                         )
                     }
                 }
@@ -1746,7 +1747,7 @@ class LibraryController(
                         copy(
                             isLoading = false,
                             isRefreshing = false,
-                            errorMessage = "Audio access is no longer available."
+                            errorMessage = applicationContext.getString(R.string.library_audio_access_lost)
                         )
                     }
                     onMediaAccessFailure()
@@ -1754,13 +1755,12 @@ class LibraryController(
                 onComplete?.invoke(Result.failure(exception))
             } catch (exception: Exception) {
                 if (permissionGate.isCurrent(scanToken)) {
+                    Log.w("LibraryController", "Library query failed", exception)
                     updateState {
                         copy(
                             isLoading = false,
                             isRefreshing = false,
-                            errorMessage = exception.message
-                                ?.let { "Library query failed: $it" }
-                                ?: "Library query failed."
+                            errorMessage = applicationContext.getString(R.string.library_query_failed)
                         )
                     }
                 }
@@ -2186,7 +2186,7 @@ class LibraryController(
             }.getOrElse {
                 playlist.copy(
                     membershipBehavior = PlaylistMembershipBehavior.USER_SMART_LIVE,
-                    smartResolutionError = "Some rules are not supported by this app version."
+                    smartResolutionError = "unsupported_rules"
                 )
             }
         }

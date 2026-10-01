@@ -2,6 +2,7 @@ package io.github.rsgarrido.sazanami.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.DpSize
@@ -46,6 +47,7 @@ import androidx.glance.text.TextStyle
 import io.github.rsgarrido.sazanami.MainActivity
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.preferences.AppPreferencesRepository
+import io.github.rsgarrido.sazanami.localization.appLanguageContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
@@ -129,7 +131,11 @@ class NowPlayingWidget : GlanceAppWidget() {
                 mode = widgetPreferences.load(appWidgetId),
                 preferences = currentAppPreferences
             )
-            NowPlayingWidgetContent(snapshot, appearance)
+            // Resolve inside the revision-observing composition so existing Glance sessions also
+            // obtain the latest official app locale. Snapshots remain raw media metadata.
+            CompositionLocalProvider(LocalContext provides LocalContext.current.appLanguageContext()) {
+                NowPlayingWidgetContent(snapshot, appearance)
+            }
         }
     }
 
@@ -321,12 +327,13 @@ private fun Metadata(
     layout: NowPlayingWidgetLayout
 ) {
     val linePolicy = widgetMetadataLinePolicyFor(layout)
+    val context = LocalContext.current
     Column(
         modifier = modifier.clickable(actionStartActivity<MainActivity>()),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = snapshot.title,
+            text = snapshot.localizedTitle(context),
             style = TextStyle(
                 color = appearance.metadataPrimaryText.asGlanceColorProvider(),
                 fontSize = 14.sp,
@@ -338,7 +345,7 @@ private fun Metadata(
             Spacer(GlanceModifier.height(2.dp))
         }
         Text(
-            text = snapshot.artist,
+            text = snapshot.localizedArtist(context),
             style = TextStyle(
                 color = appearance.metadataSecondaryText.asGlanceColorProvider(),
                 fontSize = 12.sp

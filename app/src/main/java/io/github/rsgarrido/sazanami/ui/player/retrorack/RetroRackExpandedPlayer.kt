@@ -1,4 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.player.retrorack
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import io.github.rsgarrido.sazanami.R
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -161,7 +164,7 @@ fun RetroRackExpandedPlayer(
         verticalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 7.dp)
     ) {
         RackModule(
-            title = "MAIN DECK",
+            title = stringResource(R.string.player_rack_main_deck),
             modifier = Modifier
                 .height(layoutProfile.mainDeckHeightDp.dp)
                 .graphicsLayer { alpha = deckReveal }
@@ -173,7 +176,8 @@ fun RetroRackExpandedPlayer(
             trailingAction = {
                 RackIconButton(
                     icon = Icons.Filled.Close,
-                    label = "CLOSE",
+                    label = stringResource(R.string.player_rack_close),
+                    contentDescription = stringResource(R.string.player_collapse),
                     compact = true,
                     dense = true,
                     onClick = onCollapseClick,
@@ -207,7 +211,7 @@ fun RetroRackExpandedPlayer(
         }
 
         RackModule(
-            title = "SPECTRUM MONITOR",
+            title = stringResource(R.string.player_rack_spectrum_monitor),
             modifier = Modifier
                 .height(layoutProfile.spectrumHeightDp.dp)
                 .graphicsLayer {
@@ -232,14 +236,14 @@ fun RetroRackExpandedPlayer(
         }
 
         RackModule(
-            title = "PLAYBACK RACK // ${playbackContext.size.toString().padStart(2, '0')} TRACKS",
+            title = pluralStringResource(R.plurals.player_rack_playback_tracks, playbackContext.size, playbackContext.size.toString().padStart(2, '0')),
             modifier = Modifier.weight(1f).graphicsLayer { alpha = queueReveal; scaleY = .9f + .1f * queueReveal },
             titleModifier = safeHeaderGesture,
             trailingAction = {
                 RackIconButton(
                     icon = Icons.Filled.List,
-                    label = "QUEUE",
-                    contentDescription = "Open queues",
+                    label = stringResource(R.string.player_rack_queue),
+                    contentDescription = stringResource(R.string.player_open_queues),
                     active = true,
                     compact = true,
                     dense = true,
@@ -305,7 +309,7 @@ private fun MainDeck(
                 if (sharedOwner == RetroRackSharedOwner.EXPANDED) {
                     RetainedArtworkImage(
                         model = currentSong?.albumArtUri,
-                        contentDescription = "Current album artwork",
+            contentDescription = stringResource(R.string.player_current_album_artwork),
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -324,7 +328,7 @@ private fun MainDeck(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = currentSong?.title?.uppercase() ?: "NO TRACK LOADED",
+            text = currentSong?.title?.uppercase() ?: stringResource(R.string.player_rack_no_track_loaded),
                     color = LcdGreen,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -361,7 +365,7 @@ private fun MainDeck(
                     horizontalArrangement = Arrangement.spacedBy(5.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    LcdLabel(text = if (isPlaying) "PLAY" else "PAUSE")
+            LcdLabel(text = stringResource(if (isPlaying) R.string.player_rack_play else R.string.player_rack_pause))
                     LcdLabel(text = "320K")
                     LcdLabel(text = "44.1K")
                     Text(
@@ -402,7 +406,8 @@ private fun MainDeck(
         ) {
             RackIconButton(
                 icon = Icons.Filled.Shuffle,
-                label = "SHUF",
+                label = stringResource(R.string.player_rack_shuffle),
+                contentDescription = stringResource(if (isShuffleEnabled) R.string.player_disable_shuffle else R.string.player_enable_shuffle),
                 active = isShuffleEnabled,
                 compact = compact,
                 onClick = onShuffleClick
@@ -410,13 +415,15 @@ private fun MainDeck(
             Spacer(modifier = Modifier.weight(1f))
             RackIconButton(
                 icon = Icons.Filled.KeyboardArrowLeft,
-                label = "PREV",
+                label = stringResource(R.string.player_rack_previous),
+                contentDescription = stringResource(R.string.player_previous_song),
                 compact = compact,
                 onClick = onPreviousClick
             )
             RackIconButton(
                 icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                label = if (isPlaying) "PAUSE" else "PLAY",
+                label = stringResource(if (isPlaying) R.string.player_rack_pause else R.string.player_rack_play),
+                contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                 active = true,
                 compact = compact,
                 primary = true,
@@ -427,7 +434,8 @@ private fun MainDeck(
             )
             RackIconButton(
                 icon = Icons.Filled.KeyboardArrowRight,
-                label = "NEXT",
+                label = stringResource(R.string.player_rack_next),
+                contentDescription = stringResource(R.string.player_next_song),
                 compact = compact,
                 onClick = onNextClick
             )
@@ -435,10 +443,15 @@ private fun MainDeck(
             RackIconButton(
                 icon = Icons.Filled.Repeat,
                 label = when (repeatMode) {
-                    RepeatMode.OFF -> "REP"
-                    RepeatMode.ALL -> "ALL"
-                    RepeatMode.ONE -> "ONE"
+                    RepeatMode.OFF -> stringResource(R.string.player_rack_repeat)
+                    RepeatMode.ALL -> stringResource(R.string.player_rack_all)
+                    RepeatMode.ONE -> stringResource(R.string.player_rack_one)
                 },
+                contentDescription = stringResource(when (repeatMode) {
+                    RepeatMode.OFF -> R.string.player_enable_repeat_all
+                    RepeatMode.ALL -> R.string.player_enable_repeat_one
+                    RepeatMode.ONE -> R.string.player_disable_repeat
+                }),
                 active = repeatMode != RepeatMode.OFF,
                 compact = compact,
                 onClick = onRepeatClick
@@ -449,7 +462,8 @@ private fun MainDeck(
                 } else {
                     Icons.Filled.FavoriteBorder
                 },
-                label = "FAV",
+                label = stringResource(R.string.player_rack_favorite),
+                contentDescription = stringResource(if (isCurrentSongFavorite) R.string.player_remove_favorite else R.string.player_add_favorite),
                 active = isCurrentSongFavorite,
                 compact = compact,
                 onClick = { currentSong?.let(onToggleFavoriteClick) }

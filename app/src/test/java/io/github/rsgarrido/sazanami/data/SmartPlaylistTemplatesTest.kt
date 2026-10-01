@@ -1,5 +1,6 @@
 package io.github.rsgarrido.sazanami.data
 
+import io.github.rsgarrido.sazanami.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -7,6 +8,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class SmartPlaylistTemplatesTest {
+    @Test
+    fun templateKeysRemainStableWhilePresentationUsesSeparateResources() {
+        assertEquals(
+            setOf("heavy_rotation", "forgotten_favorites", "top_rated", "never_played"),
+            SmartPlaylistTemplate.entries.map(SmartPlaylistTemplate::key).toSet()
+        )
+        assertEquals(R.string.smart_template_heavy_rotation, SmartPlaylistTemplate.HEAVY_ROTATION.nameRes)
+        assertEquals(R.string.smart_template_heavy_rotation_description,
+            SmartPlaylistTemplate.HEAVY_ROTATION.descriptionRes)
+        assertTrue(SmartPlaylistTemplate.entries.all { SmartPlaylistTemplate.fromKey(it.key) == it })
+    }
+
     @Test
     fun heavyRotationUsesThirtyDayRecentPlaysAndStableFiveDaySnapshot() {
         val template = SmartPlaylistTemplate.HEAVY_ROTATION

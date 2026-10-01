@@ -54,8 +54,8 @@ internal fun WidgetPlayerState.toSnapshot(): NowPlayingWidgetSnapshot {
     val identity = listOf(mediaId, itemInstanceId.orEmpty()).joinToString("|")
     return NowPlayingWidgetSnapshot(
         mediaIdentity = identity,
-        title = title?.trim().takeUnless { it.isNullOrEmpty() } ?: "Unknown title",
-        artist = artist?.trim().takeUnless { it.isNullOrEmpty() } ?: "Unknown artist",
+        title = title?.trim().orEmpty(),
+        artist = artist?.trim().orEmpty(),
         artworkUri = artworkUri,
         isPlaying = isPlaying,
         // Previous remains actionable on the first item: the session owns its restart threshold.

@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.settings
 
 import androidx.compose.foundation.background
+import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -40,7 +41,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.width
 import io.github.rsgarrido.sazanami.data.preferences.CrossfadePreferences
@@ -59,6 +62,8 @@ import io.github.rsgarrido.sazanami.mediaaccess.folderArtworkLocationLabel
 import io.github.rsgarrido.sazanami.ui.home.LocalHomePinUi
 import io.github.rsgarrido.sazanami.ui.state.LibraryRefreshSummary
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
+import io.github.rsgarrido.sazanami.ui.player.modern.descriptionRes
+import io.github.rsgarrido.sazanami.ui.player.modern.labelRes
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokenField
@@ -153,21 +158,21 @@ fun SettingsScreen(
     val themeCustomizationOptions = selectedPlayerTheme.customizationOptions()
     val folderSelectionText = when {
         folderSelectionMode == FolderSelectionMode.ALL && excludedFolderCount == 0 ->
-            "All folder trees • $availableFolderCount source(s)"
+            pluralStringResource(R.plurals.settings_all_folder_sources, availableFolderCount, availableFolderCount)
         folderSelectionMode == FolderSelectionMode.ALL ->
-            "All except $excludedFolderCount excluded • $availableFolderCount source(s)"
+            pluralStringResource(R.plurals.settings_all_except_folder_sources, availableFolderCount, excludedFolderCount, availableFolderCount)
         selectedFolderCount == 0 ->
-            "No folders selected • $availableFolderCount source(s)"
+            pluralStringResource(R.plurals.settings_no_folder_sources_selected, availableFolderCount, availableFolderCount)
         excludedFolderCount == 0 ->
-            "$selectedFolderCount folder root(s) selected"
+            pluralStringResource(R.plurals.settings_folder_roots_selected, selectedFolderCount, selectedFolderCount)
         else ->
-            "$selectedFolderCount selected • $excludedFolderCount excluded"
+            stringResource(R.string.settings_folder_roots_selected_and_excluded, selectedFolderCount, excludedFolderCount)
     }
     val libraryScanSummary = when {
-        isLibraryRefreshing -> "Scanning for added, changed, moved, or removed music…"
+        isLibraryRefreshing -> stringResource(R.string.settings_scan_in_progress)
         libraryErrorMessage != null -> libraryErrorMessage
         lastLibraryRefreshSummary != null -> lastLibraryRefreshSummary.settingsSummary()
-        else -> "Check the device library without restarting Sazanami"
+        else -> stringResource(R.string.settings_scan_idle)
     }
 
     Column(
@@ -185,13 +190,13 @@ fun SettingsScreen(
             IconButton(onClick = onBackClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = stringResource(R.string.settings_back)
                 )
             }
 
             Column(modifier = Modifier.padding(start = 4.dp)) {
                 Text(
-                    text = "Settings",
+                    text = stringResource(R.string.settings_screen_title),
                     style = AppShellTypography.ScreenTitle,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -199,39 +204,39 @@ fun SettingsScreen(
         }
 
         SettingsSection(
-            title = "Library",
-            description = "Choose what Sazanami includes and refresh your current collection.",
+            title = stringResource(R.string.settings_library_section),
+            description = stringResource(R.string.settings_library_section_summary),
             icon = AppShellIcons.AlbumStack
         ) {
             SettingsRow(
-                title = "Library folders",
+                title = stringResource(R.string.settings_library_folders),
                 summary = folderSelectionText,
                 icon = AppShellIcons.Folder,
                 onClick = onLibraryFoldersClick,
                 emphasizeSummary = true,
-                navigationContentDescription = "Open library folders"
+                navigationContentDescription = stringResource(R.string.settings_open_library_folders)
             )
 
             SettingsDivider()
 
             SettingsRow(
-                title = "Folder artwork",
-                summary = folderArtworkLocationLabel(folderArtworkUi.state.treeUri),
+                title = stringResource(R.string.settings_folder_artwork),
+                summary = folderArtworkLocationLabel(LocalResources.current, folderArtworkUi.state.treeUri),
                 icon = AppShellIcons.AlbumStack,
                 onClick = folderArtworkUi.onChooseFolder,
                 emphasizeSummary = folderArtworkUi.state.hasFolderAccess,
                 navigationContentDescription = if (folderArtworkUi.state.hasFolderAccess) {
-                    "Change folder artwork location"
+                    stringResource(R.string.settings_change_folder_artwork_location)
                 } else {
-                    "Choose folder artwork location"
+                    stringResource(R.string.settings_choose_folder_artwork_location)
                 }
             )
 
             if (folderArtworkUi.state.hasFolderAccess) {
                 SettingsDivider()
                 SettingsRow(
-                    title = "Use embedded artwork only",
-                    summary = "Remove the selected folder and stop reading cover.jpg-style files",
+                    title = stringResource(R.string.settings_embedded_artwork_only),
+                    summary = stringResource(R.string.settings_embedded_artwork_only_summary),
                     icon = AppShellIcons.AlbumStack,
                     onClick = {
                         isEmbeddedArtworkOnlyDialogVisible = true
@@ -242,7 +247,7 @@ fun SettingsScreen(
             SettingsDivider()
 
             SettingsRow(
-                title = if (isLibraryRefreshing) "Scanning library" else "Scan library",
+                title = if (isLibraryRefreshing) stringResource(R.string.settings_scanning_library) else stringResource(R.string.settings_scan_library),
                 summary = libraryScanSummary,
                 icon = Icons.Filled.Refresh,
                 onClick = {
@@ -256,8 +261,8 @@ fun SettingsScreen(
             SettingsDivider()
 
             SettingsRow(
-                title = "Songs",
-                summary = "$totalSongCount song(s) in your current library",
+                title = stringResource(R.string.settings_songs),
+                summary = pluralStringResource(R.plurals.settings_library_song_count, totalSongCount, totalSongCount),
                 icon = AppShellIcons.MusicNote
             )
         }
@@ -265,16 +270,16 @@ fun SettingsScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Home",
-            description = "Choose which automatic shelves appear on your Home screen.",
+            title = stringResource(R.string.settings_home_section),
+            description = stringResource(R.string.settings_home_section_summary),
             icon = Icons.Filled.Home
         ) {
             SettingsRow(
-                title = "Recently Added",
+                title = stringResource(R.string.settings_recently_added),
                 summary = if (homePinUi.showRecentlyAddedOnHome) {
-                    "Shown on Home when recently added music is available"
+                    stringResource(R.string.settings_recently_added_shown)
                 } else {
-                    "Hidden from Home"
+                    stringResource(R.string.settings_recently_added_hidden)
                 },
                 icon = AppShellIcons.AlbumStack,
                 trailingContent = {
@@ -286,7 +291,7 @@ fun SettingsScreen(
             )
 
             SettingsFooterNote(
-                text = "Pinned songs, albums, and artists are managed from their item actions. Home holds up to 4 pins."
+                text = stringResource(R.string.settings_home_pin_note)
             )
         }
 
@@ -297,13 +302,13 @@ fun SettingsScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Playback & audio",
-            description = "Control sound processing, loudness, timing, and power use.",
+            title = stringResource(R.string.settings_playback_section),
+            description = stringResource(R.string.settings_playback_section_summary),
             icon = AppShellIcons.Equalizer
         ) {
             SettingsRow(
-                title = "Smooth play/pause",
-                summary = "Fade briefly when playback starts or pauses",
+                title = stringResource(R.string.settings_smooth_play_pause),
+                summary = stringResource(R.string.settings_smooth_play_pause_summary),
                 icon = AppShellIcons.MusicNote,
                 trailingContent = {
                     Switch(
@@ -316,8 +321,8 @@ fun SettingsScreen(
             SettingsDivider()
 
             SettingsRow(
-                title = "Crossfade",
-                summary = "Overlap automatic track transitions",
+                title = stringResource(R.string.settings_crossfade),
+                summary = stringResource(R.string.settings_crossfade_summary),
                 icon = AppShellIcons.MusicNote,
                 trailingContent = {
                     Switch(
@@ -330,9 +335,9 @@ fun SettingsScreen(
             SettingsDivider()
 
             SettingsRow(
-                title = "Crossfade duration",
+                title = stringResource(R.string.settings_crossfade_duration),
                 summary = (crossfadeDurationMs / 1_000).let { seconds ->
-                    "$seconds ${if (seconds == 1) "second" else "seconds"}"
+                    pluralStringResource(R.plurals.settings_crossfade_seconds, seconds, seconds)
                 },
                 icon = AppShellIcons.Timer,
                 trailingContent = {
@@ -354,8 +359,8 @@ fun SettingsScreen(
             SettingsDivider()
 
             SettingsRow(
-                title = "Preserve album transitions",
-                summary = "Keep confident sequential album tracks un-crossfaded",
+                title = stringResource(R.string.settings_preserve_album_transitions),
+                summary = stringResource(R.string.settings_preserve_album_transitions_summary),
                 icon = AppShellIcons.AlbumStack,
                 trailingContent = {
                     Switch(
@@ -369,75 +374,72 @@ fun SettingsScreen(
             SettingsDivider()
 
             SettingsRow(
-                title = "Equalizer",
+                title = stringResource(R.string.settings_equalizer),
                 summary = equalizerSummary,
                 icon = AppShellIcons.Equalizer,
                 onClick = onEqualizerClick,
                 emphasizeSummary = true,
-                navigationContentDescription = "Open equalizer settings"
+                navigationContentDescription = stringResource(R.string.settings_open_equalizer)
             )
 
             SettingsDivider()
 
             SettingsRow(
-                title = "ReplayGain",
-                summary = selectedReplayGainMode.displayName,
+                title = stringResource(R.string.settings_replay_gain),
+                summary = stringResource(selectedReplayGainMode.labelRes),
                 icon = AppShellIcons.Gauge,
                 onClick = { isReplayGainDialogVisible = true },
                 emphasizeSummary = true,
-                navigationContentDescription = "Open ReplayGain settings"
+                navigationContentDescription = stringResource(R.string.settings_open_replay_gain)
             )
 
             SettingsDivider()
 
             SettingsRow(
-                title = "Audio offload",
-                summary = selectedAudioOffloadPreference.displayName,
+                title = stringResource(R.string.settings_audio_offload),
+                summary = stringResource(selectedAudioOffloadPreference.labelRes),
                 icon = AppShellIcons.AudioRoute,
                 onClick = { isAudioOffloadDialogVisible = true },
                 emphasizeSummary = true,
-                navigationContentDescription = "Open audio offload settings"
+                navigationContentDescription = stringResource(R.string.settings_open_audio_offload)
             )
 
             SettingsDivider()
 
             SettingsRow(
-                title = "Sleep Timer",
+                title = stringResource(R.string.settings_sleep_timer),
                 summary = if (isSleepTimerActive) {
                     sleepTimerDisplayText
                 } else {
-                    "Pause playback after a set time"
+                    stringResource(R.string.settings_sleep_timer_summary)
                 },
                 icon = AppShellIcons.Timer,
                 onClick = onSleepTimerClick,
                 emphasizeSummary = isSleepTimerActive,
-                navigationContentDescription = "Open sleep timer"
+                navigationContentDescription = stringResource(R.string.settings_open_sleep_timer)
             )
 
             SettingsDivider()
 
             SettingsFooterNote(
-                text = "Audio offload may reduce power use during long background playback. " +
-                        "Sazanami falls back to normal decoded playback when offload is unavailable " +
-                        "or incompatible with an active audio feature. Crossfade uses decoded " +
-                        "playback while enabled."
+                text = stringResource(R.string.settings_audio_offload_note)
             )
         }
 
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Player & appearance",
-            description = "Choose the player identity, motion, controls, and theme colors.",
+            title = stringResource(R.string.settings_player_section),
+            description = stringResource(R.string.settings_player_section_summary),
             icon = AppShellIcons.Palette
         ) {
             SettingsRow(
-                title = "Font",
-                summary = selectedAppFont.displayName,
+                title = stringResource(R.string.settings_font),
+                summary = selectedAppFont.localizedDisplayName(),
                 icon = AppShellIcons.Palette,
                 onClick = { isFontDialogVisible = true },
                 emphasizeSummary = true,
-                navigationContentDescription = "Choose application font"
+                navigationContentDescription = stringResource(R.string.settings_choose_font)
             )
 
             SettingsDivider()
@@ -453,35 +455,39 @@ fun SettingsScreen(
 
             SettingsDivider()
 
+            SettingsLanguageRow()
+
+            SettingsDivider()
+
             SettingsRow(
-                title = "Player Theme",
-                summary = selectedPlayerTheme.displayName,
+                title = stringResource(R.string.settings_player_theme),
+                summary = stringResource(selectedPlayerTheme.labelRes),
                 icon = AppShellIcons.Deck,
                 onClick = { isPlayerThemeDialogVisible = true },
                 emphasizeSummary = true,
-                navigationContentDescription = "Choose player theme"
+                navigationContentDescription = stringResource(R.string.settings_choose_player_theme)
             )
 
             if (selectedPlayerTheme == PlayerTheme.DEFAULT) {
                 SettingsDivider()
 
                 SettingsRow(
-                    title = "Artwork transition style",
-                    summary = selectedModernArtworkTransitionStyle.displayName,
+                    title = stringResource(R.string.settings_artwork_transition_style),
+                    summary = stringResource(selectedModernArtworkTransitionStyle.labelRes),
                     icon = AppShellIcons.Transition,
                     onClick = { isArtworkTransitionDialogVisible = true },
                     emphasizeSummary = true,
-                    navigationContentDescription = "Choose artwork transition style"
+                    navigationContentDescription = stringResource(R.string.settings_choose_artwork_transition_style)
                 )
 
                 SettingsDivider()
 
                 SettingsRow(
-                    title = "Customize Default Player",
-                    summary = "Seekbar, waveform, background, blur, and dimming",
+                    title = stringResource(R.string.settings_customize_default_player),
+                    summary = stringResource(R.string.settings_customize_default_player_summary),
                     icon = AppShellIcons.Palette,
                     onClick = { isDefaultPlayerCustomizationVisible = true },
-                    navigationContentDescription = "Customize Default Player"
+                    navigationContentDescription = stringResource(R.string.settings_customize_default_player)
                 )
             }
 
@@ -489,11 +495,11 @@ fun SettingsScreen(
                 SettingsDivider()
 
                 SettingsRow(
-                    title = "Customize theme colors",
-                    summary = "Choose preset colors for ${selectedPlayerTheme.displayName}",
+                    title = stringResource(R.string.settings_customize_theme_colors),
+                    summary = stringResource(R.string.settings_theme_colors_summary, stringResource(selectedPlayerTheme.labelRes)),
                     icon = AppShellIcons.Palette,
                     onClick = { isThemeCustomizationDialogVisible = true },
-                    navigationContentDescription = "Customize theme colors"
+                    navigationContentDescription = stringResource(R.string.settings_customize_theme_colors)
                 )
             }
         }
@@ -501,50 +507,50 @@ fun SettingsScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Listening history",
-            description = "Bring previous listening activity into Sazanami.",
+            title = stringResource(R.string.settings_history_section),
+            description = stringResource(R.string.settings_history_section_summary),
             icon = Icons.Filled.History
         ) {
             SettingsRow(
-                title = "Import listening history",
-                summary = "Import your previous listening history from supported services.",
+                title = stringResource(R.string.settings_import_history),
+                summary = stringResource(R.string.settings_import_history_summary),
                 icon = AppShellIcons.Restore,
                 onClick = onListeningHistoryImportClick,
-                navigationContentDescription = "Open listening history import"
+                navigationContentDescription = stringResource(R.string.settings_open_import_history)
             )
             SettingsDivider()
             SettingsRow(
-                title = "Match imported tracks",
-                summary = "Connect imported listening history to songs in your library.",
+                title = stringResource(R.string.settings_match_imported_tracks),
+                summary = stringResource(R.string.settings_match_imported_tracks_summary),
                 icon = AppShellIcons.Search,
                 onClick = onListeningHistoryReconciliationClick,
-                navigationContentDescription = "Open imported track matching"
+                navigationContentDescription = stringResource(R.string.settings_open_imported_matching)
             )
         }
 
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Data & support",
-            description = "Protect app data and inspect playback or device information.",
+            title = stringResource(R.string.settings_data_section),
+            description = stringResource(R.string.settings_data_section_summary),
             icon = AppShellIcons.Diagnostics
         ) {
             SettingsRow(
-                title = "Export Backup",
-                summary = "Save favorites, playlists, listening history and track links, ratings, and preferences to a Sazanami backup file.",
+                title = stringResource(R.string.settings_export_backup),
+                summary = stringResource(R.string.settings_export_backup_summary),
                 icon = AppShellIcons.Export,
                 onClick = onExportBackupClick,
-                navigationContentDescription = "Export backup"
+                navigationContentDescription = stringResource(R.string.settings_export_backup_action)
             )
 
             SettingsDivider()
 
             SettingsRow(
-                title = "Restore Backup",
-                summary = "Replace app data from a Sazanami backup file.",
+                title = stringResource(R.string.settings_restore_backup),
+                summary = stringResource(R.string.settings_restore_backup_summary),
                 icon = AppShellIcons.Restore,
                 onClick = onRestoreBackupClick,
-                navigationContentDescription = "Restore backup"
+                navigationContentDescription = stringResource(R.string.settings_restore_backup_action)
             )
 
             SettingsDivider()
@@ -604,7 +610,7 @@ fun SettingsScreen(
     if (isFontDialogVisible) {
         AlertDialog(
             onDismissRequest = { isFontDialogVisible = false },
-            title = { Text(text = "Font") },
+            title = { Text(text = stringResource(R.string.settings_font)) },
             text = {
                 Column {
                     AppFont.entries.forEach { appFont ->
@@ -629,10 +635,10 @@ fun SettingsScreen(
                             Column(
                                 modifier = Modifier.padding(start = 4.dp)
                             ) {
-                                Text(text = appFont.displayName)
+                                Text(text = appFont.localizedDisplayName())
 
                                 Text(
-                                    text = appFont.description,
+                                    text = appFont.localizedDescription(),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
@@ -642,7 +648,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { isFontDialogVisible = false }) {
-                    Text(text = "Close")
+                    Text(text = stringResource(R.string.settings_close))
                 }
             }
         )
@@ -696,7 +702,7 @@ fun SettingsScreen(
                 isReplayGainDialogVisible = false
             },
             title = {
-                Text(text = "ReplayGain")
+                Text(text = stringResource(R.string.settings_replay_gain))
             },
             text = {
                 Column {
@@ -722,10 +728,10 @@ fun SettingsScreen(
                             Column(
                                 modifier = Modifier.padding(start = 4.dp)
                             ) {
-                                Text(text = replayGainMode.displayName)
+                                Text(text = stringResource(replayGainMode.labelRes))
 
                                 Text(
-                                    text = replayGainMode.description,
+                                    text = stringResource(replayGainMode.descriptionRes),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
@@ -739,7 +745,7 @@ fun SettingsScreen(
                         isReplayGainDialogVisible = false
                     }
                 ) {
-                    Text(text = "Close")
+                    Text(text = stringResource(R.string.settings_close))
                 }
             }
         )
@@ -751,7 +757,7 @@ fun SettingsScreen(
                 isAudioOffloadDialogVisible = false
             },
             title = {
-                Text(text = "Audio offload")
+                Text(text = stringResource(R.string.settings_audio_offload))
             },
             text = {
                 Column {
@@ -774,12 +780,12 @@ fun SettingsScreen(
                                 }
                             )
                             Column(modifier = Modifier.padding(start = 4.dp)) {
-                                Text(text = preference.displayName)
+                                Text(text = stringResource(preference.labelRes))
                                 Text(
                                     text = if (preference == AudioOffloadPreference.AUTOMATIC) {
-                                        "Use offload when compatible and otherwise play normally."
+                                        stringResource(R.string.settings_offload_automatic_description)
                                     } else {
-                                        "Use normal decoded playback."
+                                        stringResource(R.string.settings_offload_normal_description)
                                     },
                                     style = MaterialTheme.typography.bodySmall
                                 )
@@ -790,7 +796,7 @@ fun SettingsScreen(
             },
             confirmButton = {
                 TextButton(onClick = { isAudioOffloadDialogVisible = false }) {
-                    Text(text = "Close")
+                    Text(text = stringResource(R.string.settings_close))
                 }
             }
         )
@@ -802,11 +808,11 @@ fun SettingsScreen(
                 isEmbeddedArtworkOnlyDialogVisible = false
             },
             title = {
-                Text(text = "Use embedded artwork only?")
+                Text(text = stringResource(R.string.settings_embedded_only_dialog_title))
             },
             text = {
                 Text(
-                    text = "Sazanami will stop using cover.jpg-style files from the selected folder and remove its saved folder access. Embedded artwork inside your music files will still be used. You can choose a folder again later in Settings."
+                    text = stringResource(R.string.settings_embedded_only_dialog_message)
                 )
             },
             dismissButton = {
@@ -815,7 +821,7 @@ fun SettingsScreen(
                         isEmbeddedArtworkOnlyDialogVisible = false
                     }
                 ) {
-                    Text(text = "Cancel")
+                    Text(text = stringResource(R.string.settings_cancel))
                 }
             },
             confirmButton = {
@@ -825,7 +831,7 @@ fun SettingsScreen(
                         folderArtworkUi.onClearFolder()
                     }
                 ) {
-                    Text(text = "Use embedded only")
+                    Text(text = stringResource(R.string.settings_use_embedded_only))
                 }
             }
         )
@@ -840,7 +846,7 @@ fun SettingsScreen(
                 isArtworkTransitionDialogVisible = false
             },
             title = {
-                Text(text = "Artwork transition style")
+                Text(text = stringResource(R.string.settings_artwork_transition_style))
             },
             text = {
                 Column {
@@ -866,10 +872,10 @@ fun SettingsScreen(
                             Column(
                                 modifier = Modifier.padding(start = 4.dp)
                             ) {
-                                Text(text = transitionStyle.displayName)
+                                Text(text = stringResource(transitionStyle.labelRes))
 
                                 Text(
-                                    text = transitionStyle.description,
+                                    text = stringResource(transitionStyle.descriptionRes),
                                     style = MaterialTheme.typography.bodySmall
                                 )
                             }
@@ -883,7 +889,7 @@ fun SettingsScreen(
                         isArtworkTransitionDialogVisible = false
                     }
                 ) {
-                    Text(text = "Close")
+                    Text(text = stringResource(R.string.settings_close))
                 }
             }
         )
@@ -895,7 +901,7 @@ fun SettingsScreen(
                 isPlayerThemeDialogVisible = false
             },
             title = {
-                Text(text = "Player Theme")
+                Text(text = stringResource(R.string.settings_player_theme))
             },
             text = {
                 Column {
@@ -917,7 +923,7 @@ fun SettingsScreen(
                                 }
                             )
 
-                            Text(text = playerTheme.displayName)
+                            Text(text = stringResource(playerTheme.labelRes))
                         }
                     }
                 }
@@ -928,7 +934,7 @@ fun SettingsScreen(
                         isPlayerThemeDialogVisible = false
                     }
                 ) {
-                    Text(text = "Close")
+                    Text(text = stringResource(R.string.settings_close))
                 }
             }
         )
@@ -958,30 +964,31 @@ private fun appAppearanceLabel(appearance: AppAppearance): String = when (appear
     AppAppearance.DARK -> stringResource(R.string.app_appearance_dark)
 }
 
-private val AppFont.displayName: String
-    get() = when (this) {
-        AppFont.SAZANAMI -> "Sazanami"
-        AppFont.DEVICE -> "Device font"
-    }
+@Composable
+private fun AppFont.localizedDisplayName(): String = when (this) {
+    AppFont.SAZANAMI -> stringResource(R.string.app_name)
+    AppFont.DEVICE -> stringResource(R.string.settings_device_font)
+}
 
-private val AppFont.description: String
-    get() = when (this) {
-        AppFont.SAZANAMI -> "Space Grotesk, Sazanami's default typeface."
-        AppFont.DEVICE -> "Use your device's configured font."
-    }
+@Composable
+private fun AppFont.localizedDescription(): String = when (this) {
+    AppFont.SAZANAMI -> stringResource(R.string.settings_sazanami_font_description)
+    AppFont.DEVICE -> stringResource(R.string.settings_device_font_description)
+}
 
+@Composable
 private fun LibraryRefreshSummary.settingsSummary(): String {
     if (!successfulCompleteScan) {
-        return "Scan was incomplete • kept the existing library"
+        return stringResource(R.string.settings_scan_incomplete)
     }
-    val changes = buildList {
-        if (addedCount > 0) add("$addedCount added")
-        if (updatedCount > 0) add("$updatedCount updated")
-        if (movedCount > 0) add("$movedCount moved")
-        if (removedCount > 0) add("$removedCount removed")
-    }
+    val changes = listOfNotNull(
+        if (addedCount > 0) pluralStringResource(R.plurals.settings_scan_added, addedCount, addedCount) else null,
+        if (updatedCount > 0) pluralStringResource(R.plurals.settings_scan_updated, updatedCount, updatedCount) else null,
+        if (movedCount > 0) pluralStringResource(R.plurals.settings_scan_moved, movedCount, movedCount) else null,
+        if (removedCount > 0) pluralStringResource(R.plurals.settings_scan_removed, removedCount, removedCount) else null
+    )
     return if (changes.isEmpty()) {
-        "No library changes found"
+        stringResource(R.string.settings_scan_no_changes)
     } else {
         changes.joinToString(" • ")
     }

@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -121,7 +123,7 @@ internal fun PocketDiscCartridge(
             .clickable(
                 enabled = enabled,
                 role = Role.Button,
-                onClickLabel = "Open current album",
+        onClickLabel = stringResource(R.string.player_open_current_album),
                 onClick = onClick
             )
             .padding(if (compact) 6.dp else 8.dp)
@@ -325,7 +327,7 @@ internal fun PocketDiscCartridge(
         }
 
         Text(
-            text = "DIGITAL DISC",
+            text = stringResource(R.string.player_disc_digital_disc),
             color = colors.lcdTextMuted,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -344,7 +346,7 @@ internal fun PocketDiscCartridge(
                 .padding(end = if (compact) 7.dp else 10.dp, top = if (compact) 7.dp else 9.dp)
         )
         Text(
-            text = "INSERT THIS END",
+            text = stringResource(R.string.player_disc_insert_this_end),
             color = colors.lcdTextMuted.copy(alpha = 0.60f),
             fontFamily = FontFamily.Monospace,
             fontSize = if (compact) 5.sp else 6.sp,
@@ -355,11 +357,12 @@ internal fun PocketDiscCartridge(
     }
 }
 
+@Composable
 internal fun pocketDiscAlbumDurationLabel(durationMs: Long): String {
-    if (durationMs <= 0L) return "-- MIN"
+    if (durationMs <= 0L) return stringResource(R.string.player_disc_unknown_minutes)
 
     val totalMinutes = (durationMs / 60_000L).coerceAtLeast(1L)
-    return "$totalMinutes MIN"
+    return stringResource(R.string.player_disc_minutes, totalMinutes)
 }
 
 @Composable

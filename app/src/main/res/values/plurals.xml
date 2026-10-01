@@ -1,5 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <plurals name="rated_filter_stars">
+        <item quantity="one">%1$d star</item>
+        <item quantity="other">%1$d stars</item>
+    </plurals>
+    <plurals name="library_search_see_all_songs">
+        <item quantity="one">See all %1$d song</item>
+        <item quantity="other">See all %1$d songs</item>
+    </plurals>
+    <plurals name="library_search_see_all_albums">
+        <item quantity="one">See all %1$d album</item>
+        <item quantity="other">See all %1$d albums</item>
+    </plurals>
+    <plurals name="library_search_see_all_artists">
+        <item quantity="one">See all %1$d artist</item>
+        <item quantity="other">See all %1$d artists</item>
+    </plurals>
+    <plurals name="library_search_see_all_playlists">
+        <item quantity="one">See all %1$d playlist</item>
+        <item quantity="other">See all %1$d playlists</item>
+    </plurals>
+    <plurals name="library_search_artist_subtitle">
+        <item quantity="one">Artist · %1$d song</item>
+        <item quantity="other">Artist · %1$d songs</item>
+    </plurals>
+    <plurals name="library_search_playlist_subtitle">
+        <item quantity="one">Playlist · %1$d song</item>
+        <item quantity="other">Playlist · %1$d songs</item>
+    </plurals>
+    <plurals name="core_song_count">
+        <item quantity="one">%1$d song</item>
+        <item quantity="other">%1$d songs</item>
+    </plurals>
+    <plurals name="settings_library_song_count">
+        <item quantity="one">%1$d song in your current library</item>
+        <item quantity="other">%1$d songs in your current library</item>
+    </plurals>
+    <plurals name="settings_crossfade_seconds">
+        <item quantity="one">%1$d second</item>
+        <item quantity="other">%1$d seconds</item>
+    </plurals>
+    <plurals name="settings_all_folder_sources">
+        <item quantity="one">All folder trees · %1$d source</item>
+        <item quantity="other">All folder trees · %1$d sources</item>
+    </plurals>
+    <plurals name="settings_all_except_folder_sources">
+        <item quantity="one">All except %1$d excluded · %2$d source</item>
+        <item quantity="other">All except %1$d excluded · %2$d sources</item>
+    </plurals>
+    <plurals name="settings_no_folder_sources_selected">
+        <item quantity="one">No folders selected · %1$d source</item>
+        <item quantity="other">No folders selected · %1$d sources</item>
+    </plurals>
+    <plurals name="settings_folder_roots_selected">
+        <item quantity="one">%1$d folder root selected</item>
+        <item quantity="other">%1$d folder roots selected</item>
+    </plurals>
+    <plurals name="settings_scan_added">
+        <item quantity="one">%1$d added</item>
+        <item quantity="other">%1$d added</item>
+    </plurals>
+    <plurals name="settings_scan_updated">
+        <item quantity="one">%1$d updated</item>
+        <item quantity="other">%1$d updated</item>
+    </plurals>
+    <plurals name="settings_scan_moved">
+        <item quantity="one">%1$d moved</item>
+        <item quantity="other">%1$d moved</item>
+    </plurals>
+    <plurals name="settings_scan_removed">
+        <item quantity="one">%1$d removed</item>
+        <item quantity="other">%1$d removed</item>
+    </plurals>
+    <plurals name="folder_selection_selected_count">
+        <item quantity="one">%1$d folder selected.</item>
+        <item quantity="other">%1$d folders selected.</item>
+    </plurals>
+    <plurals name="folder_selection_exclusions">
+        <item quantity="one">All folder trees are included except %1$d exclusion.</item>
+        <item quantity="other">All folder trees are included except %1$d exclusions.</item>
+    </plurals>
+    <plurals name="folder_selection_roots_included">
+        <item quantity="one">%1$d folder root included.</item>
+        <item quantity="other">%1$d folder roots included.</item>
+    </plurals>
+    <plurals name="folder_selection_songs_in_tree">
+        <item quantity="one">%1$d song in this folder tree</item>
+        <item quantity="other">%1$d songs in this folder tree</item>
+    </plurals>
     <plurals name="song_count">
         <item quantity="one">%1$d song</item>
         <item quantity="other">%1$d songs</item>
@@ -27,5 +115,101 @@
     <plurals name="playlist_label">
         <item quantity="one">playlist</item>
         <item quantity="other">playlists</item>
+    </plurals>
+    <plurals name="sleep_timer_minutes_option">
+        <item quantity="one">%d minute</item>
+        <item quantity="other">%d minutes</item>
+    </plurals>
+    <plurals name="playlist_folder_delete_explanation">
+        <item quantity="one">\"%1$s\" will be removed. Its %2$d playlist will move to the playlist root; no playlists will be deleted.</item>
+        <item quantity="other">\"%1$s\" will be removed. Its %2$d playlists will move to the playlist root; no playlists will be deleted.</item>
+    </plurals>
+    <plurals name="playlist_song_count_all_added">
+        <item quantity="one">%d song · Already added</item>
+        <item quantity="other">%d songs · Already added</item>
+    </plurals>
+    <plurals name="playlist_song_count_part_added">
+        <item quantity="one">%1$d song · %2$d selected already added</item>
+        <item quantity="other">%1$d songs · %2$d selected already added</item>
+    </plurals>
+    <plurals name="playlist_folder_count">
+        <item quantity="one">%d playlist</item>
+        <item quantity="other">%d playlists</item>
+    </plurals>
+    <plurals name="playlist_root_counts_one_playlist">
+        <item quantity="one">%1$d playlist · %2$d folder</item>
+        <item quantity="other">%1$d playlist · %2$d folders</item>
+    </plurals>
+    <plurals name="playlist_root_counts_many_playlists">
+        <item quantity="one">%1$d playlists · %2$d folder</item>
+        <item quantity="other">%1$d playlists · %2$d folders</item>
+    </plurals>
+    <plurals name="playlist_import_success">
+        <item quantity="one">Imported %1$d song into %2$s</item>
+        <item quantity="other">Imported %1$d songs into %2$s</item>
+    </plurals>
+    <plurals name="playlist_import_one_song_with_unmatched">
+        <item quantity="one">Imported %1$d song into %2$s. %3$d entry could not be matched.</item>
+        <item quantity="other">Imported %1$d song into %2$s. %3$d entries could not be matched.</item>
+    </plurals>
+    <plurals name="playlist_import_many_songs_with_unmatched">
+        <item quantity="one">Imported %1$d songs into %2$s. %3$d entry could not be matched.</item>
+        <item quantity="other">Imported %1$d songs into %2$s. %3$d entries could not be matched.</item>
+    </plurals>
+    <plurals name="playlist_export_success">
+        <item quantity="one">Exported %d song</item>
+        <item quantity="other">Exported %d songs</item>
+    </plurals>
+    <plurals name="playlist_export_one_song_with_skipped">
+        <item quantity="one">Exported %1$d song. %2$d unavailable song was skipped.</item>
+        <item quantity="other">Exported %1$d song. %2$d unavailable songs were skipped.</item>
+    </plurals>
+    <plurals name="playlist_export_many_songs_with_skipped">
+        <item quantity="one">Exported %1$d songs. %2$d unavailable song was skipped.</item>
+        <item quantity="other">Exported %1$d songs. %2$d unavailable songs were skipped.</item>
+    </plurals>
+    <plurals name="playlist_export_none_with_skipped">
+        <item quantity="one">No songs could be exported. %d unavailable song was skipped.</item>
+        <item quantity="other">No songs could be exported. %d unavailable songs were skipped.</item>
+    </plurals>
+    <plurals name="library_folder_child_count">
+        <item quantity="one">%d folder</item>
+        <item quantity="other">%d folders</item>
+    </plurals>
+    <plurals name="library_queue_track_count">
+        <item quantity="one">%d track</item>
+        <item quantity="other">%d tracks</item>
+    </plurals>
+    <plurals name="library_queue_track_count_with_title">
+        <item quantity="one">%1$d track · %2$s</item>
+        <item quantity="other">%1$d tracks · %2$s</item>
+    </plurals>
+    <plurals name="library_selection_songs_title">
+        <item quantity="one">%d song selected</item>
+        <item quantity="other">%d songs selected</item>
+    </plurals>
+    <plurals name="library_selection_songs_artwork">
+        <item quantity="one">%d selected song</item>
+        <item quantity="other">%d selected songs</item>
+    </plurals>
+    <plurals name="library_selection_albums_title">
+        <item quantity="one">%d album selected</item>
+        <item quantity="other">%d albums selected</item>
+    </plurals>
+    <plurals name="library_selection_albums_artwork">
+        <item quantity="one">%d selected album</item>
+        <item quantity="other">%d selected albums</item>
+    </plurals>
+    <plurals name="library_selection_count">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
+    <plurals name="library_organize_active_filters">
+        <item quantity="one">Organize library, %d active filter</item>
+        <item quantity="other">Organize library, %d active filters</item>
+    </plurals>
+    <plurals name="library_album_artist_song_count">
+        <item quantity="one">%1$s · %2$d song</item>
+        <item quantity="other">%1$s · %2$d songs</item>
     </plurals>
 </resources>

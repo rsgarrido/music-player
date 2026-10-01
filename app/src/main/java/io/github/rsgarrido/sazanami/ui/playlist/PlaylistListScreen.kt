@@ -1,4 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.playlist
+import android.content.res.Resources
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -56,6 +60,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -118,6 +124,7 @@ fun PlaylistListScreen(
     bottomContentPadding: Dp = 0.dp,
     modifier: Modifier = Modifier
 ) {
+    val resources = LocalResources.current
     val homePinUi = LocalHomePinUi.current
     val libraryQueueUi = LocalLibraryQueueUi.current
     var playlistPendingRename by remember { mutableStateOf<Playlist?>(null) }
@@ -157,37 +164,37 @@ fun PlaylistListScreen(
     fun showPlaylistActions(playlist: Playlist) {
         actionSheetTarget = LibraryItemActionSheetTarget(
             title = playlist.name,
-            subtitle = playlistMetadataText(playlist),
+            subtitle = playlistMetadataText(resources, playlist),
             artworkUri = null,
-            artworkDescription = "Artwork for ${playlist.name}",
+            artworkDescription = resources.getString(R.string.playlist_artwork_for, playlist.name),
             actions = buildList {
                 add(homePinUi.actionForPlaylist(playlist))
-                addAll(playlistQueueActions(playlist, libraryQueueUi, onAddPlaylistToQueueClick))
-                add(LibraryItemAction("Change artwork", Icons.Filled.Image) {
+                addAll(playlistQueueActions(playlist, libraryQueueUi, onAddPlaylistToQueueClick, resources::getString))
+                add(LibraryItemAction(resources.getString(R.string.playlist_change_artwork), Icons.Filled.Image) {
                     onChangeArtworkClick(playlist)
                 })
                 if (playlist.artworkMode == PlaylistArtworkMode.CUSTOM) {
-                    add(LibraryItemAction("Reset to automatic artwork", Icons.Filled.Restore) {
+                    add(LibraryItemAction(resources.getString(R.string.playlist_reset_artwork), Icons.Filled.Restore) {
                         onResetArtworkClick(playlist)
                     })
                 }
-                add(LibraryItemAction("Move to folder", Icons.AutoMirrored.Filled.DriveFileMove) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_move_to_folder), Icons.AutoMirrored.Filled.DriveFileMove) {
                     playlistPendingMove = playlist
                 })
-                add(LibraryItemAction("Rename", Icons.Filled.Edit) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_rename_action), Icons.Filled.Edit) {
                     playlistPendingRename = playlist
                 })
-                add(LibraryItemAction("Export as M3U8", Icons.Filled.Share) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_export_m3u8), Icons.Filled.Share) {
                     onExportPlaylistClick(playlist)
                 })
-                add(LibraryItemAction("Delete", Icons.Filled.Delete, isDestructive = true) {
+                add(LibraryItemAction(resources.getString(R.string.playlist_delete_action), Icons.Filled.Delete, isDestructive = true) {
                     playlistPendingDelete = playlist
                 })
             },
             artworkContent = {
                 PlaylistArtwork(
                     playlist = playlist,
-                    contentDescription = "Artwork for ${playlist.name}",
+                    contentDescription = stringResource(R.string.playlist_artwork_for, playlist.name),
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -197,14 +204,14 @@ fun PlaylistListScreen(
     fun showFolderActions(folder: PlaylistFolder) {
         actionSheetTarget = LibraryItemActionSheetTarget(
             title = folder.name,
-            subtitle = folderPlaylistCountText(folder.playlistCount),
+            subtitle = folderPlaylistCountText(resources, folder.playlistCount),
             artworkUri = null,
-            artworkDescription = "Folder ${folder.name}",
+            artworkDescription = resources.getString(R.string.playlist_folder_artwork_for, folder.name),
             actions = listOf(
-                LibraryItemAction("Rename folder", Icons.Filled.Edit) {
+                LibraryItemAction(resources.getString(R.string.playlist_folder_rename_action), Icons.Filled.Edit) {
                     folderPendingRename = folder
                 },
-                LibraryItemAction("Delete folder", Icons.Filled.Delete, isDestructive = true) {
+                LibraryItemAction(resources.getString(R.string.playlist_folder_delete_action), Icons.Filled.Delete, isDestructive = true) {
                     folderPendingDelete = folder
                 }
             ),
@@ -236,20 +243,21 @@ fun PlaylistListScreen(
         ) {
             if (currentFolder != null) {
                 IconButton(onClick = { onFolderSelected(null) }) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back to playlists")
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.playlist_folder_back))
                 }
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = currentFolder?.name ?: "Your playlists",
+                    text = currentFolder?.name ?: stringResource(R.string.playlist_your_playlists),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = currentFolder?.let { folderPlaylistCountText(it.playlistCount) }
-                        ?: rootCollectionCountText(folders.size, visiblePlaylists.size),
+                    text = currentFolder?.let {
+                        pluralStringResource(R.plurals.playlist_folder_count, it.playlistCount, it.playlistCount)
+                    } ?: rootCollectionCountText(folders.size, visiblePlaylists.size),
                     style = AppShellTypography.SongSubtitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -259,17 +267,17 @@ fun PlaylistListScreen(
                 IconButton(onClick = { sortMenuExpanded = true }) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Sort,
-                        contentDescription = "Sort playlists by ${sortField.label}",
+                        contentDescription = stringResource(R.string.playlist_sort_by, stringResource(sortField.labelRes)),
                         tint = AppShellAccent
                     )
                 }
                 DropdownMenu(sortMenuExpanded, { sortMenuExpanded = false }) {
                     PlaylistSortField.entries.forEach { field ->
                         DropdownMenuItem(
-                            text = { Text(field.label) },
+                            text = { Text(stringResource(field.labelRes)) },
                             leadingIcon = {
                                 if (field == sortField) {
-                                    Icon(Icons.Filled.Check, contentDescription = "Selected")
+                                    Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.playlist_selected))
                                 }
                             },
                             onClick = {
@@ -284,9 +292,9 @@ fun PlaylistListScreen(
                     val directionTitle = if (
                         sortDirection == LibrarySortDirection.ASCENDING
                     ) {
-                        "Ascending"
+                        stringResource(R.string.playlist_sort_ascending)
                     } else {
-                        "Descending"
+                        stringResource(R.string.playlist_sort_descending)
                     }
                     DropdownMenuItem(
                         text = { Text(directionTitle) },
@@ -299,7 +307,7 @@ fun PlaylistListScreen(
                                 } else {
                                     Icons.Filled.ArrowDownward
                                 },
-                                contentDescription = "$directionTitle playlist sort direction",
+                                contentDescription = stringResource(R.string.playlist_sort_direction_description, directionTitle),
                                 tint = AppShellAccent
                             )
                         },
@@ -313,11 +321,11 @@ fun PlaylistListScreen(
 
             Box {
                 IconButton(onClick = { overflowExpanded = true }) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = "Playlist actions")
+                    Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.playlist_actions))
                 }
                 DropdownMenu(overflowExpanded, { overflowExpanded = false }) {
                     DropdownMenuItem(
-                        text = { Text("Create folder") },
+                        text = { Text(stringResource(R.string.playlist_create_folder)) },
                         leadingIcon = {
                             Icon(Icons.Filled.CreateNewFolder, contentDescription = null)
                         },
@@ -327,7 +335,7 @@ fun PlaylistListScreen(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Import M3U") },
+                        text = { Text(stringResource(R.string.playlist_import_m3u)) },
                         leadingIcon = { Icon(Icons.Filled.UploadFile, contentDescription = null) },
                         onClick = {
                             overflowExpanded = false
@@ -342,7 +350,7 @@ fun PlaylistListScreen(
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(text = "New", modifier = Modifier.padding(start = 6.dp))
+                Text(text = stringResource(R.string.playlist_new), modifier = Modifier.padding(start = 6.dp))
             }
         }
 
@@ -448,8 +456,8 @@ fun PlaylistListScreen(
 
     playlistPendingRename?.let { playlist ->
         PlaylistNameDialog(
-            title = "Rename Playlist",
-            confirmButtonText = "Rename",
+            title = stringResource(R.string.playlist_rename_title),
+            confirmButtonText = stringResource(R.string.playlist_rename_action),
             initialName = playlist.name,
             originalName = playlist.name,
             existingPlaylistNames = playlists.map(Playlist::name),
@@ -486,8 +494,8 @@ fun PlaylistListScreen(
 
     if (createFolderDialogVisible) {
         PlaylistFolderNameDialog(
-            title = "Create Folder",
-            confirmButtonText = "Create",
+            title = stringResource(R.string.playlist_folder_create_title),
+            confirmButtonText = stringResource(R.string.playlist_create_action),
             existingNames = folders.map(PlaylistFolder::name),
             onDismiss = { createFolderDialogVisible = false },
             onConfirmClick = { name ->
@@ -499,8 +507,8 @@ fun PlaylistListScreen(
 
     folderPendingRename?.let { folder ->
         PlaylistFolderNameDialog(
-            title = "Rename Folder",
-            confirmButtonText = "Rename",
+            title = stringResource(R.string.playlist_folder_rename_title),
+            confirmButtonText = stringResource(R.string.playlist_rename_action),
             existingNames = folders.map(PlaylistFolder::name),
             initialName = folder.name,
             originalName = folder.name,
@@ -537,7 +545,7 @@ private fun PlaylistFolderRow(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 5.dp)
             .libraryItemActions(
-                clickLabel = "Open ${folder.name}",
+                clickLabel = stringResource(R.string.playlist_open_item, folder.name),
                 onClick = onClick,
                 onShowActions = onMoreClick
             ),
@@ -566,13 +574,13 @@ private fun PlaylistFolderRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = folderPlaylistCountText(folder.playlistCount),
+                    text = pluralStringResource(R.plurals.playlist_folder_count, folder.playlistCount, folder.playlistCount),
                     style = AppShellTypography.SongSubtitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             IconButton(onClick = onMoreClick) {
-                Icon(Icons.Filled.MoreVert, contentDescription = "More options for ${folder.name}")
+                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.playlist_more_options_for, folder.name))
             }
         }
     }
@@ -590,7 +598,7 @@ private fun PlaylistRow(
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 5.dp)
             .libraryItemActions(
-                clickLabel = "Open ${playlist.name}",
+                clickLabel = stringResource(R.string.playlist_open_item, playlist.name),
                 onClick = onClick,
                 onShowActions = onMoreClick
             ),
@@ -617,7 +625,7 @@ private fun PlaylistRow(
             ) { artworkModifier ->
                 PlaylistArtwork(
                     playlist = playlist,
-                    contentDescription = "Artwork for ${playlist.name}",
+                    contentDescription = stringResource(R.string.playlist_artwork_for, playlist.name),
                     modifier = artworkModifier
                 )
             }
@@ -629,7 +637,7 @@ private fun PlaylistRow(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = playlistMetadataText(playlist),
+                    text = playlistMetadataText(LocalResources.current, playlist),
                     style = AppShellTypography.SongSubtitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -644,7 +652,7 @@ private fun PlaylistRow(
             IconButton(onClick = onMoreClick) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
-                    contentDescription = "More options for ${playlist.name}"
+                    contentDescription = stringResource(R.string.playlist_more_options_for, playlist.name)
                 )
             }
         }
@@ -662,7 +670,7 @@ private fun PlaylistFolderGridTile(
         modifier = modifier
             .fillMaxWidth()
             .libraryItemActions(
-                clickLabel = "Open ${folder.name}",
+                clickLabel = stringResource(R.string.playlist_open_item, folder.name),
                 onClick = onClick,
                 onShowActions = onMoreClick
             ),
@@ -682,7 +690,7 @@ private fun PlaylistFolderGridTile(
                     tint = AppShellAccent
                 )
                 IconButton(onClick = onMoreClick, modifier = Modifier.align(Alignment.TopEnd)) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = "More options for ${folder.name}")
+                    Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.playlist_more_options_for, folder.name))
                 }
             }
             Column(
@@ -698,7 +706,7 @@ private fun PlaylistFolderGridTile(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    folderPlaylistCountText(folder.playlistCount),
+                    pluralStringResource(R.plurals.playlist_folder_count, folder.playlistCount, folder.playlistCount),
                     style = AppShellTypography.SongSubtitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = PlaylistGridLayout.secondaryMaxLines,
@@ -720,7 +728,7 @@ private fun PlaylistGridTile(
         modifier = modifier
             .fillMaxWidth()
             .libraryItemActions(
-                clickLabel = "Open ${playlist.name}",
+                clickLabel = stringResource(R.string.playlist_open_item, playlist.name),
                 onClick = onClick,
                 onShowActions = onMoreClick
             ),
@@ -741,12 +749,12 @@ private fun PlaylistGridTile(
                 ) { artworkModifier ->
                     PlaylistArtwork(
                         playlist = playlist,
-                        contentDescription = "Artwork for ${playlist.name}",
+                        contentDescription = stringResource(R.string.playlist_artwork_for, playlist.name),
                         modifier = artworkModifier
                     )
                 }
                 IconButton(onClick = onMoreClick, modifier = Modifier.align(Alignment.TopEnd)) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = "More options for ${playlist.name}")
+                    Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.playlist_more_options_for, playlist.name))
                 }
             }
             Column(
@@ -762,7 +770,7 @@ private fun PlaylistGridTile(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    playlistGridMetadataText(playlist),
+                    playlistGridMetadataText(LocalResources.current, playlist),
                     style = AppShellTypography.SongSubtitle,
                     color = if (playlist.type == PlaylistType.SMART) {
                         AppShellAccent
@@ -794,12 +802,12 @@ private fun PlaylistCollectionEmptyState(inFolder: Boolean) {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                if (inFolder) "No playlists in this folder" else "No playlists yet",
+                if (inFolder) stringResource(R.string.playlist_empty_folder) else stringResource(R.string.playlist_empty_root),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                if (inFolder) "Move a playlist here from its action menu."
-                else "Create one to start building your library.",
+                if (inFolder) stringResource(R.string.playlist_empty_folder_guidance)
+                else stringResource(R.string.playlist_empty_root_guidance),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -807,54 +815,66 @@ private fun PlaylistCollectionEmptyState(inFolder: Boolean) {
     }
 }
 
-private fun folderPlaylistCountText(count: Int): String =
-    if (count == 1) "1 playlist" else "$count playlists"
+private fun folderPlaylistCountText(resources: Resources, count: Int): String =
+    resources.getQuantityString(R.plurals.playlist_folder_count, count, count)
 
-private fun rootCollectionCountText(folderCount: Int, playlistCount: Int): String = buildString {
-    append(folderPlaylistCountText(playlistCount))
-    if (folderCount > 0) append(" • $folderCount folder${if (folderCount == 1) "" else "s"}")
+@Composable
+private fun rootCollectionCountText(folderCount: Int, playlistCount: Int): String {
+    if (folderCount == 0) {
+        return pluralStringResource(R.plurals.playlist_folder_count, playlistCount, playlistCount)
+    }
+    val pluralRes = if (playlistCount == 1) R.plurals.playlist_root_counts_one_playlist
+    else R.plurals.playlist_root_counts_many_playlists
+    return pluralStringResource(pluralRes, folderCount, playlistCount, folderCount)
 }
 
+@Composable
 internal fun playlistCollectionKindText(playlist: Playlist): String =
     when {
-        playlist.type != PlaylistType.SMART -> "Manual"
+        playlist.type != PlaylistType.SMART -> stringResource(playlistCollectionKindRes(playlist))
         playlist.membershipBehavior ==
             io.github.rsgarrido.sazanami.data.PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT &&
-            playlist.generatedLastRefreshedAt != null ->
-            "Smart • Updated ${relativeUpdatedText(playlist.generatedLastRefreshedAt)}"
-        else -> "Smart"
+            playlist.generatedLastRefreshedAt != null -> {
+            val age = relativePlaylistAge(playlist.generatedLastRefreshedAt)
+            when (age.unit) {
+                PlaylistAgeUnit.NOW -> stringResource(R.string.smart_playlist_collection_updated_now)
+                PlaylistAgeUnit.MINUTE -> pluralStringResource(R.plurals.smart_playlist_collection_updated_minutes, age.count, age.count)
+                PlaylistAgeUnit.HOUR -> pluralStringResource(R.plurals.smart_playlist_collection_updated_hours, age.count, age.count)
+                PlaylistAgeUnit.DAY -> pluralStringResource(R.plurals.smart_playlist_collection_updated_days, age.count, age.count)
+            }
+        }
+        else -> stringResource(playlistCollectionKindRes(playlist))
     }
 
 internal fun playlistGridMetadataText(
+    resources: Resources,
     playlist: Playlist,
     now: Long = System.currentTimeMillis()
 ): String = when {
-    playlist.type != PlaylistType.SMART -> playlistMetadataText(playlist)
+    playlist.type != PlaylistType.SMART -> playlistMetadataText(resources, playlist)
     playlist.membershipBehavior == PlaylistMembershipBehavior.GENERATED_SMART_SNAPSHOT &&
-        playlist.generatedLastRefreshedAt != null ->
-        "Smart \u2022 Updated ${compactRelativeUpdatedText(playlist.generatedLastRefreshedAt, now)}"
-    else -> "Smart"
+        playlist.generatedLastRefreshedAt != null -> {
+        val age = relativePlaylistAge(playlist.generatedLastRefreshedAt, now)
+        when (age.unit) {
+            PlaylistAgeUnit.NOW -> resources.getString(R.string.smart_playlist_grid_updated_now)
+            PlaylistAgeUnit.MINUTE -> resources.getQuantityString(R.plurals.smart_playlist_grid_updated_minutes, age.count, age.count)
+            PlaylistAgeUnit.HOUR -> resources.getQuantityString(R.plurals.smart_playlist_grid_updated_hours, age.count, age.count)
+            PlaylistAgeUnit.DAY -> resources.getQuantityString(R.plurals.smart_playlist_grid_updated_days, age.count, age.count)
+        }
+    }
+    else -> resources.getString(R.string.smart_playlist_collection_smart)
 }
 
-internal fun compactRelativeUpdatedText(timestamp: Long, now: Long = System.currentTimeMillis()): String {
-    val elapsed = (now - timestamp).coerceAtLeast(0L)
-    val minutes = elapsed / 60_000L
-    val hours = minutes / 60L
-    val days = hours / 24L
-    return when {
-        minutes < 1L -> "now"
-        minutes < 60L -> "${minutes}m"
-        hours < 24L -> "${hours}h"
-        else -> "${days}d"
-    }
-}
+internal fun playlistCollectionKindRes(playlist: Playlist): Int =
+    if (playlist.type == PlaylistType.SMART) R.string.smart_playlist_collection_smart
+    else R.string.smart_playlist_collection_manual
 
 internal enum class PlaylistSortField(
-    val label: String
+    @StringRes val labelRes: Int
 ) {
-    NAME("Name"),
-    CREATED("Created"),
-    MODIFIED("Modified");
+    NAME(R.string.playlist_sort_name),
+    CREATED(R.string.playlist_sort_created),
+    MODIFIED(R.string.playlist_sort_modified);
 
     fun sort(
         playlists: List<Playlist>,

@@ -85,11 +85,11 @@ class NowPlayingWidgetFoundationTest {
     }
 
     @Test
-    fun playerProjection_blankMetadataUsesStableFallbackLabels() {
+    fun playerProjection_blankMetadataDoesNotPersistLocalizedFallbacks() {
         val snapshot = playerState(title = "  ", artist = null).toSnapshot()
 
-        assertEquals("Unknown title", snapshot.title)
-        assertEquals("Unknown artist", snapshot.artist)
+        assertEquals("", snapshot.title)
+        assertEquals("", snapshot.artist)
     }
 
     @Test

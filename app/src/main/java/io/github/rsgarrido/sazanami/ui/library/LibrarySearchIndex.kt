@@ -1,12 +1,18 @@
 package io.github.rsgarrido.sazanami.ui.library
 
+import androidx.annotation.StringRes
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Playlist
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.membershipKey
 import java.util.Locale
 
-enum class SearchCategory(val label: String) {
-    ALL("All"), SONGS("Songs"), ALBUMS("Albums"), ARTISTS("Artists"), PLAYLISTS("Playlists")
+enum class SearchCategory(@StringRes val labelRes: Int) {
+    ALL(R.string.library_search_all),
+    SONGS(R.string.library_search_songs),
+    ALBUMS(R.string.library_search_albums),
+    ARTISTS(R.string.library_search_artists),
+    PLAYLISTS(R.string.library_search_playlists)
 }
 
 /** Search normalization never changes domain metadata or entity identity. */

@@ -36,6 +36,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -410,7 +412,7 @@ internal fun ModernQueueHubButton(
     ) {
         Icon(
             imageVector = Icons.Filled.QueueMusic,
-            contentDescription = "Open queues",
+            contentDescription = stringResource(R.string.player_open_queues),
             tint = tint
         )
     }

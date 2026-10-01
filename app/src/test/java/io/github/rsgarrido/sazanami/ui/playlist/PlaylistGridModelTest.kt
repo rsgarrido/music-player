@@ -20,7 +20,7 @@ class PlaylistGridModelTest {
             generatedLastRefreshedAt = now - 61_000L
         )
 
-        assertEquals("Smart \u2022 Updated 1m", playlistGridMetadataText(playlist, now))
+        assertEquals(RelativePlaylistAge(PlaylistAgeUnit.MINUTE, 1), relativePlaylistAge(playlist.generatedLastRefreshedAt!!, now))
     }
 
     @Test

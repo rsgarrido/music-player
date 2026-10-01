@@ -1,7 +1,9 @@
 package io.github.rsgarrido.sazanami.mediaaccess
 
 import android.content.Context
+import android.content.res.Resources
 import android.net.Uri
+import io.github.rsgarrido.sazanami.R
 
 internal data class FolderArtworkAccessState(
     val treeUri: Uri? = null,
@@ -62,10 +64,11 @@ internal class FolderArtworkAccessStore(context: Context) {
     }
 }
 
-internal fun folderArtworkLocationLabel(uri: Uri?): String {
-    if (uri == null) return "Embedded artwork only"
+internal fun folderArtworkLocationLabel(resources: Resources, uri: Uri?): String {
+    if (uri == null) return resources.getString(R.string.folder_artwork_embedded_only)
     val decoded = Uri.decode(uri.lastPathSegment.orEmpty())
     val label = decoded.substringAfter(':', decoded).trim('/').substringAfterLast('/')
-    return label.takeIf(String::isNotBlank)?.let { "Folder artwork • $it" }
-        ?: "Folder artwork enabled"
+    return label.takeIf(String::isNotBlank)?.let {
+        resources.getString(R.string.folder_artwork_named_location, it)
+    } ?: resources.getString(R.string.folder_artwork_enabled)
 }

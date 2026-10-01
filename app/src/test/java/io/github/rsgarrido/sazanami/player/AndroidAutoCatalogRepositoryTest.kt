@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.player
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.net.Uri
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.FolderSelectionMode
@@ -22,6 +23,8 @@ import org.mockito.Mockito.*
 
 class AndroidAutoCatalogRepositoryTest {
     private val context = mock(Context::class.java)
+    private val folderArtworkPreferences = mock(SharedPreferences::class.java)
+    private val localArtistArtworkPreferences = mock(SharedPreferences::class.java)
     private val database = mock(AppDatabase::class.java)
     private val playlists = mock(PlaylistDao::class.java)
     private val artists = mock(ArtistPictureAssignmentDao::class.java)
@@ -34,6 +37,10 @@ class AndroidAutoCatalogRepositoryTest {
     fun setup() = runBlocking {
         PerformanceTracing.bypassForTests = true
         `when`(context.applicationContext).thenReturn(context)
+        `when`(context.getSharedPreferences("folder_artwork_access", Context.MODE_PRIVATE))
+            .thenReturn(folderArtworkPreferences)
+        `when`(context.getSharedPreferences("local_artist_artwork", Context.MODE_PRIVATE))
+            .thenReturn(localArtistArtworkPreferences)
         `when`(database.playlistDao()).thenReturn(playlists)
         `when`(database.artistPictureAssignmentDao()).thenReturn(artists)
         `when`(playlists.getPlaylistsWithSongCount()).thenReturn(emptyList())

@@ -44,12 +44,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.ui.AppShellIcons
@@ -82,6 +84,7 @@ import io.github.rsgarrido.sazanami.ui.player.modern.ModernWaveformDensity
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernWaveformSize
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernSolidColorSwatches
 import io.github.rsgarrido.sazanami.ui.player.modern.modernArgbToHsv
+import io.github.rsgarrido.sazanami.ui.player.modern.localizedLabel
 import io.github.rsgarrido.sazanami.ui.player.modern.modernHsvToArgb
 import io.github.rsgarrido.sazanami.ui.player.modern.rememberModernArtworkPalette
 import io.github.rsgarrido.sazanami.ui.player.modern.resolveModernControlRowLayout
@@ -118,17 +121,17 @@ internal fun DefaultPlayerCustomizationScreen(
             IconButton(onClick = onBackClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back"
+                    contentDescription = stringResource(R.string.modern_back)
                 )
             }
             Column(modifier = Modifier.padding(start = 4.dp)) {
                 Text(
-                    text = "Customize Default Player",
+                    text = stringResource(R.string.modern_customize_default_player),
                     style = AppShellTypography.ScreenTitle,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "Changes appear instantly in the preview and expanded player.",
+                    text = stringResource(R.string.modern_changes_preview),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -136,8 +139,8 @@ internal fun DefaultPlayerCustomizationScreen(
         }
 
         SettingsSection(
-            title = "Preview",
-            description = "A compact view of the current Default player appearance.",
+            title = stringResource(R.string.modern_preview),
+            description = stringResource(R.string.modern_preview_description),
             icon = AppShellIcons.Deck
         ) {
             ModernPlayerAppearancePreview(
@@ -150,15 +153,15 @@ internal fun DefaultPlayerCustomizationScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Presets",
-            description = "Apply a coordinated look, then fine-tune any setting below.",
+            title = stringResource(R.string.modern_presets),
+            description = stringResource(R.string.modern_presets_description),
             icon = AppShellIcons.Palette
         ) {
             ChoiceGroup(
-                title = "Current appearance",
+                title = stringResource(R.string.modern_current_appearance),
                 options = ModernAppearanceChoice.entries,
                 selected = activeChoice,
-                label = ModernAppearanceChoice::displayName,
+                label = { stringResource(it.labelRes) },
                 onSelected = onChoiceSelected
             )
         }
@@ -166,15 +169,15 @@ internal fun DefaultPlayerCustomizationScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Seekbar",
-            description = "Choose the progress style and waveform presentation.",
+            title = stringResource(R.string.modern_seekbar),
+            description = stringResource(R.string.modern_seekbar_description),
             icon = AppShellIcons.Seekbar
         ) {
             ChoiceGroup(
-                title = "Style",
+                title = stringResource(R.string.modern_style),
                 options = ModernSeekbarStyle.entries,
                 selected = appearance.seekbar.style,
-                label = ModernSeekbarStyle::displayName,
+                label = { it.localizedLabel() },
                 onSelected = { style ->
                     onAppearanceEdited { current ->
                         current.copy(seekbar = current.seekbar.copy(style = style))
@@ -184,10 +187,10 @@ internal fun DefaultPlayerCustomizationScreen(
 
             if (appearance.seekbar.style.usesWaveformData) {
                 ChoiceGroup(
-                    title = "Waveform size",
+                    title = stringResource(R.string.modern_waveform_size),
                     options = ModernWaveformSize.entries,
                     selected = appearance.seekbar.waveformSize,
-                    label = ModernWaveformSize::displayName,
+                    label = { it.localizedLabel() },
                     onSelected = { size ->
                         onAppearanceEdited { current ->
                             current.copy(seekbar = current.seekbar.copy(waveformSize = size))
@@ -195,10 +198,10 @@ internal fun DefaultPlayerCustomizationScreen(
                     }
                 )
                 ChoiceGroup(
-                    title = "Waveform density",
+                    title = stringResource(R.string.modern_waveform_density),
                     options = ModernWaveformDensity.entries,
                     selected = appearance.seekbar.waveformDensity,
-                    label = ModernWaveformDensity::displayName,
+                    label = { it.localizedLabel() },
                     onSelected = { density ->
                         onAppearanceEdited { current ->
                             current.copy(seekbar = current.seekbar.copy(waveformDensity = density))
@@ -208,10 +211,10 @@ internal fun DefaultPlayerCustomizationScreen(
             }
 
             ChoiceGroup(
-                title = "Progress color",
+                title = stringResource(R.string.modern_progress_color),
                 options = ModernSeekbarColorMode.entries,
                 selected = appearance.seekbar.colorMode,
-                label = ModernSeekbarColorMode::displayName,
+                label = { it.localizedLabel() },
                 onSelected = { mode ->
                     onAppearanceEdited { current ->
                         current.copy(seekbar = current.seekbar.copy(colorMode = mode))
@@ -223,15 +226,15 @@ internal fun DefaultPlayerCustomizationScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Background",
-            description = "Set the backdrop while keeping player details readable.",
+            title = stringResource(R.string.modern_background),
+            description = stringResource(R.string.modern_background_description),
             icon = AppShellIcons.Palette
         ) {
             ChoiceGroup(
-                title = "Style",
+                title = stringResource(R.string.modern_style),
                 options = ModernBackgroundStyle.entries,
                 selected = appearance.background.style,
-                label = ModernBackgroundStyle::displayName,
+                label = { it.localizedLabel() },
                 onSelected = { style ->
                     onAppearanceEdited { current ->
                         current.copy(background = current.background.copy(style = style))
@@ -241,10 +244,10 @@ internal fun DefaultPlayerCustomizationScreen(
 
             if (appearance.background.style.supportsBlur) {
                 ChoiceGroup(
-                    title = "Blur strength",
+                    title = stringResource(R.string.modern_blur_strength),
                     options = ModernBlurStrength.entries,
                     selected = appearance.background.blurStrength,
-                    label = ModernBlurStrength::displayName,
+                    label = { it.localizedLabel() },
                     onSelected = { strength ->
                         onAppearanceEdited { current ->
                             current.copy(background = current.background.copy(blurStrength = strength))
@@ -255,10 +258,10 @@ internal fun DefaultPlayerCustomizationScreen(
 
             if (appearance.background.style.supportsDimming) {
                 ChoiceGroup(
-                    title = "Dimming",
+                    title = stringResource(R.string.modern_dimming),
                     options = ModernDimmingStrength.entries,
                     selected = appearance.background.dimmingStrength,
-                    label = ModernDimmingStrength::displayName,
+                    label = { it.localizedLabel() },
                     onSelected = { strength ->
                         onAppearanceEdited { current ->
                             current.copy(background = current.background.copy(dimmingStrength = strength))
@@ -286,30 +289,30 @@ internal fun DefaultPlayerCustomizationScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Artwork",
-            description = "Adjust the album cover's shape, scale, fit, and depth.",
+            title = stringResource(R.string.modern_artwork),
+            description = stringResource(R.string.modern_artwork_description),
             icon = AppShellIcons.Deck
         ) {
-            ChoiceGroup("Shape", ModernArtworkShape.entries, appearance.artwork.shape,
-                ModernArtworkShape::displayName) { value ->
+            ChoiceGroup(stringResource(R.string.modern_shape), ModernArtworkShape.entries, appearance.artwork.shape,
+                { it.localizedLabel() }) { value ->
                 onAppearanceEdited { current ->
                     current.copy(artwork = current.artwork.copy(shape = value))
                 }
             }
-            ChoiceGroup("Size", ModernArtworkSize.entries, appearance.artwork.size,
-                ModernArtworkSize::displayName) { value ->
+            ChoiceGroup(stringResource(R.string.modern_size), ModernArtworkSize.entries, appearance.artwork.size,
+                { it.localizedLabel() }) { value ->
                 onAppearanceEdited { current ->
                     current.copy(artwork = current.artwork.copy(size = value))
                 }
             }
-            ChoiceGroup("Image fit", ModernArtworkFit.entries, appearance.artwork.fit,
-                ModernArtworkFit::displayName) { value ->
+            ChoiceGroup(stringResource(R.string.modern_image_fit), ModernArtworkFit.entries, appearance.artwork.fit,
+                { it.localizedLabel() }) { value ->
                 onAppearanceEdited { current ->
                     current.copy(artwork = current.artwork.copy(fit = value))
                 }
             }
-            ChoiceGroup("Shadow", ModernArtworkShadow.entries, appearance.artwork.shadow,
-                ModernArtworkShadow::displayName) { value ->
+            ChoiceGroup(stringResource(R.string.modern_shadow), ModernArtworkShadow.entries, appearance.artwork.shadow,
+                { it.localizedLabel() }) { value ->
                 onAppearanceEdited { current ->
                     current.copy(artwork = current.artwork.copy(shadow = value))
                 }
@@ -319,24 +322,24 @@ internal fun DefaultPlayerCustomizationScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Playback Controls",
-            description = "Choose the control treatment, scale, and active accent.",
+            title = stringResource(R.string.modern_playback_controls),
+            description = stringResource(R.string.modern_playback_controls_description),
             icon = AppShellIcons.MusicNote
         ) {
-            ChoiceGroup("Style", ModernControlStyle.entries, appearance.controls.style,
-                ModernControlStyle::displayName) { value ->
+            ChoiceGroup(stringResource(R.string.modern_style), ModernControlStyle.entries, appearance.controls.style,
+                { it.localizedLabel() }) { value ->
                 onAppearanceEdited { current ->
                     current.copy(controls = current.controls.copy(style = value))
                 }
             }
-            ChoiceGroup("Size", ModernControlSize.entries, appearance.controls.size,
-                ModernControlSize::displayName) { value ->
+            ChoiceGroup(stringResource(R.string.modern_size), ModernControlSize.entries, appearance.controls.size,
+                { it.localizedLabel() }) { value ->
                 onAppearanceEdited { current ->
                     current.copy(controls = current.controls.copy(size = value))
                 }
             }
-            ChoiceGroup("Accent", ModernControlAccent.entries, appearance.controls.accent,
-                ModernControlAccent::displayName) { value ->
+            ChoiceGroup(stringResource(R.string.modern_accent), ModernControlAccent.entries, appearance.controls.accent,
+                { it.localizedLabel() }) { value ->
                 onAppearanceEdited { current ->
                     current.copy(controls = current.controls.copy(accent = value))
                 }
@@ -346,21 +349,21 @@ internal fun DefaultPlayerCustomizationScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Layout",
-            description = "Tune spacing, metadata alignment, and technical details.",
+            title = stringResource(R.string.modern_layout),
+            description = stringResource(R.string.modern_layout_description),
             icon = AppShellIcons.ListView
         ) {
-            ChoiceGroup("Density", ModernLayoutDensity.entries, appearance.layout.density,
-                ModernLayoutDensity::displayName) { value ->
+            ChoiceGroup(stringResource(R.string.modern_density), ModernLayoutDensity.entries, appearance.layout.density,
+                { it.localizedLabel() }) { value ->
                 onAppearanceEdited { current ->
                     current.copy(layout = current.layout.copy(density = value))
                 }
             }
             ChoiceGroup(
-                "Metadata alignment",
+                stringResource(R.string.modern_metadata_alignment),
                 ModernMetadataAlignment.entries,
                 appearance.layout.metadataAlignment,
-                ModernMetadataAlignment::displayName
+                { it.localizedLabel() }
             ) { value ->
                 onAppearanceEdited { current ->
                     current.copy(layout = current.layout.copy(metadataAlignment = value))
@@ -374,9 +377,9 @@ internal fun DefaultPlayerCustomizationScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Audio quality badge", style = MaterialTheme.typography.labelLarge)
+                    Text(stringResource(R.string.modern_audio_quality_badge), style = MaterialTheme.typography.labelLarge)
                     Text(
-                        "Show format and bit-depth details when available.",
+                        stringResource(R.string.modern_audio_quality_badge_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -397,8 +400,8 @@ internal fun DefaultPlayerCustomizationScreen(
         SettingsSectionSpacer()
 
         SettingsSection(
-            title = "Reset",
-            description = "Restore Sazanami's intended Modern player defaults.",
+            title = stringResource(R.string.modern_reset),
+            description = stringResource(R.string.modern_reset_description),
             icon = Icons.Filled.Refresh
         ) {
             ElevatedButton(
@@ -412,7 +415,7 @@ internal fun DefaultPlayerCustomizationScreen(
             ) {
                 Icon(Icons.Filled.Refresh, contentDescription = null)
                 Text(
-                    text = "Reset Default Player Appearance",
+                    text = stringResource(R.string.modern_reset_default_appearance),
                     modifier = Modifier.padding(start = 10.dp)
                 )
             }
@@ -424,16 +427,15 @@ internal fun DefaultPlayerCustomizationScreen(
     if (resetConfirmationVisible) {
         AlertDialog(
             onDismissRequest = { resetConfirmationVisible = false },
-            title = { Text("Reset Default Player Appearance?") },
+            title = { Text(stringResource(R.string.modern_reset_confirm_title)) },
             text = {
                 Text(
-                    "This restores all Default player appearance settings. " +
-                            "Other player themes are unchanged."
+                    stringResource(R.string.modern_reset_confirm_body)
                 )
             },
             dismissButton = {
                 TextButton(onClick = { resetConfirmationVisible = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.modern_cancel))
                 }
             },
             confirmButton = {
@@ -443,7 +445,7 @@ internal fun DefaultPlayerCustomizationScreen(
                         onReset()
                     }
                 ) {
-                    Text("Reset")
+                    Text(stringResource(R.string.modern_reset))
                 }
             }
         )
@@ -517,7 +519,7 @@ internal fun ModernPlayerAppearancePreview(
 
                 Spacer(modifier = Modifier.height(13.dp))
                 Text(
-                    text = previewSong?.title ?: "Default Player Preview",
+                text = previewSong?.title ?: stringResource(R.string.modern_preview_title_fallback),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = style.contentColor,
@@ -699,7 +701,7 @@ private fun SolidColorPicker(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
-        Text("Solid color", style = MaterialTheme.typography.labelLarge)
+        Text(stringResource(R.string.modern_solid_color), style = MaterialTheme.typography.labelLarge)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(top = 10.dp)
@@ -744,17 +746,17 @@ private fun SolidColorPicker(
                 )
             }
         }
-        ColorSlider("Hue", hsv.hue, 0f..359f) { value ->
+        ColorSlider(stringResource(R.string.modern_hue), hsv.hue, 0f..359f) { value ->
             onColorChanged { current ->
                 modernHsvToArgb(modernArgbToHsv(current).copy(hue = value))
             }
         }
-        ColorSlider("Saturation", hsv.saturation, 0f..1f) { value ->
+        ColorSlider(stringResource(R.string.modern_saturation), hsv.saturation, 0f..1f) { value ->
             onColorChanged { current ->
                 modernHsvToArgb(modernArgbToHsv(current).copy(saturation = value))
             }
         }
-        ColorSlider("Brightness", hsv.value, 0.08f..1f) { value ->
+        ColorSlider(stringResource(R.string.modern_brightness), hsv.value, 0.08f..1f) { value ->
             onColorChanged { current ->
                 modernHsvToArgb(modernArgbToHsv(current).copy(value = value))
             }
@@ -790,7 +792,7 @@ private fun <T> ChoiceGroup(
     title: String,
     options: List<T>,
     selected: T?,
-    label: (T) -> String,
+    label: @Composable (T) -> String,
     onSelected: (T) -> Unit
 ) {
     Column(

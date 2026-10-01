@@ -1,4 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.pocketcassette
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -104,7 +106,7 @@ internal fun PocketCassetteWindow(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 androidx.compose.material3.Text(
-                    text = "TAPE BAY // SIDE A",
+            text = stringResource(R.string.player_cassette_tape_bay),
                     color = Color.White.copy(alpha = 0.82f),
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -129,7 +131,7 @@ internal fun PocketCassetteWindow(
                             )
                     )
                     androidx.compose.material3.Text(
-                        text = if (isPlaying) "MOTION" else "HOLD",
+            text = stringResource(if (isPlaying) R.string.player_cassette_motion else R.string.player_cassette_hold),
                         color = Color.White.copy(alpha = 0.7f),
                         fontFamily = FontFamily.Monospace,
                         fontSize = 8.sp,
@@ -158,7 +160,7 @@ internal fun PocketCassetteWindow(
                 if (sharedOwner == PocketCassetteSharedOwner.EXPANDED) {
                     RetainedArtworkImage(
                         model = currentSong?.albumArtUri,
-                        contentDescription = "Album artwork cassette label",
+            contentDescription = stringResource(R.string.player_cassette_artwork_label),
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxSize()
@@ -422,7 +424,7 @@ private fun PocketCassetteTrackLabel(
         verticalArrangement = Arrangement.spacedBy(1.dp)
     ) {
         androidx.compose.material3.Text(
-            text = currentSong?.title ?: "No track loaded",
+            text = currentSong?.title ?: stringResource(R.string.player_no_track_loaded),
             color = PocketCassetteColors.windowText,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
@@ -449,7 +451,7 @@ private fun PocketCassetteTrackLabel(
             verticalAlignment = Alignment.CenterVertically
         ) {
             androidx.compose.material3.Text(
-                text = currentSong?.artist?.ifBlank { "Unknown artist" }.orEmpty(),
+            text = currentSong?.artist?.ifBlank { stringResource(R.string.player_unknown_artist) }.orEmpty(),
                 color = PocketCassetteColors.windowTextMuted,
                 fontFamily = FontFamily.Monospace,
                 fontSize = if (compact) 8.sp else 9.sp,
@@ -477,7 +479,7 @@ private fun PocketCassetteTrackLabel(
             )
         }
         androidx.compose.material3.Text(
-            text = currentSong?.album?.ifBlank { "Unknown album" }.orEmpty(),
+            text = currentSong?.album?.ifBlank { stringResource(R.string.player_unknown_album) }.orEmpty(),
             color = PocketCassetteColors.windowTextMuted.copy(alpha = 0.8f),
             fontFamily = FontFamily.Monospace,
             fontSize = 8.sp,
@@ -486,7 +488,7 @@ private fun PocketCassetteTrackLabel(
             modifier = if (onOpenAlbumClick != null) {
                 Modifier.clickable(
                     role = Role.Button,
-                    onClickLabel = "Open current album",
+            onClickLabel = stringResource(R.string.player_open_current_album),
                     onClick = onOpenAlbumClick
                 )
             } else Modifier

@@ -65,7 +65,7 @@ fun ClassicWheelMiniPlayer(
             Spacer(modifier = Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = displayedState.currentSong.miniTitle,
+                    text = displayedState.currentSong.localizedMiniTitle(),
                     style = MaterialTheme.typography.titleSmall,
                     color = tokens.displayTextColor,
                     fontWeight = FontWeight.SemiBold,
@@ -74,7 +74,7 @@ fun ClassicWheelMiniPlayer(
                     modifier = Modifier.onGloballyPositioned { morphBounds?.updateMiniTitle(it.boundsInRoot()) }
                 )
                 Text(
-                    text = displayedState.currentSong.miniArtist,
+                    text = displayedState.currentSong.localizedMiniArtist(),
                     style = MaterialTheme.typography.bodySmall,
                     color = tokens.displayTextColor.copy(alpha = 0.72f),
                     maxLines = 1,

@@ -67,6 +67,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsGestureRegion
@@ -138,8 +140,8 @@ internal fun PocketCassetteControls(
         ) {
             PocketCassetteMechanicalButton(
                 icon = Icons.Filled.SkipPrevious,
-                label = "REW / PREV",
-                contentDescription = "Previous track. Hold to seek backward",
+                label = stringResource(R.string.player_cassette_previous),
+                contentDescription = stringResource(R.string.player_previous_hold),
                 onClick = onPreviousClick,
                 onLongPressStart = { rewindTarget = currentPosition },
                 onLongPressRepeat = {
@@ -148,15 +150,15 @@ internal fun PocketCassetteControls(
                     )
                     onSeekChange(rewindTarget)
                 },
-                longClickLabel = "Seek backward while held",
+                longClickLabel = stringResource(R.string.player_seek_backward_hold),
                 compact = compact,
                 enabled = inputEnabled,
                 modifier = Modifier.weight(1f)
             )
             PocketCassetteMechanicalButton(
                 icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                label = if (isPlaying) "PAUSE" else "PLAY",
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                label = stringResource(if (isPlaying) R.string.player_cassette_pause else R.string.player_cassette_play),
+                contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                 onClick = onPlayPauseClick,
                 compact = compact,
                 accent = true,
@@ -169,8 +171,8 @@ internal fun PocketCassetteControls(
             )
             PocketCassetteMechanicalButton(
                 icon = Icons.Filled.SkipNext,
-                label = "NEXT / FWD",
-                contentDescription = "Next track. Hold to seek forward",
+                label = stringResource(R.string.player_cassette_next),
+                contentDescription = stringResource(R.string.player_next_hold),
                 onClick = onNextClick,
                 onLongPressStart = { forwardTarget = currentPosition },
                 onLongPressRepeat = {
@@ -179,7 +181,7 @@ internal fun PocketCassetteControls(
                     )
                     onSeekChange(forwardTarget)
                 },
-                longClickLabel = "Seek forward while held",
+                longClickLabel = stringResource(R.string.player_seek_forward_hold),
                 compact = compact,
                 enabled = inputEnabled,
                 modifier = Modifier.weight(1f)
@@ -192,8 +194,8 @@ internal fun PocketCassetteControls(
         ) {
             PocketCassetteUtilityButton(
                 icon = Icons.Filled.Shuffle,
-                label = "MIX",
-                contentDescription = if (isShuffleEnabled) "Disable shuffle" else "Enable shuffle",
+                label = stringResource(R.string.player_cassette_mix),
+                contentDescription = stringResource(if (isShuffleEnabled) R.string.player_disable_shuffle else R.string.player_enable_shuffle),
                 active = isShuffleEnabled,
                 enabled = inputEnabled,
                 onClick = onShuffleClick,
@@ -202,14 +204,14 @@ internal fun PocketCassetteControls(
             PocketCassetteUtilityButton(
                 icon = if (repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
                 label = when (repeatMode) {
-                    RepeatMode.OFF -> "LOOP"
-                    RepeatMode.ALL -> "ALL"
-                    RepeatMode.ONE -> "ONE"
+                    RepeatMode.OFF -> stringResource(R.string.player_cassette_loop)
+                    RepeatMode.ALL -> stringResource(R.string.player_cassette_all)
+                    RepeatMode.ONE -> stringResource(R.string.player_cassette_one)
                 },
                 contentDescription = when (repeatMode) {
-                    RepeatMode.OFF -> "Enable repeat all"
-                    RepeatMode.ALL -> "Enable repeat one"
-                    RepeatMode.ONE -> "Disable repeat"
+                    RepeatMode.OFF -> stringResource(R.string.player_enable_repeat_all)
+                    RepeatMode.ALL -> stringResource(R.string.player_enable_repeat_one)
+                    RepeatMode.ONE -> stringResource(R.string.player_disable_repeat)
                 },
                 active = repeatMode != RepeatMode.OFF,
                 enabled = inputEnabled,
@@ -218,11 +220,11 @@ internal fun PocketCassetteControls(
             )
             PocketCassetteUtilityButton(
                 icon = if (isCurrentSongFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                label = "SAVE",
+                label = stringResource(R.string.player_cassette_save),
                 contentDescription = if (isCurrentSongFavorite) {
-                    "Remove from favorites"
+                    stringResource(R.string.player_remove_favorite)
                 } else {
-                    "Add to favorites"
+                    stringResource(R.string.player_add_favorite)
                 },
                 active = isCurrentSongFavorite,
                 enabled = inputEnabled && currentSong != null,
@@ -231,8 +233,8 @@ internal fun PocketCassetteControls(
             )
             PocketCassetteUtilityButton(
                 icon = Icons.AutoMirrored.Filled.List,
-                label = "QUEUE",
-                contentDescription = "Open queues",
+                label = stringResource(R.string.player_cassette_queue),
+                contentDescription = stringResource(R.string.player_open_queues),
                 enabled = inputEnabled,
                 onClick = onOpenUpNextClick,
                 modifier = Modifier.weight(1f)
@@ -422,7 +424,7 @@ private fun PocketCassetteSeekSlot(
                 fontSize = if (compact) 9.sp else 10.sp
             )
             Text(
-                text = "TAPE COUNTER // POSITION",
+            text = stringResource(R.string.player_cassette_counter_position),
                 color = PocketCassetteColors.shellInk.copy(alpha = 0.72f),
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,

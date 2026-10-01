@@ -1,5 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.state
 
+import android.content.res.Resources
+import io.github.rsgarrido.sazanami.R
+
 data class SleepTimerUiState(
     val isActive: Boolean = false,
     val remainingSeconds: Int = 0,
@@ -12,13 +15,13 @@ data class SleepTimerUiState(
 
 val SLEEP_TIMER_OPTIONS_MINUTES = listOf(5, 10, 15, 30, 45, 60)
 
-fun SleepTimerUiState.displayText(): String {
-    if (!isActive || remainingSeconds <= 0) return "No sleep timer"
+fun SleepTimerUiState.displayText(resources: Resources): String {
+    if (!isActive || remainingSeconds <= 0) return resources.getString(R.string.sleep_timer_inactive)
     val minutes = remainingSeconds / 60
     val seconds = remainingSeconds % 60
     return if (minutes > 0) {
-        "${minutes}m ${seconds.toString().padStart(2, '0')}s remaining"
+        resources.getString(R.string.sleep_timer_minutes_remaining, minutes, seconds)
     } else {
-        "${seconds}s remaining"
+        resources.getString(R.string.sleep_timer_seconds_remaining, seconds)
     }
 }

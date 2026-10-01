@@ -1,6 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.mini
 
-import android.R
+import android.R as AndroidR
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.background
@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.player.pocketdisc.PocketDiscMorphBounds
 import io.github.rsgarrido.sazanami.ui.player.pocketdisc.PocketDiscSegmentedProgress
 import io.github.rsgarrido.sazanami.ui.player.pocketdisc.normalizedPocketDiscProgress
@@ -83,7 +85,7 @@ fun PocketDiscMiniPlayer(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = displayedState.currentSong.miniTitle.uppercase(Locale.ROOT),
+                    text = displayedState.currentSong.localizedMiniTitle().uppercase(Locale.ROOT),
                     color = ink,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
@@ -103,7 +105,7 @@ fun PocketDiscMiniPlayer(
                         )
                 )
                 Text(
-                    text = displayedState.currentSong.miniArtist.uppercase(Locale.ROOT),
+                    text = displayedState.currentSong.localizedMiniArtist().uppercase(Locale.ROOT),
                     color = ink.copy(alpha = 0.66f),
                     fontFamily = FontFamily.Monospace,
                     fontSize = 8.sp,
@@ -227,10 +229,10 @@ private fun PocketDiscMiniMediaBay(
             if (!transitionOwnsArtwork) {
                 AsyncImage(
                     model = state.currentSong.albumArtUri,
-                    contentDescription = "Album art for ${state.currentSong.miniTitle}",
+                    contentDescription = stringResource(R.string.player_album_art_for, state.currentSong.localizedMiniTitle()),
                     contentScale = ContentScale.Fit,
-                    error = painterResource(R.drawable.ic_media_play),
-                    placeholder = painterResource(R.drawable.ic_media_play),
+                    error = painterResource(AndroidR.drawable.ic_media_play),
+                    placeholder = painterResource(AndroidR.drawable.ic_media_play),
                     modifier = Modifier.fillMaxSize()
                 )
             }

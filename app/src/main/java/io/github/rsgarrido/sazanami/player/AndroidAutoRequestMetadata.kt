@@ -142,26 +142,35 @@ private fun Int?.toAndroidAutoRequestType(): AndroidAutoRequestType? = when (thi
 
 internal fun String?.voiceEntityQuery(): String? = this
     ?.trim()
-    ?.replace(Regex("^(please\\s+)?(play|listen\\s+to)(\\s+me)?\\s+", RegexOption.IGNORE_CASE), "")
-    ?.replace(Regex("\\s+on\\s+sazanami\\s*$", RegexOption.IGNORE_CASE), "")
+    // Parser aliases are deliberately language-specific, not localized browse labels.
+    // Keep English active regardless of the device locale alongside neutral Spanish.
+    ?.replace(Regex("^(please\\s+)?(play|listen\\s+to)(\\s+me)?\\s+|^(por\\s+favor\\s+)?(reproduce|pon|escucha)(\\s+me)?\\s+", RegexOption.IGNORE_CASE), "")
+    ?.replace(Regex("\\s+(on|en)\\s+sazanami\\s*$", RegexOption.IGNORE_CASE), "")
     ?.trim()
     ?.takeIf(String::isNotBlank)
 
 internal fun String.splitVoiceEntityByArtist(): Pair<String, String>? {
-    val marker = Regex("\\s+by\\s+", RegexOption.IGNORE_CASE).find(this) ?: return null
+    val marker = Regex("\\s+(by|por)\\s+", RegexOption.IGNORE_CASE).find(this) ?: return null
     val entity = substring(0, marker.range.first).trim()
     val artist = substring(marker.range.last + 1).trim()
     return if (entity.isNotBlank() && artist.isNotBlank()) entity to artist else null
 }
 
-private fun String?.isGenericVoiceQuery(): Boolean = voiceEntityQuery()?.lowercase() in setOf(
+internal fun String?.isGenericVoiceQuery(): Boolean = voiceEntityQuery()?.lowercase() in setOf(
     "music",
     "my music",
     "songs",
     "all songs",
     "my songs",
     "library",
-    "my library"
+    "my library",
+    "música",
+    "mi música",
+    "canciones",
+    "todas las canciones",
+    "mis canciones",
+    "biblioteca",
+    "mi biblioteca"
 )
 
 internal fun AndroidAutoSearchRequest.diagnosticSummary(): String =

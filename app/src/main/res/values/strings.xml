@@ -155,6 +155,9 @@
     <string name="statistics_close">Close</string>
     <string name="statistics_recorded_listening">Recorded listening</string>
     <string name="statistics_recorded_listening_support">Detailed history only</string>
+    <string name="statistics_recorded_accessibility">%1$s, %2$s. %3$s</string>
+    <string name="statistics_metric_accessibility">%1$s, %2$s</string>
+    <string name="statistics_metric_with_support_accessibility">%1$s, %2$s. %3$s</string>
     <string name="statistics_overview_title">Overview</string>
     <string name="statistics_plays">Plays</string>
     <string name="statistics_completed">Completed</string>

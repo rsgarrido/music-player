@@ -21,10 +21,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 
 @Composable
@@ -96,7 +98,7 @@ fun SongGroupDetailScreen(
             },
             emptyContent = {
                 Text(
-                    text = "No songs match your search.",
+                    text = stringResource(R.string.library_song_group_no_match),
                     modifier = Modifier.padding(16.dp)
                 )
             }
@@ -142,22 +144,22 @@ private fun SongGroupDetailHeader(
         ) {
             LibraryDetailAction(
                 icon = Icons.Filled.PlayArrow,
-                label = "Play",
+                label = stringResource(R.string.playlist_play),
                 enabled = hasSongs,
                 onClick = onPlayAllClick
             )
             LibraryDetailAction(
                 icon = Icons.Filled.Shuffle,
-                label = "Shuffle",
+                label = stringResource(R.string.playlist_shuffle),
                 enabled = hasSongs,
                 onClick = onShuffleAllClick
             )
             LibraryDetailAction(
                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
-                label = "Add",
+                label = stringResource(R.string.library_queue_add_action),
                 enabled = hasSongs,
                 onClick = onAddAllToPlaylistClick,
-                contentDescription = "Add to playlist"
+                contentDescription = stringResource(R.string.library_song_add_to_playlist)
             )
         }
     }

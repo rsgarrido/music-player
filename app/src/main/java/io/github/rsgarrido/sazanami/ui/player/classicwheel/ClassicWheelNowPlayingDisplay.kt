@@ -45,12 +45,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.rsgarrido.sazanami.ui.player.RetainedArtworkImage
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.player.RepeatMode
+import io.github.rsgarrido.sazanami.R
 import kotlin.math.roundToInt
 
 @Composable
@@ -88,7 +90,7 @@ fun ClassicWheelNowPlayingDisplay(
             RetainedArtworkImage(
                 model = currentSong?.albumArtUri,
                 contentDescription = currentSong?.let { song ->
-                    "Album art for ${song.title}"
+                    stringResource(R.string.player_album_art_for, song.title)
                 },
                 modifier = Modifier
                     .weight(0.95f)
@@ -105,8 +107,8 @@ fun ClassicWheelNowPlayingDisplay(
                 modifier = Modifier.weight(1.15f)
             ) {
                 Text(
-                    text = currentSong?.title?.ifBlank { "Unknown Title" }
-                        ?: "No song selected",
+                    text = currentSong?.title?.ifBlank { stringResource(R.string.player_unknown_title) }
+                        ?: stringResource(R.string.player_wheel_no_song_selected),
                     color = ClassicWheelColors.screenText,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
@@ -120,8 +122,8 @@ fun ClassicWheelNowPlayingDisplay(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = currentSong?.artist?.ifBlank { "Unknown Artist" }
-                        ?: "Choose a song",
+                    text = currentSong?.artist?.ifBlank { stringResource(R.string.player_unknown_artist) }
+                        ?: stringResource(R.string.player_wheel_choose_song),
                     color = ClassicWheelColors.screenText,
                     style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
@@ -132,7 +134,7 @@ fun ClassicWheelNowPlayingDisplay(
                 )
 
                 Text(
-                    text = currentSong?.album?.ifBlank { "Unknown Album" }
+                    text = currentSong?.album?.ifBlank { stringResource(R.string.player_unknown_album) }
                         ?: "",
                     color = ClassicWheelColors.screenTextMuted,
                     style = MaterialTheme.typography.bodyMedium,
@@ -151,7 +153,7 @@ fun ClassicWheelNowPlayingDisplay(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Shuffle,
-                            contentDescription = "Shuffle",
+                            contentDescription = stringResource(if (isShuffleEnabled) R.string.player_disable_shuffle else R.string.player_enable_shuffle),
                             tint = if (isShuffleEnabled) {
                                 ClassicWheelColors.selectionAccent
                             } else {
@@ -171,7 +173,11 @@ fun ClassicWheelNowPlayingDisplay(
                             } else {
                                 Icons.Filled.Repeat
                             },
-                            contentDescription = "Repeat",
+                            contentDescription = stringResource(when (repeatMode) {
+                                RepeatMode.OFF -> R.string.player_enable_repeat_all
+                                RepeatMode.ALL -> R.string.player_enable_repeat_one
+                                RepeatMode.ONE -> R.string.player_disable_repeat
+                            }),
                             tint = if (repeatMode == RepeatMode.OFF) {
                                 ClassicWheelColors.screenText
                             } else {
@@ -196,7 +202,7 @@ fun ClassicWheelNowPlayingDisplay(
                             } else {
                                 Icons.Filled.FavoriteBorder
                             },
-                            contentDescription = "Favorite",
+                            contentDescription = stringResource(if (isCurrentSongFavorite) R.string.player_remove_favorite else R.string.player_add_favorite),
                             tint = if (isCurrentSongFavorite) {
                                 ClassicWheelColors.selectionAccent
                             } else {
@@ -212,7 +218,7 @@ fun ClassicWheelNowPlayingDisplay(
                     ) {
                         Icon(
                             imageVector = Icons.Filled.QueueMusic,
-                            contentDescription = "Open queues",
+                            contentDescription = stringResource(R.string.player_open_queues),
                             tint = ClassicWheelColors.screenText,
                             modifier = Modifier.size(28.dp)
                         )
@@ -335,7 +341,7 @@ private fun ClassicWheelVolumeProgress(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Volume",
+            text = stringResource(R.string.player_wheel_volume),
             color = ClassicWheelColors.screenText,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold
@@ -416,21 +422,18 @@ private fun formatTime(milliseconds: Int): String {
     return "$minutes:${seconds.toString().padStart(2, '0')}"
 }
 
+@Composable
 private fun buildPlaybackModeText(
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode
 ): String {
-    val shuffleText = if (isShuffleEnabled) {
-        "Shuffle On"
-    } else {
-        "Shuffle Off"
+    val resource = when {
+        isShuffleEnabled && repeatMode == RepeatMode.OFF -> R.string.player_wheel_shuffle_on_repeat_off
+        isShuffleEnabled && repeatMode == RepeatMode.ALL -> R.string.player_wheel_shuffle_on_repeat_all
+        isShuffleEnabled -> R.string.player_wheel_shuffle_on_repeat_one
+        repeatMode == RepeatMode.OFF -> R.string.player_wheel_shuffle_off_repeat_off
+        repeatMode == RepeatMode.ALL -> R.string.player_wheel_shuffle_off_repeat_all
+        else -> R.string.player_wheel_shuffle_off_repeat_one
     }
-
-    val repeatText = when (repeatMode) {
-        RepeatMode.OFF -> "Repeat Off"
-        RepeatMode.ALL -> "Repeat All"
-        RepeatMode.ONE -> "Repeat One"
-    }
-
-    return "$shuffleText • $repeatText"
+    return stringResource(resource)
 }

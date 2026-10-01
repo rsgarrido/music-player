@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,19 +57,19 @@ internal fun PocketFlipLcdStatusRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         PocketFlipStatusChip(
-            text = if (isPlaying) "PLAY" else "PAUSE",
+            text = stringResource(if (isPlaying) R.string.player_flip_play else R.string.player_flip_pause),
             active = isPlaying,
             compact = compact
         )
         Spacer(modifier = Modifier.width(3.dp))
         if (fileType != null) {
             PocketFlipStatusChip(
-                text = "FORMAT $fileType",
+                text = stringResource(R.string.player_flip_format, fileType),
                 compact = compact
             )
             Spacer(modifier = Modifier.width(3.dp))
         }
-        PocketFlipStatusChip(text = "LOCAL", compact = compact)
+        PocketFlipStatusChip(text = stringResource(R.string.player_flip_local), compact = compact)
     }
 }
 
@@ -117,7 +119,7 @@ internal fun PocketFlipLcdMeter(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "TRACK DATA",
+                text = stringResource(R.string.player_flip_track_data),
                 color = colors.screenTextMuted,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
@@ -126,7 +128,7 @@ internal fun PocketFlipLcdMeter(
             )
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                text = if (isPlaying) "RUN" else "HOLD",
+                text = stringResource(if (isPlaying) R.string.player_flip_run else R.string.player_flip_hold),
                 color = if (isPlaying) {
                     colors.screenAccent
                 } else {

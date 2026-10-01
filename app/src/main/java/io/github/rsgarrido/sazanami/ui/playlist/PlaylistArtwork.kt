@@ -1,5 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.playlist
 
+import android.content.res.Resources
+import io.github.rsgarrido.sazanami.R
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -224,19 +227,23 @@ private fun VisualAssetDisplayPrefetchEffect(
     }
 }
 
-internal fun playlistMetadataText(playlist: Playlist): String = buildList {
-    add(if (playlist.songCount == 1) "1 song" else "${playlist.songCount} songs")
-    formatPlaylistDuration(playlist.totalDuration).takeIf(String::isNotBlank)?.let(::add)
-}.joinToString(separator = " • ")
+internal fun playlistMetadataText(resources: Resources, playlist: Playlist): String {
+    val songCount = resources.getQuantityString(
+        R.plurals.song_count, playlist.songCount, playlist.songCount
+    )
+    val duration = formatPlaylistDuration(resources, playlist.totalDuration)
+    return if (duration.isBlank()) songCount
+    else resources.getString(R.string.playlist_metadata_with_duration, songCount, duration)
+}
 
-internal fun formatPlaylistDuration(durationMs: Long): String {
+internal fun formatPlaylistDuration(resources: Resources, durationMs: Long): String {
     if (durationMs <= 0L) return ""
     val totalMinutes = (durationMs / 60_000L).coerceAtLeast(1L)
     val hours = totalMinutes / 60L
     val minutes = totalMinutes % 60L
     return when {
-        hours == 0L -> "$totalMinutes min"
-        minutes == 0L -> "$hours hr"
-        else -> "$hours hr $minutes min"
+        hours == 0L -> resources.getString(R.string.playlist_duration_minutes, totalMinutes)
+        minutes == 0L -> resources.getString(R.string.playlist_duration_hours, hours)
+        else -> resources.getString(R.string.playlist_duration_hours_minutes, hours, minutes)
     }
 }

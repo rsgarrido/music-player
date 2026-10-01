@@ -25,9 +25,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.rsgarrido.sazanami.data.PlayerTheme
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeColorPreset
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeCustomizationOption
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokenField
@@ -48,7 +50,7 @@ fun ThemeColorCustomizationDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(text = "Customize ${playerTheme.displayName}")
+            Text(text = stringResource(R.string.theme_color_customize, stringResource(playerTheme.labelRes)))
         },
         text = {
             Column(
@@ -74,12 +76,12 @@ fun ThemeColorCustomizationDialog(
         },
         dismissButton = {
             TextButton(onClick = onReset) {
-                Text(text = "Reset theme colors")
+                Text(text = stringResource(R.string.theme_color_reset))
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = "Done")
+                Text(text = stringResource(R.string.settings_done))
             }
         }
     )
@@ -95,6 +97,7 @@ private fun ThemeColorOptionRow(
     val presets = remember(playerTheme, option.field) {
         playerTheme.colorPresetsFor(option.field)
     }
+    val currentColorDescription = stringResource(R.string.theme_color_current, option.displayName)
 
     Column {
         Row(
@@ -121,7 +124,7 @@ private fun ThemeColorOptionRow(
                     modifier = Modifier
                         .size(28.dp)
                         .semantics {
-                            contentDescription = "Current ${option.displayName} color"
+                            contentDescription = currentColorDescription
                         },
                     shape = CircleShape,
                     color = currentColor,
@@ -170,6 +173,7 @@ private fun ColorSwatchButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val swatchDescription = stringResource(R.string.theme_color_swatch, optionName, preset.name)
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally
@@ -179,7 +183,7 @@ private fun ColorSwatchButton(
             modifier = Modifier
                 .size(42.dp)
                 .semantics {
-                    contentDescription = "$optionName: ${preset.name}"
+                    contentDescription = swatchDescription
                     selected = isSelected
                 },
             shape = CircleShape,

@@ -72,12 +72,12 @@ fun ModernMiniPlayer(
                     .graphicsLayer { alpha = if (morphOwnsVisuals) 0f else 1f }
             ) {
                 Text(
-                    text = displayedState.currentSong.miniTitle,
+                    text = displayedState.currentSong.localizedMiniTitle(),
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1
                 )
                 Text(
-                    text = displayedState.currentSong.miniArtist,
+                    text = displayedState.currentSong.localizedMiniArtist(),
                     style = MaterialTheme.typography.bodySmall,
                     maxLines = 1
                 )

@@ -1,6 +1,12 @@
 package io.github.rsgarrido.sazanami
 
 import android.content.Intent
+import android.content.Context
+import android.content.res.Configuration
+import android.view.View
+import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatDelegate
+import io.github.rsgarrido.sazanami.localization.AppLocalePresentationRefresh
 import android.content.ComponentName
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
@@ -61,6 +67,74 @@ import io.github.rsgarrido.sazanami.viewmodel.MusicViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    // Direct delegate integration preserves ComponentActivity and its Compose/state owners.
+    private val appLocaleDelegate by lazy { AppCompatDelegate.create(this, null) }
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(appLocaleDelegate.attachBaseContext2(newBase))
+    }
+
+    override fun setTheme(resId: Int) {
+        super.setTheme(resId)
+        appLocaleDelegate.setTheme(resId)
+    }
+
+    override fun onPostCreate(savedInstanceState: Bundle?) {
+        super.onPostCreate(savedInstanceState)
+        appLocaleDelegate.onPostCreate(savedInstanceState)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        appLocaleDelegate.onStart()
+    }
+
+    override fun onPostResume() {
+        super.onPostResume()
+        appLocaleDelegate.onPostResume()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        appLocaleDelegate.onStop()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        appLocaleDelegate.onSaveInstanceState(outState)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        appLocaleDelegate.onConfigurationChanged(newConfig)
+        AppLocalePresentationRefresh.request(this)
+    }
+
+    override fun onTitleChanged(title: CharSequence?, color: Int) {
+        super.onTitleChanged(title, color)
+        appLocaleDelegate.setTitle(title)
+    }
+
+    override fun setContentView(layoutResID: Int) {
+        initializeViewTreeOwners()
+        appLocaleDelegate.setContentView(layoutResID)
+    }
+
+    override fun setContentView(view: View) {
+        initializeViewTreeOwners()
+        appLocaleDelegate.setContentView(view)
+    }
+
+    override fun setContentView(view: View, params: ViewGroup.LayoutParams) {
+        initializeViewTreeOwners()
+        appLocaleDelegate.setContentView(view, params)
+    }
+
+    override fun addContentView(view: View, params: ViewGroup.LayoutParams) {
+        initializeViewTreeOwners()
+        appLocaleDelegate.addContentView(view, params)
+    }
+
     private var voiceControllerFuture: ListenableFuture<MediaController>? = null
 
     private var mediaAccessState by mutableStateOf(
@@ -115,7 +189,11 @@ class MainActivity : ComponentActivity() {
         val splashStartedAt = SystemClock.elapsedRealtime()
         val splashScreen = installSplashScreen()
 
+        appLocaleDelegate.installViewFactory()
+        appLocaleDelegate.onCreate(savedInstanceState)
         super.onCreate(savedInstanceState)
+        // attachBaseContext2 has synchronized compatibility storage before background reads.
+        AppLocalePresentationRefresh.request(this)
         if (savedInstanceState == null) handleVoiceIntent(intent)
 
         // Resolve persisted access and start cache restoration before the first draw. This keeps
@@ -280,6 +358,7 @@ class MainActivity : ComponentActivity() {
         voiceControllerFuture?.let(MediaController::releaseFuture)
         voiceControllerFuture = null
         super.onDestroy()
+        appLocaleDelegate.onDestroy()
     }
 
     override fun onResume() {

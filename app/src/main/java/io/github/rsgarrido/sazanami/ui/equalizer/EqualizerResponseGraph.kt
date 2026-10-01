@@ -43,6 +43,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.player.equalizer.dsp.EqualizerResponsePoint
 import io.github.rsgarrido.sazanami.player.equalizer.parametric.MAX_PARAMETRIC_FREQUENCY_HZ
 import io.github.rsgarrido.sazanami.player.equalizer.parametric.MAX_PARAMETRIC_GAIN_DB
@@ -80,16 +82,13 @@ internal fun EqualizerResponseGraph(
     val zeroColor =
         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
     val backgroundColor = MaterialTheme.colorScheme.surface
-    val sampleRateText = if (analysis.usesFallbackSampleRate) {
-        "Response preview: ${analysis.sampleRateHz / 1_000.0} kHz"
-    } else {
-        "Current track analysis: " +
-            "${analysis.sampleRateHz / 1_000.0} kHz"
-    }
-    val summary = "$sampleRateText. Predicted maximum " +
-        "${formatEqualizerDb(analysis.predictedMaximumDb)}. " +
-        "Automatic attenuation " +
-        "${formatEqualizerDb(analysis.automaticHeadroom.attenuationDb, false)}."
+    val summary = stringResource(
+        if (analysis.usesFallbackSampleRate) R.string.eq_response_preview_summary else R.string.eq_response_current_summary,
+        analysis.sampleRateHz / 1_000.0,
+        formatEqualizerDb(analysis.predictedMaximumDb),
+        formatEqualizerDb(analysis.automaticHeadroom.attenuationDb, false)
+    )
+    val graphDescription = stringResource(R.string.eq_response_graph_description, summary)
     val maximumMagnitude = (
         analysis.filterResponse.asSequence() +
             analysis.effectiveResponse.asSequence()
@@ -120,7 +119,7 @@ internal fun EqualizerResponseGraph(
                 }
                 .semantics {
                     contentDescription =
-                        "Equalizer response graph. $summary"
+                        graphDescription
                 }
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -226,6 +225,16 @@ internal fun EqualizerResponseGraph(
                             rememberUpdatedState(filter)
                         val currentGraphRangeDb by
                             rememberUpdatedState(graphRangeDb)
+                        val markerDescription = stringResource(
+                            when {
+                                ignored -> R.string.eq_filter_marker_unavailable
+                                !filter.enabled -> R.string.eq_filter_marker_bypassed
+                                else -> R.string.eq_filter_marker
+                            },
+                            index + 1,
+                            filterParameterSummary(filter)
+                        )
+                        val selectFilterDescription = stringResource(R.string.eq_select_filter)
                         Box(
                             modifier = Modifier
                                 .offset {
@@ -245,21 +254,9 @@ internal fun EqualizerResponseGraph(
                                 )
                                 .semantics {
                                     this.selected = selected
-                                    contentDescription =
-                                        "Filter marker " +
-                                        "${index + 1}, " +
-                                        filterParameterSummary(
-                                            filter
-                                        ) +
-                                        when {
-                                            ignored ->
-                                                ", unavailable for current source"
-                                            !filter.enabled ->
-                                                ", bypassed"
-                                            else -> ""
-                                        }
+                                    contentDescription = markerDescription
                                     onClick(
-                                        label = "Select filter"
+                                        label = selectFilterDescription
                                     ) {
                                         onSelectFilter(filter.id)
                                         true
@@ -387,19 +384,18 @@ internal fun EqualizerResponseGraph(
             }
         }
         Text(
-            text = "Filter response",
+            text = stringResource(R.string.eq_filter_response),
             color = rawColor,
             style = MaterialTheme.typography.labelMedium
         )
         Text(
-            text = "Effective response after preamp and headroom",
+            text = stringResource(R.string.eq_effective_response),
             color = effectiveColor,
             style = MaterialTheme.typography.labelMedium
         )
         if (filters.isNotEmpty()) {
             Text(
-                text = "Drag a marker horizontally for logarithmic " +
-                    "frequency. Gain-bearing markers also drag vertically.",
+                text = stringResource(R.string.eq_marker_drag_help),
                 style = MaterialTheme.typography.bodySmall
             )
         }

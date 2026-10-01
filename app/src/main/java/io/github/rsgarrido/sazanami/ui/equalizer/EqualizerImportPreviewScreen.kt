@@ -35,11 +35,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.ui.state.resolve
 import io.github.rsgarrido.sazanami.player.equalizer.interchange.EqualizerProfileDiagnostic
+import io.github.rsgarrido.sazanami.player.equalizer.interchange.EqualizerProfileDiagnosticCode
+import io.github.rsgarrido.sazanami.player.equalizer.interchange.EqualizerProfileDiagnosticSeverity
 import io.github.rsgarrido.sazanami.player.equalizer.interchange.EqualizerProfileFormat
 import io.github.rsgarrido.sazanami.player.equalizer.interchange.ImportedFilterDeclaration
 import io.github.rsgarrido.sazanami.player.equalizer.interchange.ImportedFilterStatus
@@ -57,6 +64,7 @@ internal fun EqualizerImportPreviewScreen(
     actions: EqualizerUiActions,
     modifier: Modifier = Modifier
 ) {
+    val resources = LocalResources.current
     val preview = state.importPreview ?: return
     var editingLine by remember { mutableStateOf<Int?>(null) }
     var replaceConfirmationVisible by remember {
@@ -100,11 +108,11 @@ internal fun EqualizerImportPreviewScreen(
             IconButton(onClick = actions.onDismissImportPreview) {
                 Icon(
                     Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Cancel EQ import"
+                    contentDescription = stringResource(R.string.eq_cancel_import)
                 )
             }
             Text(
-                "Import Parametric EQ",
+                stringResource(R.string.eq_import_parametric),
                 style = MaterialTheme.typography.titleLarge
             )
         }
@@ -118,13 +126,13 @@ internal fun EqualizerImportPreviewScreen(
                     it.copy(proposedName = name.take(40))
                 }
             },
-            label = { Text("Preset name") },
+            label = { Text(stringResource(R.string.eq_preset_name)) },
             supportingText = {
                 Text(
                     if (nameIsValid) {
-                        "Used only when saving a preset."
+                        stringResource(R.string.eq_name_saving_only)
                     } else {
-                        "Enter a unique name (1–40 characters)."
+                        stringResource(R.string.eq_name_unique_range)
                     }
                 )
             },
@@ -135,7 +143,7 @@ internal fun EqualizerImportPreviewScreen(
                 .padding(horizontal = 16.dp)
                 .semantics {
                     contentDescription =
-                        "Imported preset name, ${preview.proposedName}"
+                        resources.getString(R.string.eq_imported_preset_name_description, preview.proposedName)
                 }
         )
 
@@ -144,12 +152,12 @@ internal fun EqualizerImportPreviewScreen(
             modifier = Modifier.padding(16.dp)
         ) {
             Column(Modifier.weight(1f)) {
-                Text("Automatic headroom")
+                Text(stringResource(R.string.eq_automatic_headroom))
                 Text(
                     if (preview.automaticHeadroomEnabled) {
-                        "On — recommended"
+                        stringResource(R.string.eq_headroom_on_recommended)
                     } else {
-                        "Off — use imported preamp exactly"
+                        stringResource(R.string.eq_headroom_off_exact)
                     },
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -165,14 +173,14 @@ internal fun EqualizerImportPreviewScreen(
                 },
                 modifier = Modifier.semantics {
                     contentDescription =
-                        "Imported automatic headroom"
+                        resources.getString(R.string.eq_imported_headroom_description)
                 }
             )
         }
 
         if (state.runtimeState.sampleRateHz != null) {
             Text(
-                "Preview sample rate",
+                stringResource(R.string.eq_preview_sample_rate),
                 style = MaterialTheme.typography.titleSmall,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
@@ -190,7 +198,7 @@ internal fun EqualizerImportPreviewScreen(
                             it.copy(previewAtCurrentTrackRate = true)
                         }
                     },
-                    label = { Text("Current track") }
+                    label = { Text(stringResource(R.string.eq_current_track)) }
                 )
                 FilterChip(
                     selected = !preview.previewAtCurrentTrackRate,
@@ -199,7 +207,7 @@ internal fun EqualizerImportPreviewScreen(
                             it.copy(previewAtCurrentTrackRate = false)
                         }
                     },
-                    label = { Text("48 kHz") }
+                    label = { Text(stringResource(R.string.eq_48khz)) }
                 )
             }
         }
@@ -221,7 +229,7 @@ internal fun EqualizerImportPreviewScreen(
                     }
                 }
             ) {
-                Text("Select first 10")
+                Text(stringResource(R.string.eq_select_first_ten))
             }
             TextButton(
                 onClick = {
@@ -230,12 +238,11 @@ internal fun EqualizerImportPreviewScreen(
                     }
                 }
             ) {
-                Text("Clear selection")
+                Text(stringResource(R.string.eq_clear_selection))
             }
         }
         Text(
-            "Sazanami can apply at most 10 filters. Selection preserves " +
-                "source order; files with more than 10 start unselected.",
+            stringResource(R.string.eq_import_selection_help),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(
                 horizontal = 16.dp,
@@ -277,20 +284,20 @@ internal fun EqualizerImportPreviewScreen(
                     .padding(16.dp)
                     .semantics {
                         contentDescription =
-                            "Saving imported EQ profile"
+                            resources.getString(R.string.eq_saving_imported_profile)
                     }
             )
         }
         state.importMessage?.let { message ->
             Text(
-                message,
+                message.resolve(),
                 color = MaterialTheme.colorScheme.error,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
         }
 
         Text(
-            "Import destination",
+            stringResource(R.string.eq_import_destination),
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(
                 start = 16.dp,
@@ -298,9 +305,7 @@ internal fun EqualizerImportPreviewScreen(
             )
         )
         Text(
-            "Replace switches to Parametric and retains EQ enabled, " +
-                "limiter, and Graphic settings. Save alone does not " +
-                "change playback.",
+            stringResource(R.string.eq_import_destination_help),
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
@@ -318,10 +323,10 @@ internal fun EqualizerImportPreviewScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .semantics {
                     contentDescription =
-                        "Replace current Parametric EQ"
+                        resources.getString(R.string.eq_replace_current)
                 }
         ) {
-            Text("Replace current Parametric EQ")
+            Text(stringResource(R.string.eq_replace_current))
         }
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -338,7 +343,7 @@ internal fun EqualizerImportPreviewScreen(
                     !state.importInProgress,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Save as preset")
+                Text(stringResource(R.string.eq_save_as_preset))
             }
             OutlinedButton(
                 onClick = {
@@ -349,14 +354,14 @@ internal fun EqualizerImportPreviewScreen(
                     !state.importInProgress,
                 modifier = Modifier.weight(1f)
             ) {
-                Text("Save and apply")
+                Text(stringResource(R.string.eq_save_and_apply))
             }
         }
         TextButton(
             onClick = actions.onDismissImportPreview,
             modifier = Modifier.padding(8.dp)
         ) {
-            Text("Cancel")
+            Text(stringResource(R.string.eq_cancel))
         }
         Spacer(Modifier.height(24.dp))
     }
@@ -385,12 +390,10 @@ internal fun EqualizerImportPreviewScreen(
             onDismissRequest = {
                 supportedOnlyConfirmationVisible = false
             },
-            title = { Text("Import supported filters only?") },
+            title = { Text(stringResource(R.string.eq_supported_only_confirm)) },
             text = {
                 Text(
-                    "Sazanami will not reproduce the unsupported commands. " +
-                        "The result may not match the original file, and " +
-                        "scoped preamp commands will not be imported."
+                    stringResource(R.string.eq_supported_only_warning)
                 )
             },
             dismissButton = {
@@ -399,7 +402,7 @@ internal fun EqualizerImportPreviewScreen(
                         supportedOnlyConfirmationVisible = false
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.eq_cancel))
                 }
             },
             confirmButton = {
@@ -413,7 +416,7 @@ internal fun EqualizerImportPreviewScreen(
                         supportedOnlyConfirmationVisible = false
                     }
                 ) {
-                    Text("Import supported only")
+                    Text(stringResource(R.string.eq_import_supported_only))
                 }
             }
         )
@@ -423,11 +426,10 @@ internal fun EqualizerImportPreviewScreen(
             onDismissRequest = {
                 replaceConfirmationVisible = false
             },
-            title = { Text("Replace current Parametric EQ?") },
+            title = { Text(stringResource(R.string.eq_replace_confirm)) },
             text = {
                 Text(
-                    "This replaces the current Parametric curve. Saved " +
-                        "presets and the Graphic curve remain available."
+                    stringResource(R.string.eq_replace_help)
                 )
             },
             dismissButton = {
@@ -436,7 +438,7 @@ internal fun EqualizerImportPreviewScreen(
                         replaceConfirmationVisible = false
                     }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.eq_cancel))
                 }
             },
             confirmButton = {
@@ -446,7 +448,7 @@ internal fun EqualizerImportPreviewScreen(
                         actions.onReplaceWithImportedProfile()
                     }
                 ) {
-                    Text("Replace")
+                    Text(stringResource(R.string.eq_replace))
                 }
             }
         )
@@ -458,6 +460,8 @@ private fun ImportSummary(
     preview: EqualizerImportPreviewState
 ) {
     val result = preview.parseResult
+    val resources = LocalResources.current
+    val formatLabel = formatName(result.detectedFormat)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -465,34 +469,28 @@ private fun ImportSummary(
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                "Source: ${result.sourceName ?: "Clipboard"}",
+                stringResource(R.string.eq_source, result.sourceName ?: stringResource(R.string.eq_clipboard_source)),
                 style = MaterialTheme.typography.titleSmall
             )
             Text(
-                formatName(result.detectedFormat),
+                formatLabel,
                 modifier = Modifier.semantics {
                     contentDescription =
-                        "Detected format, " +
-                            formatName(result.detectedFormat)
+                        resources.getString(R.string.eq_detected_format_description, formatLabel)
                 }
             )
             Text(
-                "Preamp: " +
-                    formatEqualizerDb(result.preampDb ?: 0.0)
+                stringResource(R.string.eq_import_preamp, formatEqualizerDb(result.preampDb ?: 0.0))
             )
             Text(
-                "Filters: ${result.declarations.size} · " +
-                    "Selected: ${preview.selectedFilters.size}",
+                stringResource(R.string.eq_import_filter_selection, result.declarations.size, preview.selectedFilters.size),
                 modifier = Modifier.semantics {
                     contentDescription =
-                        "Selected filter count, " +
-                            "${preview.selectedFilters.size} of " +
-                            result.declarations.size
+                        resources.getString(R.string.eq_import_filter_selection_description, preview.selectedFilters.size, result.declarations.size)
                 }
             )
             Text(
-                "Warnings: ${result.warningCount} · " +
-                    "Errors: ${result.errorCount}",
+                stringResource(R.string.eq_import_issue_counts, result.warningCount, result.errorCount),
                 color = if (result.errorCount > 0) {
                     MaterialTheme.colorScheme.error
                 } else {
@@ -500,8 +498,7 @@ private fun ImportSummary(
                 },
                 modifier = Modifier.semantics {
                     contentDescription =
-                        "Warning count, ${result.warningCount}. " +
-                            "Error count, ${result.errorCount}."
+                        resources.getString(R.string.eq_import_issue_counts_description, result.warningCount, result.errorCount)
                 }
             )
         }
@@ -518,31 +515,27 @@ private fun ImportAnalysisSummary(state: EqualizerScreenState) {
     ) {
         Column(Modifier.padding(16.dp)) {
             Text(
-                "Preview analysis",
+                stringResource(R.string.eq_preview_analysis),
                 style = MaterialTheme.typography.titleSmall
             )
             Text(
-                "Predicted maximum: " +
-                    formatEqualizerDb(analysis.predictedMaximumDb)
+                stringResource(R.string.eq_predicted_maximum, formatEqualizerDb(analysis.predictedMaximumDb))
             )
             Text(
-                "Automatic attenuation: " +
-                    formatEqualizerDb(
+                stringResource(R.string.eq_automatic_attenuation, formatEqualizerDb(
                         analysis.automaticHeadroom.attenuationDb,
                         includePlus = false
-                    )
+                    ))
             )
             Text(
-                "Effective preamp: " +
-                    formatEqualizerDb(
+                stringResource(R.string.eq_effective_preamp, formatEqualizerDb(
                         analysis.automaticHeadroom.effectivePreampDb
-                    )
+                    ))
             )
-            Text("Sample rate: ${analysis.sampleRateHz} Hz")
+            Text(stringResource(R.string.eq_sample_rate, analysis.sampleRateHz))
             if (analysis.ignoredFilterIndices.isNotEmpty()) {
                 Text(
-                    "${analysis.ignoredFilterIndices.size} selected " +
-                        "filter(s) unavailable at this sample rate.",
+                    pluralStringResource(R.plurals.eq_import_unavailable_filters, analysis.ignoredFilterIndices.size, analysis.ignoredFilterIndices.size),
                     color = MaterialTheme.colorScheme.error
                 )
             }
@@ -559,17 +552,15 @@ private fun ImportedFilterRow(
     onEdit: () -> Unit
 ) {
     val filter = declaration.mappedFilter
-    val status = declaration.status.name.lowercase()
-        .replaceFirstChar { it.uppercase() }
+    val status = stringResource(declaration.status.labelRes)
+    val resources = LocalResources.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .semantics {
                 contentDescription =
-                    "Source line ${declaration.sourceLineNumber}, " +
-                        "$status, " +
-                        if (selected) "selected" else "not selected"
+                    resources.getString(if (selected) R.string.eq_source_line_selected_description else R.string.eq_source_line_unselected_description, declaration.sourceLineNumber, status)
             }
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -580,13 +571,12 @@ private fun ImportedFilterRow(
                     (!selectionLimitReached || selected),
                 modifier = Modifier.semantics {
                     contentDescription =
-                        "Select source line " +
-                            declaration.sourceLineNumber
+                        resources.getString(R.string.eq_select_source_line, declaration.sourceLineNumber)
                 }
             )
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Line ${declaration.sourceLineNumber} · $status",
+                    stringResource(R.string.eq_source_line_status, declaration.sourceLineNumber, status),
                     style = MaterialTheme.typography.titleSmall
                 )
                 Text(
@@ -598,9 +588,9 @@ private fun ImportedFilterRow(
             TextButton(onClick = onEdit) {
                 Text(
                     if (filter == null) {
-                        "Replace with supported filter"
+                        stringResource(R.string.eq_replace_supported_filter)
                     } else {
-                        "Edit"
+                        stringResource(R.string.eq_edit)
                     }
                 )
             }
@@ -616,8 +606,11 @@ private fun ImportedFilterRow(
 private fun DiagnosticText(
     diagnostic: EqualizerProfileDiagnostic
 ) {
+    val severity = stringResource(diagnostic.severity.labelRes)
+    val detail = stringResource(diagnostic.code.labelRes)
     Text(
-        "${diagnostic.severity.name}: ${diagnostic.message}",
+        if (diagnostic.lineNumber == null) stringResource(R.string.eq_diagnostic, severity, detail)
+        else stringResource(R.string.eq_diagnostic_line, diagnostic.lineNumber, severity, detail),
         color = if (
             diagnostic.severity.name in setOf("ERROR", "BLOCKING")
         ) {
@@ -640,9 +633,8 @@ private fun ImportSafetyConfirmations(
     if (preview.hasOverrideableSemanticBlocks) {
         SafetyCheckbox(
             checked = preview.supportedOnlyOverrideConfirmed,
-            text = "Import supported standalone filters only. " +
-                "The result may not match the original configuration.",
-            description = "Supported-only import confirmation",
+            text = stringResource(R.string.eq_supported_only_checkbox),
+            description = stringResource(R.string.eq_supported_only_description),
             onCheckedChange = { checked ->
                 if (checked) {
                     onRequestSupportedOnly()
@@ -659,9 +651,8 @@ private fun ImportSafetyConfirmations(
     if (preview.hasUnsupportedDeclarations) {
         SafetyCheckbox(
             checked = preview.unsupportedExclusionConfirmed,
-            text = "I explicitly exclude unsupported filter " +
-                "declarations.",
-            description = "Unsupported filters excluded",
+            text = stringResource(R.string.eq_exclude_unsupported_checkbox),
+            description = stringResource(R.string.eq_exclude_unsupported_description),
             onCheckedChange = { checked ->
                 onUpdate {
                     it.copy(
@@ -674,8 +665,8 @@ private fun ImportSafetyConfirmations(
     if (preview.hasUnrecognizedText) {
         SafetyCheckbox(
             checked = preview.unrecognizedTextConfirmed,
-            text = "I reviewed the unrecognized non-comment text.",
-            description = "Unrecognized text reviewed",
+            text = stringResource(R.string.eq_reviewed_unrecognized_checkbox),
+            description = stringResource(R.string.eq_reviewed_unrecognized_description),
             onCheckedChange = { checked ->
                 onUpdate {
                     it.copy(unrecognizedTextConfirmed = checked)
@@ -686,9 +677,8 @@ private fun ImportSafetyConfirmations(
     if (preview.selectedFilters.isEmpty()) {
         SafetyCheckbox(
             checked = preview.flatImportConfirmed,
-            text = "I intend to import a Flat Parametric profile " +
-                "with zero selected filters.",
-            description = "Flat import confirmed",
+            text = stringResource(R.string.eq_flat_import_checkbox),
+            description = stringResource(R.string.eq_flat_import_description),
             onCheckedChange = { checked ->
                 onUpdate {
                     it.copy(flatImportConfirmed = checked)
@@ -725,10 +715,13 @@ private fun SafetyCheckbox(
     }
 }
 
+@Composable
 private fun ParametricFilter.summary(): String {
+    val enabledLabel = stringResource(if (enabled) R.string.eq_on else R.string.eq_off)
+    val typeLabel = stringResource(type.labelRes)
     val parameters = buildList {
-        add(if (enabled) "ON" else "OFF")
-        add(type.name.replace('_', ' '))
+        add(enabledLabel)
+        add(typeLabel)
         add(formatFrequency(frequencyHz))
         gainDbOrNull?.let { add(formatEqualizerDb(it)) }
         qOrNull?.let {
@@ -744,12 +737,55 @@ private fun ParametricFilter.summary(): String {
 private fun formatFrequency(value: Double): String =
     String.format(Locale.ROOT, "%.1f Hz", value)
 
+@Composable
 private fun formatName(format: EqualizerProfileFormat): String =
     when (format) {
         EqualizerProfileFormat.AUTOEQ_PARAMETRIC_TEXT ->
-            "AutoEq-style Parametric EQ text"
+            stringResource(R.string.eq_format_autoeq)
         EqualizerProfileFormat.EQUALIZER_APO_SUBSET ->
-            "Equalizer APO-compatible subset"
+            stringResource(R.string.eq_format_apo)
         EqualizerProfileFormat.SAZANAMI_PARAMETRIC_PRESET_JSON ->
-            "Native Sazanami Parametric preset"
+            stringResource(R.string.eq_format_native)
+    }
+
+private val ImportedFilterStatus.labelRes: Int
+    get() = when (this) {
+        ImportedFilterStatus.VALID -> R.string.eq_import_status_valid
+        ImportedFilterStatus.INVALID -> R.string.eq_import_status_invalid
+        ImportedFilterStatus.UNSUPPORTED -> R.string.eq_import_status_unsupported
+    }
+
+private val EqualizerProfileDiagnosticSeverity.labelRes: Int
+    get() = when (this) {
+        EqualizerProfileDiagnosticSeverity.INFO -> R.string.eq_severity_info
+        EqualizerProfileDiagnosticSeverity.WARNING -> R.string.eq_severity_warning
+        EqualizerProfileDiagnosticSeverity.ERROR -> R.string.eq_severity_error
+        EqualizerProfileDiagnosticSeverity.BLOCKING -> R.string.eq_severity_blocking
+    }
+
+private val EqualizerProfileDiagnosticCode.labelRes: Int
+    get() = when (this) {
+        EqualizerProfileDiagnosticCode.DECIMAL_COMMA_NORMALIZED -> R.string.eq_diag_decimal_comma
+        EqualizerProfileDiagnosticCode.MULTIPLE_PREAMPS_COMBINED -> R.string.eq_diag_multiple_preamps
+        EqualizerProfileDiagnosticCode.UNSUPPORTED_COMMAND -> R.string.eq_diag_unsupported_command
+        EqualizerProfileDiagnosticCode.UNSUPPORTED_FILTER_TYPE -> R.string.eq_diag_unsupported_filter_type
+        EqualizerProfileDiagnosticCode.MISSING_PARAMETER -> R.string.eq_diag_missing_parameter
+        EqualizerProfileDiagnosticCode.DUPLICATE_PARAMETER -> R.string.eq_diag_duplicate_parameter
+        EqualizerProfileDiagnosticCode.OUT_OF_RANGE -> R.string.eq_diag_out_of_range
+        EqualizerProfileDiagnosticCode.FILTER_LIMIT_EXCEEDED -> R.string.eq_diag_filter_limit
+        EqualizerProfileDiagnosticCode.UNKNOWN_COMMAND -> R.string.eq_diag_unknown_command
+        EqualizerProfileDiagnosticCode.MALFORMED_FILTER -> R.string.eq_diag_malformed_filter
+        EqualizerProfileDiagnosticCode.SHELF_ROUNDING_NORMALIZED -> R.string.eq_diag_shelf_rounding
+        EqualizerProfileDiagnosticCode.UNRECOGNIZED_TEXT -> R.string.eq_diag_unrecognized_text
+        EqualizerProfileDiagnosticCode.INPUT_TOO_LARGE -> R.string.eq_diag_input_too_large
+        EqualizerProfileDiagnosticCode.TOO_MANY_LINES -> R.string.eq_diag_too_many_lines
+        EqualizerProfileDiagnosticCode.LINE_TOO_LONG -> R.string.eq_diag_line_too_long
+        EqualizerProfileDiagnosticCode.TOO_MANY_DECLARATIONS -> R.string.eq_diag_too_many_declarations
+        EqualizerProfileDiagnosticCode.NUL_CHARACTER -> R.string.eq_diag_nul_character
+        EqualizerProfileDiagnosticCode.INVALID_UNIT -> R.string.eq_diag_invalid_unit
+        EqualizerProfileDiagnosticCode.EXTRA_PARAMETER -> R.string.eq_diag_extra_parameter
+        EqualizerProfileDiagnosticCode.INVALID_NUMBER -> R.string.eq_diag_invalid_number
+        EqualizerProfileDiagnosticCode.INVALID_PREAMP -> R.string.eq_diag_invalid_preamp
+        EqualizerProfileDiagnosticCode.INVALID_NATIVE_FILE -> R.string.eq_diag_invalid_native_file
+        EqualizerProfileDiagnosticCode.UNSUPPORTED_NATIVE_VERSION -> R.string.eq_diag_unsupported_native_version
     }

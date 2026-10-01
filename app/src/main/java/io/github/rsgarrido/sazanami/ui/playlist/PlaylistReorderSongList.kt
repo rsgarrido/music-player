@@ -1,6 +1,8 @@
 package io.github.rsgarrido.sazanami.ui.playlist
 
 import android.R
+import io.github.rsgarrido.sazanami.R as AppR
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -264,7 +266,7 @@ internal fun PlaylistReorderSongList(
                 .padding(horizontal = 16.dp, vertical = 10.dp)
         ) {
             Text(
-                text = "Custom order \u2022 Drag songs using the handles",
+                text = stringResource(AppR.string.playlist_reorder_instruction),
                 style = AppShellTypography.SongSubtitle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -332,16 +334,16 @@ internal fun PlaylistReorderSongList(
                     },
                     headlineContent = {
                         Text(
-                            text = song?.title?.ifBlank { "Unknown Title" }
-                                ?: row.title.ifBlank { "Unknown Title" },
+                            text = song?.title?.ifBlank { stringResource(AppR.string.playlist_unknown_title) }
+                                ?: row.title.ifBlank { stringResource(AppR.string.playlist_unknown_title) },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                     },
                     supportingContent = {
                         Text(
-                            text = song?.artist?.ifBlank { "Unknown Artist" }
-                                ?: row.artist.ifBlank { "Unavailable song" },
+                            text = song?.artist?.ifBlank { stringResource(AppR.string.playlist_unknown_artist) }
+                                ?: row.artist.ifBlank { stringResource(AppR.string.playlist_unavailable_song) },
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -357,7 +359,7 @@ internal fun PlaylistReorderSongList(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.DragHandle,
-                                contentDescription = "Drag to reorder",
+                                contentDescription = stringResource(AppR.string.playlist_drag_to_reorder),
                                 tint = if (isDragged) AppShellAccent
                                 else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(26.dp)

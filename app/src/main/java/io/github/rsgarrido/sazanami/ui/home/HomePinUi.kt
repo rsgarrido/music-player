@@ -13,9 +13,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.rsgarrido.sazanami.data.Playlist
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.ArtistIdentity
 import io.github.rsgarrido.sazanami.data.ArtistPictureAssignment
@@ -28,6 +30,7 @@ import io.github.rsgarrido.sazanami.ui.AppShellTypography
 import io.github.rsgarrido.sazanami.ui.library.LibraryAlbumGroup
 import io.github.rsgarrido.sazanami.ui.library.LibraryArtistGroup
 import io.github.rsgarrido.sazanami.ui.library.LibraryItemAction
+import io.github.rsgarrido.sazanami.ui.library.LibraryActionId
 import io.github.rsgarrido.sazanami.ui.library.buildLibraryAlbumGroups
 import io.github.rsgarrido.sazanami.ui.library.findLibraryAlbumGroupForSong
 import io.github.rsgarrido.sazanami.ui.library.buildLibraryArtistGroups
@@ -47,7 +50,7 @@ data class ResolvedHomePin(
 ) {
     val title: String
         get() = when (val currentTarget = target) {
-            is HomePinTarget.SongTarget -> currentTarget.song.title.ifBlank { "Unknown Title" }
+            is HomePinTarget.SongTarget -> currentTarget.song.title
             is HomePinTarget.AlbumTarget -> currentTarget.album.title
             is HomePinTarget.ArtistTarget -> currentTarget.artist.name
             is HomePinTarget.PlaylistTarget -> currentTarget.playlist.name
@@ -56,10 +59,10 @@ data class ResolvedHomePin(
 
     val subtitle: String
         get() = when (val currentTarget = target) {
-            is HomePinTarget.SongTarget -> currentTarget.song.artist.ifBlank { "Unknown Artist" }
+            is HomePinTarget.SongTarget -> currentTarget.song.artist
             is HomePinTarget.AlbumTarget -> currentTarget.album.artistText
-            is HomePinTarget.ArtistTarget -> "Artist"
-            is HomePinTarget.PlaylistTarget -> "Playlist"
+            is HomePinTarget.ArtistTarget -> ""
+            is HomePinTarget.PlaylistTarget -> ""
             null -> pin.subtitle
         }
 
@@ -72,14 +75,23 @@ data class ResolvedHomePin(
             null -> null
         }
 
-    val typeLabel: String
-        get() = when (pin.type) {
-            HomePinType.SONG -> "SONG"
-            HomePinType.ALBUM -> "ALBUM"
-            HomePinType.ARTIST -> "ARTIST"
-            HomePinType.PLAYLIST -> "PLAYLIST"
-        }
 }
+
+@Composable
+internal fun ResolvedHomePin.localizedTitle(): String = when (val currentTarget = target) {
+    is HomePinTarget.SongTarget -> currentTarget.song.title.ifBlank {
+        stringResource(R.string.library_song_unknown_title)
+    }
+    else -> title
+}
+
+@Composable
+internal fun ResolvedHomePin.localizedTypeLabel(): String = stringResource(when (pin.type) {
+    HomePinType.SONG -> R.string.home_pin_type_song
+    HomePinType.ALBUM -> R.string.home_pin_type_album
+    HomePinType.ARTIST -> R.string.home_pin_type_artist
+    HomePinType.PLAYLIST -> R.string.home_pin_type_playlist
+})
 
 internal fun ResolvedHomePin.artistPictureIdentityOrNull(): ArtistIdentity? =
     (target as? HomePinTarget.ArtistTarget)
@@ -104,6 +116,7 @@ data class HomeCustomizationUiState(
 data class HomePinUiEnvironment(
     val pins: List<ResolvedHomePin> = emptyList(),
     val showRecentlyAddedOnHome: Boolean = true,
+    val resolveString: (Int) -> String = { "" },
     val onPinRequested: (HomePin) -> Unit = {},
     val onUnpinRequested: (String) -> Unit = {},
     val onMovePinRequested: (String, Int) -> Unit = { _, _ -> },
@@ -135,8 +148,9 @@ data class HomePinUiEnvironment(
     fun actionForSong(song: Song): LibraryItemAction {
         val existing = pinForSong(song)
         return LibraryItemAction(
-            label = if (existing == null) "Pin to Home" else "Unpin from Home",
+            label = resolveString(if (existing == null) R.string.home_pin_to_home else R.string.home_unpin_from_home),
             icon = Icons.Filled.PushPin,
+            id = LibraryActionId.HOME_PIN,
             onClick = {
                 if (existing == null) {
                     onPinRequested(HomePin.song(song))
@@ -150,8 +164,9 @@ data class HomePinUiEnvironment(
     fun actionForAlbum(album: LibraryAlbumGroup): LibraryItemAction {
         val existing = pinForAlbum(album)
         return LibraryItemAction(
-            label = if (existing == null) "Pin to Home" else "Unpin from Home",
+            label = resolveString(if (existing == null) R.string.home_pin_to_home else R.string.home_unpin_from_home),
             icon = Icons.Filled.PushPin,
+            id = LibraryActionId.HOME_PIN,
             onClick = {
                 if (existing == null) {
                     HomePin.album(album.title, album.artistText, album.songs)?.let(onPinRequested)
@@ -165,8 +180,9 @@ data class HomePinUiEnvironment(
     fun actionForArtist(artist: LibraryArtistGroup): LibraryItemAction {
         val existing = pinForArtist(artist)
         return LibraryItemAction(
-            label = if (existing == null) "Pin to Home" else "Unpin from Home",
+            label = resolveString(if (existing == null) R.string.home_pin_to_home else R.string.home_unpin_from_home),
             icon = Icons.Filled.PushPin,
+            id = LibraryActionId.HOME_PIN,
             onClick = {
                 if (existing == null) {
                     HomePin.artist(artist.name, artist.songs)?.let(onPinRequested)
@@ -180,8 +196,9 @@ data class HomePinUiEnvironment(
     fun actionForPlaylist(playlist: Playlist): LibraryItemAction {
         val existing = pinForPlaylist(playlist)
         return LibraryItemAction(
-            label = if (existing == null) "Pin to Home" else "Unpin from Home",
+            label = resolveString(if (existing == null) R.string.home_pin_to_home else R.string.home_unpin_from_home),
             icon = Icons.Filled.PushPin,
+            id = LibraryActionId.HOME_PIN,
             onClick = {
                 if (existing == null) {
                     onPinRequested(HomePin.playlist(playlist))
@@ -262,11 +279,11 @@ fun HomePinReplacementDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Replace a pin") },
+        title = { Text(stringResource(R.string.home_replace_pin)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Home can hold up to ${HomePin.MAX_COUNT} pins. Choose which item to replace with ${pendingPin.title}.",
+                    text = stringResource(R.string.home_replace_pin_message, HomePin.MAX_COUNT, pendingPin.title),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -277,13 +294,13 @@ fun HomePinReplacementDialog(
                     ) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Text(
-                                text = pin.title,
+                                text = pin.localizedTitle(),
                                 style = AppShellTypography.SongTitle,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                             Text(
-                                text = pin.typeLabel,
+                                text = pin.localizedTypeLabel(),
                                 style = AppShellTypography.Eyebrow,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -295,7 +312,7 @@ fun HomePinReplacementDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.home_pin_cancel))
             }
         }
     )

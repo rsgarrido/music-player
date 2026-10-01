@@ -7,6 +7,8 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalResources
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.backup.BackupExportResult
 import java.time.LocalDate
 import kotlinx.coroutines.launch
@@ -20,6 +22,7 @@ fun rememberBackupExportActions(
     snackbarHostState: SnackbarHostState,
     onExport: (Uri, (Result<BackupExportResult>) -> Unit) -> Unit
 ): BackupExportActions {
+    val resources = LocalResources.current
     val coroutineScope = rememberCoroutineScope()
 
     fun showMessage(message: String) {
@@ -39,10 +42,10 @@ fun rememberBackupExportActions(
             onExport(uri) { result ->
                 result.fold(
                     onSuccess = { exportResult ->
-                        showMessage(backupExportSuccessMessage(exportResult))
+                        showMessage(resources.backupExportSuccessMessage(exportResult))
                     },
                     onFailure = {
-                        showMessage("Couldn't export backup.")
+                        showMessage(resources.getString(R.string.backup_export_failure))
                     }
                 )
             }
@@ -60,24 +63,4 @@ fun rememberBackupExportActions(
 
 internal fun backupFilename(date: LocalDate): String {
     return "sazanami-backup-$date.sazanami"
-}
-
-internal fun backupExportSuccessMessage(result: BackupExportResult): String {
-    return "Backup exported. " +
-        "${countLabel(result.playlistCount, "playlist")}, " +
-        "${countLabel(result.favoriteCount, "favorite")}, " +
-        "${countLabel(result.listeningHistoryCount, "history entry")}, " +
-        "${countLabel(result.visualAssetCount, "picture")}."
-}
-
-private fun countLabel(count: Int, singularLabel: String): String {
-    val label = if (count == 1) {
-        singularLabel
-    } else if (singularLabel == "history entry") {
-        "history entries"
-    } else {
-        "${singularLabel}s"
-    }
-
-    return "$count $label"
 }

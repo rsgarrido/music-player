@@ -37,6 +37,26 @@ class AndroidAutoSearchResolverTest {
     }
 
     @Test
+    fun `Spanish title por artist query resolves the same stable song`() {
+        val match = AndroidAutoSearchResolver.resolvePlayback(
+            AndroidAutoSearchRequest(query = "reproduce Left Behind por Slipknot en Sazanami"),
+            catalog
+        )
+
+        assertEquals(leftBehind.id, match!!.selectedSong.id)
+    }
+
+    @Test
+    fun `English and Spanish generic library aliases both remain active`() {
+        for (query in listOf("play my music", "reproduce mi música", "pon todas las canciones")) {
+            val match = AndroidAutoSearchResolver.resolvePlayback(
+                AndroidAutoSearchRequest(query = query), catalog
+            )
+            assertEquals(catalog.songs.map(Song::id), match!!.songs.map(Song::id))
+        }
+    }
+
+    @Test
     fun `structured artist query resolves artist library context`() {
         val match = AndroidAutoSearchResolver.resolvePlayback(
             AndroidAutoSearchRequest(artist = "Slipknot"),

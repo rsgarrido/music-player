@@ -30,8 +30,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.FolderBrowseIndex
 import io.github.rsgarrido.sazanami.data.FolderBrowseNode
 import io.github.rsgarrido.sazanami.data.FolderId
@@ -112,7 +115,7 @@ internal fun FoldersTabContent(
         modifier = modifier,
         emptyContent = {
             Text(
-                text = "No songs directly in this folder.",
+                text = stringResource(R.string.library_folder_no_direct_songs),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 18.dp)
@@ -127,7 +130,7 @@ internal fun FoldersTabContent(
             }
             if (selectedNode.childFolderIds.isNotEmpty()) {
                 item(key = "folder-detail-folders-label") {
-                    FolderSectionLabel("Folders")
+                    FolderSectionLabel(stringResource(R.string.library_folder_heading))
                 }
                 items(
                     items = index.childrenOf(selectedNode.id),
@@ -140,7 +143,7 @@ internal fun FoldersTabContent(
                 }
             }
             item(key = "folder-detail-songs-label") {
-                FolderSectionLabel("Songs")
+                FolderSectionLabel(stringResource(R.string.library_folder_songs_heading))
             }
         }
     )
@@ -157,7 +160,7 @@ private fun FolderRootContent(
     if (roots.isEmpty()) {
         Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text(
-                text = "No music folders in your library.",
+                text = stringResource(R.string.library_folder_no_folders),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(24.dp)
@@ -176,9 +179,9 @@ private fun FolderRootContent(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(text = "Folders", style = AppShellTypography.SectionTitle)
+                Text(text = stringResource(R.string.library_folder_heading), style = AppShellTypography.SectionTitle)
                 Text(
-                    text = "Music already in your library",
+                    text = stringResource(R.string.library_folder_music_in_library),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -230,7 +233,7 @@ private fun FolderDetailHeader(
         IconButton(onClick = onBackFromFolder) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back to parent folder"
+                contentDescription = stringResource(R.string.library_folder_back_parent)
             )
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -314,12 +317,12 @@ private fun MissingFolderContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "This folder is no longer in your library.",
+            text = stringResource(R.string.library_folder_missing),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = "Back to folders",
+            text = stringResource(R.string.library_folder_back_to_folders),
             style = MaterialTheme.typography.labelLarge,
             color = AppShellAccent,
             modifier = Modifier
@@ -329,9 +332,10 @@ private fun MissingFolderContent(
     }
 }
 
+@Composable
 private fun FolderBrowseNode.folderSummary(): String = listOf(
-    songCount.countLabel("song"),
-    childFolderIds.size.countLabel("folder")
+    pluralStringResource(R.plurals.core_song_count, songCount, songCount),
+    pluralStringResource(R.plurals.library_folder_child_count, childFolderIds.size, childFolderIds.size)
 ).joinToString(" | ")
 
 private fun FolderBrowseNode.folderDetailListItemCount(): Int {
@@ -340,12 +344,11 @@ private fun FolderBrowseNode.folderDetailListItemCount(): Int {
     return 2 + childFolderItems + directSongItems // Detail header and songs label.
 }
 
-private fun Int.countLabel(noun: String): String = "$this $noun${if (this == 1) "" else "s"}"
-
 private fun FolderId.stableKey(): String = "$volumeName:$normalizedPath"
 
+@Composable
 private fun String.storageDisplayName(): String = when {
-    equals("external_primary", ignoreCase = true) -> "Internal storage"
-    isBlank() -> "Storage"
+    equals("external_primary", ignoreCase = true) -> stringResource(R.string.library_folder_internal_storage)
+    isBlank() -> stringResource(R.string.library_folder_storage)
     else -> this
 }

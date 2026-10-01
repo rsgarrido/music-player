@@ -15,6 +15,7 @@ class EqualizerPresetMatcherTest {
                 preset.name,
                 EqualizerPresetMatcher.match(state)?.name
             )
+            assertEquals(preset.id, EqualizerPresetMatcher.match(state)?.builtInId)
             assertEquals(
                 preset.name,
                 EqualizerPresetMatcher
@@ -61,6 +62,10 @@ class EqualizerPresetMatcherTest {
             EqualizerPresetMatcher
                 .match(flat.copy(userPresets = listOf(identicalFlat)))
                 ?.name
+        )
+        assertEquals(
+            EqualizerBuiltInPresetId.FLAT,
+            EqualizerPresetMatcher.match(flat.copy(userPresets = listOf(identicalFlat)))?.builtInId
         )
     }
 

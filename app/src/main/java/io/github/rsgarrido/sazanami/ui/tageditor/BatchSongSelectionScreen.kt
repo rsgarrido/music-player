@@ -1,6 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.tageditor
 
-import android.R
+import android.R as AndroidR
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,11 +37,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.ui.filterSongsForSearch
@@ -88,12 +91,13 @@ fun BatchSongSelectionScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = onDismiss, enabled = !isPreparing) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.metadata_back))
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(text = "Select tracks", style = MaterialTheme.typography.titleLarge)
+                        Text(text = stringResource(R.string.metadata_select_tracks), style = MaterialTheme.typography.titleLarge)
                         Text(
-                            text = "${selectedSongs.size} selected for metadata planning",
+                            text = pluralStringResource(R.plurals.metadata_selected_for_planning,
+                                selectedSongs.size, selectedSongs.size),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -117,19 +121,20 @@ fun BatchSongSelectionScreen(
                         },
                         enabled = filteredSongs.isNotEmpty() && !isPreparing
                     ) {
-                        Text(if (searchQuery.isBlank()) "Select all" else "Select results")
+                        Text(stringResource(if (searchQuery.isBlank())
+                            R.string.metadata_select_all else R.string.metadata_select_results))
                     }
                     TextButton(
                         onClick = { selectedKeys = emptySet() },
                         enabled = selectedKeys.isNotEmpty() && !isPreparing
                     ) {
-                        Text("Clear")
+                        Text(stringResource(R.string.metadata_clear))
                     }
                 }
 
                 if (filteredSongs.isEmpty()) {
                     Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                        Text("No matching tracks.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.metadata_no_matching_tracks), color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 } else {
                     LazyColumn(modifier = Modifier.weight(1f)) {
@@ -145,23 +150,22 @@ fun BatchSongSelectionScreen(
                                             .size(52.dp)
                                             .clip(RoundedCornerShape(8.dp)),
                                         contentScale = ContentScale.Crop,
-                                        error = painterResource(R.drawable.ic_media_play),
-                                        placeholder = painterResource(R.drawable.ic_media_play)
+                                        error = painterResource(AndroidR.drawable.ic_media_play),
+                                        placeholder = painterResource(AndroidR.drawable.ic_media_play)
                                     )
                                 },
                                 headlineContent = {
                                     Text(
-                                        song.title.ifBlank { "Unknown Title" },
+                                        song.title.ifBlank { stringResource(R.string.metadata_unknown_title) },
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 },
                                 supportingContent = {
                                     Text(
-                                        listOf(
-                                            song.artist.ifBlank { "Unknown Artist" },
-                                            song.album.ifBlank { "Unknown Album" }
-                                        ).joinToString(" • "),
+                                        stringResource(R.string.metadata_artist_album,
+                                            song.artist.ifBlank { stringResource(R.string.metadata_unknown_artist) },
+                                            song.album.ifBlank { stringResource(R.string.metadata_unknown_album) }),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -190,7 +194,7 @@ fun BatchSongSelectionScreen(
                     if (isPreparing) {
                         CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
                     } else {
-                        Text("Continue (${selectedSongs.size})")
+                        Text(stringResource(R.string.metadata_continue_count, selectedSongs.size))
                     }
                 }
             }

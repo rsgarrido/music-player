@@ -218,7 +218,7 @@ internal fun HomeScreen(
         ) {
             item(key = "home-empty-history") {
                 Text(
-                    text = "Choose something from Library to start building your listening history.",
+                    text = stringResource(R.string.home_empty_history),
                     modifier = homeSectionItemMotion()
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                     style = MaterialTheme.typography.bodyLarge,

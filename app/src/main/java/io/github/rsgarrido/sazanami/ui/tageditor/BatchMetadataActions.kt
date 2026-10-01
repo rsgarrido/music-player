@@ -4,6 +4,7 @@ import android.app.Activity
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -15,6 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.BatchArtworkValue
 import io.github.rsgarrido.sazanami.data.BatchEditIntent
 import io.github.rsgarrido.sazanami.data.BatchMetadataOperationState
@@ -49,6 +52,7 @@ fun rememberBatchMetadataActions(
     onDismiss: () -> Unit
 ): BatchMetadataActions {
     val context = LocalContext.current
+    val resources = LocalResources.current
     var launchedRequest by remember { mutableStateOf<LaunchedPermissionRequest?>(null) }
     val latestAwaiting by rememberUpdatedState(
         state as? BatchMetadataOperationState.AwaitingPermission
@@ -67,7 +71,7 @@ fun rememberBatchMetadataActions(
                 request.batchIndex,
                 activityResult.resultCode == Activity.RESULT_OK,
                 if (activityResult.resultCode == Activity.RESULT_OK) null
-                else "Write permission was denied."
+                else resources.getString(R.string.metadata_write_permission_denied)
             )
         }
     }
@@ -80,7 +84,7 @@ fun rememberBatchMetadataActions(
                 awaiting.operationId,
                 awaiting.batchIndex,
                 false,
-                "Bulk write permission requires Android 11 or newer."
+                resources.getString(R.string.metadata_bulk_permission_version)
             )
             return@LaunchedEffect
         }
@@ -96,12 +100,13 @@ fun rememberBatchMetadataActions(
                 IntentSenderRequest.Builder(request.intentSender).build()
             )
         } catch (exception: Exception) {
+            Log.w("BatchMetadata", "Could not request write permission", exception)
             launchedRequest = null
             onPermissionResult(
                 awaiting.operationId,
                 awaiting.batchIndex,
                 false,
-                exception.message ?: "Could not request write permission."
+                resources.getString(R.string.metadata_write_permission_request_failed)
             )
         }
     }

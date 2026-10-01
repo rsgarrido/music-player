@@ -1,4 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.pocketcassette
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -161,7 +163,7 @@ private fun PocketCassetteSharedArtwork(
         if (song.albumArtUri != null) {
             RetainedArtworkImage(
                 model = song.albumArtUri,
-                contentDescription = "Current album artwork",
+                contentDescription = stringResource(R.string.player_current_album_artwork),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
@@ -201,7 +203,7 @@ private fun PocketCassetteSharedForeground(
     val density = LocalDensity.current
 
     Text(
-        text = song.title.ifBlank { "Unknown title" },
+        text = song.title.ifBlank { stringResource(R.string.player_unknown_title) },
         color = lerp(
             tokens.displayTextColor,
             PocketCassetteColors.windowText,
@@ -217,7 +219,7 @@ private fun PocketCassetteSharedForeground(
     )
 
     Text(
-        text = song.artist.ifBlank { "Unknown artist" },
+        text = song.artist.ifBlank { stringResource(R.string.player_unknown_artist) },
         color = lerp(
             tokens.displayTextColor.copy(alpha = 0.7f),
             PocketCassetteColors.windowTextMuted,
@@ -257,7 +259,7 @@ private fun PocketCassetteSharedForeground(
         ) {
             Icon(
                 imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pause" else "Play",
+                contentDescription = stringResource(if (isPlaying) R.string.player_pause else R.string.player_play),
                 tint = lerp(
                     tokens.displayTextColor,
                     PocketCassetteColors.buttonActive,

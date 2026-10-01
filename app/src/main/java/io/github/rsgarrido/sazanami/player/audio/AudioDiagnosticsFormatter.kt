@@ -112,7 +112,7 @@ fun formatEqualizerPlanLatency(
     return "$preparation · $application"
 }
 
-private fun friendlyCodecName(mimeType: String, codecs: String?): String = when (mimeType) {
+internal fun friendlyCodecName(mimeType: String, codecs: String?): String = when (mimeType) {
     "audio/flac" -> "FLAC"
     "audio/mpeg" -> "MP3"
     "audio/mp4a-latm" -> "AAC"
@@ -124,7 +124,7 @@ private fun friendlyCodecName(mimeType: String, codecs: String?): String = when 
     else -> codecs?.takeIf { it.isNotBlank() } ?: mimeType
 }
 
-private fun formatSampleRate(sampleRateHz: Int): String {
+internal fun formatSampleRate(sampleRateHz: Int): String {
     val kilohertz = sampleRateHz / 1_000.0
     return if (sampleRateHz % 1_000 == 0) {
         "${sampleRateHz / 1_000} kHz"
