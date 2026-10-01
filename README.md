@@ -5,6 +5,10 @@
 <h1 align="center">Sazanami</h1>
 
 <p align="center">
+  <strong>English</strong> | <a href="README.es.md">Español</a>
+</p>
+
+<p align="center">
   <strong>An offline, privacy-first Android music player for your own music library.</strong>
 </p>
 
