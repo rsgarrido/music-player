@@ -1,6 +1,9 @@
 <resources>
     <string name="app_name">Sazanami</string>
     <string name="external_audio_title">External audio</string>
+    <string name="external_audio_app_icon">Sazanami app icon</string>
+    <string name="external_audio_embedded_artwork">Embedded artwork</string>
+    <string name="external_audio_artwork_placeholder">Audio artwork placeholder</string>
     <string name="external_audio_close">Close player</string>
     <string name="external_audio_preparing">Preparing audio…</string>
     <string name="external_audio_seek">Playback position</string>

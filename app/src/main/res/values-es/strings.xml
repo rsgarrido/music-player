@@ -88,6 +88,9 @@
     <string name="app_appearance_close">Cerrar</string>
     <string name="app_name">Sazanami</string>
     <string name="external_audio_title">Audio externo</string>
+    <string name="external_audio_app_icon">Icono de Sazanami</string>
+    <string name="external_audio_embedded_artwork">Carátula incrustada</string>
+    <string name="external_audio_artwork_placeholder">Marcador de carátula de audio</string>
     <string name="external_audio_close">Cerrar reproductor</string>
     <string name="external_audio_preparing">Preparando audio…</string>
     <string name="external_audio_seek">Posición de reproducción</string>

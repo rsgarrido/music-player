@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.external
 
 import android.content.Intent
+import android.graphics.Bitmap
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.CancellationSignal
@@ -48,6 +49,8 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
     private var uiState by mutableStateOf(ExternalAudioUiState())
     private var requestJob: Job? = null
     private var progressJob: Job? = null
+    private var artworkJob: Job? = null
+    private val artworkRequest = ExternalAudioArtworkRequest<Bitmap>()
     private var providerCancellation: CancellationSignal? = null
     private var requestId = 0
     private var errorReported = false
@@ -153,6 +156,7 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
         releasePreview()
         session.beginRequest(wasReady)
         val generation = ++requestId
+        artworkRequest.beginRequest(generation)
         errorReported = false
         uiState = ExternalAudioUiState(
             requestId = generation,
@@ -179,6 +183,7 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
                     if (!isFinishing && !isDestroyed && generation == requestId) {
                         uiState = uiState.copy(displayName = request.displayName)
                         preparePlayer(request, positionMs, shouldPlay)
+                        loadArtwork(request, generation)
                     }
                 }
             } catch (cancelled: CancellationException) {
@@ -231,6 +236,22 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
             while (isActive && session.player === player) {
                 publishPlayerState(player)
                 delay(250L)
+            }
+        }
+    }
+
+    private fun loadArtwork(request: ExternalAudioRequest, generation: Int) {
+        if (isFinishing || isDestroyed) return
+        val targetEdgePx = (EXTERNAL_AUDIO_ARTWORK_SIZE_DP * resources.displayMetrics.density)
+            .roundToInt().coerceIn(1, EXTERNAL_AUDIO_ARTWORK_MAX_EDGE_PX)
+        artworkJob = lifecycleScope.launch {
+            // Separate from the playback request: absent/broken artwork never prevents playback.
+            val bitmap = loadExternalAudioArtwork(applicationContext, request.uri, targetEdgePx)
+            ensureActive()
+            if (!isFinishing && !isDestroyed && artworkRequest.accept(generation, bitmap)) {
+                uiState = uiState.copy(artwork = artworkRequest.artwork)
+            } else {
+                bitmap?.recycle() // An obsolete result was never displayed.
             }
         }
     }
@@ -312,6 +333,11 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
     }
 
     private fun releasePreview() {
+        artworkJob?.cancel()
+        artworkJob = null
+        artworkRequest.clear()
+        // Drop references; do not recycle an image that Compose may still be rendering.
+        uiState = uiState.copy(artwork = null)
         requestJob?.cancel()
         requestJob = null
         providerCancellation?.let { runCatching { it.cancel() } }

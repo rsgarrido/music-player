@@ -1,9 +1,14 @@
 package io.github.rsgarrido.sazanami.external
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -32,13 +37,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.ui.AppShellIcons
+import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+
+internal const val EXTERNAL_AUDIO_ARTWORK_TAG = "external_audio_artwork"
 
 internal data class ExternalAudioUiState(
     val requestId: Int = 0,
@@ -48,7 +65,8 @@ internal data class ExternalAudioUiState(
     val isPreparing: Boolean = true,
     val showPause: Boolean = false,
     val canPlayPause: Boolean = false,
-    val canSeek: Boolean = false
+    val canSeek: Boolean = false,
+    val artwork: Bitmap? = null
 )
 
 @Composable
@@ -71,6 +89,16 @@ internal fun ExternalAudioPlayerScreen(
     val shownPosition = draggedFraction?.let { externalAudioSeekPosition(it, duration) }
         ?: state.positionMs
     val seekDescription = stringResource(R.string.external_audio_seek)
+    val context = LocalContext.current
+    val iconSizePx = with(LocalDensity.current) { 32.dp.roundToPx() }
+    val appIconRequest = remember(context, iconSizePx) {
+        ImageRequest.Builder(context)
+            .data(R.drawable.sazanami_icon_foreground)
+            .size(iconSizePx)
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .diskCachePolicy(CachePolicy.DISABLED)
+            .build()
+    }
 
     Surface(
         shape = RoundedCornerShape(24.dp),
@@ -89,21 +117,64 @@ internal fun ExternalAudioPlayerScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Existing launcher foreground, decoded asynchronously at header size.
+                    AsyncImage(
+                        model = appIconRequest,
+                        contentDescription = stringResource(R.string.external_audio_app_icon),
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Text(
+                        text = stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
                 IconButton(onClick = onClose) {
                     Icon(Icons.Filled.Close, stringResource(R.string.external_audio_close))
                 }
             }
-            Text(
-                text = state.displayName.ifBlank { stringResource(R.string.external_audio_title) },
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(EXTERNAL_AUDIO_ARTWORK_SIZE_DP.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .testTag(EXTERNAL_AUDIO_ARTWORK_TAG),
+                    contentAlignment = Alignment.Center
+                ) {
+                    val artwork = state.artwork
+                    if (artwork != null) {
+                        Image(
+                            bitmap = remember(artwork) { artwork.asImageBitmap() },
+                            contentDescription = stringResource(R.string.external_audio_embedded_artwork),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Icon(
+                            imageVector = AppShellIcons.MusicNote,
+                            contentDescription = stringResource(R.string.external_audio_artwork_placeholder),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+                Text(
+                    text = state.displayName.ifBlank { stringResource(R.string.external_audio_title) },
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+            }
             if (state.isPreparing) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
