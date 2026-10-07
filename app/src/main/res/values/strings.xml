@@ -1,5 +1,22 @@
 <resources>
     <string name="app_name">Sazanami</string>
+    <string name="external_audio_title">External audio</string>
+    <string name="external_audio_app_icon">Sazanami app icon</string>
+    <string name="external_audio_embedded_artwork">Embedded artwork</string>
+    <string name="external_audio_artwork_placeholder">Audio artwork placeholder</string>
+    <string name="external_audio_close">Close player</string>
+    <string name="external_audio_preparing">Preparing audio…</string>
+    <string name="external_audio_seek">Playback position</string>
+    <string name="external_audio_unknown_duration">—:—</string>
+    <string name="external_audio_rewind">Rewind 10 seconds</string>
+    <string name="external_audio_forward">Forward 10 seconds</string>
+    <string name="external_audio_play">Play</string>
+    <string name="external_audio_pause">Pause</string>
+    <string name="external_audio_invalid_request">No audio file was provided.</string>
+    <string name="external_audio_unsupported_uri">Only local content audio is supported.</string>
+    <string name="external_audio_unsupported_audio">This file is not supported audio.</string>
+    <string name="external_audio_cannot_open">Cannot open this audio. Try opening it again from the file manager.</string>
+    <string name="external_audio_cannot_play">This audio could not be played.</string>
     <string name="settings_help_section_title">Help &amp; About</string>
     <string name="settings_help_section_summary">Tips, project links, and app information.</string>
     <string name="settings_help_tips_title">Tips &amp; Help</string>
