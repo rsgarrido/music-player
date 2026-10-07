@@ -53,6 +53,10 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
     private var errorReported = false
 
     private val playerListener = object : Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            if (session.player != null) session.recordPlaybackState(playbackState)
+        }
+
         override fun onEvents(player: Player, events: Player.Events) {
             if (session.player === player) publishPlayerState(player)
         }
@@ -82,7 +86,8 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
         openRequest(
             incoming = intent,
             positionMs = savedInstanceState?.getLong(KEY_POSITION, 0L)?.coerceAtLeast(0L) ?: 0L,
-            shouldPlay = savedInstanceState?.getBoolean(KEY_PLAY_WHEN_READY, true) ?: true
+            shouldPlay = savedInstanceState?.getBoolean(KEY_PLAY_WHEN_READY, true) ?: true,
+            wasReady = savedInstanceState?.getBoolean(KEY_HAS_REACHED_READY, false) ?: false
         )
     }
 
@@ -117,6 +122,7 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
             player?.let { it.playWhenReady && it.playbackState != Player.STATE_ENDED }
                 ?: uiState.showPause
         )
+        outState.putBoolean(KEY_HAS_REACHED_READY, session.hasReachedReady)
         super.onSaveInstanceState(outState)
     }
 
@@ -138,14 +144,21 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    private fun openRequest(incoming: Intent, positionMs: Long, shouldPlay: Boolean) {
+    private fun openRequest(
+        incoming: Intent,
+        positionMs: Long,
+        shouldPlay: Boolean,
+        wasReady: Boolean = false
+    ) {
         releasePreview()
+        session.beginRequest(wasReady)
         val generation = ++requestId
         errorReported = false
         uiState = ExternalAudioUiState(
             requestId = generation,
             displayName = getString(R.string.external_audio_title),
             positionMs = positionMs,
+            isPreparing = session.isInitiallyPreparing,
             showPause = shouldPlay
         )
         validateExternalAudioIntent(incoming)?.let {
@@ -236,8 +249,7 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
         uiState = uiState.copy(
             positionMs = position,
             durationMs = duration,
-            isPreparing = player.playbackState == Player.STATE_IDLE ||
-                player.playbackState == Player.STATE_BUFFERING,
+            isPreparing = session.isInitiallyPreparing,
             showPause = player.playWhenReady && player.playbackState != Player.STATE_ENDED &&
                 player.playbackSuppressionReason == Player.PLAYBACK_SUPPRESSION_REASON_NONE,
             canPlayPause = true,
@@ -313,5 +325,6 @@ class ExternalAudioPlayerActivity : AppCompatActivity() {
     private companion object {
         const val KEY_POSITION = "external_audio_position"
         const val KEY_PLAY_WHEN_READY = "external_audio_play_when_ready"
+        const val KEY_HAS_REACHED_READY = "external_audio_has_reached_ready"
     }
 }

@@ -3,6 +3,8 @@ package io.github.rsgarrido.sazanami.external
 import androidx.media3.common.Player
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.inOrder
@@ -12,6 +14,55 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 
 class ExternalAudioPlayerSessionTest {
+    @Test
+    fun initialPreparationEndsAtFirstReadyAndDoesNotReturnDuringSeekBuffering() {
+        val session = ExternalAudioPlayerSession()
+        session.beginRequest()
+        assertTrue(session.isInitiallyPreparing)
+        assertFalse(session.hasReachedReady)
+
+        session.recordPlaybackState(Player.STATE_IDLE)
+        assertTrue(session.isInitiallyPreparing)
+        session.recordPlaybackState(Player.STATE_BUFFERING)
+        assertTrue(session.isInitiallyPreparing)
+
+        session.recordPlaybackState(Player.STATE_READY)
+        assertTrue(session.hasReachedReady)
+        assertFalse(session.isInitiallyPreparing)
+
+        session.recordPlaybackState(Player.STATE_BUFFERING)
+        assertFalse(session.isInitiallyPreparing)
+        session.recordPlaybackState(Player.STATE_READY)
+        assertFalse(session.isInitiallyPreparing)
+    }
+
+    @Test
+    fun genuinelyNewRequestResetsInitialPreparation() {
+        val session = ExternalAudioPlayerSession()
+        session.beginRequest()
+        session.recordPlaybackState(Player.STATE_READY)
+
+        session.beginRequest()
+
+        assertFalse(session.hasReachedReady)
+        assertTrue(session.isInitiallyPreparing)
+        session.recordPlaybackState(Player.STATE_BUFFERING)
+        assertTrue(session.isInitiallyPreparing)
+    }
+
+    @Test
+    fun recreationCanPreserveReadinessWhileTheDecoderIsRebuilt() {
+        val session = ExternalAudioPlayerSession()
+        session.beginRequest(wasReady = true)
+
+        session.recordPlaybackState(Player.STATE_IDLE)
+        assertFalse(session.isInitiallyPreparing)
+        session.recordPlaybackState(Player.STATE_BUFFERING)
+        assertFalse(session.isInitiallyPreparing)
+        session.recordPlaybackState(Player.STATE_READY)
+        assertFalse(session.isInitiallyPreparing)
+    }
+
     @Test
     fun closeBackStopAndDestroyCanAllReleaseTheSameSessionOnlyOnce() {
         val player = mock(Player::class.java)

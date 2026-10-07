@@ -7,6 +7,21 @@ internal class ExternalAudioPlayerSession {
     var player: Player? = null
         private set
 
+    var hasReachedReady: Boolean = false
+        private set
+
+    val isInitiallyPreparing: Boolean
+        get() = !hasReachedReady
+
+    /** Only a new request resets readiness; rebuilding its decoder may restore the checkpoint. */
+    fun beginRequest(wasReady: Boolean = false) {
+        hasReachedReady = wasReady
+    }
+
+    fun recordPlaybackState(playbackState: Int) {
+        if (playbackState == Player.STATE_READY) hasReachedReady = true
+    }
+
     fun replace(newPlayer: Player) {
         if (player === newPlayer) return
         close()

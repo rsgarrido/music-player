@@ -1,5 +1,6 @@
 package io.github.rsgarrido.sazanami.external
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import androidx.media3.common.Player
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.ui.theme.SazanamiTheme
 import org.junit.Assert.assertEquals
@@ -21,6 +23,70 @@ class ExternalAudioPlayerScreenTest {
     @get:Rule
     val compose = createComposeRule()
     private val context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    @Test
+    fun postReadySeekBufferingKeepsPreparationHiddenAndSeekControlsStationary() {
+        val session = ExternalAudioPlayerSession()
+        session.beginRequest()
+        val screenState = mutableStateOf(ExternalAudioUiState(
+            displayName = "Recording.m4a",
+            durationMs = 102_000L,
+            isPreparing = session.isInitiallyPreparing,
+            showPause = true,
+            canPlayPause = true,
+            canSeek = true
+        ))
+        compose.setContent {
+            SazanamiTheme {
+                ExternalAudioPlayerScreen(
+                    state = screenState.value,
+                    onClose = {},
+                    onPlayPause = {},
+                    onSeek = {},
+                    onSeekBack = {},
+                    onSeekForward = {}
+                )
+            }
+        }
+        val preparingText = context.getString(R.string.external_audio_preparing)
+        val seekDescription = context.getString(R.string.external_audio_seek)
+        val pauseDescription = context.getString(R.string.external_audio_pause)
+        compose.onNodeWithText(preparingText).assertIsDisplayed()
+
+        compose.runOnIdle {
+            session.recordPlaybackState(Player.STATE_READY)
+            screenState.value = screenState.value.copy(isPreparing = session.isInitiallyPreparing)
+        }
+        compose.onNodeWithText(preparingText).assertDoesNotExist()
+        val readySeekBounds = compose.onNodeWithContentDescription(seekDescription)
+            .fetchSemanticsNode().boundsInRoot
+        val readyPauseBounds = compose.onNodeWithContentDescription(pauseDescription)
+            .fetchSemanticsNode().boundsInRoot
+
+        compose.runOnIdle {
+            session.recordPlaybackState(Player.STATE_BUFFERING)
+            screenState.value = screenState.value.copy(
+                isPreparing = session.isInitiallyPreparing,
+                positionMs = 10_000L
+            )
+        }
+        compose.onNodeWithText(preparingText).assertDoesNotExist()
+        assertEquals(readySeekBounds, compose.onNodeWithContentDescription(seekDescription)
+            .fetchSemanticsNode().boundsInRoot)
+        assertEquals(readyPauseBounds, compose.onNodeWithContentDescription(pauseDescription)
+            .fetchSemanticsNode().boundsInRoot)
+
+        compose.runOnIdle {
+            session.recordPlaybackState(Player.STATE_READY)
+            screenState.value = screenState.value.copy(
+                isPreparing = session.isInitiallyPreparing,
+                positionMs = 10_250L
+            )
+        }
+        compose.onNodeWithText(preparingText).assertDoesNotExist()
+        assertEquals(readySeekBounds, compose.onNodeWithContentDescription(seekDescription)
+            .fetchSemanticsNode().boundsInRoot)
+    }
 
     @Test
     fun unknownDurationKeepsPlaybackAndCloseAvailableButDisablesSeeking() {
