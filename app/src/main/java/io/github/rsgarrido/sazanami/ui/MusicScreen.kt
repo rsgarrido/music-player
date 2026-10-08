@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -28,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -148,12 +148,7 @@ import io.github.rsgarrido.sazanami.ui.state.LibrarySelectionEntity
 import io.github.rsgarrido.sazanami.ui.equalizer.EqualizerScreenState
 import io.github.rsgarrido.sazanami.ui.equalizer.EqualizerUiActions
 import io.github.rsgarrido.sazanami.ui.queue.rememberQueueSnackbarActions
-import io.github.rsgarrido.sazanami.ui.tageditor.DiscardTagChangesDialog
-import io.github.rsgarrido.sazanami.ui.tageditor.BatchMetadataEditorScreen
 import io.github.rsgarrido.sazanami.ui.tageditor.BatchMetadataEditorContext
-import io.github.rsgarrido.sazanami.ui.tageditor.BatchMetadataExecutionScreen
-import io.github.rsgarrido.sazanami.ui.tageditor.BatchSongSelectionScreen
-import io.github.rsgarrido.sazanami.ui.tageditor.TagEditorScreen
 import io.github.rsgarrido.sazanami.ui.tageditor.rememberTagEditorActions
 import io.github.rsgarrido.sazanami.ui.tageditor.rememberBatchMetadataActions
 import io.github.rsgarrido.sazanami.controller.SpotifyImportUiState
@@ -607,6 +602,80 @@ internal fun MusicScreen(
             selectedLibraryTab = LibraryTab.ALBUMS
         }
         batchMetadataEditorContext = BatchMetadataEditorContext.SongSelection
+    }
+
+    val onEditSongTagsClick: (Song) -> Unit = remember {
+        { song ->
+            isTagSaveInProgress = false
+            hasUnsavedTagChanges = false
+            isDiscardTagChangesDialogVisible = false
+            selectedArtworkUriForTagEdit = null
+            songPendingTagEdit = song
+        }
+    }
+    val latestPrepareBatchMetadataEditor = rememberUpdatedState(prepareBatchMetadataEditor)
+    val onEditAlbumMetadataClick: (LibraryAlbumGroup) -> Unit = remember {
+        { album ->
+            latestPrepareBatchMetadataEditor.value(
+                album.metadataEditingSongs(),
+                BatchMetadataEditorContext.Album(
+                    albumKey = album.key,
+                    title = album.title,
+                    artworkUri = album.songs.firstOrNull()?.albumArtUri?.toString()
+                )
+            )
+        }
+    }
+    val onBatchMetadataClick: () -> Unit = remember {
+        { isBatchSongSelectionVisible = true }
+    }
+
+    // Prepare these slots outside PlayerMorphHost; invoke them at the original screen/dialog positions.
+    val metadataEditorContent: @Composable () -> Unit = {
+        MusicMetadataPresentation(
+            songForTagEdit = songPendingTagEdit,
+            batchEditorState = batchMetadataEditorState,
+            batchExecutionState = batchMetadataOperationState,
+            batchEditorContext = batchMetadataEditorContext,
+            currentSongId = currentSong?.id,
+            isTagSaveInProgress = isTagSaveInProgress,
+            selectedArtworkUri = selectedArtworkUriForTagEdit,
+            tagEditorActions = tagEditorActions,
+            batchMetadataActions = batchMetadataActions,
+            onReadEditableSongTags = onReadEditableSongTags,
+            onGetUnsupportedTagEditingMessage = onGetUnsupportedTagEditingMessage,
+            onRequestCloseTagEditor = ::requestCloseTagEditor,
+            onChooseTagArtwork = { artworkPickerLauncher.launch("image/*") },
+            onUnsavedTagChangesChanged = { hasUnsavedTagChanges = it },
+            onBatchEditorStateChanged = { batchMetadataEditorState = it },
+            onChooseBatchArtwork = { batchArtworkPickerLauncher.launch(arrayOf("image/*")) },
+            onCloseBatchEditor = {
+                batchMetadataEditorState = null
+                batchMetadataEditorContext = BatchMetadataEditorContext.SongSelection
+            },
+            onCloseBatchResults = ::closeBatchMetadataResults
+        )
+    }
+    val metadataDialogContent: @Composable () -> Unit = {
+        MusicMetadataDialogs(
+            isBatchSongSelectionVisible = isBatchSongSelectionVisible,
+            songs = songs,
+            isBatchPreparationInProgress = isBatchPreparationInProgress,
+            isDiscardTagChangesDialogVisible = isDiscardTagChangesDialogVisible,
+            onDismissBatchSelection = {
+                if (!isBatchPreparationInProgress) isBatchSongSelectionVisible = false
+            },
+            onContinueBatchSelection = { selectedSongs ->
+                prepareBatchMetadataEditor(selectedSongs, BatchMetadataEditorContext.SongSelection)
+            },
+            onDismissTagDiscard = { isDiscardTagChangesDialogVisible = false },
+            onConfirmTagDiscard = {
+                isDiscardTagChangesDialogVisible = false
+                hasUnsavedTagChanges = false
+                selectedArtworkUriForTagEdit = null
+                songPendingTagEdit = null
+            }
+        )
     }
 
     fun closeSettings() {
@@ -1192,80 +1261,10 @@ internal fun MusicScreen(
                 label = "libraryChromeBottomPadding"
             )
 
-            if (selectedBatchExecutionState != null) {
-                BatchMetadataExecutionScreen(
-                    state = selectedBatchExecutionState,
-                    onCancel = batchMetadataActions.cancel,
-                    onRetryFailed = batchMetadataActions.retryFailed,
-                    onContinueUnprocessed = batchMetadataActions.continueUnprocessed,
-                    onRetryRefresh = batchMetadataActions.retryRefresh,
-                    onDone = ::closeBatchMetadataResults,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
-                )
-            } else if (selectedBatchEditorState != null) {
-                BatchMetadataEditorScreen(
-                    state = selectedBatchEditorState,
-                    context = batchMetadataEditorContext,
-                    onStateChanged = { updated -> batchMetadataEditorState = updated },
-                    onChooseArtwork = {
-                        batchArtworkPickerLauncher.launch(arrayOf("image/*"))
-                    },
-                    onApply = batchMetadataActions.apply,
-                    onBack = {
-                        batchMetadataEditorState = null
-                        batchMetadataEditorContext = BatchMetadataEditorContext.SongSelection
-                    },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
-                )
-            } else if (selectedSongForTagEdit != null) {
-                val initialEditableTags = remember(
-                    selectedSongForTagEdit.id,
-                    selectedSongForTagEdit.filePath
-                ) {
-                    onReadEditableSongTags(selectedSongForTagEdit)
-                }
-
-                val unsupportedTagEditingMessage = remember(
-                    selectedSongForTagEdit.id,
-                    selectedSongForTagEdit.filePath
-                ) {
-                    onGetUnsupportedTagEditingMessage(selectedSongForTagEdit)
-                }
-
-                TagEditorScreen(
-                    song = selectedSongForTagEdit,
-                    initialTags = initialEditableTags,
-                    isSaving = isTagSaveInProgress,
-                    unsupportedMessage = unsupportedTagEditingMessage,
-                    isCurrentSong = currentSong?.id == selectedSongForTagEdit.id,
-                    selectedArtworkUri = selectedArtworkUriForTagEdit,
-                    onChangeArtworkClick = {
-                        artworkPickerLauncher.launch("image/*")
-                    },
-                    onBackClick = {
-                        requestCloseTagEditor()
-                    },
-                    onSaveClick = { editedTags ->
-                        tagEditorActions.saveTags(
-                            selectedSongForTagEdit,
-                            editedTags,
-                            selectedArtworkUriForTagEdit
-                        )
-                    },
-                    onUnsavedChangesChanged = { hasChanges ->
-                        hasUnsavedTagChanges = hasChanges
-                    },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .statusBarsPadding()
-                        .navigationBarsPadding()
-                )
+            if (selectedBatchExecutionState != null || selectedBatchEditorState != null ||
+                selectedSongForTagEdit != null
+            ) {
+                metadataEditorContent()
             } else {
                 MusicScreenBody(
                     songs = songs,
@@ -1582,26 +1581,9 @@ internal fun MusicScreen(
                     onAddSongsToCurrentPlaylistClick = { playlist, songs ->
                         playlistSnackbarActions.addSongsToPlaylist(playlist, songs)
                     },
-                    onEditSongTagsClick = { song ->
-                        isTagSaveInProgress = false
-                        hasUnsavedTagChanges = false
-                        isDiscardTagChangesDialogVisible = false
-                        selectedArtworkUriForTagEdit = null
-                        songPendingTagEdit = song
-                    },
-                    onEditAlbumMetadataClick = { album: LibraryAlbumGroup ->
-                        prepareBatchMetadataEditor(
-                            album.metadataEditingSongs(),
-                            BatchMetadataEditorContext.Album(
-                                albumKey = album.key,
-                                title = album.title,
-                                artworkUri = album.songs.firstOrNull()?.albumArtUri?.toString()
-                            )
-                        )
-                    },
-                    onBatchMetadataClick = {
-                        isBatchSongSelectionVisible = true
-                    },
+                    onEditSongTagsClick = onEditSongTagsClick,
+                    onEditAlbumMetadataClick = onEditAlbumMetadataClick,
+                    onBatchMetadataClick = onBatchMetadataClick,
                     isSleepTimerActive = isSleepTimerActive,
                     sleepTimerDisplayText = sleepTimerDisplayText,
                     onSleepTimerClick = {
@@ -1770,37 +1752,7 @@ internal fun MusicScreen(
                 )
             }
 
-            if (isBatchSongSelectionVisible) {
-                BatchSongSelectionScreen(
-                    songs = songs,
-                    isPreparing = isBatchPreparationInProgress,
-                    onDismiss = {
-                        if (!isBatchPreparationInProgress) {
-                            isBatchSongSelectionVisible = false
-                        }
-                    },
-                    onContinue = { selectedSongs ->
-                        prepareBatchMetadataEditor(
-                            selectedSongs,
-                            BatchMetadataEditorContext.SongSelection
-                        )
-                    }
-                )
-            }
-
-            if (isDiscardTagChangesDialogVisible) {
-                DiscardTagChangesDialog(
-                    onDismiss = {
-                        isDiscardTagChangesDialogVisible = false
-                    },
-                    onConfirmDiscardClick = {
-                        isDiscardTagChangesDialogVisible = false
-                        hasUnsavedTagChanges = false
-                        selectedArtworkUriForTagEdit = null
-                        songPendingTagEdit = null
-                    }
-                )
-            }
+            metadataDialogContent()
 
             if (selectedSongForTagEdit == null && selectedBatchEditorState == null) {
                 MusicScreenOverlays(
