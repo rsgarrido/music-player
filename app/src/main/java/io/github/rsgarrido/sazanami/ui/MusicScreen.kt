@@ -1851,7 +1851,6 @@ internal fun MusicScreen(
                     onShowQueueHub = {
                         isQueueHubVisible = true
                     },
-                    onShowExpandedSleepTimer = onOpenSleepTimer,
                     onShowExpandedMore = {
                         if (canPresentNowPlayingMore) {
                             currentSong?.let(overlayState::openNowPlayingMore)

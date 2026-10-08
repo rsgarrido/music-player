@@ -130,7 +130,6 @@ fun ExpandedPlayerThemeHost(
     lyricsTransitionState: PlayerLyricsTransitionState,
     lyricsGestureRegion: PlayerLyricsGestureRegion,
     onOpenQueueHubClick: () -> Unit,
-    onOpenSleepTimerClick: () -> Unit,
     onOpenMoreClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
     songs: List<Song>,
