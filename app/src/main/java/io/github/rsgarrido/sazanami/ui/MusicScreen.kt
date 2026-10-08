@@ -68,8 +68,7 @@ import io.github.rsgarrido.sazanami.ui.library.LibraryAlbumGroup
 import io.github.rsgarrido.sazanami.ui.library.buildLibraryAlbumGroups
 import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.ui.player.PlayerPresentation
-import io.github.rsgarrido.sazanami.ui.player.isCurrentNowPlayingTarget
-import io.github.rsgarrido.sazanami.ui.player.performNowPlayingAction
+import io.github.rsgarrido.sazanami.ui.player.rememberNowPlayingMoreActionDispatcher
 import io.github.rsgarrido.sazanami.ui.player.supportsNowPlayingMore
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackQueue
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackEffect
@@ -666,6 +665,23 @@ internal fun MusicScreen(
             mainDestination = MainDestination.LIBRARY
         }
     }
+
+    val onNowPlayingMoreAction = rememberNowPlayingMoreActionDispatcher(
+        currentSong = currentSong,
+        librarySongs = songs,
+        favoriteMembershipKeys = favoriteMembershipKeys,
+        canPresent = canPresentNowPlayingMore,
+        overlayState = overlayState,
+        onToggleFavorite = onToggleFavoriteClick,
+        onOpenAlbum = ::openCurrentAlbum,
+        onOpenLyrics = lyricsTransitionState::openLyrics,
+        onFavoriteFeedback = favoriteFeedbackQueue::emit,
+        onOpenArtist = onOpenCurrentArtistClick,
+        onTrackInfoClick = onTrackInfoClick,
+        onAddToPlaylist = workflowOpeners.addToPlaylist,
+        onRateSong = workflowOpeners.rateSong,
+        onOpenSleepTimer = onOpenSleepTimer
+    )
 
     fun restorePlaybackLaunchContext() {
         val validContext = playbackLaunchContext.withValidDetails(
@@ -1803,32 +1819,7 @@ internal fun MusicScreen(
                     isQueueHubVisible = isQueueHubVisible,
                     nowPlayingMoreTarget = nowPlayingMoreTarget,
                     onDismissNowPlayingMore = overlayState::dismissNowPlayingMore,
-                    onNowPlayingMoreAction = { action, target ->
-                        if (isCurrentNowPlayingTarget(
-                                overlayState.currentNowPlayingMoreTarget(currentSong), target
-                            ) && canPresentNowPlayingMore
-                        ) {
-                            performNowPlayingAction(
-                                action = action,
-                                target = target,
-                                currentSong = currentSong,
-                                librarySongs = songs,
-                                onDismiss = overlayState::dismissNowPlayingMore,
-                                onToggleFavorite = onToggleFavoriteClick,
-                                onOpenAlbum = ::openCurrentAlbum,
-                                onOpenLyrics = lyricsTransitionState::openLyrics,
-                                isFavorite = target.membershipKey() in favoriteMembershipKeys,
-                                onFavoriteFeedback = favoriteFeedbackQueue::emit,
-                                onOpenArtist = onOpenCurrentArtistClick,
-                                onTrackInfoClick = onTrackInfoClick,
-                                onAddToPlaylist = workflowOpeners.addToPlaylist,
-                                onRateSong = workflowOpeners.rateSong,
-                                onOpenSleepTimer = onOpenSleepTimer
-                            )
-                        } else {
-                            overlayState.dismissNowPlayingMore()
-                        }
-                    },
+                    onNowPlayingMoreAction = onNowPlayingMoreAction,
                     playbackQueueHubUiState = playbackQueueHubUiState,
                     queuedSongs = queuedSongs,
                     upcomingSongs = upcomingSongs,
