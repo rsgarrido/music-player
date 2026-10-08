@@ -245,9 +245,13 @@ internal fun ModernPlayerMetadata(
                 color = style.secondaryContentColor,
                 maxLines = 1,
                 textAlign = alignment.textAlign(),
-                modifier = Modifier.fillMaxWidth().artistNavigationClick(
-                    onOpenArtistClick.takeUnless { hidePersistentContent }
-                )
+                modifier = Modifier
+                    .align(if (alignment == ModernMetadataAlignment.CENTER) {
+                        Alignment.CenterHorizontally
+                    } else {
+                        Alignment.Start
+                    })
+                    .artistNavigationClick(onOpenArtistClick.takeUnless { hidePersistentContent })
             )
         }
 

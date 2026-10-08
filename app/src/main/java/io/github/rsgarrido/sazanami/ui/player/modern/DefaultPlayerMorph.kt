@@ -301,7 +301,7 @@ private fun DefaultMorphTitleArtist(
                         ),
                         maxLines = 1,
                         textAlign = if (useCenteredAlignment) TextAlign.Center else TextAlign.Start,
-                        modifier = Modifier.fillMaxWidth().artistNavigationClick(
+                        modifier = Modifier.artistNavigationClick(
                             onOpenArtistClick.takeIf {
                                 item.isCurrent && progress == 1f &&
                                         carouselPresentation.state.offsetX == 0f
