@@ -31,6 +31,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.res.stringResource
 import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.data.Song
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -69,6 +70,8 @@ internal fun DefaultPlayerMorph(
     modifier: Modifier = Modifier,
     onOpenArtistClick: (() -> Unit)? = null,
     metadataGestureModifier: Modifier = Modifier,
+    artworkGestureModifier: Modifier = Modifier,
+    onViewArtwork: ((Song) -> Unit)? = null,
     expandedContent: @Composable (DefaultPlayerMorphVisualState) -> Unit
 ) {
     val safeProgress = progress.coerceIn(0f, 1f)
@@ -152,7 +155,9 @@ internal fun DefaultPlayerMorph(
                 progress = safeProgress,
                 style = style,
                 appearance = appearance.artwork,
-                expandedArtworkRequestSizePx = expandedArtworkRequestSizePx
+                expandedArtworkRequestSizePx = expandedArtworkRequestSizePx,
+                gestureModifier = artworkGestureModifier,
+                onViewArtwork = onViewArtwork
             )
             DefaultMorphTitleArtist(
                 carouselPresentation = carouselPresentation,
@@ -185,13 +190,16 @@ private fun DefaultMorphArtwork(
     progress: Float,
     style: ModernPlayerStyle,
     appearance: ModernArtworkAppearance,
-    expandedArtworkRequestSizePx: Int?
+    expandedArtworkRequestSizePx: Int?,
+    gestureModifier: Modifier,
+    onViewArtwork: ((Song) -> Unit)?
 ) {
     val density = LocalDensity.current
     val clippingPolicy = modernArtworkTransitionClippingPolicy()
     Box(
         modifier = Modifier
             .placeInRootBounds(bounds)
+            .then(gestureModifier)
             .graphicsLayer {
                 clip = clippingPolicy.clipTransitionViewportToRestingBounds
             }
@@ -207,7 +215,8 @@ private fun DefaultMorphArtwork(
             decoratePages = false,
             appearance = appearance,
             fitFrameProgress = progress,
-            artworkRequestSizePx = expandedArtworkRequestSizePx
+            artworkRequestSizePx = expandedArtworkRequestSizePx,
+            onViewArtwork = onViewArtwork.takeIf { progress == 1f }
         )
     }
 }

@@ -74,6 +74,7 @@ internal fun ModernExpandedPlayer(
     onOpenAlbumClick: (() -> Unit)? = null,
     onOpenArtistClick: (() -> Unit)? = null,
     onTrackInfoClick: (() -> Unit)? = null,
+    onViewArtwork: ((Song) -> Unit)? = null,
     playerMorphState: PlayerMorphState,
     lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
@@ -234,7 +235,12 @@ internal fun ModernExpandedPlayer(
                         }
                         .hiddenFromDefaultMorph(morphOwnsPersistentContent),
                     gesturesEnabled = !lyricsTransitionState.lyricsInteractive,
-                    renderArtwork = defaultMorphVisualState == null
+                    renderArtwork = defaultMorphVisualState == null,
+                    onViewArtwork = modernArtworkClickCallback(
+                        onViewArtwork, displayedCarouselSongs.current, currentSong,
+                        playerMorphState, lyricsTransitionState, carouselState,
+                        hasVisibleOwner = defaultMorphVisualState == null
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))

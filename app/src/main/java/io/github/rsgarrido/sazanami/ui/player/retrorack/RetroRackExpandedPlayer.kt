@@ -72,6 +72,7 @@ import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import io.github.rsgarrido.sazanami.ui.player.RetainedArtworkImage
+import io.github.rsgarrido.sazanami.ui.player.artworkViewerClick
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.ui.player.fillRetroRackSpectrum
@@ -118,7 +119,8 @@ fun RetroRackExpandedPlayer(
     onMorphDragEnd: (Float) -> Unit = {},
     onMorphDragCancel: () -> Unit = {},
     lyricsGestureModifier: Modifier = Modifier,
-    lyricsGestureRegion: PlayerLyricsGestureRegion? = null
+    lyricsGestureRegion: PlayerLyricsGestureRegion? = null,
+    onViewArtwork: ((Song) -> Unit)? = null
 ) {
     val palette = remember(tokens) { RetroRackPalette.from(tokens) }
     val playbackContext = activeQueueSongs
@@ -187,6 +189,7 @@ fun RetroRackExpandedPlayer(
         ) {
             MainDeck(
                 currentSong = currentSong,
+                onViewArtwork = onViewArtwork.takeIf { deckReveal == 1f },
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
@@ -264,6 +267,7 @@ fun RetroRackExpandedPlayer(
 @Composable
 private fun MainDeck(
     currentSong: Song?,
+    onViewArtwork: ((Song) -> Unit)?,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -303,6 +307,9 @@ private fun MainDeck(
                     .padding(2.dp)
                     .onGloballyPositioned { morphBounds?.updateExpandedArtwork(it.boundsInRoot()) }
                     .then(modifier)
+                    .artworkViewerClick(currentSong, onViewArtwork.takeIf {
+                        inputEnabled && sharedOwner == RetroRackSharedOwner.EXPANDED
+                    })
             ) {
                 if (sharedOwner == RetroRackSharedOwner.EXPANDED) {
                     RetainedArtworkImage(

@@ -28,6 +28,7 @@ import io.github.rsgarrido.sazanami.ui.navigation.playbackLaunchContextSaver
 import io.github.rsgarrido.sazanami.ui.player.PlayerMorphState
 import io.github.rsgarrido.sazanami.ui.player.isCurrentNowPlayingTarget
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingTrackInfoRequest
+import io.github.rsgarrido.sazanami.ui.player.NowPlayingArtworkViewerRequest
 import io.github.rsgarrido.sazanami.ui.player.rememberPlayerMorphState
 
 internal enum class DetailEntryOrigin {
@@ -274,7 +275,7 @@ enum class MusicPrimaryDestination {
     LISTENING_HISTORY_IMPORT,
     LISTENING_HISTORY_RECONCILIATION
 }
-enum class MusicOverlayDestination { UP_NEXT, QUEUE_HUB, CREATE_PLAYLIST, SLEEP_TIMER, NOW_PLAYING_MORE, TRACK_INFORMATION }
+enum class MusicOverlayDestination { UP_NEXT, QUEUE_HUB, CREATE_PLAYLIST, SLEEP_TIMER, NOW_PLAYING_MORE, TRACK_INFORMATION, ARTWORK_VIEWER }
 
 @Stable
 class MusicOverlayState internal constructor(
@@ -294,12 +295,34 @@ class MusicOverlayState internal constructor(
     val isTrackInformationVisible =
         destinationState(transientDestination, MusicOverlayDestination.TRACK_INFORMATION)
 
+    internal var artworkViewerRequest by mutableStateOf<NowPlayingArtworkViewerRequest?>(null)
+        private set
+
+    val isArtworkViewerVisible =
+        destinationState(transientDestination, MusicOverlayDestination.ARTWORK_VIEWER)
+
+    internal fun openArtworkViewer(song: Song): Boolean {
+        val uri = song.albumArtUri ?: return false
+        dismissNowPlayingDetails()
+        artworkViewerRequest = NowPlayingArtworkViewerRequest(song, uri)
+        isArtworkViewerVisible.value = true
+        return true
+    }
+
+    internal fun dismissArtworkViewer(request: NowPlayingArtworkViewerRequest? = null) {
+        if (request != null && artworkViewerRequest !== request) return
+        isArtworkViewerVisible.value = false
+        artworkViewerRequest = null
+    }
+
     private fun dismissNowPlayingDetails() {
         dismissNowPlayingMore()
         dismissTrackInformation()
+        dismissArtworkViewer()
     }
 
     fun openTrackInformation(song: Song) {
+        dismissArtworkViewer()
         dismissNowPlayingMore()
         trackInfoRequest = NowPlayingTrackInfoRequest(song)
         isTrackInformationVisible.value = true
@@ -318,6 +341,7 @@ class MusicOverlayState internal constructor(
         destinationState(transientDestination, target, ::dismissNowPlayingDetails)
 
     fun openNowPlayingMore(song: Song) {
+        dismissArtworkViewer()
         dismissTrackInformation()
         nowPlayingMoreTarget = song
         isNowPlayingMoreVisible.value = true

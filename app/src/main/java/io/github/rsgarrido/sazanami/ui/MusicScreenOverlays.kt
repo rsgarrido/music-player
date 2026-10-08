@@ -73,6 +73,8 @@ fun MusicScreenOverlays(
     onOpenCurrentAlbumClick: (Song) -> Unit,
     onOpenCurrentArtistClick: (Song) -> Unit,
     onTrackInfoClick: (Song) -> Unit,
+    onViewArtwork: (Song) -> Unit,
+    isArtworkViewerVisible: Boolean,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -212,7 +214,7 @@ fun MusicScreenOverlays(
                     indication = null,
                     onClick = {}
                 )
-                .blockPlayerInput(lyricsTransitionState.lyricsOwnsInput || nowPlayingMoreTarget != null)
+                .blockPlayerInput(lyricsTransitionState.lyricsOwnsInput || nowPlayingMoreTarget != null || isArtworkViewerVisible)
         ) {
             PlaybackProgress(playbackProgressUiState) { progress ->
                 ExpandedPlayerThemeHost(
@@ -224,6 +226,7 @@ fun MusicScreenOverlays(
                             !isExpandedUpNextSheetVisible &&
                             !isQueueHubVisible &&
                             nowPlayingMoreTarget == null &&
+                            !isArtworkViewerVisible &&
                             !isSleepTimerDialogVisible &&
                             !isCreatePlaylistDialogVisible &&
                             songPendingPlaylistAdd == null &&
@@ -261,6 +264,7 @@ fun MusicScreenOverlays(
                     onOpenCurrentAlbumClick = onOpenCurrentAlbumClick,
                     onOpenCurrentArtistClick = onOpenCurrentArtistClick,
                     onTrackInfoClick = onTrackInfoClick,
+                    onViewArtwork = onViewArtwork,
                     endpointBounds = playerEndpointBounds,
                     defaultMorphBounds = defaultMorphBounds,
                     classicMorphBounds = classicMorphBounds,

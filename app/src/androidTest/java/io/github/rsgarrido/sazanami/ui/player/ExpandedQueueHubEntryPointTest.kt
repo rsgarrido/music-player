@@ -10,6 +10,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
@@ -361,6 +363,39 @@ class ExpandedQueueHubEntryPointTest {
         }
     }
 
+    @Test
+    fun onlyApprovedSettledRetroArtworkOpensTheSharedViewerEntry() {
+        val theme = mutableStateOf(PlayerTheme.RETRO_RACK)
+        val target = mutableStateOf(song(1, "Cover track").copy(albumArtUri = Uri.parse("content://art/1")))
+        var opened = 0
+        lateinit var player: PlayerMorphState
+        lateinit var lyrics: PlayerLyricsTransitionState
+        composeRule.setContent {
+            MaterialTheme {
+                player = rememberPlayerMorphState(PlayerPresentation.Expanded)
+                lyrics = rememberPlayerLyricsTransitionState(false) {}
+                RetroThemeHostFixture(theme.value, target.value, player, lyrics, false, {}, {}, {},
+                    onViewArtwork = { assertEquals(target.value, it); opened++ })
+            }
+        }
+        listOf(PlayerTheme.RETRO_RACK, PlayerTheme.POCKET_FLIP, PlayerTheme.POCKET_DISC).forEachIndexed { index, value ->
+            composeRule.runOnIdle { theme.value = value }
+            composeRule.onAllNodesWithTag(ArtworkViewerEntryTag).assertCountEquals(1)
+            composeRule.onNodeWithTag(ArtworkViewerEntryTag).performClick()
+            composeRule.runOnIdle { assertEquals(index + 1, opened); player.updateProgressFromDrag(0.5f) }
+            composeRule.onAllNodesWithTag(ArtworkViewerEntryTag).assertCountEquals(0)
+            composeRule.runOnIdle { player.snapTo(PlayerPresentation.Expanded) }
+        }
+        composeRule.runOnIdle { lyrics.beginOpeningDrag() }
+        composeRule.onAllNodesWithTag(ArtworkViewerEntryTag).assertCountEquals(0)
+        composeRule.runOnIdle { lyrics.snapToExpanded(); target.value = target.value.copy(albumArtUri = null) }
+        composeRule.onAllNodesWithTag(ArtworkViewerEntryTag).assertCountEquals(0)
+        listOf(PlayerTheme.POCKET_CASSETTE, PlayerTheme.CLASSIC_WHEEL).forEach { value ->
+            composeRule.runOnIdle { theme.value = value; target.value = target.value.copy(albumArtUri = Uri.parse("content://art/1")) }
+            composeRule.onAllNodesWithTag(ArtworkViewerEntryTag).assertCountEquals(0)
+        }
+    }
+
     @androidx.compose.runtime.Composable
     private fun RetroThemeHostFixture(
         theme: PlayerTheme,
@@ -370,7 +405,8 @@ class ExpandedQueueHubEntryPointTest {
         isFavorite: Boolean,
         onMore: () -> Unit,
         onQueue: () -> Unit,
-        onFavorite: (Song) -> Unit
+        onFavorite: (Song) -> Unit,
+        onViewArtwork: ((Song) -> Unit)? = null
     ) {
         Box(Modifier.fillMaxSize().blockPlayerInput(lyrics.lyricsOwnsInput)) {
             ExpandedPlayerThemeHost(
@@ -388,14 +424,24 @@ class ExpandedQueueHubEntryPointTest {
                 onToggleFavoriteClick = onFavorite, songs = listOf(target), upcomingSongs = emptyList(),
                 activeQueueSongs = listOf(target), activeQueueName = "Queue", activeQueuePosition = 1,
                 activeQueueCount = 1, onSongClick = { _, _ -> }, onOpenCurrentAlbumClick = {},
-                onOpenCurrentArtistClick = {}, endpointBounds = remember { PlayerEndpointBounds() },
+                onOpenCurrentArtistClick = {}, onViewArtwork = onViewArtwork,
+                endpointBounds = remember { PlayerEndpointBounds() },
                 defaultMorphBounds = remember { DefaultPlayerMorphBounds() },
                 classicMorphBounds = remember { ClassicWheelMorphBounds() },
                 classicWheelMenuState = remember { ClassicWheelMenuState() },
-                retroRackMorphBounds = remember { RetroRackMorphBounds() },
-                pocketFlipMorphBounds = remember { PocketFlipMorphBounds() },
+                retroRackMorphBounds = remember { RetroRackMorphBounds().apply {
+                    val mini = Rect(0f, 700f, 48f, 748f)
+                    updateMiniArtwork(mini); updateMiniTitle(mini); updateMiniArtist(mini); updateMiniProgress(mini); updateMiniPlay(mini)
+                } },
+                pocketFlipMorphBounds = remember { PocketFlipMorphBounds().apply {
+                    val mini = Rect(0f, 700f, 48f, 748f)
+                    updateMiniArtwork(mini); updateMiniTitle(mini); updateMiniArtist(mini); updateMiniProgress(mini); updateMiniPlay(mini)
+                } },
                 pocketCassetteMorphBounds = remember { PocketCassetteMorphBounds() },
-                pocketDiscMorphBounds = remember { PocketDiscMorphBounds() }
+                pocketDiscMorphBounds = remember { PocketDiscMorphBounds().apply {
+                    val mini = Rect(0f, 700f, 48f, 748f)
+                    updateMiniArtwork(mini); updateMiniTitle(mini); updateMiniArtist(mini); updateMiniProgress(mini); updateMiniPlay(mini)
+                } }
             )
         }
     }

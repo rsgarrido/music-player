@@ -70,6 +70,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.rsgarrido.sazanami.ui.player.RetainedArtworkImage
+import io.github.rsgarrido.sazanami.ui.player.artworkViewerClick
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsGestureRegion
 import io.github.rsgarrido.sazanami.ui.player.playerEndpointInput
 import io.github.rsgarrido.sazanami.data.Song
@@ -122,7 +123,8 @@ fun PocketDiscExpandedPlayer(
     onMorphDragEnd: (Float) -> Unit = {},
     onMorphDragCancel: () -> Unit = {},
     lyricsGestureModifier: Modifier = Modifier,
-    lyricsGestureRegion: PlayerLyricsGestureRegion? = null
+    lyricsGestureRegion: PlayerLyricsGestureRegion? = null,
+    onViewArtwork: ((Song) -> Unit)? = null
 ) {
     val palette = remember(tokens) { PocketDiscPalette.from(tokens) }
     val safeCollapseDragModifier = Modifier.pocketDiscDownwardCollapseGesture(
@@ -192,7 +194,9 @@ fun PocketDiscExpandedPlayer(
                         song = currentSong,
                         sharedOwner = sharedOwner,
                         morphBounds = morphBounds,
-                        modifier = Modifier.size(mediaItemSize)
+                        modifier = Modifier.size(mediaItemSize).artworkViewerClick(currentSong, onViewArtwork.takeIf {
+                            inputEnabled && mediaReveal == 1f && sharedOwner == PocketDiscSharedOwner.EXPANDED
+                        })
                     )
                     PocketDiscCartridge(
                         compact = compact,

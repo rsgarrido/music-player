@@ -130,4 +130,8 @@
         <item quantity="one">%d song</item>
         <item quantity="other">%d songs</item>
     </plurals>
+    <string name="player_view_artwork">View artwork</string>
+    <string name="player_artwork_viewer">Artwork viewer</string>
+    <string name="player_artwork_unavailable">Artwork unavailable</string>
+    <string name="player_artwork_loading">Loading artwork</string>
 </resources>

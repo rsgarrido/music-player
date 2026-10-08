@@ -132,4 +132,8 @@
         <item quantity="many">%d canciones</item>
         <item quantity="other">%d canciones</item>
     </plurals>
+    <string name="player_view_artwork">Ver portada</string>
+    <string name="player_artwork_viewer">Visor de portada</string>
+    <string name="player_artwork_unavailable">Portada no disponible</string>
+    <string name="player_artwork_loading">Cargando portada</string>
 </resources>

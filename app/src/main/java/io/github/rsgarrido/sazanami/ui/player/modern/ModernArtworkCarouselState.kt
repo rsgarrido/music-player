@@ -96,6 +96,12 @@ internal class ModernArtworkCarouselState(
     private var pendingExpiryJob: Job? = null
     private var pendingTransition: ModernPendingSongTransition? = null
 
+    private var dragging by mutableStateOf(false)
+    private var settling by mutableStateOf(false)
+    private var navigationPending by mutableStateOf(false)
+    private var settleGeneration = 0L
+    val isIdle: Boolean get() = !dragging && !settling && !navigationPending && offsetX == 0f
+
     val dragProgress: Float
         get() = (abs(offsetX) / artworkWidthPx).coerceIn(0f, 1f)
 
@@ -106,6 +112,9 @@ internal class ModernArtworkCarouselState(
     }
 
     fun startDrag() {
+        dragging = true
+        ++settleGeneration
+        settling = false
         settleJob?.cancel()
         clearPendingTransition()
     }
@@ -115,6 +124,9 @@ internal class ModernArtworkCarouselState(
     }
 
     fun settle(velocityX: Float, sourceSongId: Long) {
+        dragging = false
+        ++settleGeneration
+        settling = false
         settleJob?.cancel()
 
         val direction = resolveModernArtworkSwipe(
@@ -123,6 +135,7 @@ internal class ModernArtworkCarouselState(
             velocityX = velocityX
         )
         if (direction == ModernCarouselDirection.NONE) {
+            settling = true
             settleJob = coroutineScope.launch {
                 animateOffsetTo(
                     targetOffset = 0f,
@@ -172,6 +185,8 @@ internal class ModernArtworkCarouselState(
         durationMillis: Int
     ) {
         settleJob?.cancel()
+        ++settleGeneration
+        settling = false
         val targetOffset = when (direction) {
             ModernCarouselDirection.PREVIOUS -> artworkWidthPx
             ModernCarouselDirection.NEXT -> -artworkWidthPx
@@ -185,6 +200,9 @@ internal class ModernArtworkCarouselState(
 
     fun resetForSongChange() {
         settleJob?.cancel()
+        ++settleGeneration
+        settling = false
+        dragging = false
         offsetX = 0f
     }
 
@@ -194,6 +212,7 @@ internal class ModernArtworkCarouselState(
         startedFromDrag: Boolean
     ) {
         pendingExpiryJob?.cancel()
+        navigationPending = true
         pendingTransition = ModernPendingSongTransition(
             direction = direction,
             sourceSongId = sourceSongId,
@@ -202,6 +221,7 @@ internal class ModernArtworkCarouselState(
         pendingExpiryJob = coroutineScope.launch {
             delay(PENDING_NAVIGATION_TIMEOUT_MILLIS)
             pendingTransition = null
+            navigationPending = false
         }
     }
 
@@ -209,17 +229,24 @@ internal class ModernArtworkCarouselState(
         pendingExpiryJob?.cancel()
         pendingExpiryJob = null
         pendingTransition = null
+        navigationPending = false
     }
 
     private suspend fun animateOffsetTo(targetOffset: Float, durationMillis: Int) {
-        Animatable(offsetX).animateTo(
-            targetValue = targetOffset,
-            animationSpec = tween(
-                durationMillis = durationMillis,
-                easing = FastOutSlowInEasing
-            )
-        ) {
-            offsetX = value
+        val generation = ++settleGeneration
+        settling = true
+        try {
+            Animatable(offsetX).animateTo(
+                targetValue = targetOffset,
+                animationSpec = tween(
+                    durationMillis = durationMillis,
+                    easing = FastOutSlowInEasing
+                )
+            ) {
+                offsetX = value
+            }
+        } finally {
+            if (generation == settleGeneration) settling = false
         }
     }
 }

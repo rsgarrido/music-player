@@ -52,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.rsgarrido.sazanami.ui.player.RetainedArtworkImage
+import io.github.rsgarrido.sazanami.ui.player.artworkViewerClick
 import io.github.rsgarrido.sazanami.data.Song
 
 @Composable
@@ -69,7 +70,8 @@ internal fun PocketFlipDisplayHalf(
     inputEnabled: Boolean = true,
     morphBounds: PocketFlipMorphBounds? = null,
     sharedOwner: PocketFlipSharedOwner = PocketFlipSharedOwner.EXPANDED,
-    collapseDragModifier: Modifier = Modifier
+    collapseDragModifier: Modifier = Modifier,
+    onViewArtwork: ((Song) -> Unit)? = null
 ) {
     val bezelRadius = if (compact) 18.dp else 22.dp
     val screenRadius = if (compact) 6.dp else 8.dp
@@ -118,6 +120,9 @@ internal fun PocketFlipDisplayHalf(
                         renderContent = sharedOwner == PocketFlipSharedOwner.EXPANDED,
                         modifier = Modifier
                             .size(if (compact) 104.dp else 116.dp)
+                            .artworkViewerClick(currentSong, onViewArtwork.takeIf {
+                                inputEnabled && displayReveal == 1f && sharedOwner == PocketFlipSharedOwner.EXPANDED
+                            })
                             .onGloballyPositioned { coordinates ->
                                 morphBounds?.updateExpandedArtwork(coordinates.boundsInRoot())
                             }

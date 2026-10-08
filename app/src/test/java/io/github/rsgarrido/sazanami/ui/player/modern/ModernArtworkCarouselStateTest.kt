@@ -6,9 +6,28 @@ import kotlinx.coroutines.cancel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ModernArtworkCarouselStateTest {
+
+    @Test
+    fun neutralOffsetIsNotIdleWhileDraggingOrAwaitingNavigation() {
+        val scope = CoroutineScope(Job())
+        try {
+            val state = ModernArtworkCarouselState(scope, {}, {})
+            assertTrue(state.isIdle)
+            state.startDrag()
+            assertEquals(0f, state.offsetX, 0f)
+            assertFalse(state.isIdle)
+            state.resetForSongChange()
+            assertTrue(state.isIdle)
+            state.recordButtonNavigation(ModernCarouselDirection.NEXT, 1)
+            assertFalse(state.isIdle)
+            state.consumeTransitionForSongChange(2)
+            assertTrue(state.isIdle)
+        } finally { scope.cancel() }
+    }
 
     @Test
     fun transitionDurations_keepNavigationVisibleAndSnapBackResponsive() {

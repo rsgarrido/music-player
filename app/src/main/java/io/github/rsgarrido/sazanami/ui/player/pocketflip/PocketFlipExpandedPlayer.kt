@@ -59,7 +59,8 @@ fun PocketFlipExpandedPlayer(
     onMorphDragEnd: (Float) -> Unit = {},
     onMorphDragCancel: () -> Unit = {},
     lyricsGestureModifier: Modifier = Modifier,
-    lyricsGestureRegion: PlayerLyricsGestureRegion? = null
+    lyricsGestureRegion: PlayerLyricsGestureRegion? = null,
+    onViewArtwork: ((Song) -> Unit)? = null
 ) {
     val palette = remember(tokens) { PocketFlipPalette.from(tokens) }
     val configuration = LocalConfiguration.current
@@ -91,6 +92,7 @@ fun PocketFlipExpandedPlayer(
                 duration = duration,
                 onSeekChange = onSeekChange,
                 onOpenAlbumClick = onOpenAlbumClick,
+                onViewArtwork = onViewArtwork,
                 compact = compact,
                 modifier = Modifier
                     .weight(if (compact) 0.54f else 0.57f)

@@ -178,6 +178,53 @@ class MusicRouteStateTest {
         assertFalse(state.isTrackInformationVisible.value)
     }
 
+    @Test
+    fun artworkViewerRejectsNullArtCapturesFreshRequestsAndStaysPinned() {
+        val state = expandedOverlayState()
+        state.openNowPlayingMore(song(1))
+        assertFalse(state.openArtworkViewer(song(1)))
+        assertTrue(state.isNowPlayingMoreVisible.value)
+        val target = song(1).copy(albumArtUri = mock(Uri::class.java))
+        assertTrue(state.openArtworkViewer(target))
+        assertNull(state.nowPlayingMoreTarget)
+        val first = requireNotNull(state.artworkViewerRequest)
+        assertSame(target, first.song)
+        assertSame(target.albumArtUri, first.artworkUri)
+        state.reconcileNowPlayingMore(song(2), true)
+        assertSame(first, state.artworkViewerRequest)
+        assertEquals(PlayerPresentation.Expanded, state.playerMorphState.targetPresentation)
+        state.openArtworkViewer(target)
+        assertTrue(first !== state.artworkViewerRequest)
+        state.dismissArtworkViewer(first) // An old close cannot dismiss a reopened viewer.
+        assertTrue(state.isArtworkViewerVisible.value)
+        state.dismissArtworkViewer()
+        assertNull(state.artworkViewerRequest)
+    }
+
+    @Test
+    fun artworkViewerAndOtherDestinationsClearEachOthersCapturedTargets() {
+        val state = expandedOverlayState()
+        val target = song(1).copy(albumArtUri = mock(Uri::class.java))
+        listOf(state.isQueueHubVisible, state.isSleepTimerDialogVisible,
+            state.isExpandedUpNextSheetVisible, state.isCreatePlaylistDialogVisible).forEach { destination ->
+            state.openArtworkViewer(target)
+            destination.value = true
+            assertNull(state.artworkViewerRequest)
+            assertFalse(state.isArtworkViewerVisible.value)
+            state.openArtworkViewer(target)
+            assertFalse(destination.value)
+        }
+        state.isSettingsScreenVisible.value = true
+        assertNull(state.artworkViewerRequest)
+        state.isSettingsScreenVisible.value = false
+        state.openTrackInformation(target)
+        assertNull(state.artworkViewerRequest)
+        state.openArtworkViewer(target)
+        assertNull(state.trackInfoRequest)
+        state.openNowPlayingMore(target)
+        assertNull(state.artworkViewerRequest)
+    }
+
     private fun expandedOverlayState() = MusicOverlayState(
         playerMorphState(PlayerPresentation.Expanded), mutableStateOf(null), mutableStateOf(null)
     )

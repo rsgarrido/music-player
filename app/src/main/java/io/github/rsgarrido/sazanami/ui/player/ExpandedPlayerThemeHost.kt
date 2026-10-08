@@ -96,6 +96,10 @@ import io.github.rsgarrido.sazanami.ui.player.modern.ModernExpandedArtworkPreloa
 import io.github.rsgarrido.sazanami.ui.player.modern.modernArtworkPreloadPolicy
 import io.github.rsgarrido.sazanami.ui.player.modern.modernArtistClickCallback
 import io.github.rsgarrido.sazanami.ui.player.modern.rememberModernPlayerVerticalDragModifier
+import io.github.rsgarrido.sazanami.ui.player.modern.rememberModernArtworkHorizontalDragModifier
+import io.github.rsgarrido.sazanami.ui.player.modern.modernArtworkClickCallback
+import io.github.rsgarrido.sazanami.ui.player.retrorack.RetroRackSharedOwner
+import io.github.rsgarrido.sazanami.ui.player.pocketdisc.PocketDiscSharedOwner
 import io.github.rsgarrido.sazanami.data.membershipKey
 import kotlin.math.roundToInt
 
@@ -139,6 +143,7 @@ fun ExpandedPlayerThemeHost(
     onOpenCurrentAlbumClick: (Song) -> Unit,
     onOpenCurrentArtistClick: (Song) -> Unit,
     onTrackInfoClick: ((Song) -> Unit)? = null,
+    onViewArtwork: ((Song) -> Unit)? = null,
     endpointBounds: PlayerEndpointBounds,
     defaultMorphBounds: DefaultPlayerMorphBounds,
     classicMorphBounds: ClassicWheelMorphBounds,
@@ -291,6 +296,20 @@ fun ExpandedPlayerThemeHost(
                         appearance = modernPlayerAppearance,
                         artworkPalette = artworkPalette,
                         expandedArtworkRequestSizePx = expandedArtworkRequestSizePx,
+                        onViewArtwork = modernArtworkClickCallback(
+                            onViewArtwork, carouselPresentation.songs.current, currentSong,
+                            playerMorphState, lyricsTransitionState, carouselPresentation.state,
+                            hasVisibleOwner = geometry != null
+                        ),
+                        artworkGestureModifier = if (playerMorphState.settledPresentation == PlayerPresentation.Expanded) {
+                            rememberModernArtworkHorizontalDragModifier(
+                                carouselPresentation.state, carouselPresentation.songs.current.id,
+                                enabled = !lyricsTransitionState.lyricsInteractive
+                            ).then(rememberModernPlayerVerticalDragModifier(
+                                playerMorphState, lyricsTransitionState, hostHeightPx,
+                                defaultMorphTravelDistance(endpointBounds, defaultMorphBounds)
+                            ))
+                        } else Modifier,
                         onOpenArtistClick = modernArtistClickCallback(
                             onClick = onOpenArtistClick,
                             playerMorphState = playerMorphState,
@@ -328,6 +347,7 @@ fun ExpandedPlayerThemeHost(
                             onCollapseClick = onCollapseClick,
                             onOpenArtistClick = onOpenArtistClick,
                             onTrackInfoClick = onTrackInfoClick?.let { open -> { open(currentSong) } },
+                            onViewArtwork = onViewArtwork,
                             onOpenAlbumClick = if (
                                 playerMorphState.settledPresentation == PlayerPresentation.Expanded &&
                                 playerMorphState.progress == 1f &&
@@ -448,6 +468,10 @@ fun ExpandedPlayerThemeHost(
                 ) { deckReveal, spectrumReveal, queueReveal, controlsReveal, inputEnabled ->
                     RetroRackExpandedPlayer(
                         currentSong = currentSong,
+                        onViewArtwork = onViewArtwork.takeIf {
+                            sharedOwner == RetroRackSharedOwner.EXPANDED &&
+                                    canOpenArtworkAtExpandedEndpoint(playerMorphState, lyricsTransitionState)
+                        },
                         isVisualizerWorkAllowed = isVisualizerWorkAllowed && shouldRunRetroRackExpandedWork(playerMorphState.progress),
                         isPlaying = isPlaying,
                         isShuffleEnabled = isShuffleEnabled,
@@ -524,6 +548,10 @@ fun ExpandedPlayerThemeHost(
                 ) { displayReveal, hingeReveal, controlsReveal, inputEnabled ->
                     PocketFlipExpandedPlayer(
                         currentSong = currentSong,
+                        onViewArtwork = onViewArtwork.takeIf {
+                            sharedOwner == PocketFlipSharedOwner.EXPANDED &&
+                                    canOpenArtworkAtExpandedEndpoint(playerMorphState, lyricsTransitionState)
+                        },
                         isVisualizerWorkAllowed = isVisualizerWorkAllowed &&
                                 shouldRunPocketFlipExpandedWork(playerMorphState.progress),
                         isPlaying = isPlaying,
@@ -707,6 +735,10 @@ fun ExpandedPlayerThemeHost(
                 ) { headerReveal, mediaReveal, panelReveal, controlsReveal, inputEnabled ->
                     PocketDiscExpandedPlayer(
                         currentSong = currentSong,
+                        onViewArtwork = onViewArtwork.takeIf {
+                            sharedOwner == PocketDiscSharedOwner.EXPANDED &&
+                                    canOpenArtworkAtExpandedEndpoint(playerMorphState, lyricsTransitionState)
+                        },
                         activeQueueName = activeQueueName,
                         activeQueuePosition = activeQueuePosition,
                         activeQueueCount = activeQueueCount,

@@ -74,6 +74,9 @@ import io.github.rsgarrido.sazanami.ui.player.supportsNowPlayingMore
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackQueue
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackEffect
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingTrackInfoOverlay
+import io.github.rsgarrido.sazanami.ui.player.NowPlayingArtworkViewerOverlay
+import io.github.rsgarrido.sazanami.ui.player.rememberNowPlayingArtworkViewerOpener
+import io.github.rsgarrido.sazanami.ui.player.supportsNowPlayingArtworkViewer
 import io.github.rsgarrido.sazanami.ui.player.rememberNowPlayingTrackInfoOpener
 import io.github.rsgarrido.sazanami.ui.player.rememberNowPlayingWorkflowOpeners
 import io.github.rsgarrido.sazanami.ui.player.resolveNowPlayingAlbumKey
@@ -437,6 +440,9 @@ internal fun MusicScreen(
         songPendingPlaylistAdd = target
     }
     NowPlayingTrackInfoOverlay(overlayState, canPresentNowPlayingMore)
+    val canPresentArtworkViewer = canPresentNowPlayingMore && supportsNowPlayingArtworkViewer(selectedPlayerTheme)
+    val onViewArtwork = rememberNowPlayingArtworkViewerOpener(currentSong, overlayState, lyricsTransitionState, canPresentArtworkViewer)
+    NowPlayingArtworkViewerOverlay(overlayState, canPresentArtworkViewer)
     val nowPlayingMoreTarget = overlayState.currentNowPlayingMoreTarget(currentSong)
         ?.takeIf { canPresentNowPlayingMore }
     LaunchedEffect(
@@ -745,6 +751,7 @@ internal fun MusicScreen(
                 isQueueHubVisible ||
                 isNowPlayingMoreVisible ||
                 isTrackInformationVisible ||
+                overlayState.isArtworkViewerVisible.value ||
                 playerMorphState.shouldConsumeBack ||
                 isFolderScreenVisible ||
                 isDiagnosticsScreenVisible ||
@@ -789,6 +796,10 @@ internal fun MusicScreen(
 
             isTrackInformationVisible -> {
                 overlayState.dismissTrackInformation()
+            }
+
+            overlayState.isArtworkViewerVisible.value -> {
+                overlayState.dismissArtworkViewer()
             }
 
             isNowPlayingMoreVisible -> {
@@ -1920,7 +1931,9 @@ internal fun MusicScreen(
                     onSongClick = onSongClick,
                     onOpenCurrentAlbumClick = ::openCurrentAlbum,
                     onOpenCurrentArtistClick = onOpenCurrentArtistClick,
-                    onTrackInfoClick = onTrackInfoClick
+                    onTrackInfoClick = onTrackInfoClick,
+                    onViewArtwork = onViewArtwork,
+                    isArtworkViewerVisible = overlayState.isArtworkViewerVisible.value
                 )
             }
         }
