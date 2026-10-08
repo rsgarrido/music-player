@@ -48,6 +48,8 @@ internal fun ModernPlayerMetadataCarousel(
     onPersistentContentBoundsChanged: (Rect) -> Unit = {},
     hidePersistentContent: Boolean = false,
     onOpenAlbumClick: (() -> Unit)? = null,
+    onOpenArtistClick: (() -> Unit)? = null,
+    onTrackInfoClick: (() -> Unit)? = null,
     expandedContentAlpha: Float = 1f,
     loadExpandedMetadata: Boolean = true
 ) {
@@ -126,6 +128,12 @@ internal fun ModernPlayerMetadataCarousel(
                         },
                         hidePersistentContent = hidePersistentContent,
                         onOpenAlbumClick = if (item.isCurrent) onOpenAlbumClick else null,
+                        onTrackInfoClick = onTrackInfoClick.takeIf {
+                            item.isCurrent && carouselState.offsetX == 0f && expandedContentAlpha == 1f
+                        },
+                        onOpenArtistClick = if (item.isCurrent && !hidePersistentContent &&
+                            carouselState.offsetX == 0f
+                        ) onOpenArtistClick else null,
                         expandedContentAlpha = expandedContentAlpha,
                         loadExpandedMetadata = loadExpandedMetadata
                     )
@@ -144,6 +152,8 @@ private fun ModernPlayerMetadataPage(
     onPersistentContentSizeChanged: (IntSize) -> Unit,
     hidePersistentContent: Boolean,
     onOpenAlbumClick: (() -> Unit)?,
+    onOpenArtistClick: (() -> Unit)?,
+    onTrackInfoClick: (() -> Unit)?,
     expandedContentAlpha: Float,
     loadExpandedMetadata: Boolean
 ) {
@@ -174,6 +184,7 @@ private fun ModernPlayerMetadataPage(
             onPersistentContentSizeChanged = onPersistentContentSizeChanged,
             hidePersistentContent = hidePersistentContent,
             onOpenAlbumClick = onOpenAlbumClick,
+            onOpenArtistClick = onOpenArtistClick,
             expandedContentAlpha = expandedContentAlpha
         )
 
@@ -181,6 +192,7 @@ private fun ModernPlayerMetadataPage(
             ModernPlayerAudioQualityBadge(
                 audioQualityInfo = audioQualityInfo,
                 style = style,
+                onTrackInfoClick = onTrackInfoClick,
                 modifier = Modifier
                     .align(
                         if (layoutAppearance.metadataAlignment == ModernMetadataAlignment.CENTER) {
@@ -204,6 +216,7 @@ internal fun ModernPlayerMetadata(
     onPersistentContentSizeChanged: (IntSize) -> Unit = {},
     hidePersistentContent: Boolean = false,
     onOpenAlbumClick: (() -> Unit)? = null,
+    onOpenArtistClick: (() -> Unit)? = null,
     expandedContentAlpha: Float = 1f
 ) {
     Column(
@@ -238,7 +251,13 @@ internal fun ModernPlayerMetadata(
                 color = style.secondaryContentColor,
                 maxLines = 1,
                 textAlign = alignment.textAlign(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .align(if (alignment == ModernMetadataAlignment.CENTER) {
+                        Alignment.CenterHorizontally
+                    } else {
+                        Alignment.Start
+                    })
+                    .artistNavigationClick(onOpenArtistClick.takeUnless { hidePersistentContent })
             )
         }
 

@@ -3,9 +3,6 @@ package io.github.rsgarrido.sazanami.ui.player.modern
 import android.R as AndroidR
 import androidx.compose.ui.res.stringResource
 import io.github.rsgarrido.sazanami.R
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -32,6 +29,7 @@ import coil.request.ImageRequest
 import coil.size.Precision
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.ui.player.RetainedArtworkImage
+import io.github.rsgarrido.sazanami.ui.player.artworkViewerClick
 
 internal enum class ModernArtworkRenderingPolicy {
     Slide,
@@ -59,11 +57,9 @@ internal fun ModernPlayerArtwork(
     appearance: ModernArtworkAppearance = ModernArtworkAppearance(),
     modifier: Modifier = Modifier,
     gesturesEnabled: Boolean = true,
-    renderArtwork: Boolean = true
+    renderArtwork: Boolean = true,
+    onViewArtwork: ((Song) -> Unit)? = null
 ) {
-    val horizontalDragState = rememberDraggableState { deltaX ->
-        carouselState.dragBy(deltaX)
-    }
     val carouselItems = carouselSongs.items()
 
     Box(
@@ -72,18 +68,7 @@ internal fun ModernPlayerArtwork(
             .onSizeChanged { size ->
                 carouselState.updateArtworkWidth(size.width)
             }
-            .draggable(
-                state = horizontalDragState,
-                orientation = Orientation.Horizontal,
-                enabled = gesturesEnabled,
-                onDragStarted = { carouselState.startDrag() },
-                onDragStopped = { velocityX ->
-                    carouselState.settle(
-                        velocityX = velocityX,
-                        sourceSongId = carouselSongs.current.id
-                    )
-                }
-            ),
+            .then(rememberModernArtworkHorizontalDragModifier(carouselState, carouselSongs.current.id, gesturesEnabled)),
         contentAlignment = Alignment.Center
     ) {
         if (renderArtwork) {
@@ -94,7 +79,8 @@ internal fun ModernPlayerArtwork(
                 style = style,
                 appearance = appearance,
                 artworkSize = artworkSize,
-                decoratePages = true
+                decoratePages = true,
+                onViewArtwork = onViewArtwork
             )
         }
     }
@@ -111,7 +97,8 @@ internal fun ModernPlayerArtworkPages(
     appearance: ModernArtworkAppearance = ModernArtworkAppearance(),
     fitFrameProgress: Float = 1f,
     artworkRequestSizePx: Int? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onViewArtwork: ((Song) -> Unit)? = null
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -141,7 +128,7 @@ internal fun ModernPlayerArtworkPages(
                     if (transform.rotationY != 0f) {
                         cameraDistance = COVER_FLOW_CAMERA_DISTANCE_MULTIPLIER * density
                     }
-                }
+                }.artworkViewerClick(item.song, onViewArtwork.takeIf { item.isCurrent && carouselState.isIdle && fitFrameProgress == 1f })
                 val contentDescription = if (item.isCurrent) {
                     stringResource(R.string.player_album_art_for, item.song.title)
                 } else {

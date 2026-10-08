@@ -119,7 +119,9 @@ class AudioQualityRepository(context: Context) {
                         ?.takeIf { it > 0 },
                     bitrateKbps = audioFormat.intOrNull(MediaFormat.KEY_BIT_RATE)
                         ?.takeIf { it > 0 }
-                        ?.div(BITS_PER_KILOBIT)
+                        ?.div(BITS_PER_KILOBIT),
+                    codecMimeType = mime,
+                    channelCount = audioFormat.intOrNull(MediaFormat.KEY_CHANNEL_COUNT)?.takeIf { it > 0 }
                 )
             } finally {
                 extractor.release()
@@ -186,5 +188,9 @@ internal fun mergeAudioQualityInfo(
     },
     bitrateKbps = sources.firstNotNullOfOrNull {
         it?.bitrateKbps?.takeIf { value -> value > 0 }
-    }
+    },
+    codecMimeType = sources.firstNotNullOfOrNull {
+        it?.codecMimeType?.trim()?.takeIf { value -> value.startsWith("audio/") }
+    },
+    channelCount = sources.firstNotNullOfOrNull { it?.channelCount?.takeIf { value -> value > 0 } }
 )

@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="player_more_actions">Más acciones</string>
+    <string name="player_more_short">MÁS</string>
+    <string name="player_more_song_subtitle">%1$s · %2$s</string>
+    <string name="player_go_to_album">Ir al álbum</string>
+    <string name="player_lyrics">Letras</string>
+    <string name="player_open_lyrics">Abrir letras</string>
     <string name="player_shuffle_on">Reproducción aleatoria activada</string>
     <string name="player_shuffle_off">Reproducción aleatoria desactivada</string>
     <string name="player_previous_song">Canción anterior</string>
@@ -39,6 +45,8 @@
     <string name="player_disable_repeat">Desactivar repetición</string>
     <string name="player_remove_favorite">Quitar de favoritos</string>
     <string name="player_add_favorite">Agregar a favoritos</string>
+    <string name="player_added_to_favorites">Agregado a favoritos</string>
+    <string name="player_removed_from_favorites">Quitado de favoritos</string>
     <string name="player_wheel_now_playing">En reproducción</string>
     <string name="player_wheel_music">Música</string>
     <string name="player_wheel_menu">MENÚ</string>
@@ -124,4 +132,8 @@
         <item quantity="many">%d canciones</item>
         <item quantity="other">%d canciones</item>
     </plurals>
+    <string name="player_view_artwork">Ver portada</string>
+    <string name="player_artwork_viewer">Visor de portada</string>
+    <string name="player_artwork_unavailable">Portada no disponible</string>
+    <string name="player_artwork_loading">Cargando portada</string>
 </resources>

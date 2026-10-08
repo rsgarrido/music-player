@@ -24,6 +24,10 @@ import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.ui.player.ExpandedPlayerThemeHost
+import io.github.rsgarrido.sazanami.ui.player.NowPlayingAction
+import io.github.rsgarrido.sazanami.ui.player.NowPlayingMoreDialog
+import io.github.rsgarrido.sazanami.ui.player.nowPlayingActions
+import io.github.rsgarrido.sazanami.ui.ratings.LocalSongRatingUi
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsTransitionState
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsGestureRegion
 import io.github.rsgarrido.sazanami.ui.player.PlayerMorphState
@@ -67,6 +71,10 @@ fun MusicScreenOverlays(
     songs: List<Song>,
     onSongClick: (Song, List<Song>) -> Unit,
     onOpenCurrentAlbumClick: (Song) -> Unit,
+    onOpenCurrentArtistClick: (Song) -> Unit,
+    onTrackInfoClick: (Song) -> Unit,
+    onViewArtwork: (Song) -> Unit,
+    isArtworkViewerVisible: Boolean,
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
@@ -74,6 +82,9 @@ fun MusicScreenOverlays(
     favoriteMembershipKeys: Set<String>,
     isExpandedUpNextSheetVisible: Boolean,
     isQueueHubVisible: Boolean,
+    nowPlayingMoreTarget: Song?,
+    onDismissNowPlayingMore: () -> Unit,
+    onNowPlayingMoreAction: (NowPlayingAction, Song) -> Unit,
     playbackQueueHubUiState: PlaybackQueueHubUiState,
     queuedSongs: List<Song>,
     upcomingSongs: List<Song>,
@@ -203,7 +214,7 @@ fun MusicScreenOverlays(
                     indication = null,
                     onClick = {}
                 )
-                .blockPlayerInput(lyricsTransitionState.lyricsOwnsInput)
+                .blockPlayerInput(lyricsTransitionState.lyricsOwnsInput || nowPlayingMoreTarget != null || isArtworkViewerVisible)
         ) {
             PlaybackProgress(playbackProgressUiState) { progress ->
                 ExpandedPlayerThemeHost(
@@ -214,6 +225,8 @@ fun MusicScreenOverlays(
                     isVisualizerWorkAllowed = !isLyricsVisible &&
                             !isExpandedUpNextSheetVisible &&
                             !isQueueHubVisible &&
+                            nowPlayingMoreTarget == null &&
+                            !isArtworkViewerVisible &&
                             !isSleepTimerDialogVisible &&
                             !isCreatePlaylistDialogVisible &&
                             songPendingPlaylistAdd == null &&
@@ -249,6 +262,9 @@ fun MusicScreenOverlays(
                     activeQueueCount = activeQueueCount,
                     onSongClick = onSongClick,
                     onOpenCurrentAlbumClick = onOpenCurrentAlbumClick,
+                    onOpenCurrentArtistClick = onOpenCurrentArtistClick,
+                    onTrackInfoClick = onTrackInfoClick,
+                    onViewArtwork = onViewArtwork,
                     endpointBounds = playerEndpointBounds,
                     defaultMorphBounds = defaultMorphBounds,
                     classicMorphBounds = classicMorphBounds,
@@ -281,6 +297,20 @@ fun MusicScreenOverlays(
                 alpha = lyricsVisualAlpha(progress)
                 translationY = (1f - progress) * 88.dp.toPx()
             }
+        )
+    }
+
+    if (nowPlayingMoreTarget != null) {
+        val ratings = LocalSongRatingUi.current.state.ratingsByReferenceKey
+        val isRated = (ratings[nowPlayingMoreTarget.membershipKey()] ?: 0) in 1..5
+        val actions = remember(nowPlayingMoreTarget, favoriteMembershipKeys, songs, isRated, isSleepTimerActive) {
+            nowPlayingActions(nowPlayingMoreTarget, favoriteMembershipKeys, songs, isRated, isSleepTimerActive)
+        }
+        NowPlayingMoreDialog(
+            target = nowPlayingMoreTarget,
+            actions = actions,
+            onDismiss = onDismissNowPlayingMore,
+            onAction = { action -> onNowPlayingMoreAction(action, nowPlayingMoreTarget) }
         )
     }
 

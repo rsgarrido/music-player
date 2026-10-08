@@ -35,7 +35,6 @@ fun PocketFlipExpandedPlayer(
     repeatMode: RepeatMode,
     currentPosition: Int,
     duration: Int,
-    isCurrentSongFavorite: Boolean,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -45,7 +44,7 @@ fun PocketFlipExpandedPlayer(
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onOpenAlbumClick: (() -> Unit)?,
-    onToggleFavoriteClick: (Song) -> Unit,
+    onMoreClick: () -> Unit,
     tokens: PlayerThemeTokens = PocketFlipDefaultTokens,
     renderShell: Boolean = true,
     displayReveal: Float = 1f,
@@ -60,7 +59,8 @@ fun PocketFlipExpandedPlayer(
     onMorphDragEnd: (Float) -> Unit = {},
     onMorphDragCancel: () -> Unit = {},
     lyricsGestureModifier: Modifier = Modifier,
-    lyricsGestureRegion: PlayerLyricsGestureRegion? = null
+    lyricsGestureRegion: PlayerLyricsGestureRegion? = null,
+    onViewArtwork: ((Song) -> Unit)? = null
 ) {
     val palette = remember(tokens) { PocketFlipPalette.from(tokens) }
     val configuration = LocalConfiguration.current
@@ -92,6 +92,7 @@ fun PocketFlipExpandedPlayer(
                 duration = duration,
                 onSeekChange = onSeekChange,
                 onOpenAlbumClick = onOpenAlbumClick,
+                onViewArtwork = onViewArtwork,
                 compact = compact,
                 modifier = Modifier
                     .weight(if (compact) 0.54f else 0.57f)
@@ -121,7 +122,6 @@ fun PocketFlipExpandedPlayer(
                 isPlaying = isPlaying,
                 isShuffleEnabled = isShuffleEnabled,
                 repeatMode = repeatMode,
-                isCurrentSongFavorite = isCurrentSongFavorite,
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
@@ -129,7 +129,7 @@ fun PocketFlipExpandedPlayer(
                 onRepeatClick = onRepeatClick,
                 onOpenUpNextClick = onOpenUpNextClick,
                 onCollapseClick = onCollapseClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
+                onMoreClick = onMoreClick,
                 compact = compact,
                 modifier = Modifier.weight(if (compact) 0.46f else 0.43f),
                 controlsReveal = controlsReveal,

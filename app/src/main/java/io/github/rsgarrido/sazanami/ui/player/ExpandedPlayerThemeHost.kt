@@ -13,6 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -92,6 +94,13 @@ import io.github.rsgarrido.sazanami.ui.player.modern.defaultMorphTravelDistance
 import io.github.rsgarrido.sazanami.ui.player.modern.rememberModernArtworkPalette
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernExpandedArtworkPreloader
 import io.github.rsgarrido.sazanami.ui.player.modern.modernArtworkPreloadPolicy
+import io.github.rsgarrido.sazanami.ui.player.modern.modernArtistClickCallback
+import io.github.rsgarrido.sazanami.ui.player.modern.rememberModernPlayerVerticalDragModifier
+import io.github.rsgarrido.sazanami.ui.player.modern.rememberModernArtworkHorizontalDragModifier
+import io.github.rsgarrido.sazanami.ui.player.modern.modernArtworkClickCallback
+import io.github.rsgarrido.sazanami.ui.player.retrorack.RetroRackSharedOwner
+import io.github.rsgarrido.sazanami.ui.player.pocketdisc.PocketDiscSharedOwner
+import io.github.rsgarrido.sazanami.data.membershipKey
 import kotlin.math.roundToInt
 
 @Composable
@@ -132,6 +141,9 @@ fun ExpandedPlayerThemeHost(
     activeQueueCount: Int,
     onSongClick: (Song, List<Song>) -> Unit,
     onOpenCurrentAlbumClick: (Song) -> Unit,
+    onOpenCurrentArtistClick: (Song) -> Unit,
+    onTrackInfoClick: ((Song) -> Unit)? = null,
+    onViewArtwork: ((Song) -> Unit)? = null,
     endpointBounds: PlayerEndpointBounds,
     defaultMorphBounds: DefaultPlayerMorphBounds,
     classicMorphBounds: ClassicWheelMorphBounds,
@@ -186,9 +198,10 @@ fun ExpandedPlayerThemeHost(
         hostDragOffset = (hostDragOffset + delta).coerceAtMost(0f)
         lyricsTransitionState.dragOpeningBy(delta, hostHeightPx)
     }
+    val openLyricsLabel = stringResource(R.string.player_open_lyrics)
     val openLyricsSemanticsModifier = Modifier.semantics {
         customActions = listOf(
-            CustomAccessibilityAction("Open lyrics") {
+            CustomAccessibilityAction(openLyricsLabel) {
                 lyricsTransitionState.openLyrics()
                 true
             }
@@ -266,6 +279,12 @@ fun ExpandedPlayerThemeHost(
                             onPreviousClick = onPreviousClick,
                             onNextClick = onNextClick
                         )
+                    val artistAvailable = remember(currentSong, songs) {
+                        resolveNowPlayingArtistName(currentSong, songs) != null
+                    }
+                    val onOpenArtistClick: (() -> Unit)? = if (artistAvailable) {
+                        { onOpenCurrentArtistClick(currentSong) }
+                    } else null
                     DefaultPlayerMorph(
                         progress = playerMorphState.progress,
                         geometry = geometry,
@@ -276,7 +295,34 @@ fun ExpandedPlayerThemeHost(
                         style = modernStyle,
                         appearance = modernPlayerAppearance,
                         artworkPalette = artworkPalette,
-                        expandedArtworkRequestSizePx = expandedArtworkRequestSizePx
+                        expandedArtworkRequestSizePx = expandedArtworkRequestSizePx,
+                        onViewArtwork = modernArtworkClickCallback(
+                            onViewArtwork, carouselPresentation.songs.current, currentSong,
+                            playerMorphState, lyricsTransitionState, carouselPresentation.state,
+                            hasVisibleOwner = geometry != null
+                        ),
+                        artworkGestureModifier = if (playerMorphState.settledPresentation == PlayerPresentation.Expanded) {
+                            rememberModernArtworkHorizontalDragModifier(
+                                carouselPresentation.state, carouselPresentation.songs.current.id,
+                                enabled = !lyricsTransitionState.lyricsInteractive
+                            ).then(rememberModernPlayerVerticalDragModifier(
+                                playerMorphState, lyricsTransitionState, hostHeightPx,
+                                defaultMorphTravelDistance(endpointBounds, defaultMorphBounds)
+                            ))
+                        } else Modifier,
+                        onOpenArtistClick = modernArtistClickCallback(
+                            onClick = onOpenArtistClick,
+                            playerMorphState = playerMorphState,
+                            lyricsTransitionState = lyricsTransitionState,
+                            carouselOffsetX = carouselPresentation.state.offsetX,
+                            hasVisibleContent = geometry != null,
+                            isCurrentTrackDisplayed = carouselPresentation.songs.current.membershipKey() ==
+                                    currentSong.membershipKey()
+                        ),
+                        metadataGestureModifier = rememberModernPlayerVerticalDragModifier(
+                            playerMorphState, lyricsTransitionState, hostHeightPx,
+                            defaultMorphTravelDistance(endpointBounds, defaultMorphBounds)
+                        )
                     ) { visualState ->
                         ModernExpandedPlayer(
                             currentSong = currentSong,
@@ -299,6 +345,9 @@ fun ExpandedPlayerThemeHost(
                             onShuffleClick = onShuffleClick,
                             onRepeatClick = onRepeatClick,
                             onCollapseClick = onCollapseClick,
+                            onOpenArtistClick = onOpenArtistClick,
+                            onTrackInfoClick = onTrackInfoClick?.let { open -> { open(currentSong) } },
+                            onViewArtwork = onViewArtwork,
                             onOpenAlbumClick = if (
                                 playerMorphState.settledPresentation == PlayerPresentation.Expanded &&
                                 playerMorphState.progress == 1f &&
@@ -312,6 +361,7 @@ fun ExpandedPlayerThemeHost(
                             playerMorphState = playerMorphState,
                             lyricsTransitionState = lyricsTransitionState,
                             onOpenUpNextClick = onOpenQueueHubClick,
+                            onOpenMoreClick = onOpenMoreClick,
                             onToggleFavoriteClick = onToggleFavoriteClick,
                             style = modernStyle,
                             defaultMorphBounds = defaultMorphBounds,
@@ -418,13 +468,16 @@ fun ExpandedPlayerThemeHost(
                 ) { deckReveal, spectrumReveal, queueReveal, controlsReveal, inputEnabled ->
                     RetroRackExpandedPlayer(
                         currentSong = currentSong,
+                        onViewArtwork = onViewArtwork.takeIf {
+                            sharedOwner == RetroRackSharedOwner.EXPANDED &&
+                                    canOpenArtworkAtExpandedEndpoint(playerMorphState, lyricsTransitionState)
+                        },
                         isVisualizerWorkAllowed = isVisualizerWorkAllowed && shouldRunRetroRackExpandedWork(playerMorphState.progress),
                         isPlaying = isPlaying,
                         isShuffleEnabled = isShuffleEnabled,
                         repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
-                        isCurrentSongFavorite = isCurrentSongFavorite,
                         upcomingSongs = upcomingSongs,
                         activeQueueSongs = activeQueueSongs,
                         onPlayPauseClick = onPlayPauseClick,
@@ -435,7 +488,7 @@ fun ExpandedPlayerThemeHost(
                         onRepeatClick = onRepeatClick,
                         onCollapseClick = onCollapseClick,
                         onOpenUpNextClick = onOpenQueueHubClick,
-                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        onMoreClick = onOpenMoreClick,
                         onSongClick = onSongClick,
                         tokens = tokens,
                         deckReveal = deckReveal,
@@ -495,6 +548,10 @@ fun ExpandedPlayerThemeHost(
                 ) { displayReveal, hingeReveal, controlsReveal, inputEnabled ->
                     PocketFlipExpandedPlayer(
                         currentSong = currentSong,
+                        onViewArtwork = onViewArtwork.takeIf {
+                            sharedOwner == PocketFlipSharedOwner.EXPANDED &&
+                                    canOpenArtworkAtExpandedEndpoint(playerMorphState, lyricsTransitionState)
+                        },
                         isVisualizerWorkAllowed = isVisualizerWorkAllowed &&
                                 shouldRunPocketFlipExpandedWork(playerMorphState.progress),
                         isPlaying = isPlaying,
@@ -502,7 +559,6 @@ fun ExpandedPlayerThemeHost(
                         repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
-                        isCurrentSongFavorite = isCurrentSongFavorite,
                         onPlayPauseClick = onPlayPauseClick,
                         onPreviousClick = onPreviousClick,
                         onNextClick = onNextClick,
@@ -519,7 +575,7 @@ fun ExpandedPlayerThemeHost(
                         ) {
                             currentSong?.let { song -> { onOpenCurrentAlbumClick(song) } }
                         } else null,
-                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        onMoreClick = onOpenMoreClick,
                         tokens = tokens,
                         renderShell = false,
                         displayReveal = displayReveal,
@@ -588,7 +644,6 @@ fun ExpandedPlayerThemeHost(
                         repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
-                        isCurrentSongFavorite = isCurrentSongFavorite,
                         onPlayPauseClick = onPlayPauseClick,
                         onPreviousClick = onPreviousClick,
                         onNextClick = onNextClick,
@@ -605,7 +660,7 @@ fun ExpandedPlayerThemeHost(
                         ) {
                             currentSong?.let { song -> { onOpenCurrentAlbumClick(song) } }
                         } else null,
-                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        onMoreClick = onOpenMoreClick,
                         tokens = tokens,
                         renderShell = false,
                         headerReveal = headerReveal,
@@ -680,6 +735,10 @@ fun ExpandedPlayerThemeHost(
                 ) { headerReveal, mediaReveal, panelReveal, controlsReveal, inputEnabled ->
                     PocketDiscExpandedPlayer(
                         currentSong = currentSong,
+                        onViewArtwork = onViewArtwork.takeIf {
+                            sharedOwner == PocketDiscSharedOwner.EXPANDED &&
+                                    canOpenArtworkAtExpandedEndpoint(playerMorphState, lyricsTransitionState)
+                        },
                         activeQueueName = activeQueueName,
                         activeQueuePosition = activeQueuePosition,
                         activeQueueCount = activeQueueCount,
@@ -691,7 +750,6 @@ fun ExpandedPlayerThemeHost(
                         repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
-                        isCurrentSongFavorite = isCurrentSongFavorite,
                         onPlayPauseClick = onPlayPauseClick,
                         onPreviousClick = onPreviousClick,
                         onNextClick = onNextClick,
@@ -703,7 +761,7 @@ fun ExpandedPlayerThemeHost(
                         onOpenAlbumClick = {
                             currentSong?.let(onOpenCurrentAlbumClick)
                         },
-                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        onMoreClick = onOpenMoreClick,
                         tokens = tokens,
                         renderShell = false,
                         headerReveal = headerReveal,

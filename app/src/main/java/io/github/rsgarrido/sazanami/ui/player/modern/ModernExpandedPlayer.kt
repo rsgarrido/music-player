@@ -1,9 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.modern
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -15,18 +12,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.setValue
@@ -42,6 +40,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.rsgarrido.sazanami.data.Song
+import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.player.audioquality.AudioQualityRepository
 import io.github.rsgarrido.sazanami.player.waveform.WaveformData
@@ -73,10 +72,14 @@ internal fun ModernExpandedPlayer(
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenAlbumClick: (() -> Unit)? = null,
+    onOpenArtistClick: (() -> Unit)? = null,
+    onTrackInfoClick: (() -> Unit)? = null,
+    onViewArtwork: ((Song) -> Unit)? = null,
     playerMorphState: PlayerMorphState,
     lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
+    onOpenMoreClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     style: ModernPlayerStyle = ModernPlayerDefaults.style(),
     albumArtSize: Dp = ModernPlayerDefaults.MaximumArtworkSize,
@@ -116,24 +119,6 @@ internal fun ModernExpandedPlayer(
     val displayedCarouselSongs = activeCarouselPresentation.songs
 
     var containerHeightPx by remember { mutableFloatStateOf(1f) }
-    var isMorphDrag by remember { mutableStateOf(false) }
-    val verticalDragState = rememberDraggableState { deltaY ->
-        if (playerMorphState.progress < 1f &&
-            lyricsTransitionState.progress == 0f
-        ) {
-            isMorphDrag = true
-            playerMorphState.dragBy(deltaY)
-        } else if (deltaY < 0f || lyricsTransitionState.progress > 0f) {
-            if (lyricsTransitionState.progress == 0f) {
-                lyricsTransitionState.beginOpeningDrag()
-            }
-            lyricsTransitionState.dragOpeningBy(deltaY, containerHeightPx)
-            playerMorphState.updateProgressFromDrag(1f)
-        } else {
-            isMorphDrag = true
-            playerMorphState.dragBy(deltaY)
-        }
-    }
     val dragProgress = 1f - playerMorphState.progress
     val morphOwnsPersistentContent = defaultMorphVisualState?.isReady == true
 
@@ -192,34 +177,11 @@ internal fun ModernExpandedPlayer(
                         Color.Transparent
                     }
                 )
-                .draggable(
-                    state = verticalDragState,
-                    orientation = Orientation.Vertical,
-                    onDragStarted = {
-                        isMorphDrag = playerMorphState.progress < 1f
-                        val morphDragRange = defaultMorphDragRangePx
-                        if (morphDragRange != null) {
-                            playerMorphState.beginDragWithRange(morphDragRange)
-                        } else {
-                            playerMorphState.beginDrag(containerHeightPx)
-                        }
-                    },
-                    enabled = !lyricsTransitionState.lyricsInteractive,
-                    onDragStopped = { velocityY ->
-                        if (!isMorphDrag && (
-                            lyricsTransitionState.progress > 0f ||
-                            playerMorphState.progress >= 1f &&
-                            velocityY <=
-                            PlayerLyricsTransitionState.OPEN_VELOCITY_PX_PER_SECOND
-                            )
-                        ) {
-                            playerMorphState.snapTo(PlayerPresentation.Expanded)
-                            lyricsTransitionState.settleOpening(velocityY)
-                        } else {
-                            playerMorphState.endDrag(velocityY)
-                        }
-                        isMorphDrag = false
-                    }
+                .then(
+                    rememberModernPlayerVerticalDragModifier(
+                        playerMorphState, lyricsTransitionState,
+                        containerHeightPx, defaultMorphDragRangePx
+                    )
                 )
         ) {
             if (defaultMorphVisualState == null ||
@@ -273,7 +235,12 @@ internal fun ModernExpandedPlayer(
                         }
                         .hiddenFromDefaultMorph(morphOwnsPersistentContent),
                     gesturesEnabled = !lyricsTransitionState.lyricsInteractive,
-                    renderArtwork = defaultMorphVisualState == null
+                    renderArtwork = defaultMorphVisualState == null,
+                    onViewArtwork = modernArtworkClickCallback(
+                        onViewArtwork, displayedCarouselSongs.current, currentSong,
+                        playerMorphState, lyricsTransitionState, carouselState,
+                        hasVisibleOwner = defaultMorphVisualState == null
+                    )
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -291,6 +258,24 @@ internal fun ModernExpandedPlayer(
                     },
                     hidePersistentContent = morphOwnsPersistentContent,
                     onOpenAlbumClick = onOpenAlbumClick,
+                    onTrackInfoClick = onTrackInfoClick.takeIf {
+                        canOpenModernMore(
+                            playerMorphState, lyricsTransitionState, carouselState.offsetX,
+                            hasExpandedContent = defaultMorphVisualState == null ||
+                                    defaultMorphVisualState.isReady && defaultMorphVisualState.metadataAlpha == 1f,
+                            isCurrentTrackDisplayed = displayedCarouselSongs.current.membershipKey() ==
+                                    currentSong.membershipKey()
+                        )
+                    },
+                    onOpenArtistClick = modernArtistClickCallback(
+                        onClick = onOpenArtistClick,
+                        playerMorphState = playerMorphState,
+                        lyricsTransitionState = lyricsTransitionState,
+                        carouselOffsetX = carouselState.offsetX,
+                        hasVisibleContent = defaultMorphVisualState == null,
+                        isCurrentTrackDisplayed = displayedCarouselSongs.current.membershipKey() ==
+                                currentSong.membershipKey()
+                    ),
                     expandedContentAlpha =
                         defaultMorphVisualState?.metadataAlpha ?: 1f,
                     loadExpandedMetadata =
@@ -307,6 +292,20 @@ internal fun ModernExpandedPlayer(
                         ),
                     horizontalArrangement = Arrangement.End
                 ) {
+                    if (onOpenMoreClick != null) {
+                        ModernMoreButton(
+                            onClick = onOpenMoreClick,
+                            enabled = canOpenModernMore(
+                                playerMorphState = playerMorphState,
+                                lyricsTransitionState = lyricsTransitionState,
+                                carouselOffsetX = carouselState.offsetX,
+                                hasExpandedContent = defaultMorphVisualState?.isReady != false,
+                                isCurrentTrackDisplayed = displayedCarouselSongs.current.membershipKey() ==
+                                        currentSong.membershipKey()
+                            ),
+                            tint = style.contentColor
+                        )
+                    }
                     ModernQueueHubButton(
                         onClick = onOpenUpNextClick,
                         enabled = defaultMorphVisualState == null ||
@@ -393,6 +392,44 @@ internal fun ModernExpandedPlayer(
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
+            }
+        }
+    }
+}
+
+internal fun canOpenModernMore(
+    playerMorphState: PlayerMorphState,
+    lyricsTransitionState: PlayerLyricsTransitionState,
+    carouselOffsetX: Float,
+    hasExpandedContent: Boolean,
+    isCurrentTrackDisplayed: Boolean
+): Boolean = hasExpandedContent && isCurrentTrackDisplayed &&
+        playerMorphState.targetPresentation == PlayerPresentation.Expanded &&
+        playerMorphState.settledPresentation == PlayerPresentation.Expanded &&
+        playerMorphState.progress == 1f && !playerMorphState.isDragging &&
+        !playerMorphState.isAnimating && !lyricsTransitionState.isDragging &&
+        !lyricsTransitionState.lyricsOwnsInput && carouselOffsetX == 0f
+
+@Composable
+internal fun ModernMoreButton(
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    tint: Color = Color.Unspecified,
+    modifier: Modifier = Modifier
+) {
+    // Keep Queue Hub's existing 42 dp row geometry while giving More a 48 dp touch target.
+    // Reserve the slot during transitions without exposing an inactive action.
+    Box(
+        modifier = modifier.size(width = 48.dp, height = 42.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (enabled) {
+            IconButton(onClick = onClick, modifier = Modifier.requiredSize(48.dp)) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = stringResource(R.string.player_more_actions),
+                    tint = tint
+                )
             }
         }
     }

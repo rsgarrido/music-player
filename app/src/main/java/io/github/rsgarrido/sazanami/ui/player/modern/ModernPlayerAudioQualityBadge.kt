@@ -7,6 +7,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,7 +28,8 @@ import io.github.rsgarrido.sazanami.player.audioquality.toDisplayText
 internal fun ModernPlayerAudioQualityBadge(
     audioQualityInfo: AudioQualityInfo?,
     style: ModernPlayerStyle,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onTrackInfoClick: (() -> Unit)? = null
 ) {
     val displayText = audioQualityInfo?.toDisplayText()
     val badgeShape = RoundedCornerShape(percent = 50)
@@ -54,6 +59,13 @@ internal fun ModernPlayerAudioQualityBadge(
                         color = style.contentColor.copy(alpha = 0.14f),
                         shape = badgeShape
                     )
+                    .then(if (onTrackInfoClick != null && displayedText == displayText) {
+                        Modifier.clickable(
+                            role = Role.Button,
+                            onClickLabel = stringResource(R.string.player_open_track_information),
+                            onClick = onTrackInfoClick
+                        )
+                    } else Modifier)
                     .padding(horizontal = 10.dp, vertical = 5.dp)
             ) {
                 Text(

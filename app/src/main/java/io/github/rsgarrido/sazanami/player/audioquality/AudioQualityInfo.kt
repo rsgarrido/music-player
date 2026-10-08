@@ -6,7 +6,9 @@ data class AudioQualityInfo(
     val format: String?,
     val bitDepth: Int?,
     val sampleRateHz: Int?,
-    val bitrateKbps: Int?
+    val bitrateKbps: Int?,
+    val codecMimeType: String? = null,
+    val channelCount: Int? = null
 )
 
 fun AudioQualityInfo.toDisplayText(): String? {
@@ -66,7 +68,7 @@ internal fun resolveAudioFormat(
         ?: normalizeAudioFormat(headerFormat)
 }
 
-private fun formatSampleRate(sampleRateHz: Int): String {
+internal fun formatSampleRate(sampleRateHz: Int): String {
     val wholeKilohertz = sampleRateHz / HERTZ_PER_KILOHERTZ
     val remainingHertz = sampleRateHz % HERTZ_PER_KILOHERTZ
 
