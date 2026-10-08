@@ -64,6 +64,39 @@ class SearchNavigationStateTest {
         assertTrue(shouldOfferLibraryOrganize(MainDestination.LIBRARY))
     }
 
+    @Test fun nowPlayingArtistClearsConflictingDetailsAndReturnsToLibraryArtists() {
+        val state = navigation(MainDestination.SEARCH)
+        state.openAlbum("old-album", DetailEntryOrigin.HOME_PINNED)
+        state.openArtist("Old Artist", DetailEntryOrigin.SEARCH)
+        state.openPlaylist(42, DetailEntryOrigin.HOME_PINNED)
+        state.selectedGenreKey.value = "old-genre"
+        val cleanup = mutableListOf<String>()
+        navigateToNowPlayingArtist(
+            "The Warning", state,
+            resetLyrics = { cleanup += "lyrics" },
+            collapsePlayer = { cleanup += "collapse" },
+            clearLibrarySelection = { cleanup += "selection" },
+            clearPlaylistSelection = { state.clearPlaylist(); cleanup += "playlist" }
+        )
+        assertEquals(listOf("lyrics", "collapse", "selection", "playlist"), cleanup)
+        assertNull(state.selectedAlbumKey.value)
+        assertNull(state.selectedGenreKey.value)
+        assertNull(state.selectedPlaylistId.value)
+        assertEquals("", state.searchQuery.value)
+        assertEquals("The Warning", state.selectedArtistName.value)
+        assertEquals(DetailEntryOrigin.LIBRARY, state.artistDetailOrigin.value)
+        assertEquals(MainDestination.LIBRARY, state.mainDestination.value)
+        assertEquals(LibraryTab.ARTISTS, state.selectedLibraryTab.value)
+        state.openAlbum("artist-album")
+        state.closeAlbum()
+        assertEquals("The Warning", state.selectedArtistName.value)
+        assertEquals(LibraryTab.ARTISTS, state.selectedLibraryTab.value)
+        state.closeArtist()
+        assertNull(state.selectedArtistName.value)
+        assertEquals(MainDestination.LIBRARY, state.mainDestination.value)
+        assertEquals(LibraryTab.ARTISTS, state.selectedLibraryTab.value)
+    }
+
     private fun assertSearchPreserved(state: MusicNavigationState, category: SearchCategory) {
         assertEquals(MainDestination.SEARCH, state.mainDestination.value)
         assertEquals("the", state.searchQuery.value)

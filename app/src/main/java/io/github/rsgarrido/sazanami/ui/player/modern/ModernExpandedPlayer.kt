@@ -1,9 +1,6 @@
 package io.github.rsgarrido.sazanami.ui.player.modern
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -28,7 +25,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.setValue
@@ -76,6 +72,7 @@ internal fun ModernExpandedPlayer(
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenAlbumClick: (() -> Unit)? = null,
+    onOpenArtistClick: (() -> Unit)? = null,
     playerMorphState: PlayerMorphState,
     lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
@@ -120,24 +117,6 @@ internal fun ModernExpandedPlayer(
     val displayedCarouselSongs = activeCarouselPresentation.songs
 
     var containerHeightPx by remember { mutableFloatStateOf(1f) }
-    var isMorphDrag by remember { mutableStateOf(false) }
-    val verticalDragState = rememberDraggableState { deltaY ->
-        if (playerMorphState.progress < 1f &&
-            lyricsTransitionState.progress == 0f
-        ) {
-            isMorphDrag = true
-            playerMorphState.dragBy(deltaY)
-        } else if (deltaY < 0f || lyricsTransitionState.progress > 0f) {
-            if (lyricsTransitionState.progress == 0f) {
-                lyricsTransitionState.beginOpeningDrag()
-            }
-            lyricsTransitionState.dragOpeningBy(deltaY, containerHeightPx)
-            playerMorphState.updateProgressFromDrag(1f)
-        } else {
-            isMorphDrag = true
-            playerMorphState.dragBy(deltaY)
-        }
-    }
     val dragProgress = 1f - playerMorphState.progress
     val morphOwnsPersistentContent = defaultMorphVisualState?.isReady == true
 
@@ -196,34 +175,11 @@ internal fun ModernExpandedPlayer(
                         Color.Transparent
                     }
                 )
-                .draggable(
-                    state = verticalDragState,
-                    orientation = Orientation.Vertical,
-                    onDragStarted = {
-                        isMorphDrag = playerMorphState.progress < 1f
-                        val morphDragRange = defaultMorphDragRangePx
-                        if (morphDragRange != null) {
-                            playerMorphState.beginDragWithRange(morphDragRange)
-                        } else {
-                            playerMorphState.beginDrag(containerHeightPx)
-                        }
-                    },
-                    enabled = !lyricsTransitionState.lyricsInteractive,
-                    onDragStopped = { velocityY ->
-                        if (!isMorphDrag && (
-                            lyricsTransitionState.progress > 0f ||
-                            playerMorphState.progress >= 1f &&
-                            velocityY <=
-                            PlayerLyricsTransitionState.OPEN_VELOCITY_PX_PER_SECOND
-                            )
-                        ) {
-                            playerMorphState.snapTo(PlayerPresentation.Expanded)
-                            lyricsTransitionState.settleOpening(velocityY)
-                        } else {
-                            playerMorphState.endDrag(velocityY)
-                        }
-                        isMorphDrag = false
-                    }
+                .then(
+                    rememberModernPlayerVerticalDragModifier(
+                        playerMorphState, lyricsTransitionState,
+                        containerHeightPx, defaultMorphDragRangePx
+                    )
                 )
         ) {
             if (defaultMorphVisualState == null ||
@@ -295,6 +251,15 @@ internal fun ModernExpandedPlayer(
                     },
                     hidePersistentContent = morphOwnsPersistentContent,
                     onOpenAlbumClick = onOpenAlbumClick,
+                    onOpenArtistClick = modernArtistClickCallback(
+                        onClick = onOpenArtistClick,
+                        playerMorphState = playerMorphState,
+                        lyricsTransitionState = lyricsTransitionState,
+                        carouselOffsetX = carouselState.offsetX,
+                        hasVisibleContent = defaultMorphVisualState == null,
+                        isCurrentTrackDisplayed = displayedCarouselSongs.current.membershipKey() ==
+                                currentSong.membershipKey()
+                    ),
                     expandedContentAlpha =
                         defaultMorphVisualState?.metadataAlpha ?: 1f,
                     loadExpandedMetadata =

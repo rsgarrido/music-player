@@ -48,6 +48,7 @@ internal fun ModernPlayerMetadataCarousel(
     onPersistentContentBoundsChanged: (Rect) -> Unit = {},
     hidePersistentContent: Boolean = false,
     onOpenAlbumClick: (() -> Unit)? = null,
+    onOpenArtistClick: (() -> Unit)? = null,
     expandedContentAlpha: Float = 1f,
     loadExpandedMetadata: Boolean = true
 ) {
@@ -126,6 +127,9 @@ internal fun ModernPlayerMetadataCarousel(
                         },
                         hidePersistentContent = hidePersistentContent,
                         onOpenAlbumClick = if (item.isCurrent) onOpenAlbumClick else null,
+                        onOpenArtistClick = if (item.isCurrent && !hidePersistentContent &&
+                            carouselState.offsetX == 0f
+                        ) onOpenArtistClick else null,
                         expandedContentAlpha = expandedContentAlpha,
                         loadExpandedMetadata = loadExpandedMetadata
                     )
@@ -144,6 +148,7 @@ private fun ModernPlayerMetadataPage(
     onPersistentContentSizeChanged: (IntSize) -> Unit,
     hidePersistentContent: Boolean,
     onOpenAlbumClick: (() -> Unit)?,
+    onOpenArtistClick: (() -> Unit)?,
     expandedContentAlpha: Float,
     loadExpandedMetadata: Boolean
 ) {
@@ -174,6 +179,7 @@ private fun ModernPlayerMetadataPage(
             onPersistentContentSizeChanged = onPersistentContentSizeChanged,
             hidePersistentContent = hidePersistentContent,
             onOpenAlbumClick = onOpenAlbumClick,
+            onOpenArtistClick = onOpenArtistClick,
             expandedContentAlpha = expandedContentAlpha
         )
 
@@ -204,6 +210,7 @@ internal fun ModernPlayerMetadata(
     onPersistentContentSizeChanged: (IntSize) -> Unit = {},
     hidePersistentContent: Boolean = false,
     onOpenAlbumClick: (() -> Unit)? = null,
+    onOpenArtistClick: (() -> Unit)? = null,
     expandedContentAlpha: Float = 1f
 ) {
     Column(
@@ -238,7 +245,9 @@ internal fun ModernPlayerMetadata(
                 color = style.secondaryContentColor,
                 maxLines = 1,
                 textAlign = alignment.textAlign(),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().artistNavigationClick(
+                    onOpenArtistClick.takeUnless { hidePersistentContent }
+                )
             )
         }
 

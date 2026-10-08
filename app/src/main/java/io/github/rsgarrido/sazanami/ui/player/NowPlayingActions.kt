@@ -4,10 +4,13 @@ import androidx.annotation.StringRes
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.membershipKey
+import io.github.rsgarrido.sazanami.data.artistIdentity
+import io.github.rsgarrido.sazanami.data.normalizeArtistName
 import io.github.rsgarrido.sazanami.ui.library.buildLibraryAlbumGroups
+import io.github.rsgarrido.sazanami.ui.library.buildLibraryArtistGroups
 import io.github.rsgarrido.sazanami.ui.library.findLibraryAlbumGroupForSong
 
-enum class NowPlayingAction { FAVORITE, GO_TO_ALBUM, LYRICS }
+enum class NowPlayingAction { FAVORITE, GO_TO_ARTIST, GO_TO_ALBUM, LYRICS }
 
 internal enum class NowPlayingFavoriteFeedback { ADDED_TO_FAVORITES, REMOVED_FROM_FAVORITES }
 
@@ -23,6 +26,33 @@ internal fun isCurrentNowPlayingTarget(target: Song?, currentSong: Song?): Boole
 internal fun resolveNowPlayingAlbumKey(song: Song, librarySongs: List<Song>): String? =
     findLibraryAlbumGroupForSong(song, buildLibraryAlbumGroups(librarySongs))?.key
 
+/** Navigation policy only; preserve the library's single-string artist grouping semantics. */
+internal fun resolveNowPlayingArtistName(song: Song, librarySongs: List<Song>): String? {
+    val normalized = normalizeArtistName(song.artist)
+    if (normalized in nonNavigableArtistNames) {
+        return null
+    }
+    val identity = artistIdentity(song.artist)
+    return buildLibraryArtistGroups(librarySongs)
+        .firstOrNull { it.identity == identity && !it.identity.isUnknown }?.name
+}
+
+private val nonNavigableArtistNames =
+    setOf("", "unknown", "unknown artist", "<unknown>", "artista desconocido")
+
+/** Revalidate both entry points against the latest track and library before navigating. */
+internal fun openCurrentNowPlayingArtist(
+    target: Song,
+    currentSong: Song?,
+    librarySongs: List<Song>,
+    onOpenArtist: (String) -> Unit
+): Boolean {
+    if (!isCurrentNowPlayingTarget(target, currentSong)) return false
+    val artistName = resolveNowPlayingArtistName(requireNotNull(currentSong), librarySongs) ?: return false
+    onOpenArtist(artistName)
+    return true
+}
+
 internal fun nowPlayingActions(
     target: Song,
     favoriteMembershipKeys: Set<String>,
@@ -34,6 +64,9 @@ internal fun nowPlayingActions(
         labelRes = if (isFavorite) R.string.player_remove_favorite else R.string.player_add_favorite,
         isActive = isFavorite
     ))
+    if (resolveNowPlayingArtistName(target, librarySongs) != null) {
+        add(NowPlayingActionItem(NowPlayingAction.GO_TO_ARTIST, R.string.library_search_go_artist))
+    }
     if (resolveNowPlayingAlbumKey(target, librarySongs) != null) {
         add(NowPlayingActionItem(NowPlayingAction.GO_TO_ALBUM, R.string.player_go_to_album))
     }
@@ -55,7 +88,8 @@ internal fun performNowPlayingAction(
     onOpenAlbum: (Song) -> Unit,
     onOpenLyrics: () -> Unit,
     isFavorite: Boolean = false,
-    onFavoriteFeedback: (NowPlayingFavoriteFeedback) -> Unit = {}
+    onFavoriteFeedback: (NowPlayingFavoriteFeedback) -> Unit = {},
+    onOpenArtist: (Song) -> Unit = {}
 ): Boolean {
     onDismiss()
     if (!isCurrentNowPlayingTarget(target, currentSong)) return false
@@ -68,6 +102,10 @@ internal fun performNowPlayingAction(
             }
             onToggleFavorite(target)
             onFavoriteFeedback(feedback)
+        }
+        NowPlayingAction.GO_TO_ARTIST -> {
+            if (resolveNowPlayingArtistName(requireNotNull(currentSong), librarySongs) == null) return false
+            onOpenArtist(target)
         }
         NowPlayingAction.GO_TO_ALBUM -> {
             if (resolveNowPlayingAlbumKey(target, librarySongs) == null) return false

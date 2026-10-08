@@ -67,6 +67,8 @@ internal fun DefaultPlayerMorph(
     artworkPalette: ModernArtworkPalette,
     expandedArtworkRequestSizePx: Int?,
     modifier: Modifier = Modifier,
+    onOpenArtistClick: (() -> Unit)? = null,
+    metadataGestureModifier: Modifier = Modifier,
     expandedContent: @Composable (DefaultPlayerMorphVisualState) -> Unit
 ) {
     val safeProgress = progress.coerceIn(0f, 1f)
@@ -158,7 +160,9 @@ internal fun DefaultPlayerMorph(
                 bounds = geometry.text,
                 progress = safeProgress,
                 style = style,
-                layoutAppearance = appearance.layout
+                layoutAppearance = appearance.layout,
+                onOpenArtistClick = onOpenArtistClick,
+                gestureModifier = metadataGestureModifier
             )
             DefaultMorphPlayPause(
                 isPlaying = isPlaying,
@@ -215,7 +219,9 @@ private fun DefaultMorphTitleArtist(
     bounds: androidx.compose.ui.geometry.Rect,
     progress: Float,
     style: ModernPlayerStyle,
-    layoutAppearance: ModernLayoutAppearance
+    layoutAppearance: ModernLayoutAppearance,
+    onOpenArtistClick: (() -> Unit)?,
+    gestureModifier: Modifier
 ) {
     val useCenteredAlignment =
         layoutAppearance.metadataAlignment == ModernMetadataAlignment.CENTER && progress >= 0.72f
@@ -264,7 +270,8 @@ private fun DefaultMorphTitleArtist(
                                         density
                             }
                         }
-                        .suppressDefaultMorphSemantics(!item.isCurrent),
+                        .suppressDefaultMorphSemantics(!item.isCurrent)
+                        .then(if (item.isCurrent) gestureModifier else Modifier),
                     horizontalAlignment = if (useCenteredAlignment) {
                         Alignment.CenterHorizontally
                     } else {
@@ -294,7 +301,12 @@ private fun DefaultMorphTitleArtist(
                         ),
                         maxLines = 1,
                         textAlign = if (useCenteredAlignment) TextAlign.Center else TextAlign.Start,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth().artistNavigationClick(
+                            onOpenArtistClick.takeIf {
+                                item.isCurrent && progress == 1f &&
+                                        carouselPresentation.state.offsetX == 0f
+                            }
+                        )
                     )
                 }
             }

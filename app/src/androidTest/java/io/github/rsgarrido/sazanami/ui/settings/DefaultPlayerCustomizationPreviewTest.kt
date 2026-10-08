@@ -3,8 +3,10 @@ package io.github.rsgarrido.sazanami.ui.settings
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
 import org.junit.Rule
 import org.junit.Test
@@ -25,5 +27,6 @@ class DefaultPlayerCustomizationPreviewTest {
         }
 
         composeRule.onAllNodesWithContentDescription("Open queues").assertCountEquals(1)
+        composeRule.onNodeWithText("Sazanami").assertHasNoClickAction()
     }
 }

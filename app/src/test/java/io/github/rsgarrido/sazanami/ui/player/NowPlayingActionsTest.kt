@@ -31,11 +31,12 @@ class NowPlayingActionsTest {
         val differentFile = song(2).copy(folderPath = "/other", filePath = "/other/2.flac")
         assertNull(resolveNowPlayingAlbumKey(target, listOf(differentFile)))
         assertEquals(
-            listOf(NowPlayingAction.FAVORITE, NowPlayingAction.LYRICS),
+            listOf(NowPlayingAction.FAVORITE, NowPlayingAction.GO_TO_ARTIST, NowPlayingAction.LYRICS),
             nowPlayingActions(target, emptySet(), listOf(differentFile)).map { it.action }
         )
         assertEquals(
-            listOf(NowPlayingAction.FAVORITE, NowPlayingAction.GO_TO_ALBUM, NowPlayingAction.LYRICS),
+            listOf(NowPlayingAction.FAVORITE, NowPlayingAction.GO_TO_ARTIST,
+                NowPlayingAction.GO_TO_ALBUM, NowPlayingAction.LYRICS),
             nowPlayingActions(target, emptySet(), listOf(target, differentFile)).map { it.action }
         )
     }
@@ -50,11 +51,13 @@ class NowPlayingActionsTest {
                 onDismiss = { events += "dismiss" },
                 onToggleFavorite = { assertSame(target, it); events += "favorite" },
                 onOpenAlbum = { assertSame(target, it); events += "album" },
-                onOpenLyrics = { events += "lyrics" }
+                onOpenLyrics = { events += "lyrics" },
+                onOpenArtist = { assertSame(target, it); events += "artist" }
             )
             assertTrue(performed)
             assertEquals(listOf("dismiss", when (action) {
                 NowPlayingAction.FAVORITE -> "favorite"
+                NowPlayingAction.GO_TO_ARTIST -> "artist"
                 NowPlayingAction.GO_TO_ALBUM -> "album"
                 NowPlayingAction.LYRICS -> "lyrics"
             }), events)
@@ -72,7 +75,8 @@ class NowPlayingActionsTest {
                     onDismiss = { dismissals++ },
                     onToggleFavorite = { error("Stale favorite") },
                     onOpenAlbum = { error("Stale navigation") },
-                    onOpenLyrics = { error("Stale lyrics") }
+                    onOpenLyrics = { error("Stale lyrics") },
+                    onOpenArtist = { error("Stale artist") }
                 )
                 assertFalse(performed)
                 assertEquals(1, dismissals)
@@ -136,9 +140,10 @@ class NowPlayingActionsTest {
     }
 
     @Test
-    fun albumAndLyricsNeverEmitFavoriteFeedback() {
+    fun detailAndLyricsActionsNeverEmitFavoriteFeedback() {
         val target = song(1)
-        listOf(NowPlayingAction.GO_TO_ALBUM, NowPlayingAction.LYRICS).forEach { action ->
+        listOf(NowPlayingAction.GO_TO_ARTIST, NowPlayingAction.GO_TO_ALBUM,
+            NowPlayingAction.LYRICS).forEach { action ->
             val events = mutableListOf<String>()
             assertTrue(performNowPlayingAction(
                 action, target, target, listOf(target),
@@ -147,11 +152,14 @@ class NowPlayingActionsTest {
                 onOpenAlbum = { events += "album" },
                 onOpenLyrics = { events += "lyrics" },
                 isFavorite = true,
-                onFavoriteFeedback = { error("Only Favorite emits this feedback") }
+                onFavoriteFeedback = { error("Only Favorite emits this feedback") },
+                onOpenArtist = { events += "artist" }
             ))
-            assertEquals(listOf("dismiss", if (action == NowPlayingAction.GO_TO_ALBUM) {
-                "album"
-            } else "lyrics"), events)
+            assertEquals(listOf("dismiss", when (action) {
+                NowPlayingAction.GO_TO_ARTIST -> "artist"
+                NowPlayingAction.GO_TO_ALBUM -> "album"
+                else -> "lyrics"
+            }), events)
         }
     }
 
@@ -166,6 +174,89 @@ class NowPlayingActionsTest {
             onFavoriteFeedback = { error("Stale action must not confirm success") }
         ))
         assertTrue(dismissed)
+    }
+
+    @Test
+    fun artistResolutionUsesLibraryIdentityAndItsDisplayName() {
+        val target = song(1).copy(artist = "THE WARNING")
+        val library = listOf(song(2).copy(artist = "  The   Warning "),
+            song(3).copy(artist = "the warning"))
+        assertEquals("The Warning", resolveNowPlayingArtistName(target, library))
+        val action = nowPlayingActions(target, emptySet(), library).first {
+            it.action == NowPlayingAction.GO_TO_ARTIST
+        }
+        assertEquals(R.string.library_search_go_artist, action.labelRes)
+        assertNull(resolveNowPlayingArtistName(target, emptyList()))
+    }
+
+    @Test
+    fun blankAndRecognizedSentinelsCannotNavigateEvenIfTheyHaveLibraryGroups() {
+        listOf("", " \t ", "Unknown Artist", " UNKNOWN   ARTIST ", "<unknown>",
+            "<UNKNOWN>", "unknown", "Artista desconocido").forEach { artist ->
+            val target = song(1).copy(artist = artist)
+            assertNull(resolveNowPlayingArtistName(target, listOf(target)))
+            assertFalse(nowPlayingActions(target, emptySet(), listOf(target)).any {
+                it.action == NowPlayingAction.GO_TO_ARTIST
+            })
+        }
+    }
+
+    @Test
+    fun variousArtistsRequiresARealMatchingGroupAndCollaborationsAreNeverSplit() {
+        val various = song(1).copy(artist = "Various Artists")
+        assertNull(resolveNowPlayingArtistName(various, listOf(song(2))))
+        assertEquals("Various Artists", resolveNowPlayingArtistName(various, listOf(various)))
+        val collaboration = song(3).copy(artist = "Artist A feat. Artist B")
+        assertNull(resolveNowPlayingArtistName(collaboration, listOf(
+            song(4).copy(artist = "Artist A"), song(5).copy(artist = "Artist B")
+        )))
+        assertEquals("Artist A feat. Artist B",
+            resolveNowPlayingArtistName(collaboration, listOf(collaboration)))
+    }
+
+    @Test
+    fun compilationNavigationUsesTrackArtistAndNeverFallsBackToAlbumArtist() {
+        val target = song(1).copy(artist = "Track Artist", albumArtist = "Various Artists")
+        val albumArtistTrack = song(2).copy(artist = "Various Artists")
+        assertEquals("Track Artist", resolveNowPlayingArtistName(target, listOf(target, albumArtistTrack)))
+        assertNull(resolveNowPlayingArtistName(target.copy(artist = ""), listOf(albumArtistTrack)))
+        assertNull(resolveNowPlayingArtistName(target, listOf(albumArtistTrack)))
+    }
+
+    @Test
+    fun artistRemovedAfterOpeningOrChangedToUnknownDismissesWithoutNavigating() {
+        val target = song(1)
+        assertTrue(nowPlayingActions(target, emptySet(), listOf(target)).any {
+            it.action == NowPlayingAction.GO_TO_ARTIST
+        })
+        listOf(target to emptyList<Song>(), target.copy(artist = "<unknown>") to listOf(target))
+            .forEach { (current, library) ->
+                var dismissed = false
+                assertFalse(performNowPlayingAction(
+                    NowPlayingAction.GO_TO_ARTIST, target, current, library,
+                    onDismiss = { dismissed = true }, onToggleFavorite = {},
+                    onOpenAlbum = {}, onOpenLyrics = {},
+                    onOpenArtist = { error("Unresolved artist must not navigate") }
+                ))
+                assertTrue(dismissed)
+            }
+    }
+
+    @Test
+    fun sharedArtistOpeningRevalidatesCurrentTrackLibraryAndLatestMetadata() {
+        val target = song(1)
+        listOf(null, song(2), target.copy(volumeName = "other_volume")).forEach { current ->
+            assertFalse(openCurrentNowPlayingArtist(target, current, listOf(target)) {
+                error("Stale track must not navigate")
+            })
+        }
+        assertFalse(openCurrentNowPlayingArtist(target, target, emptyList()) {
+            error("Removed artist must not navigate")
+        })
+        val updated = target.copy(artist = "Updated Artist")
+        var opened: String? = null
+        assertTrue(openCurrentNowPlayingArtist(target, updated, listOf(updated)) { opened = it })
+        assertEquals("Updated Artist", opened)
     }
 
     private fun song(id: Long) = Song(

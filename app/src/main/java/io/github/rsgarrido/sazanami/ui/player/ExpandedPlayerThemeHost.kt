@@ -94,6 +94,9 @@ import io.github.rsgarrido.sazanami.ui.player.modern.defaultMorphTravelDistance
 import io.github.rsgarrido.sazanami.ui.player.modern.rememberModernArtworkPalette
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernExpandedArtworkPreloader
 import io.github.rsgarrido.sazanami.ui.player.modern.modernArtworkPreloadPolicy
+import io.github.rsgarrido.sazanami.ui.player.modern.modernArtistClickCallback
+import io.github.rsgarrido.sazanami.ui.player.modern.rememberModernPlayerVerticalDragModifier
+import io.github.rsgarrido.sazanami.data.membershipKey
 import kotlin.math.roundToInt
 
 @Composable
@@ -134,6 +137,7 @@ fun ExpandedPlayerThemeHost(
     activeQueueCount: Int,
     onSongClick: (Song, List<Song>) -> Unit,
     onOpenCurrentAlbumClick: (Song) -> Unit,
+    onOpenCurrentArtistClick: (Song) -> Unit,
     endpointBounds: PlayerEndpointBounds,
     defaultMorphBounds: DefaultPlayerMorphBounds,
     classicMorphBounds: ClassicWheelMorphBounds,
@@ -269,6 +273,12 @@ fun ExpandedPlayerThemeHost(
                             onPreviousClick = onPreviousClick,
                             onNextClick = onNextClick
                         )
+                    val artistAvailable = remember(currentSong, songs) {
+                        resolveNowPlayingArtistName(currentSong, songs) != null
+                    }
+                    val onOpenArtistClick: (() -> Unit)? = if (artistAvailable) {
+                        { onOpenCurrentArtistClick(currentSong) }
+                    } else null
                     DefaultPlayerMorph(
                         progress = playerMorphState.progress,
                         geometry = geometry,
@@ -279,7 +289,20 @@ fun ExpandedPlayerThemeHost(
                         style = modernStyle,
                         appearance = modernPlayerAppearance,
                         artworkPalette = artworkPalette,
-                        expandedArtworkRequestSizePx = expandedArtworkRequestSizePx
+                        expandedArtworkRequestSizePx = expandedArtworkRequestSizePx,
+                        onOpenArtistClick = modernArtistClickCallback(
+                            onClick = onOpenArtistClick,
+                            playerMorphState = playerMorphState,
+                            lyricsTransitionState = lyricsTransitionState,
+                            carouselOffsetX = carouselPresentation.state.offsetX,
+                            hasVisibleContent = geometry != null,
+                            isCurrentTrackDisplayed = carouselPresentation.songs.current.membershipKey() ==
+                                    currentSong.membershipKey()
+                        ),
+                        metadataGestureModifier = rememberModernPlayerVerticalDragModifier(
+                            playerMorphState, lyricsTransitionState, hostHeightPx,
+                            defaultMorphTravelDistance(endpointBounds, defaultMorphBounds)
+                        )
                     ) { visualState ->
                         ModernExpandedPlayer(
                             currentSong = currentSong,
@@ -302,6 +325,7 @@ fun ExpandedPlayerThemeHost(
                             onShuffleClick = onShuffleClick,
                             onRepeatClick = onRepeatClick,
                             onCollapseClick = onCollapseClick,
+                            onOpenArtistClick = onOpenArtistClick,
                             onOpenAlbumClick = if (
                                 playerMorphState.settledPresentation == PlayerPresentation.Expanded &&
                                 playerMorphState.progress == 1f &&

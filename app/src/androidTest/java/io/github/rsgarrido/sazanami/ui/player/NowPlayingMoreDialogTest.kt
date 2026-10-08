@@ -58,6 +58,7 @@ class NowPlayingMoreDialogTest {
         composeRule.onNodeWithText("Unknown Artist · Unknown Album").assertExists()
         composeRule.onNodeWithText("Add to favorites").assertExists()
         composeRule.onNodeWithText("Go to album").assertExists()
+        composeRule.onNodeWithText("Go to artist").assertDoesNotExist()
         composeRule.onNodeWithText("Lyrics").assertExists()
         composeRule.runOnIdle { favorites.value = setOf(target.membershipKey()) }
         composeRule.onNodeWithText("Add to favorites").assertDoesNotExist()
@@ -213,6 +214,33 @@ class NowPlayingMoreDialogTest {
         }
         composeRule.onAllNodesWithContentDescription("More actions").assertCountEquals(0)
         composeRule.onAllNodesWithContentDescription("Open queues").assertCountEquals(1)
+    }
+
+    @Test
+    fun libraryArtistRowUsesTheSharedActionAndDismissesBeforeNavigation() {
+        val target = song(1)
+        val visible = mutableStateOf(true)
+        val events = mutableListOf<String>()
+        composeRule.setContent {
+            MaterialTheme {
+                if (visible.value) NowPlayingMoreDialog(
+                    target, nowPlayingActions(target, emptySet(), listOf(target)),
+                    onDismiss = { visible.value = false },
+                    onAction = { action ->
+                        performNowPlayingAction(
+                            action, target, target, listOf(target),
+                            onDismiss = { events += "dismiss"; visible.value = false },
+                            onToggleFavorite = {}, onOpenAlbum = {}, onOpenLyrics = {},
+                            onOpenArtist = { events += "artist" },
+                            onFavoriteFeedback = { error("Artist must not emit Favorite feedback") }
+                        )
+                    }
+                )
+            }
+        }
+        composeRule.onNodeWithText("Go to artist").performClick()
+        composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertDoesNotExist()
+        composeRule.runOnIdle { assertEquals(listOf("dismiss", "artist"), events) }
     }
 
     private fun song(id: Long) = Song(

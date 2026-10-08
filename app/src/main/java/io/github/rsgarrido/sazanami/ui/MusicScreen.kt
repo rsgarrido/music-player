@@ -623,6 +623,17 @@ internal fun MusicScreen(
         }
     }
 
+    val onOpenCurrentArtistClick = rememberNowPlayingArtistNavigation(currentSong, songs) { artistName ->
+        navigateToNowPlayingArtist(
+            name = artistName,
+            navigationState = navigationState,
+            resetLyrics = lyricsTransitionState::snapToExpanded,
+            collapsePlayer = playerMorphState::collapse,
+            clearLibrarySelection = librarySelectionUi.onClear,
+            clearPlaylistSelection = { clearPlaylistSelection() }
+        )
+    }
+
     fun openCurrentAlbum(song: Song) {
         val albumKey = resolveNowPlayingAlbumKey(song, songs)
         if (albumKey != null) {
@@ -1778,7 +1789,8 @@ internal fun MusicScreen(
                                 onOpenAlbum = ::openCurrentAlbum,
                                 onOpenLyrics = lyricsTransitionState::openLyrics,
                                 isFavorite = target.membershipKey() in favoriteMembershipKeys,
-                                onFavoriteFeedback = favoriteFeedbackQueue::emit
+                                onFavoriteFeedback = favoriteFeedbackQueue::emit,
+                                onOpenArtist = onOpenCurrentArtistClick
                             )
                         } else {
                             overlayState.dismissNowPlayingMore()
@@ -1888,7 +1900,8 @@ internal fun MusicScreen(
                     pocketDiscMorphBounds = pocketDiscMorphBounds,
                     songs = songs,
                     onSongClick = onSongClick,
-                    onOpenCurrentAlbumClick = ::openCurrentAlbum
+                    onOpenCurrentAlbumClick = ::openCurrentAlbum,
+                    onOpenCurrentArtistClick = onOpenCurrentArtistClick
                 )
             }
         }
