@@ -70,6 +70,8 @@ import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.ui.player.PlayerPresentation
 import io.github.rsgarrido.sazanami.ui.player.isCurrentNowPlayingTarget
 import io.github.rsgarrido.sazanami.ui.player.performNowPlayingAction
+import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackQueue
+import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackEffect
 import io.github.rsgarrido.sazanami.ui.player.resolveNowPlayingAlbumKey
 import io.github.rsgarrido.sazanami.ui.library.FolderBrowseScrollStateHolder
 import io.github.rsgarrido.sazanami.ui.library.folderBrowseBackDestination
@@ -333,6 +335,8 @@ internal fun MusicScreen(
     spotifyImportActions: SpotifyImportUiActions
 ) {
     val context = LocalContext.current
+    val favoriteFeedbackQueue = remember { NowPlayingFavoriteFeedbackQueue() }
+    NowPlayingFavoriteFeedbackEffect(favoriteFeedbackQueue, snackbarHostState)
     val addPlaylistToQueueFailedText = stringResource(R.string.queue_add_playlist_failed)
     val librarySelectionSource = stringResource(R.string.library_selection_source)
     val librarySelectionUi = LocalLibrarySelectionUi.current
@@ -1772,7 +1776,9 @@ internal fun MusicScreen(
                                 onDismiss = overlayState::dismissNowPlayingMore,
                                 onToggleFavorite = onToggleFavoriteClick,
                                 onOpenAlbum = ::openCurrentAlbum,
-                                onOpenLyrics = lyricsTransitionState::openLyrics
+                                onOpenLyrics = lyricsTransitionState::openLyrics,
+                                isFavorite = target.membershipKey() in favoriteMembershipKeys,
+                                onFavoriteFeedback = favoriteFeedbackQueue::emit
                             )
                         } else {
                             overlayState.dismissNowPlayingMore()

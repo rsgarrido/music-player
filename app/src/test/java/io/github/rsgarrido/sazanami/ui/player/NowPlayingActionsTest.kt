@@ -97,6 +97,77 @@ class NowPlayingActionsTest {
         assertTrue(dismissed)
     }
 
+    @Test
+    fun favoriteFeedbackUsesSelectionStateAndFollowsDismissalAndTheOptimisticToggle() {
+        val target = song(1)
+        listOf(false, true).forEach { initiallyFavorite ->
+            val favoriteKeys = mutableSetOf<String>()
+            if (initiallyFavorite) favoriteKeys += target.membershipKey()
+            val events = mutableListOf<String>()
+            var feedback: NowPlayingFavoriteFeedback? = null
+            assertTrue(performNowPlayingAction(
+                action = NowPlayingAction.FAVORITE,
+                target = target,
+                currentSong = target,
+                librarySongs = listOf(target),
+                onDismiss = { events += "dismiss" },
+                onToggleFavorite = {
+                    assertSame(target, it)
+                    if (initiallyFavorite) favoriteKeys -= it.membershipKey()
+                    else favoriteKeys += it.membershipKey()
+                    events += "toggle"
+                },
+                onOpenAlbum = { error("Unexpected album action") },
+                onOpenLyrics = { error("Unexpected lyrics action") },
+                isFavorite = target.membershipKey() in favoriteKeys,
+                onFavoriteFeedback = {
+                    feedback = it
+                    events += "feedback"
+                }
+            ))
+            assertEquals(listOf("dismiss", "toggle", "feedback"), events)
+            assertEquals(!initiallyFavorite, target.membershipKey() in favoriteKeys)
+            assertEquals(
+                if (initiallyFavorite) NowPlayingFavoriteFeedback.REMOVED_FROM_FAVORITES
+                else NowPlayingFavoriteFeedback.ADDED_TO_FAVORITES,
+                feedback
+            )
+        }
+    }
+
+    @Test
+    fun albumAndLyricsNeverEmitFavoriteFeedback() {
+        val target = song(1)
+        listOf(NowPlayingAction.GO_TO_ALBUM, NowPlayingAction.LYRICS).forEach { action ->
+            val events = mutableListOf<String>()
+            assertTrue(performNowPlayingAction(
+                action, target, target, listOf(target),
+                onDismiss = { events += "dismiss" },
+                onToggleFavorite = { error("Unexpected favorite action") },
+                onOpenAlbum = { events += "album" },
+                onOpenLyrics = { events += "lyrics" },
+                isFavorite = true,
+                onFavoriteFeedback = { error("Only Favorite emits this feedback") }
+            ))
+            assertEquals(listOf("dismiss", if (action == NowPlayingAction.GO_TO_ALBUM) {
+                "album"
+            } else "lyrics"), events)
+        }
+    }
+
+    @Test
+    fun staleFavoriteTargetDoesNotToggleOrEmitFeedback() {
+        var dismissed = false
+        assertFalse(performNowPlayingAction(
+            NowPlayingAction.FAVORITE, song(1), song(2), listOf(song(1)),
+            onDismiss = { dismissed = true },
+            onToggleFavorite = { error("Stale favorite") },
+            onOpenAlbum = {}, onOpenLyrics = {},
+            onFavoriteFeedback = { error("Stale action must not confirm success") }
+        ))
+        assertTrue(dismissed)
+    }
+
     private fun song(id: Long) = Song(
         id, "Song", "Artist", "Album", 1, 120_000L, mock(Uri::class.java),
         "/music/$id.flac", "/music", null, volumeName = "external"

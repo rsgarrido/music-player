@@ -9,6 +9,8 @@ import io.github.rsgarrido.sazanami.ui.library.findLibraryAlbumGroupForSong
 
 enum class NowPlayingAction { FAVORITE, GO_TO_ALBUM, LYRICS }
 
+internal enum class NowPlayingFavoriteFeedback { ADDED_TO_FAVORITES, REMOVED_FROM_FAVORITES }
+
 internal data class NowPlayingActionItem(
     val action: NowPlayingAction,
     @StringRes val labelRes: Int,
@@ -39,7 +41,10 @@ internal fun nowPlayingActions(
     add(NowPlayingActionItem(NowPlayingAction.LYRICS, R.string.player_lyrics))
 }
 
-/** Dismiss first, then validate the captured target against the latest playback/library state. */
+/**
+ * Dismiss first, then validate the captured target against the latest playback/library state.
+ * [isFavorite] captures membership at selection time, before the optimistic toggle changes it.
+ */
 internal fun performNowPlayingAction(
     action: NowPlayingAction,
     target: Song,
@@ -48,12 +53,22 @@ internal fun performNowPlayingAction(
     onDismiss: () -> Unit,
     onToggleFavorite: (Song) -> Unit,
     onOpenAlbum: (Song) -> Unit,
-    onOpenLyrics: () -> Unit
+    onOpenLyrics: () -> Unit,
+    isFavorite: Boolean = false,
+    onFavoriteFeedback: (NowPlayingFavoriteFeedback) -> Unit = {}
 ): Boolean {
     onDismiss()
     if (!isCurrentNowPlayingTarget(target, currentSong)) return false
     when (action) {
-        NowPlayingAction.FAVORITE -> onToggleFavorite(target)
+        NowPlayingAction.FAVORITE -> {
+            val feedback = if (isFavorite) {
+                NowPlayingFavoriteFeedback.REMOVED_FROM_FAVORITES
+            } else {
+                NowPlayingFavoriteFeedback.ADDED_TO_FAVORITES
+            }
+            onToggleFavorite(target)
+            onFavoriteFeedback(feedback)
+        }
         NowPlayingAction.GO_TO_ALBUM -> {
             if (resolveNowPlayingAlbumKey(target, librarySongs) == null) return false
             onOpenAlbum(target)

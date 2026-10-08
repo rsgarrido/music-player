@@ -44,6 +44,8 @@
     <string name="player_disable_repeat">Desactivar repetición</string>
     <string name="player_remove_favorite">Quitar de favoritos</string>
     <string name="player_add_favorite">Agregar a favoritos</string>
+    <string name="player_added_to_favorites">Agregado a favoritos</string>
+    <string name="player_removed_from_favorites">Quitado de favoritos</string>
     <string name="player_wheel_now_playing">En reproducción</string>
     <string name="player_wheel_music">Música</string>
     <string name="player_wheel_menu">MENÚ</string>
