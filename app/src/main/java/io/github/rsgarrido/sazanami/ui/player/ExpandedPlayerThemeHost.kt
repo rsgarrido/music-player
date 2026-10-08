@@ -452,7 +452,6 @@ fun ExpandedPlayerThemeHost(
                         repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
-                        isCurrentSongFavorite = isCurrentSongFavorite,
                         upcomingSongs = upcomingSongs,
                         activeQueueSongs = activeQueueSongs,
                         onPlayPauseClick = onPlayPauseClick,
@@ -463,7 +462,7 @@ fun ExpandedPlayerThemeHost(
                         onRepeatClick = onRepeatClick,
                         onCollapseClick = onCollapseClick,
                         onOpenUpNextClick = onOpenQueueHubClick,
-                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        onMoreClick = onOpenMoreClick,
                         onSongClick = onSongClick,
                         tokens = tokens,
                         deckReveal = deckReveal,
@@ -530,7 +529,6 @@ fun ExpandedPlayerThemeHost(
                         repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
-                        isCurrentSongFavorite = isCurrentSongFavorite,
                         onPlayPauseClick = onPlayPauseClick,
                         onPreviousClick = onPreviousClick,
                         onNextClick = onNextClick,
@@ -547,7 +545,7 @@ fun ExpandedPlayerThemeHost(
                         ) {
                             currentSong?.let { song -> { onOpenCurrentAlbumClick(song) } }
                         } else null,
-                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        onMoreClick = onOpenMoreClick,
                         tokens = tokens,
                         renderShell = false,
                         displayReveal = displayReveal,
@@ -616,7 +614,6 @@ fun ExpandedPlayerThemeHost(
                         repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
-                        isCurrentSongFavorite = isCurrentSongFavorite,
                         onPlayPauseClick = onPlayPauseClick,
                         onPreviousClick = onPreviousClick,
                         onNextClick = onNextClick,
@@ -633,7 +630,7 @@ fun ExpandedPlayerThemeHost(
                         ) {
                             currentSong?.let { song -> { onOpenCurrentAlbumClick(song) } }
                         } else null,
-                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        onMoreClick = onOpenMoreClick,
                         tokens = tokens,
                         renderShell = false,
                         headerReveal = headerReveal,
@@ -719,7 +716,6 @@ fun ExpandedPlayerThemeHost(
                         repeatMode = repeatMode,
                         currentPosition = currentPosition,
                         duration = duration,
-                        isCurrentSongFavorite = isCurrentSongFavorite,
                         onPlayPauseClick = onPlayPauseClick,
                         onPreviousClick = onPreviousClick,
                         onNextClick = onNextClick,
@@ -731,7 +727,7 @@ fun ExpandedPlayerThemeHost(
                         onOpenAlbumClick = {
                             currentSong?.let(onOpenCurrentAlbumClick)
                         },
-                        onToggleFavoriteClick = onToggleFavoriteClick,
+                        onMoreClick = onOpenMoreClick,
                         tokens = tokens,
                         renderShell = false,
                         headerReveal = headerReveal,

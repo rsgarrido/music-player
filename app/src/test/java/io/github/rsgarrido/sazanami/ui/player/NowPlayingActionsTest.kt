@@ -3,6 +3,7 @@ package io.github.rsgarrido.sazanami.ui.player
 import android.net.Uri
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
+import io.github.rsgarrido.sazanami.data.PlayerTheme
 import io.github.rsgarrido.sazanami.data.membershipKey
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -13,6 +14,16 @@ import org.junit.Test
 import org.mockito.Mockito.mock
 
 class NowPlayingActionsTest {
+    @Test
+    fun sharedMoreSupportsDefaultAndFourRetroThemesButNeverClassicWheel() {
+        assertEquals(
+            setOf(PlayerTheme.DEFAULT, PlayerTheme.RETRO_RACK, PlayerTheme.POCKET_FLIP,
+                PlayerTheme.POCKET_CASSETTE, PlayerTheme.POCKET_DISC),
+            PlayerTheme.entries.filter(::supportsNowPlayingMore).toSet()
+        )
+        assertFalse(supportsNowPlayingMore(PlayerTheme.CLASSIC_WHEEL))
+    }
+
     @Test
     fun favoriteActionTracksTheSharedMembershipSet() {
         val target = song(1)

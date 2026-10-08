@@ -19,8 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -59,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsGestureRegion
+import io.github.rsgarrido.sazanami.ui.player.playerEndpointInput
 
 @Composable
 internal fun PocketFlipControlHalf(
@@ -66,7 +66,6 @@ internal fun PocketFlipControlHalf(
     isPlaying: Boolean,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
-    isCurrentSongFavorite: Boolean,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -74,7 +73,7 @@ internal fun PocketFlipControlHalf(
     onRepeatClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
     onCollapseClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit,
+    onMoreClick: () -> Unit,
     compact: Boolean,
     modifier: Modifier = Modifier,
     controlsReveal: Float = 1f,
@@ -117,9 +116,8 @@ internal fun PocketFlipControlHalf(
             PocketFlipActionCluster(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
-                isCurrentSongFavorite = isCurrentSongFavorite,
                 onPlayPauseClick = onPlayPauseClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
+                onMoreClick = onMoreClick,
                 compact = compact,
                 inputEnabled = inputEnabled,
                 morphBounds = morphBounds,
@@ -353,9 +351,8 @@ private fun PocketFlipPadHitTarget(
 private fun PocketFlipActionCluster(
     currentSong: Song?,
     isPlaying: Boolean,
-    isCurrentSongFavorite: Boolean,
     onPlayPauseClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit,
+    onMoreClick: () -> Unit,
     compact: Boolean,
     inputEnabled: Boolean,
     morphBounds: PocketFlipMorphBounds?,
@@ -398,17 +395,13 @@ private fun PocketFlipActionCluster(
                 }
             )
             PocketFlipRoundAction(
-                icon = if (isCurrentSongFavorite) {
-                    Icons.Filled.Favorite
-                } else {
-                    Icons.Filled.FavoriteBorder
-                },
+                icon = Icons.Filled.MoreVert,
                 markCount = 2,
-                contentDescription = stringResource(if (isCurrentSongFavorite) R.string.player_remove_favorite else R.string.player_add_favorite),
+                contentDescription = stringResource(R.string.player_more_actions),
                 faceSize = if (compact) 48.dp else 52.dp,
-                active = isCurrentSongFavorite,
-                enabled = inputEnabled,
-                onClick = { currentSong?.let(onToggleFavoriteClick) }
+                enabled = inputEnabled && currentSong != null,
+                onClick = onMoreClick,
+                modifier = Modifier.playerEndpointInput(inputEnabled && currentSong != null)
             )
         }
     }

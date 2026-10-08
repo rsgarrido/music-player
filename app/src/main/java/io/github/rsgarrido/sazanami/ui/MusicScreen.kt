@@ -70,6 +70,7 @@ import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.ui.player.PlayerPresentation
 import io.github.rsgarrido.sazanami.ui.player.isCurrentNowPlayingTarget
 import io.github.rsgarrido.sazanami.ui.player.performNowPlayingAction
+import io.github.rsgarrido.sazanami.ui.player.supportsNowPlayingMore
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackQueue
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackEffect
 import io.github.rsgarrido.sazanami.ui.player.resolveNowPlayingAlbumKey
@@ -422,7 +423,7 @@ internal fun MusicScreen(
     var isDiscardTagChangesDialogVisible by remember { mutableStateOf(false) }
     var selectedArtworkUriForTagEdit by remember { mutableStateOf<Uri?>(null) }
 
-    val canPresentNowPlayingMore = selectedPlayerTheme == PlayerTheme.DEFAULT &&
+    val canPresentNowPlayingMore = supportsNowPlayingMore(selectedPlayerTheme) &&
             playerMorphState.targetPresentation == PlayerPresentation.Expanded &&
             !isLyricsVisible && !lyricsTransitionState.lyricsOwnsInput &&
             songPendingTagEdit == null && batchMetadataEditorState == null &&

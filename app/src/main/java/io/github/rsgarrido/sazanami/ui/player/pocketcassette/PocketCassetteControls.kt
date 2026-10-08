@@ -22,8 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -72,6 +71,7 @@ import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsGestureRegion
+import io.github.rsgarrido.sazanami.ui.player.playerEndpointInput
 import kotlinx.coroutines.delay
 
 private const val TransportSeekStepMillis = 2_000
@@ -85,7 +85,6 @@ internal fun PocketCassetteControls(
     repeatMode: RepeatMode,
     currentPosition: Int,
     duration: Int,
-    isCurrentSongFavorite: Boolean,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -93,7 +92,7 @@ internal fun PocketCassetteControls(
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit,
+    onMoreClick: () -> Unit,
     compact: Boolean,
     modifier: Modifier = Modifier,
     controlsReveal: Float = 1f,
@@ -219,17 +218,12 @@ internal fun PocketCassetteControls(
                 modifier = Modifier.weight(1f)
             )
             PocketCassetteUtilityButton(
-                icon = if (isCurrentSongFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                label = stringResource(R.string.player_cassette_save),
-                contentDescription = if (isCurrentSongFavorite) {
-                    stringResource(R.string.player_remove_favorite)
-                } else {
-                    stringResource(R.string.player_add_favorite)
-                },
-                active = isCurrentSongFavorite,
+                icon = Icons.Filled.MoreVert,
+                label = stringResource(R.string.player_more_short),
+                contentDescription = stringResource(R.string.player_more_actions),
                 enabled = inputEnabled && currentSong != null,
-                onClick = { currentSong?.let(onToggleFavoriteClick) },
-                modifier = Modifier.weight(1f)
+                onClick = onMoreClick,
+                modifier = Modifier.weight(1f).playerEndpointInput(inputEnabled && currentSong != null)
             )
             PocketCassetteUtilityButton(
                 icon = Icons.AutoMirrored.Filled.List,

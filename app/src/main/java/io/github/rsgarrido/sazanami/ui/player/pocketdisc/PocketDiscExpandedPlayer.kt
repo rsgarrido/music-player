@@ -29,8 +29,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.FastRewind
 import androidx.compose.material.icons.filled.Pause
@@ -72,6 +71,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.rsgarrido.sazanami.ui.player.RetainedArtworkImage
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsGestureRegion
+import io.github.rsgarrido.sazanami.ui.player.playerEndpointInput
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.knownDiscNumber
 import io.github.rsgarrido.sazanami.data.trackNumberWithinDisc
@@ -97,7 +97,6 @@ fun PocketDiscExpandedPlayer(
     repeatMode: RepeatMode,
     currentPosition: Int,
     duration: Int,
-    isCurrentSongFavorite: Boolean,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -107,7 +106,7 @@ fun PocketDiscExpandedPlayer(
     onCollapseClick: () -> Unit,
     onOpenQueueHubClick: () -> Unit,
     onOpenAlbumClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit,
+    onMoreClick: () -> Unit,
     tokens: PlayerThemeTokens = PocketDiscDefaultTokens,
     renderShell: Boolean = true,
     headerReveal: Float = 1f,
@@ -255,11 +254,10 @@ fun PocketDiscExpandedPlayer(
                     currentSong = currentSong,
                     isShuffleEnabled = isShuffleEnabled,
                     repeatMode = repeatMode,
-                    isCurrentSongFavorite = isCurrentSongFavorite,
                     onShuffleClick = onShuffleClick,
                     onRepeatClick = onRepeatClick,
                     onOpenQueueHubClick = onOpenQueueHubClick,
-                    onToggleFavoriteClick = onToggleFavoriteClick,
+                    onMoreClick = onMoreClick,
                     enabled = inputEnabled,
                     compact = compact,
                     modifier = Modifier
@@ -675,11 +673,10 @@ private fun PocketDiscUtilityControls(
     currentSong: Song?,
     isShuffleEnabled: Boolean,
     repeatMode: RepeatMode,
-    isCurrentSongFavorite: Boolean,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
     onOpenQueueHubClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit,
+    onMoreClick: () -> Unit,
     enabled: Boolean,
     compact: Boolean,
     modifier: Modifier = Modifier
@@ -723,15 +720,15 @@ private fun PocketDiscUtilityControls(
             modifier = Modifier.weight(1f)
         ) { Icon(Icons.Filled.QueueMusic, stringResource(R.string.player_open_queues), tint = it) }
         PocketDiscUtilityButton(
-            label = stringResource(R.string.player_disc_favorite),
-            active = isCurrentSongFavorite,
+            label = stringResource(R.string.player_more_short),
+            active = false,
             enabled = enabled && currentSong != null,
-            onClick = { currentSong?.let(onToggleFavoriteClick) },
-            modifier = Modifier.weight(1f)
+            onClick = onMoreClick,
+            modifier = Modifier.weight(1f).playerEndpointInput(enabled && currentSong != null)
         ) { tint ->
             Icon(
-                if (isCurrentSongFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-            stringResource(if (isCurrentSongFavorite) R.string.player_remove_favorite else R.string.player_add_favorite),
+                Icons.Filled.MoreVert,
+                stringResource(R.string.player_more_actions),
                 tint = tint
             )
         }

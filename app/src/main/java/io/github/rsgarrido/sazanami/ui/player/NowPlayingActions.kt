@@ -3,6 +3,7 @@ package io.github.rsgarrido.sazanami.ui.player
 import androidx.annotation.StringRes
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.Song
+import io.github.rsgarrido.sazanami.data.PlayerTheme
 import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.data.artistIdentity
 import io.github.rsgarrido.sazanami.data.normalizeArtistName
@@ -13,6 +14,12 @@ import io.github.rsgarrido.sazanami.ui.library.findLibraryAlbumGroupForSong
 enum class NowPlayingAction { FAVORITE, GO_TO_ARTIST, GO_TO_ALBUM, LYRICS }
 
 internal enum class NowPlayingFavoriteFeedback { ADDED_TO_FAVORITES, REMOVED_FROM_FAVORITES }
+
+internal fun supportsNowPlayingMore(theme: PlayerTheme): Boolean = when (theme) {
+    PlayerTheme.DEFAULT, PlayerTheme.RETRO_RACK, PlayerTheme.POCKET_FLIP,
+    PlayerTheme.POCKET_CASSETTE, PlayerTheme.POCKET_DISC -> true
+    PlayerTheme.CLASSIC_WHEEL -> false
+}
 
 internal data class NowPlayingActionItem(
     val action: NowPlayingAction,

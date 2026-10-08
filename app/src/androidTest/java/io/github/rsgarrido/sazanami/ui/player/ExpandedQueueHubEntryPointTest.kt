@@ -4,22 +4,45 @@ import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.assertDoesNotExist
 import io.github.rsgarrido.sazanami.data.Song
+import io.github.rsgarrido.sazanami.data.PlayerTheme
+import io.github.rsgarrido.sazanami.data.membershipKey
+import io.github.rsgarrido.sazanami.ui.blockPlayerInput
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.ui.player.classicwheel.ClassicWheelNowPlayingDisplay
+import io.github.rsgarrido.sazanami.ui.player.classicwheel.ClassicWheelMenuState
+import io.github.rsgarrido.sazanami.ui.player.classicwheel.ClassicWheelMorphBounds
+import io.github.rsgarrido.sazanami.ui.player.modern.DefaultPlayerMorphBounds
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernQueueHubButton
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernMoreButton
 import io.github.rsgarrido.sazanami.ui.player.pocketcassette.PocketCassetteControls
+import io.github.rsgarrido.sazanami.ui.player.pocketcassette.PocketCassetteMorphBounds
 import io.github.rsgarrido.sazanami.ui.player.pocketflip.PocketFlipControlHalf
+import io.github.rsgarrido.sazanami.ui.player.pocketflip.PocketFlipMorphBounds
+import io.github.rsgarrido.sazanami.ui.player.pocketdisc.PocketDiscMorphBounds
 import io.github.rsgarrido.sazanami.ui.player.retrorack.RetroRackExpandedPlayer
+import io.github.rsgarrido.sazanami.ui.player.retrorack.RetroRackMorphBounds
+import io.github.rsgarrido.sazanami.ui.player.theme.defaultTokens
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -27,6 +50,8 @@ import org.junit.Test
 class ExpandedQueueHubEntryPointTest {
     @get:Rule
     val composeRule = createAndroidComposeRule<ComponentActivity>()
+    private val retroThemes = listOf(PlayerTheme.RETRO_RACK, PlayerTheme.POCKET_FLIP,
+        PlayerTheme.POCKET_CASSETTE, PlayerTheme.POCKET_DISC)
 
     @Test
     fun modernExpandedControlAreaHasOneQueueHubAction() {
@@ -117,7 +142,6 @@ class ExpandedQueueHubEntryPointTest {
                     repeatMode = RepeatMode.OFF,
                     currentPosition = 0,
                     duration = 0,
-                    isCurrentSongFavorite = false,
                     upcomingSongs = emptyList(),
                     onPlayPauseClick = {},
                     onPreviousClick = {},
@@ -127,7 +151,7 @@ class ExpandedQueueHubEntryPointTest {
                     onRepeatClick = {},
                     onCollapseClick = {},
                     onOpenUpNextClick = { openCount += 1 },
-                    onToggleFavoriteClick = {},
+                    onMoreClick = {},
                     onSongClick = { _, _ -> }
                 )
             }
@@ -150,7 +174,6 @@ class ExpandedQueueHubEntryPointTest {
                     repeatMode = RepeatMode.OFF,
                     currentPosition = 0,
                     duration = 180_000,
-                    isCurrentSongFavorite = false,
                     upcomingSongs = emptyList(),
                     activeQueueSongs = listOf(duplicate, song(8L, "Middle"), duplicate),
                     onPlayPauseClick = {},
@@ -161,7 +184,7 @@ class ExpandedQueueHubEntryPointTest {
                     onRepeatClick = {},
                     onCollapseClick = {},
                     onOpenUpNextClick = {},
-                    onToggleFavoriteClick = {},
+                    onMoreClick = {},
                     onSongClick = { _, _ -> }
                 )
             }
@@ -183,7 +206,6 @@ class ExpandedQueueHubEntryPointTest {
                     isPlaying = false,
                     isShuffleEnabled = false,
                     repeatMode = RepeatMode.OFF,
-                    isCurrentSongFavorite = false,
                     onPlayPauseClick = {},
                     onPreviousClick = {},
                     onNextClick = {},
@@ -191,7 +213,7 @@ class ExpandedQueueHubEntryPointTest {
                     onRepeatClick = {},
                     onOpenUpNextClick = { flipOpenCount += 1 },
                     onCollapseClick = {},
-                    onToggleFavoriteClick = {},
+                    onMoreClick = {},
                     compact = true,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -213,7 +235,6 @@ class ExpandedQueueHubEntryPointTest {
                     repeatMode = RepeatMode.OFF,
                     currentPosition = 0,
                     duration = 0,
-                    isCurrentSongFavorite = false,
                     onPlayPauseClick = {},
                     onPreviousClick = {},
                     onNextClick = {},
@@ -221,13 +242,159 @@ class ExpandedQueueHubEntryPointTest {
                     onShuffleClick = {},
                     onRepeatClick = {},
                     onOpenUpNextClick = { cassetteOpenCount += 1 },
-                    onToggleFavoriteClick = {},
+                    onMoreClick = {},
                     compact = true
                 )
             }
         }
         assertSingleQueueHubActionAndClick()
         composeRule.runOnIdle { assertEquals(1, cassetteOpenCount) }
+    }
+
+    @Test
+    fun allFourRetroThemesOpenTheSharedMoreDialogAndKeepQueueAndFavoriteIndependent() {
+        val theme = mutableStateOf(PlayerTheme.RETRO_RACK)
+        val target = song(1, "Current track")
+        val moreTarget = mutableStateOf<Song?>(null)
+        val favorites = mutableStateOf(emptySet<String>())
+        val feedback = mutableListOf<NowPlayingFavoriteFeedback>()
+        var moreCount = 0
+        var queueCount = 0
+        var favoriteCount = 0
+        val toggle: (Song) -> Unit = {
+            favoriteCount++
+            favorites.value = if (it.membershipKey() in favorites.value) emptySet()
+                else setOf(it.membershipKey())
+        }
+        composeRule.setContent {
+            MaterialTheme {
+                val player = rememberPlayerMorphState(PlayerPresentation.Expanded)
+                val lyrics = rememberPlayerLyricsTransitionState(false) {}
+                RetroThemeHostFixture(
+                    theme.value, target, player, lyrics,
+                    isFavorite = target.membershipKey() in favorites.value,
+                    onMore = { moreCount++; moreTarget.value = target },
+                    onQueue = { queueCount++ }, onFavorite = toggle
+                )
+                moreTarget.value?.let { captured ->
+                    NowPlayingMoreDialog(
+                        captured, nowPlayingActions(captured, favorites.value, listOf(target)),
+                        onDismiss = { moreTarget.value = null },
+                        onAction = { action ->
+                            performNowPlayingAction(
+                                action, captured, target, listOf(target),
+                                onDismiss = { moreTarget.value = null }, onToggleFavorite = toggle,
+                                onOpenAlbum = {}, onOpenLyrics = {},
+                                isFavorite = captured.membershipKey() in favorites.value,
+                                onFavoriteFeedback = { feedback += it }, onOpenArtist = {}
+                            )
+                        }
+                    )
+                }
+            }
+        }
+        retroThemes.forEachIndexed { index, retroTheme ->
+            composeRule.runOnIdle { theme.value = retroTheme; favorites.value = emptySet() }
+            composeRule.onAllNodesWithContentDescription("More actions").assertCountEquals(1)
+            composeRule.onAllNodesWithContentDescription("Add to favorites").assertCountEquals(0)
+            composeRule.onAllNodesWithContentDescription("Remove from favorites").assertCountEquals(0)
+            composeRule.onAllNodesWithText("SAVE").assertCountEquals(0)
+            val moreNode = composeRule.onNodeWithContentDescription("More actions")
+            assertEquals(Role.Button, moreNode.fetchSemanticsNode().config[SemanticsProperties.Role])
+            moreNode.performClick()
+            composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertExists()
+            composeRule.onNodeWithText("Go to artist").assertExists()
+            composeRule.onNodeWithText("Go to album").assertExists()
+            composeRule.onNodeWithText("Lyrics").assertExists()
+            composeRule.runOnIdle {
+                assertEquals(index + 1, moreCount)
+                assertEquals(index, queueCount)
+                assertEquals(index, favoriteCount)
+            }
+            composeRule.onNodeWithText("Add to favorites").performClick()
+            composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertDoesNotExist()
+            assertSingleQueueHubActionAndClick()
+            composeRule.runOnIdle {
+                assertEquals(index + 1, moreCount)
+                assertEquals(index + 1, queueCount)
+                assertEquals(index + 1, favoriteCount)
+                assertEquals(NowPlayingFavoriteFeedback.ADDED_TO_FAVORITES, feedback.last())
+            }
+        }
+        composeRule.runOnIdle { theme.value = PlayerTheme.CLASSIC_WHEEL; favorites.value = emptySet() }
+        composeRule.onAllNodesWithContentDescription("More actions").assertCountEquals(0)
+        composeRule.onNodeWithContentDescription("Add to favorites").performClick()
+        composeRule.runOnIdle { assertEquals(5, favoriteCount); assertEquals(4, moreCount) }
+    }
+
+    @Test
+    fun retroMorphHiddenAndLyricsBlockedLayersExposeNoMoreAction() {
+        val theme = mutableStateOf(PlayerTheme.RETRO_RACK)
+        lateinit var player: PlayerMorphState
+        lateinit var lyrics: PlayerLyricsTransitionState
+        composeRule.setContent {
+            MaterialTheme {
+                val scope = rememberCoroutineScope()
+                player = remember { PlayerMorphState(PlayerPresentation.Collapsed, scope) }
+                lyrics = remember { PlayerLyricsTransitionState(false, scope) {} }
+                RetroThemeHostFixture(
+                    theme.value, song(1, "Track"), player, lyrics, false,
+                    onMore = { error("Inactive More") }, onQueue = {}, onFavorite = {}
+                )
+            }
+        }
+        retroThemes.forEach { retroTheme ->
+            composeRule.runOnIdle { theme.value = retroTheme }
+            composeRule.onAllNodesWithContentDescription("More actions").assertCountEquals(0)
+        }
+        composeRule.runOnIdle {
+            player.snapTo(PlayerPresentation.Expanded)
+            lyrics.beginOpeningDrag()
+            lyrics.dragOpeningBy(-400f, 800f)
+        }
+        retroThemes.forEach { retroTheme ->
+            composeRule.runOnIdle { theme.value = retroTheme }
+            composeRule.onAllNodesWithContentDescription("More actions").assertCountEquals(0)
+        }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun RetroThemeHostFixture(
+        theme: PlayerTheme,
+        target: Song,
+        player: PlayerMorphState,
+        lyrics: PlayerLyricsTransitionState,
+        isFavorite: Boolean,
+        onMore: () -> Unit,
+        onQueue: () -> Unit,
+        onFavorite: (Song) -> Unit
+    ) {
+        Box(Modifier.fillMaxSize().blockPlayerInput(lyrics.lyricsOwnsInput)) {
+            ExpandedPlayerThemeHost(
+                selectedPlayerTheme = theme, tokens = theme.defaultTokens(), currentSong = target,
+                previousPreviewSong = null, nextPreviewSong = null,
+                modernArtworkTransitionStyle = ModernArtworkTransitionStyle.SLIDE,
+                modernPlayerAppearance = ModernPlayerAppearance.Default,
+                isVisualizerWorkAllowed = false, isPlaying = false, isShuffleEnabled = false,
+                repeatMode = RepeatMode.OFF, currentPosition = 0, duration = 180_000,
+                isCurrentSongFavorite = isFavorite, onPlayPauseClick = {}, onPreviousClick = {},
+                onNextClick = {}, onSeekChange = {}, onShuffleClick = {}, onRepeatClick = {},
+                onCollapseClick = {}, playerMorphState = player, lyricsTransitionState = lyrics,
+                lyricsGestureRegion = remember { PlayerLyricsGestureRegion() },
+                onOpenQueueHubClick = onQueue, onOpenSleepTimerClick = {}, onOpenMoreClick = onMore,
+                onToggleFavoriteClick = onFavorite, songs = listOf(target), upcomingSongs = emptyList(),
+                activeQueueSongs = listOf(target), activeQueueName = "Queue", activeQueuePosition = 1,
+                activeQueueCount = 1, onSongClick = { _, _ -> }, onOpenCurrentAlbumClick = {},
+                onOpenCurrentArtistClick = {}, endpointBounds = remember { PlayerEndpointBounds() },
+                defaultMorphBounds = remember { DefaultPlayerMorphBounds() },
+                classicMorphBounds = remember { ClassicWheelMorphBounds() },
+                classicWheelMenuState = remember { ClassicWheelMenuState() },
+                retroRackMorphBounds = remember { RetroRackMorphBounds() },
+                pocketFlipMorphBounds = remember { PocketFlipMorphBounds() },
+                pocketCassetteMorphBounds = remember { PocketCassetteMorphBounds() },
+                pocketDiscMorphBounds = remember { PocketDiscMorphBounds() }
+            )
+        }
     }
 
     private fun assertSingleQueueHubActionAndClick() {

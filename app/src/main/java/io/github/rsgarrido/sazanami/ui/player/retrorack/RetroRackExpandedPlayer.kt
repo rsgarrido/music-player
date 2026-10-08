@@ -29,8 +29,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.List
@@ -66,6 +65,8 @@ import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
@@ -92,7 +93,6 @@ fun RetroRackExpandedPlayer(
     repeatMode: RepeatMode,
     currentPosition: Int,
     duration: Int,
-    isCurrentSongFavorite: Boolean,
     upcomingSongs: List<Song>,
     activeQueueSongs: List<Song> = listOfNotNull(currentSong) + upcomingSongs,
     onPlayPauseClick: () -> Unit,
@@ -103,7 +103,7 @@ fun RetroRackExpandedPlayer(
     onRepeatClick: () -> Unit,
     onCollapseClick: () -> Unit,
     onOpenUpNextClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit,
+    onMoreClick: () -> Unit,
     onSongClick: (Song, List<Song>) -> Unit,
     tokens: PlayerThemeTokens = RetroRackDefaultTokens,
     deckReveal: Float = 1f,
@@ -192,14 +192,13 @@ fun RetroRackExpandedPlayer(
                 repeatMode = repeatMode,
                 currentPosition = currentPosition,
                 duration = duration,
-                isCurrentSongFavorite = isCurrentSongFavorite,
                 onPlayPauseClick = onPlayPauseClick,
                 onPreviousClick = onPreviousClick,
                 onNextClick = onNextClick,
                 onSeekChange = onSeekChange,
                 onShuffleClick = onShuffleClick,
                 onRepeatClick = onRepeatClick,
-                onToggleFavoriteClick = onToggleFavoriteClick,
+                onMoreClick = onMoreClick,
                 compact = compact,
                 controlsReveal = controlsReveal,
                 inputEnabled = inputEnabled,
@@ -270,14 +269,13 @@ private fun MainDeck(
     repeatMode: RepeatMode,
     currentPosition: Int,
     duration: Int,
-    isCurrentSongFavorite: Boolean,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
     onSeekChange: (Int) -> Unit,
     onShuffleClick: () -> Unit,
     onRepeatClick: () -> Unit,
-    onToggleFavoriteClick: (Song) -> Unit,
+    onMoreClick: () -> Unit,
     compact: Boolean,
     controlsReveal: Float,
     inputEnabled: Boolean,
@@ -457,16 +455,14 @@ private fun MainDeck(
                 onClick = onRepeatClick
             )
             RackIconButton(
-                icon = if (isCurrentSongFavorite) {
-                    Icons.Filled.Favorite
-                } else {
-                    Icons.Filled.FavoriteBorder
-                },
-                label = stringResource(R.string.player_rack_favorite),
-                contentDescription = stringResource(if (isCurrentSongFavorite) R.string.player_remove_favorite else R.string.player_add_favorite),
-                active = isCurrentSongFavorite,
+                icon = Icons.Filled.MoreVert,
+                label = stringResource(R.string.player_more_short),
+                contentDescription = stringResource(R.string.player_more_actions),
                 compact = compact,
-                onClick = { currentSong?.let(onToggleFavoriteClick) }
+                onClick = onMoreClick,
+                modifier = Modifier
+                    .playerEndpointInput(inputEnabled && currentSong != null && controlsReveal > .99f)
+                    .semantics { role = Role.Button }
             )
         }
     }
