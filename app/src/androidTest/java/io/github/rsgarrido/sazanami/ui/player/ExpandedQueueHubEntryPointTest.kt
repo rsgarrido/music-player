@@ -310,7 +310,8 @@ class ExpandedQueueHubEntryPointTest {
             composeRule.onNodeWithText("Add to playlist").assertExists()
             composeRule.onNodeWithContentDescription("Rate song").assertExists()
             composeRule.onNodeWithContentDescription("Track information").assertExists()
-            composeRule.onNodeWithContentDescription("Lyrics").assertExists()
+            composeRule.onNodeWithContentDescription("Sleep Timer").assertExists()
+            composeRule.onNodeWithText("Lyrics").assertExists()
             composeRule.runOnIdle {
                 assertEquals(index + 1, moreCount)
                 assertEquals(index, queueCount)

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Subject
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material3.HorizontalDivider
@@ -46,6 +47,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -161,14 +163,19 @@ internal fun NowPlayingMoreDialog(
                 ) {
                     actions.filter { it.action.isQuickAction }.forEach { item ->
                         val label = stringResource(item.labelRes)
+                        val timerStateDescription = if (item.action == NowPlayingAction.SLEEP_TIMER) {
+                            stringResource(if (item.isActive) R.string.player_sleep_timer_active else R.string.sleep_timer_inactive)
+                        } else null
                         Surface(
                             onClick = { onAction(item.action) },
                             modifier = Modifier.weight(1f).heightIn(min = 56.dp).semantics {
                                 contentDescription = label
                                 role = Role.Button
-                                if (item.action == NowPlayingAction.FAVORITE || item.action == NowPlayingAction.RATE_SONG) {
+                                if (item.action == NowPlayingAction.FAVORITE || item.action == NowPlayingAction.RATE_SONG ||
+                                    item.action == NowPlayingAction.SLEEP_TIMER) {
                                     selected = item.isActive
                                 }
+                                timerStateDescription?.let { stateDescription = it }
                             },
                             shape = RoundedCornerShape(12.dp),
                             color = if (item.isActive) AppShellAccent.copy(alpha = 0.12f)
@@ -197,5 +204,6 @@ private fun nowPlayingActionIcon(item: NowPlayingActionItem): ImageVector = when
     NowPlayingAction.FAVORITE -> if (item.isActive) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder
     NowPlayingAction.RATE_SONG -> if (item.isActive) Icons.Filled.Star else Icons.Outlined.StarOutline
     NowPlayingAction.LYRICS -> Icons.Filled.Subject
+    NowPlayingAction.SLEEP_TIMER -> Icons.Filled.Timer
     NowPlayingAction.TRACK_INFORMATION -> Icons.Filled.Info
 }

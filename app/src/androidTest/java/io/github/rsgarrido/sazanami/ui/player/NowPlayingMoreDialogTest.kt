@@ -1,6 +1,7 @@
 package io.github.rsgarrido.sazanami.ui.player
 
 import android.net.Uri
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -12,6 +13,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
@@ -53,6 +56,7 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.util.Locale
 
 class NowPlayingMoreDialogTest {
     @get:Rule
@@ -74,7 +78,7 @@ class NowPlayingMoreDialogTest {
         composeRule.onNodeWithContentDescription("Add to favorites").assertExists()
         composeRule.onNodeWithText("Go to album").assertExists()
         composeRule.onNodeWithText("Go to artist").assertDoesNotExist()
-        composeRule.onNodeWithContentDescription("Lyrics").assertExists()
+        composeRule.onNodeWithText("Lyrics").assertExists()
         composeRule.runOnIdle { favorites.value = setOf(target.membershipKey()) }
         composeRule.onNodeWithContentDescription("Add to favorites").assertDoesNotExist()
         composeRule.onNodeWithContentDescription("Remove from favorites").assertExists()
@@ -184,7 +188,7 @@ class NowPlayingMoreDialogTest {
                 }
             }
         }
-        composeRule.onNodeWithContentDescription("Lyrics").performClick()
+        composeRule.onNodeWithText("Lyrics").performClick()
         composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertDoesNotExist()
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.runOnIdle { assertEquals(PlayerSurfaceState.LYRICS, lyrics.settledSurface) }
@@ -267,12 +271,12 @@ class NowPlayingMoreDialogTest {
                     nowPlayingActions(target, setOf(target.membershipKey()), listOf(target), isRated = true), {}, {})
             }
         }
-        composeRule.onNodeWithTag(NowPlayingMoreWorkflowRowsTag).onChildren().assertCountEquals(3)
+        composeRule.onNodeWithTag(NowPlayingMoreWorkflowRowsTag).onChildren().assertCountEquals(4)
         composeRule.onNodeWithTag(NowPlayingMoreQuickActionsTag).onChildren().assertCountEquals(4)
-        val workflowLabels = listOf("Go to artist", "Go to album", "Add to playlist")
+        val workflowLabels = listOf("Go to artist", "Go to album", "Add to playlist", "Lyrics")
         val workflowTops = workflowLabels.map { composeRule.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
         assertTrue(workflowTops.zipWithNext().all { (first, second) -> first < second })
-        val quickLabels = listOf("Remove from favorites", "Rate song", "Lyrics", "Track information")
+        val quickLabels = listOf("Remove from favorites", "Rate song", "Sleep Timer", "Track information")
         val quickNodes = quickLabels.map { composeRule.onNodeWithContentDescription(it).fetchSemanticsNode() }
         val quickBounds = quickNodes.map { it.boundsInRoot }
         val density = composeRule.activity.resources.displayMetrics.density
@@ -287,6 +291,42 @@ class NowPlayingMoreDialogTest {
         composeRule.onNodeWithContentDescription("Rate song").assertIsSelected()
         composeRule.onNodeWithContentDescription("Remove from favorites").assertIsSelected()
         composeRule.onNodeWithTag("star_rating_control").assertDoesNotExist()
+    }
+
+    @Test
+    fun timerButtonHasLocalizedButtonAndLiveStateSemanticsWithoutVisibleCaption() {
+        val language = mutableStateOf("en")
+        val active = mutableStateOf(false)
+        val target = song(1)
+        composeRule.setContent {
+            val context = LocalContext.current
+            val configuration = Configuration(LocalConfiguration.current).apply { setLocale(Locale(language.value)) }
+            CompositionLocalProvider(
+                LocalContext provides context.createConfigurationContext(configuration),
+                LocalConfiguration provides configuration
+            ) {
+                MaterialTheme {
+                    NowPlayingMoreDialog(target,
+                        nowPlayingActions(target, emptySet(), listOf(target), isSleepTimerActive = active.value), {}, {})
+                }
+            }
+        }
+        listOf("en", "es").forEach { locale ->
+            composeRule.runOnIdle { language.value = locale; active.value = false }
+            val label = if (locale == "en") "Sleep Timer" else "Temporizador de apagado"
+            val inactive = if (locale == "en") "No sleep timer" else "No hay un temporizador activo"
+            val activeDescription = if (locale == "en") "Sleep timer active" else "Temporizador de apagado activo"
+            val button = composeRule.onNodeWithContentDescription(label)
+            val inactiveNode = button.fetchSemanticsNode()
+            assertEquals(Role.Button, inactiveNode.config[SemanticsProperties.Role])
+            assertFalse(inactiveNode.config[SemanticsProperties.Selected])
+            assertEquals(inactive, inactiveNode.config[SemanticsProperties.StateDescription])
+            composeRule.onNodeWithText(label).assertDoesNotExist()
+            composeRule.runOnIdle { active.value = true }
+            button.assertIsSelected()
+            assertEquals(activeDescription, button.fetchSemanticsNode().config[SemanticsProperties.StateDescription])
+            composeRule.onNodeWithTag(NowPlayingMoreQuickActionsTag).onChildren().assertCountEquals(4)
+        }
     }
 
     @Test

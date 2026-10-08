@@ -5,6 +5,8 @@ import android.net.Uri
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.ui.player.PlayerMorphState
 import io.github.rsgarrido.sazanami.ui.player.PlayerPresentation
+import io.github.rsgarrido.sazanami.ui.player.NowPlayingAction
+import io.github.rsgarrido.sazanami.ui.player.performNowPlayingAction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertFalse
@@ -52,6 +54,32 @@ class MusicRouteStateTest {
         assertFalse(state.isExpandedUpNextSheetVisible.value)
         assertTrue(state.isSleepTimerDialogVisible.value)
         assertTrue(state.playerMorphState.isExpandedOrTransitioning)
+    }
+
+    @Test
+    fun moreTimerActionDismissesFirstAndReturnsToExpandedWithoutSettingsNavigation() {
+        val state = expandedOverlayState()
+        val target = song(1)
+        state.openNowPlayingMore(target)
+        assertTrue(performNowPlayingAction(
+            NowPlayingAction.SLEEP_TIMER, target, target, listOf(target),
+            onDismiss = state::dismissNowPlayingMore,
+            onToggleFavorite = {}, onOpenAlbum = {}, onOpenLyrics = {},
+            onOpenSleepTimer = {
+                assertFalse(state.isNowPlayingMoreVisible.value)
+                assertNull(state.nowPlayingMoreTarget)
+                state.isSleepTimerDialogVisible.value = true
+            }
+        ))
+        assertTrue(state.isSleepTimerDialogVisible.value)
+        assertFalse(state.isSettingsScreenVisible.value)
+        assertFalse(state.isQueueHubVisible.value)
+        assertFalse(state.isExpandedUpNextSheetVisible.value)
+        assertEquals(PlayerPresentation.Expanded, state.playerMorphState.targetPresentation)
+        state.isSleepTimerDialogVisible.value = false
+        assertFalse(state.isNowPlayingMoreVisible.value)
+        assertEquals(PlayerPresentation.Expanded, state.playerMorphState.targetPresentation)
+        assertEquals(1f, state.playerMorphState.progress, 0f)
     }
 
     @Test

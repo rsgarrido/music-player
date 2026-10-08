@@ -303,8 +303,8 @@ fun MusicScreenOverlays(
     if (nowPlayingMoreTarget != null) {
         val ratings = LocalSongRatingUi.current.state.ratingsByReferenceKey
         val isRated = (ratings[nowPlayingMoreTarget.membershipKey()] ?: 0) in 1..5
-        val actions = remember(nowPlayingMoreTarget, favoriteMembershipKeys, songs, isRated) {
-            nowPlayingActions(nowPlayingMoreTarget, favoriteMembershipKeys, songs, isRated)
+        val actions = remember(nowPlayingMoreTarget, favoriteMembershipKeys, songs, isRated, isSleepTimerActive) {
+            nowPlayingActions(nowPlayingMoreTarget, favoriteMembershipKeys, songs, isRated, isSleepTimerActive)
         }
         NowPlayingMoreDialog(
             target = nowPlayingMoreTarget,

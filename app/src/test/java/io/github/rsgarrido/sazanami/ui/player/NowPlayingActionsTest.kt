@@ -42,13 +42,14 @@ class NowPlayingActionsTest {
         val differentFile = song(2).copy(folderPath = "/other", filePath = "/other/2.flac")
         assertNull(resolveNowPlayingAlbumKey(target, listOf(differentFile)))
         assertEquals(
-            listOf(NowPlayingAction.GO_TO_ARTIST, NowPlayingAction.ADD_TO_PLAYLIST, NowPlayingAction.FAVORITE,
-                NowPlayingAction.RATE_SONG, NowPlayingAction.LYRICS, NowPlayingAction.TRACK_INFORMATION),
+            listOf(NowPlayingAction.GO_TO_ARTIST, NowPlayingAction.ADD_TO_PLAYLIST, NowPlayingAction.LYRICS,
+                NowPlayingAction.FAVORITE, NowPlayingAction.RATE_SONG, NowPlayingAction.SLEEP_TIMER, NowPlayingAction.TRACK_INFORMATION),
             nowPlayingActions(target, emptySet(), listOf(differentFile)).map { it.action }
         )
         assertEquals(
             listOf(NowPlayingAction.GO_TO_ARTIST, NowPlayingAction.GO_TO_ALBUM, NowPlayingAction.ADD_TO_PLAYLIST,
-                NowPlayingAction.FAVORITE, NowPlayingAction.RATE_SONG, NowPlayingAction.LYRICS, NowPlayingAction.TRACK_INFORMATION),
+                NowPlayingAction.LYRICS, NowPlayingAction.FAVORITE, NowPlayingAction.RATE_SONG,
+                NowPlayingAction.SLEEP_TIMER, NowPlayingAction.TRACK_INFORMATION),
             nowPlayingActions(target, emptySet(), listOf(target, differentFile)).map { it.action }
         )
     }
@@ -67,7 +68,8 @@ class NowPlayingActionsTest {
                 onOpenArtist = { assertSame(target, it); events += "artist" },
                 onTrackInfoClick = { assertSame(target, it); events += "info" },
                 onAddToPlaylist = { assertSame(target, it); events += "playlist" },
-                onRateSong = { assertSame(target, it); events += "rate" }
+                onRateSong = { assertSame(target, it); events += "rate" },
+                onOpenSleepTimer = { events += "timer" }
             )
             assertTrue(performed)
             assertEquals(listOf("dismiss", when (action) {
@@ -78,6 +80,7 @@ class NowPlayingActionsTest {
                 NowPlayingAction.ADD_TO_PLAYLIST -> "playlist"
                 NowPlayingAction.RATE_SONG -> "rate"
                 NowPlayingAction.LYRICS -> "lyrics"
+                NowPlayingAction.SLEEP_TIMER -> "timer"
             }), events)
         }
     }
@@ -97,7 +100,8 @@ class NowPlayingActionsTest {
                     onOpenArtist = { error("Stale artist") },
                     onTrackInfoClick = { error("Stale information") },
                     onAddToPlaylist = { error("Stale playlist target") },
-                    onRateSong = { error("Stale rating target") }
+                    onRateSong = { error("Stale rating target") },
+                    onOpenSleepTimer = { error("Stale timer entry") }
                 )
                 assertFalse(performed)
                 assertEquals(1, dismissals)
@@ -165,7 +169,7 @@ class NowPlayingActionsTest {
         val target = song(1)
         listOf(NowPlayingAction.GO_TO_ARTIST, NowPlayingAction.GO_TO_ALBUM, NowPlayingAction.TRACK_INFORMATION,
             NowPlayingAction.ADD_TO_PLAYLIST, NowPlayingAction.RATE_SONG,
-            NowPlayingAction.LYRICS).forEach { action ->
+            NowPlayingAction.LYRICS, NowPlayingAction.SLEEP_TIMER).forEach { action ->
             val events = mutableListOf<String>()
             assertTrue(performNowPlayingAction(
                 action, target, target, listOf(target),
@@ -177,7 +181,8 @@ class NowPlayingActionsTest {
                 onFavoriteFeedback = { error("Only Favorite emits this feedback") },
                 onOpenArtist = { events += "artist" },
                 onTrackInfoClick = { events += "info" },
-                onAddToPlaylist = { events += "playlist" }, onRateSong = { events += "rate" }
+                onAddToPlaylist = { events += "playlist" }, onRateSong = { events += "rate" },
+                onOpenSleepTimer = { events += "timer" }
             ))
             assertEquals(listOf("dismiss", when (action) {
                 NowPlayingAction.GO_TO_ARTIST -> "artist"
@@ -185,6 +190,7 @@ class NowPlayingActionsTest {
                 NowPlayingAction.TRACK_INFORMATION -> "info"
                 NowPlayingAction.ADD_TO_PLAYLIST -> "playlist"
                 NowPlayingAction.RATE_SONG -> "rate"
+                NowPlayingAction.SLEEP_TIMER -> "timer"
                 else -> "lyrics"
             }), events)
         }
@@ -289,8 +295,8 @@ class NowPlayingActionsTest {
     @Test
     fun trackInformationIsAvailableWithoutArtistAlbumOrTechnicalMetadata() {
         val target = song(1).copy(artist = "", album = "")
-        assertEquals(listOf(NowPlayingAction.ADD_TO_PLAYLIST, NowPlayingAction.FAVORITE,
-            NowPlayingAction.RATE_SONG, NowPlayingAction.LYRICS, NowPlayingAction.TRACK_INFORMATION),
+        assertEquals(listOf(NowPlayingAction.ADD_TO_PLAYLIST, NowPlayingAction.LYRICS, NowPlayingAction.FAVORITE,
+            NowPlayingAction.RATE_SONG, NowPlayingAction.SLEEP_TIMER, NowPlayingAction.TRACK_INFORMATION),
             nowPlayingActions(target, emptySet(), emptyList()).map { it.action })
         val events = mutableListOf<String>()
         assertTrue(performNowPlayingAction(
@@ -302,15 +308,22 @@ class NowPlayingActionsTest {
     }
 
     @Test
-    fun workflowAndQuickActionsHaveTheirOwnOrderedGroupsAndLiveRatingState() {
+    fun workflowAndQuickActionsHaveTheirOwnOrderedGroupsAndLiveRatingAndTimerState() {
         val target = song(1)
-        val actions = nowPlayingActions(target, emptySet(), listOf(target), isRated = true)
+        val actions = nowPlayingActions(target, emptySet(), listOf(target), isRated = true, isSleepTimerActive = true)
         assertEquals(listOf(NowPlayingAction.GO_TO_ARTIST, NowPlayingAction.GO_TO_ALBUM,
-            NowPlayingAction.ADD_TO_PLAYLIST), actions.filterNot { it.action.isQuickAction }.map { it.action })
+            NowPlayingAction.ADD_TO_PLAYLIST, NowPlayingAction.LYRICS), actions.filterNot { it.action.isQuickAction }.map { it.action })
         assertEquals(listOf(NowPlayingAction.FAVORITE, NowPlayingAction.RATE_SONG,
-            NowPlayingAction.LYRICS, NowPlayingAction.TRACK_INFORMATION),
+            NowPlayingAction.SLEEP_TIMER, NowPlayingAction.TRACK_INFORMATION),
             actions.filter { it.action.isQuickAction }.map { it.action })
         assertTrue(actions.first { it.action == NowPlayingAction.RATE_SONG }.isActive)
+        val timer = actions.first { it.action == NowPlayingAction.SLEEP_TIMER }
+        assertTrue(timer.isActive)
+        assertEquals(R.string.sleep_timer_title, timer.labelRes)
+        assertFalse(NowPlayingAction.LYRICS.isQuickAction)
+        assertFalse(nowPlayingActions(target, emptySet(), listOf(target)).first {
+            it.action == NowPlayingAction.SLEEP_TIMER
+        }.isActive)
         assertFalse(nowPlayingActions(target, emptySet(), listOf(target)).first {
             it.action == NowPlayingAction.RATE_SONG
         }.isActive)

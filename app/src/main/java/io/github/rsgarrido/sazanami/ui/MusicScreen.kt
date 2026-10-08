@@ -439,6 +439,9 @@ internal fun MusicScreen(
     val workflowOpeners = rememberNowPlayingWorkflowOpeners(currentSong, canPresentNowPlayingMore) { target ->
         songPendingPlaylistAdd = target
     }
+    val onOpenSleepTimer: () -> Unit = remember(overlayState) {
+        { overlayState.isSleepTimerDialogVisible.value = true }
+    }
     NowPlayingTrackInfoOverlay(overlayState, canPresentNowPlayingMore)
     val canPresentArtworkViewer = canPresentNowPlayingMore && supportsNowPlayingArtworkViewer(selectedPlayerTheme)
     val onViewArtwork = rememberNowPlayingArtworkViewerOpener(currentSong, overlayState, lyricsTransitionState, canPresentArtworkViewer)
@@ -1819,7 +1822,8 @@ internal fun MusicScreen(
                                 onOpenArtist = onOpenCurrentArtistClick,
                                 onTrackInfoClick = onTrackInfoClick,
                                 onAddToPlaylist = workflowOpeners.addToPlaylist,
-                                onRateSong = workflowOpeners.rateSong
+                                onRateSong = workflowOpeners.rateSong,
+                                onOpenSleepTimer = onOpenSleepTimer
                             )
                         } else {
                             overlayState.dismissNowPlayingMore()
@@ -1856,9 +1860,7 @@ internal fun MusicScreen(
                     onShowQueueHub = {
                         isQueueHubVisible = true
                     },
-                    onShowExpandedSleepTimer = {
-                        isSleepTimerDialogVisible = true
-                    },
+                    onShowExpandedSleepTimer = onOpenSleepTimer,
                     onShowExpandedMore = {
                         if (canPresentNowPlayingMore) {
                             currentSong?.let(overlayState::openNowPlayingMore)
