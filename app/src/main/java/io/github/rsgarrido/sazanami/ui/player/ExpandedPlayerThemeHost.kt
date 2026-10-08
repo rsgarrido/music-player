@@ -13,6 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import io.github.rsgarrido.sazanami.R
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
@@ -186,9 +188,10 @@ fun ExpandedPlayerThemeHost(
         hostDragOffset = (hostDragOffset + delta).coerceAtMost(0f)
         lyricsTransitionState.dragOpeningBy(delta, hostHeightPx)
     }
+    val openLyricsLabel = stringResource(R.string.player_open_lyrics)
     val openLyricsSemanticsModifier = Modifier.semantics {
         customActions = listOf(
-            CustomAccessibilityAction("Open lyrics") {
+            CustomAccessibilityAction(openLyricsLabel) {
                 lyricsTransitionState.openLyrics()
                 true
             }
@@ -312,6 +315,7 @@ fun ExpandedPlayerThemeHost(
                             playerMorphState = playerMorphState,
                             lyricsTransitionState = lyricsTransitionState,
                             onOpenUpNextClick = onOpenQueueHubClick,
+                            onOpenMoreClick = onOpenMoreClick,
                             onToggleFavoriteClick = onToggleFavoriteClick,
                             style = modernStyle,
                             defaultMorphBounds = defaultMorphBounds,

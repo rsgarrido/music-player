@@ -3,6 +3,7 @@ package io.github.rsgarrido.sazanami.ui.player
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
@@ -15,6 +16,7 @@ import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.ui.player.classicwheel.ClassicWheelNowPlayingDisplay
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernQueueHubButton
+import io.github.rsgarrido.sazanami.ui.player.modern.ModernMoreButton
 import io.github.rsgarrido.sazanami.ui.player.pocketcassette.PocketCassetteControls
 import io.github.rsgarrido.sazanami.ui.player.pocketflip.PocketFlipControlHalf
 import io.github.rsgarrido.sazanami.ui.player.retrorack.RetroRackExpandedPlayer
@@ -37,6 +39,41 @@ class ExpandedQueueHubEntryPointTest {
 
         assertSingleQueueHubActionAndClick()
         composeRule.runOnIdle { assertEquals(1, openCount) }
+    }
+
+    @Test
+    fun modernMoreAndQueueHubHaveIndependentCallbacksAndSingleActions() {
+        var queueCount = 0
+        var moreCount = 0
+        composeRule.setContent {
+            MaterialTheme {
+                Row {
+                    ModernMoreButton(onClick = { moreCount++ })
+                    ModernQueueHubButton(onClick = { queueCount++ })
+                }
+            }
+        }
+        composeRule.onAllNodesWithContentDescription("More actions").assertCountEquals(1)
+        composeRule.onNodeWithContentDescription("More actions").performClick()
+        composeRule.runOnIdle {
+            assertEquals(1, moreCount)
+            assertEquals(0, queueCount)
+        }
+        assertSingleQueueHubActionAndClick()
+        composeRule.runOnIdle {
+            assertEquals(1, moreCount)
+            assertEquals(1, queueCount)
+        }
+    }
+
+    @Test
+    fun inactiveMoreSlotExposesNoAccessibleOrClickableAction() {
+        composeRule.setContent {
+            MaterialTheme {
+                ModernMoreButton(onClick = { error("Inactive More") }, enabled = false)
+            }
+        }
+        composeRule.onAllNodesWithContentDescription("More actions").assertCountEquals(0)
     }
 
     @Test

@@ -15,12 +15,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.QueueMusic
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -42,6 +44,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.rsgarrido.sazanami.data.Song
+import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.player.audioquality.AudioQualityRepository
 import io.github.rsgarrido.sazanami.player.waveform.WaveformData
@@ -77,6 +80,7 @@ internal fun ModernExpandedPlayer(
     lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
+    onOpenMoreClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     style: ModernPlayerStyle = ModernPlayerDefaults.style(),
     albumArtSize: Dp = ModernPlayerDefaults.MaximumArtworkSize,
@@ -307,6 +311,20 @@ internal fun ModernExpandedPlayer(
                         ),
                     horizontalArrangement = Arrangement.End
                 ) {
+                    if (onOpenMoreClick != null) {
+                        ModernMoreButton(
+                            onClick = onOpenMoreClick,
+                            enabled = canOpenModernMore(
+                                playerMorphState = playerMorphState,
+                                lyricsTransitionState = lyricsTransitionState,
+                                carouselOffsetX = carouselState.offsetX,
+                                hasExpandedContent = defaultMorphVisualState?.isReady != false,
+                                isCurrentTrackDisplayed = displayedCarouselSongs.current.membershipKey() ==
+                                        currentSong.membershipKey()
+                            ),
+                            tint = style.contentColor
+                        )
+                    }
                     ModernQueueHubButton(
                         onClick = onOpenUpNextClick,
                         enabled = defaultMorphVisualState == null ||
@@ -393,6 +411,44 @@ internal fun ModernExpandedPlayer(
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
+            }
+        }
+    }
+}
+
+internal fun canOpenModernMore(
+    playerMorphState: PlayerMorphState,
+    lyricsTransitionState: PlayerLyricsTransitionState,
+    carouselOffsetX: Float,
+    hasExpandedContent: Boolean,
+    isCurrentTrackDisplayed: Boolean
+): Boolean = hasExpandedContent && isCurrentTrackDisplayed &&
+        playerMorphState.targetPresentation == PlayerPresentation.Expanded &&
+        playerMorphState.settledPresentation == PlayerPresentation.Expanded &&
+        playerMorphState.progress == 1f && !playerMorphState.isDragging &&
+        !playerMorphState.isAnimating && !lyricsTransitionState.isDragging &&
+        !lyricsTransitionState.lyricsOwnsInput && carouselOffsetX == 0f
+
+@Composable
+internal fun ModernMoreButton(
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    tint: Color = Color.Unspecified,
+    modifier: Modifier = Modifier
+) {
+    // Keep Queue Hub's existing 42 dp row geometry while giving More a 48 dp touch target.
+    // Reserve the slot during transitions without exposing an inactive action.
+    Box(
+        modifier = modifier.size(width = 48.dp, height = 42.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        if (enabled) {
+            IconButton(onClick = onClick, modifier = Modifier.requiredSize(48.dp)) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = stringResource(R.string.player_more_actions),
+                    tint = tint
+                )
             }
         }
     }

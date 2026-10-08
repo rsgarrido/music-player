@@ -66,7 +66,11 @@ import io.github.rsgarrido.sazanami.player.PlaybackShuffleMode
 import io.github.rsgarrido.sazanami.ui.library.LibraryTab
 import io.github.rsgarrido.sazanami.ui.library.LibraryAlbumGroup
 import io.github.rsgarrido.sazanami.ui.library.buildLibraryAlbumGroups
-import io.github.rsgarrido.sazanami.ui.library.findLibraryAlbumGroupForSong
+import io.github.rsgarrido.sazanami.data.membershipKey
+import io.github.rsgarrido.sazanami.ui.player.PlayerPresentation
+import io.github.rsgarrido.sazanami.ui.player.isCurrentNowPlayingTarget
+import io.github.rsgarrido.sazanami.ui.player.performNowPlayingAction
+import io.github.rsgarrido.sazanami.ui.player.resolveNowPlayingAlbumKey
 import io.github.rsgarrido.sazanami.ui.library.FolderBrowseScrollStateHolder
 import io.github.rsgarrido.sazanami.ui.library.folderBrowseBackDestination
 import io.github.rsgarrido.sazanami.ui.library.resolveFolderBrowseSelection
@@ -393,6 +397,7 @@ internal fun MusicScreen(
     overlayState.isListeningHistoryReconciliationVisible
     var isExpandedUpNextSheetVisible by overlayState.isExpandedUpNextSheetVisible
     var isQueueHubVisible by overlayState.isQueueHubVisible
+    val isNowPlayingMoreVisible by overlayState.isNowPlayingMoreVisible
     var isCreatePlaylistDialogVisible by overlayState.isCreatePlaylistDialogVisible
     var playlistCreationFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var isSleepTimerDialogVisible by overlayState.isSleepTimerDialogVisible
@@ -412,6 +417,22 @@ internal fun MusicScreen(
     var hasUnsavedTagChanges by remember { mutableStateOf(false) }
     var isDiscardTagChangesDialogVisible by remember { mutableStateOf(false) }
     var selectedArtworkUriForTagEdit by remember { mutableStateOf<Uri?>(null) }
+
+    val canPresentNowPlayingMore = selectedPlayerTheme == PlayerTheme.DEFAULT &&
+            playerMorphState.targetPresentation == PlayerPresentation.Expanded &&
+            !isLyricsVisible && !lyricsTransitionState.lyricsOwnsInput &&
+            songPendingTagEdit == null && batchMetadataEditorState == null &&
+            songPendingPlaylistAdd == null && songsPendingPlaylistAdd.isEmpty()
+    val nowPlayingMoreTarget = overlayState.currentNowPlayingMoreTarget(currentSong)
+        ?.takeIf { canPresentNowPlayingMore }
+    LaunchedEffect(
+        currentSong?.membershipKey(),
+        overlayState.nowPlayingMoreTarget,
+        isNowPlayingMoreVisible,
+        canPresentNowPlayingMore
+    ) {
+        overlayState.reconcileNowPlayingMore(currentSong, canPresentNowPlayingMore)
+    }
 
     LaunchedEffect(isLyricsVisible) {
         onLyricsVisibilityChanged(isLyricsVisible)
@@ -598,6 +619,20 @@ internal fun MusicScreen(
         }
     }
 
+    fun openCurrentAlbum(song: Song) {
+        val albumKey = resolveNowPlayingAlbumKey(song, songs)
+        if (albumKey != null) {
+            lyricsTransitionState.snapToExpanded()
+            playerMorphState.collapse()
+            navigationState.clearArtist()
+            navigationState.openAlbum(albumKey, DetailEntryOrigin.LIBRARY)
+            selectedGenreKey = null
+            clearPlaylistSelection()
+            searchQuery = ""
+            mainDestination = MainDestination.LIBRARY
+        }
+    }
+
     fun restorePlaybackLaunchContext() {
         val validContext = playbackLaunchContext.withValidDetails(
             albumKeys = buildLibraryAlbumGroups(songs).mapTo(mutableSetOf()) { album -> album.key },
@@ -683,6 +718,7 @@ internal fun MusicScreen(
                 batchMetadataOperationState != null ||
                 isExpandedUpNextSheetVisible ||
                 isQueueHubVisible ||
+                isNowPlayingMoreVisible ||
                 playerMorphState.shouldConsumeBack ||
                 isFolderScreenVisible ||
                 isDiagnosticsScreenVisible ||
@@ -723,6 +759,10 @@ internal fun MusicScreen(
 
             songPendingTagEdit != null -> {
                 requestCloseTagEditor()
+            }
+
+            isNowPlayingMoreVisible -> {
+                overlayState.dismissNowPlayingMore()
             }
 
             isLyricsVisible -> {
@@ -1717,6 +1757,27 @@ internal fun MusicScreen(
                     favoriteMembershipKeys = favoriteMembershipKeys,
                     isExpandedUpNextSheetVisible = isExpandedUpNextSheetVisible,
                     isQueueHubVisible = isQueueHubVisible,
+                    nowPlayingMoreTarget = nowPlayingMoreTarget,
+                    onDismissNowPlayingMore = overlayState::dismissNowPlayingMore,
+                    onNowPlayingMoreAction = { action, target ->
+                        if (isCurrentNowPlayingTarget(
+                                overlayState.currentNowPlayingMoreTarget(currentSong), target
+                            ) && canPresentNowPlayingMore
+                        ) {
+                            performNowPlayingAction(
+                                action = action,
+                                target = target,
+                                currentSong = currentSong,
+                                librarySongs = songs,
+                                onDismiss = overlayState::dismissNowPlayingMore,
+                                onToggleFavorite = onToggleFavoriteClick,
+                                onOpenAlbum = ::openCurrentAlbum,
+                                onOpenLyrics = lyricsTransitionState::openLyrics
+                            )
+                        } else {
+                            overlayState.dismissNowPlayingMore()
+                        }
+                    },
                     playbackQueueHubUiState = playbackQueueHubUiState,
                     queuedSongs = queuedSongs,
                     upcomingSongs = upcomingSongs,
@@ -1752,9 +1813,9 @@ internal fun MusicScreen(
                         isSleepTimerDialogVisible = true
                     },
                     onShowExpandedMore = {
-                        playerMorphState.collapse()
-                        restorePlaybackLaunchContext()
-                        isSettingsScreenVisible = true
+                        if (canPresentNowPlayingMore) {
+                            currentSong?.let(overlayState::openNowPlayingMore)
+                        }
                     },
                     onDismissExpandedUpNextSheet = {
                         isExpandedUpNextSheetVisible = false
@@ -1821,22 +1882,7 @@ internal fun MusicScreen(
                     pocketDiscMorphBounds = pocketDiscMorphBounds,
                     songs = songs,
                     onSongClick = onSongClick,
-                    onOpenCurrentAlbumClick = { song ->
-                        val albumKey = findLibraryAlbumGroupForSong(
-                            song = song,
-                            albums = buildLibraryAlbumGroups(songs)
-                        )?.key
-                        if (albumKey != null) {
-                            lyricsTransitionState.snapToExpanded()
-                            playerMorphState.collapse()
-                            navigationState.clearArtist()
-                            navigationState.openAlbum(albumKey, DetailEntryOrigin.LIBRARY)
-                            selectedGenreKey = null
-                            clearPlaylistSelection()
-                            searchQuery = ""
-                            mainDestination = MainDestination.LIBRARY
-                        }
-                    }
+                    onOpenCurrentAlbumClick = ::openCurrentAlbum
                 )
             }
         }

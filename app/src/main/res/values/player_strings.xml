@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="player_more_actions">More actions</string>
+    <string name="player_more_song_subtitle">%1$s · %2$s</string>
+    <string name="player_go_to_album">Go to album</string>
+    <string name="player_lyrics">Lyrics</string>
+    <string name="player_open_lyrics">Open lyrics</string>
     <string name="player_shuffle_on">Shuffle on</string>
     <string name="player_shuffle_off">Shuffle off</string>
     <string name="player_previous_song">Previous song</string>

@@ -3,11 +3,14 @@ package io.github.rsgarrido.sazanami.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.saveable.Saver
 import io.github.rsgarrido.sazanami.data.FolderId
+import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.ui.library.LibrarySortDirection
 import io.github.rsgarrido.sazanami.ui.library.LibrarySortOption
 import io.github.rsgarrido.sazanami.ui.library.LibrarySortState
@@ -23,6 +26,7 @@ import io.github.rsgarrido.sazanami.ui.navigation.MainDestination
 import io.github.rsgarrido.sazanami.ui.navigation.PlaybackLaunchContext
 import io.github.rsgarrido.sazanami.ui.navigation.playbackLaunchContextSaver
 import io.github.rsgarrido.sazanami.ui.player.PlayerMorphState
+import io.github.rsgarrido.sazanami.ui.player.isCurrentNowPlayingTarget
 import io.github.rsgarrido.sazanami.ui.player.rememberPlayerMorphState
 
 internal enum class DetailEntryOrigin {
@@ -269,7 +273,7 @@ enum class MusicPrimaryDestination {
     LISTENING_HISTORY_IMPORT,
     LISTENING_HISTORY_RECONCILIATION
 }
-enum class MusicOverlayDestination { UP_NEXT, QUEUE_HUB, CREATE_PLAYLIST, SLEEP_TIMER }
+enum class MusicOverlayDestination { UP_NEXT, QUEUE_HUB, CREATE_PLAYLIST, SLEEP_TIMER, NOW_PLAYING_MORE }
 
 @Stable
 class MusicOverlayState internal constructor(
@@ -277,30 +281,65 @@ class MusicOverlayState internal constructor(
     private val primaryDestination: MutableState<MusicPrimaryDestination?>,
     private val transientDestination: MutableState<MusicOverlayDestination?>
 ) {
-    val isFolderScreenVisible = destinationState(primaryDestination, MusicPrimaryDestination.FOLDERS)
-    val isSettingsScreenVisible = destinationState(primaryDestination, MusicPrimaryDestination.SETTINGS)
-    val isTipsHelpScreenVisible = destinationState(primaryDestination, MusicPrimaryDestination.TIPS_HELP)
-    val isAboutScreenVisible = destinationState(primaryDestination, MusicPrimaryDestination.ABOUT)
+    var nowPlayingMoreTarget by mutableStateOf<Song?>(null)
+        private set
+
+    val isNowPlayingMoreVisible =
+        destinationState(transientDestination, MusicOverlayDestination.NOW_PLAYING_MORE)
+
+    // A new destination clears the captured More target without changing other overlay behavior.
+    private fun primaryState(target: MusicPrimaryDestination) =
+        destinationState(primaryDestination, target, ::dismissNowPlayingMore)
+
+    private fun transientState(target: MusicOverlayDestination) =
+        destinationState(transientDestination, target, ::dismissNowPlayingMore)
+
+    fun openNowPlayingMore(song: Song) {
+        nowPlayingMoreTarget = song
+        isNowPlayingMoreVisible.value = true
+    }
+
+    fun dismissNowPlayingMore() {
+        isNowPlayingMoreVisible.value = false
+        nowPlayingMoreTarget = null
+    }
+
+    fun reconcileNowPlayingMore(currentSong: Song?, canPresent: Boolean) {
+        if (!isNowPlayingMoreVisible.value || !canPresent ||
+            !isCurrentNowPlayingTarget(nowPlayingMoreTarget, currentSong)
+        ) {
+            dismissNowPlayingMore()
+        }
+    }
+
+    fun currentNowPlayingMoreTarget(currentSong: Song?): Song? = nowPlayingMoreTarget?.takeIf {
+        isNowPlayingMoreVisible.value &&
+                isCurrentNowPlayingTarget(it, currentSong)
+    }
+
+    val isFolderScreenVisible = primaryState(MusicPrimaryDestination.FOLDERS)
+    val isSettingsScreenVisible = primaryState(MusicPrimaryDestination.SETTINGS)
+    val isTipsHelpScreenVisible = primaryState(MusicPrimaryDestination.TIPS_HELP)
+    val isAboutScreenVisible = primaryState(MusicPrimaryDestination.ABOUT)
     val isDiagnosticsScreenVisible =
-        destinationState(primaryDestination, MusicPrimaryDestination.DIAGNOSTICS)
+        primaryState(MusicPrimaryDestination.DIAGNOSTICS)
     val isEqualizerScreenVisible =
-        destinationState(primaryDestination, MusicPrimaryDestination.EQUALIZER)
+        primaryState(MusicPrimaryDestination.EQUALIZER)
     val isStatisticsScreenVisible =
-        destinationState(primaryDestination, MusicPrimaryDestination.STATISTICS)
+        primaryState(MusicPrimaryDestination.STATISTICS)
     val isListeningHistoryImportVisible =
-        destinationState(primaryDestination, MusicPrimaryDestination.LISTENING_HISTORY_IMPORT)
-    val isListeningHistoryReconciliationVisible = destinationState(
-        primaryDestination,
+        primaryState(MusicPrimaryDestination.LISTENING_HISTORY_IMPORT)
+    val isListeningHistoryReconciliationVisible = primaryState(
         MusicPrimaryDestination.LISTENING_HISTORY_RECONCILIATION
     )
     val isExpandedUpNextSheetVisible =
-        destinationState(transientDestination, MusicOverlayDestination.UP_NEXT)
+        transientState(MusicOverlayDestination.UP_NEXT)
     val isQueueHubVisible =
-        destinationState(transientDestination, MusicOverlayDestination.QUEUE_HUB)
+        transientState(MusicOverlayDestination.QUEUE_HUB)
     val isCreatePlaylistDialogVisible =
-        destinationState(transientDestination, MusicOverlayDestination.CREATE_PLAYLIST)
+        transientState(MusicOverlayDestination.CREATE_PLAYLIST)
     val isSleepTimerDialogVisible =
-        destinationState(transientDestination, MusicOverlayDestination.SLEEP_TIMER)
+        transientState(MusicOverlayDestination.SLEEP_TIMER)
 }
 
 internal class SettingsHelpNavigation(private val overlayState: MusicOverlayState) {
@@ -341,12 +380,14 @@ fun rememberMusicOverlayState(): MusicOverlayState {
 
 private fun <T> destinationState(
     destination: MutableState<T?>,
-    target: T
+    target: T,
+    onOpen: () -> Unit = {}
 ): MutableState<Boolean> = object : MutableState<Boolean> {
     override var value: Boolean
         get() = destination.value == target
         set(value) {
             if (value) {
+                onOpen()
                 destination.value = target
             } else if (destination.value == target) {
                 destination.value = null
