@@ -1,6 +1,10 @@
 package io.github.rsgarrido.sazanami.ui.player
 
 import android.net.Uri
+import android.view.Window
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -13,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -38,6 +44,7 @@ class NowPlayingArtworkViewerDialogTest {
     private val visible = mutableStateOf(true)
     private val status = mutableStateOf(ArtworkViewerLoadStatus.READY)
     private val tilt = ArtworkViewerTiltState()
+    private var viewerWindow: Window? = null
 
     private fun content(motion: ArtworkViewerMotionPolicy = ArtworkViewerMotionPolicy(true, false)) {
         val target = song(1)
@@ -48,8 +55,12 @@ class NowPlayingArtworkViewerDialogTest {
                 Box(Modifier.fillMaxSize().clickable { playerClicks++ })
                 if (visible.value) NowPlayingArtworkViewerDialog(request, { visible.value = false }, motion, tilt,
                     imageContent = { _, modifier, description, onStatus ->
+                        val view = LocalView.current
                         Box(modifier.background(Color.Blue).semantics { contentDescription = description })
-                        SideEffect { onStatus(status.value) }
+                        SideEffect {
+                            viewerWindow = (view.parent as? DialogWindowProvider)?.window
+                            onStatus(status.value)
+                        }
                     })
             }
         }
@@ -72,6 +83,49 @@ class NowPlayingArtworkViewerDialogTest {
         composeRule.runOnIdle { assertEquals(0, playerBacks) }
     }
 
+    @Test fun dialogPreservesVisibleOrHiddenBarsAndDismissalLeavesThePlayerPresentationIntact() {
+        visible.value = false
+        content()
+        val activityWindow = composeRule.activity.window
+        val controller = WindowCompat.getInsetsController(activityWindow, activityWindow.decorView)
+        lateinit var original: SystemBarPresentation
+        composeRule.runOnIdle { original = readSystemBarPresentation(activityWindow) }
+        try {
+            listOf(false, true).forEach { barsVisible ->
+                composeRule.runOnIdle {
+                    if (barsVisible) controller.show(WindowInsetsCompat.Type.systemBars())
+                    else controller.hide(WindowInsetsCompat.Type.systemBars())
+                }
+                composeRule.waitUntil(5_000) {
+                    val insets = ViewCompat.getRootWindowInsets(activityWindow.decorView)
+                    insets != null && insets.isVisible(WindowInsetsCompat.Type.statusBars()) == barsVisible &&
+                        insets.isVisible(WindowInsetsCompat.Type.navigationBars()) == barsVisible
+                }
+                composeRule.runOnIdle { visible.value = true }
+                composeRule.onNodeWithTag(ArtworkViewerDialogTag).assertExists()
+                composeRule.waitUntil(5_000) {
+                    val insets = viewerWindow?.decorView?.let(ViewCompat::getRootWindowInsets)
+                    insets != null && insets.isVisible(WindowInsetsCompat.Type.statusBars()) == barsVisible &&
+                        insets.isVisible(WindowInsetsCompat.Type.navigationBars()) == barsVisible
+                }
+                val close = composeRule.onNodeWithContentDescription(composeRule.activity.getString(R.string.common_close))
+                close.assertIsDisplayed()
+                val root = composeRule.onNodeWithTag(ArtworkViewerDialogTag).fetchSemanticsNode().boundsInRoot
+                val bounds = close.fetchSemanticsNode().boundsInRoot
+                val cutout = requireNotNull(viewerWindow).decorView.let(ViewCompat::getRootWindowInsets)?.displayCutout
+                assertTrue(bounds.top >= root.top + (cutout?.safeInsetTop ?: 0))
+                assertTrue(bounds.right <= root.right - (cutout?.safeInsetRight ?: 0))
+                close.performClick()
+                composeRule.onNodeWithTag(ArtworkViewerDialogTag).assertDoesNotExist()
+                composeRule.waitUntil(5_000) {
+                    val insets = ViewCompat.getRootWindowInsets(activityWindow.decorView)
+                    insets != null && insets.isVisible(WindowInsetsCompat.Type.statusBars()) == barsVisible &&
+                        insets.isVisible(WindowInsetsCompat.Type.navigationBars()) == barsVisible
+                }
+            }
+        } finally { composeRule.runOnIdle { applySystemBarPresentation(controller, original) } }
+    }
+
     @Test fun backdropClosesWithoutClickingTheUnderlyingPlayer() {
         content()
         composeRule.onNodeWithTag(ArtworkViewerBackdropTag).performTouchInput { click(Offset(5f, 5f)) }
@@ -89,8 +143,8 @@ class NowPlayingArtworkViewerDialogTest {
         }
         composeRule.runOnIdle {
             assertTrue(tilt.dragging)
-            assertTrue(kotlin.math.abs(tilt.rotationX) <= 7f)
-            assertTrue(kotlin.math.abs(tilt.rotationY) <= 7f)
+            assertTrue(kotlin.math.abs(tilt.rotationX) <= 16f)
+            assertTrue(kotlin.math.abs(tilt.rotationY) <= 16f)
         }
         composeRule.onNodeWithTag(ArtworkViewerInputTag).performTouchInput { up() }
         composeRule.mainClock.advanceTimeBy(1_000)

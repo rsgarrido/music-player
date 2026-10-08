@@ -19,14 +19,21 @@ import androidx.compose.ui.unit.IntSize
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-internal const val ArtworkViewerTiltLimit = 7f
+internal const val ArtworkViewerTiltLimit = 16f
+internal const val ArtworkViewerTiltMaxDragFraction = 0.375f
+private const val ArtworkViewerTiltDegreesPerDimension = ArtworkViewerTiltLimit / ArtworkViewerTiltMaxDragFraction
 internal enum class ArtworkViewerLoadStatus { LOADING, READY, ERROR }
 
 internal class ArtworkViewerImageState(private val request: NowPlayingArtworkViewerRequest) {
     var status by mutableStateOf(ArtworkViewerLoadStatus.LOADING)
         private set
+    var intrinsicSize by mutableStateOf(IntSize.Zero)
+        private set
     fun update(source: NowPlayingArtworkViewerRequest, next: ArtworkViewerLoadStatus) {
         if (source === request) status = next
+    }
+    fun resolvedSize(source: NowPlayingArtworkViewerRequest, size: IntSize) {
+        if (source === request) intrinsicSize = size
     }
 }
 
@@ -45,8 +52,8 @@ internal class ArtworkViewerTiltState {
     }
     fun dragBy(delta: Offset, size: IntSize) {
         if (!dragging || size.width <= 0 || size.height <= 0) return
-        rotationX = (rotationX - delta.y / size.height * 14f).coerceIn(-ArtworkViewerTiltLimit, ArtworkViewerTiltLimit)
-        rotationY = (rotationY + delta.x / size.width * 14f).coerceIn(-ArtworkViewerTiltLimit, ArtworkViewerTiltLimit)
+        rotationX = (rotationX - delta.y / size.height * ArtworkViewerTiltDegreesPerDimension).coerceIn(-ArtworkViewerTiltLimit, ArtworkViewerTiltLimit)
+        rotationY = (rotationY + delta.x / size.width * ArtworkViewerTiltDegreesPerDimension).coerceIn(-ArtworkViewerTiltLimit, ArtworkViewerTiltLimit)
     }
     fun reset() {
         dragging = false
@@ -63,7 +70,15 @@ internal fun artworkViewerDecodeSize(bounds: IntSize): IntSize {
     return IntSize((width * factor).roundToInt().coerceAtLeast(1), (height * factor).roundToInt().coerceAtLeast(1))
 }
 
-internal fun artworkViewerCameraDistance(bounds: IntSize): Float = max(bounds.width, bounds.height).coerceAtLeast(1) * 3f
+internal fun artworkViewerCameraDistance(bounds: IntSize): Float = max(bounds.width, bounds.height).coerceAtLeast(1) * 1.5f
+
+/** Normalize tilt against the painted Fit image, excluding the frame's empty letterboxing. */
+internal fun artworkViewerTiltBounds(frame: IntSize, intrinsic: IntSize): IntSize {
+    if (intrinsic.width <= 0 || intrinsic.height <= 0) return frame
+    val scale = minOf(frame.width.toFloat() / intrinsic.width, frame.height.toFloat() / intrinsic.height)
+    return IntSize((intrinsic.width * scale).roundToInt().coerceAtLeast(1),
+        (intrinsic.height * scale).roundToInt().coerceAtLeast(1))
+}
 
 internal data class ArtworkViewerMotionPolicy(val animationsEnabled: Boolean, val touchExploration: Boolean) {
     val tiltEnabled get() = animationsEnabled && !touchExploration

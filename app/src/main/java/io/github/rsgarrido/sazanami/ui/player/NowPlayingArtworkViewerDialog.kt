@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
@@ -89,12 +91,14 @@ internal fun NowPlayingArtworkViewerDialog(
     val rotationX by animateFloatAsState(if (tiltEnabled) tilt.rotationX else 0f, tiltSpec, label = "artworkTiltX")
     val rotationY by animateFloatAsState(if (tiltEnabled) tilt.rotationY else 0f, tiltSpec, label = "artworkTiltY")
     val pane = stringResource(R.string.player_artwork_viewer)
+    val playerBars = rememberPlayerSystemBarPresentation(request)
 
     Dialog(onDismissRequest = close, properties = DialogProperties(
         usePlatformDefaultWidth = false, decorFitsSystemWindows = false
     )) {
         // The Compose scrim owns dimming so its open/close fade has one source.
         val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        PreserveDialogSystemBarsEffect(window, playerBars)
         DisposableEffect(window) {
             val original = window?.attributes?.dimAmount
             window?.setDimAmount(0f)
@@ -105,25 +109,29 @@ internal fun NowPlayingArtworkViewerDialog(
                 .background(Color.Black.copy(alpha = 0.76f * entrance.value))
                 .testTag(ArtworkViewerBackdropTag)
                 .pointerInput(request) { detectTapGestures { close() } })
-            BoxWithConstraints(Modifier.fillMaxSize().systemBarsPadding().padding(16.dp)) {
+            BoxWithConstraints(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).padding(16.dp)) {
                 val width = minOf((maxWidth - 32.dp).coerceAtLeast(1.dp), 840.dp)
                 val height = minOf((maxHeight - 112.dp).coerceAtLeast(1.dp), 840.dp)
                 val density = LocalDensity.current
                 val bounds = with(density) { IntSize(width.roundToPx(), height.roundToPx()) }
                 val decodeSize = artworkViewerDecodeSize(bounds)
+                val tiltBounds = artworkViewerTiltBounds(bounds, image.intrinsicSize)
                 val context = LocalContext.current
                 val model = remember(context, request, decodeSize) {
                     ImageRequest.Builder(context).data(request.artworkUri)
-                        .size(decodeSize.width, decodeSize.height).scale(Scale.FIT).crossfade(false).build()
+                        .size(decodeSize.width, decodeSize.height).scale(Scale.FIT).crossfade(false)
+                        .listener(onSuccess = { _, result ->
+                            image.resolvedSize(request, IntSize(result.drawable.intrinsicWidth, result.drawable.intrinsicHeight))
+                        }).build()
                 }
                 // Input is on the untransformed frame; the inner artwork alone receives perspective.
                 Box(Modifier.align(Alignment.Center).size(width, height).testTag(ArtworkViewerInputTag)
                     .pointerInput(request) { detectTapGestures { /* Artwork taps stay inside the modal. */ } }
-                    .pointerInput(request, tiltEnabled, bounds) {
+                    .pointerInput(request, tiltEnabled, tiltBounds) {
                         if (!tiltEnabled) return@pointerInput
                         detectDragGestures(
                             onDragStart = { tilt.begin(rotationX, rotationY) },
-                            onDrag = { change, delta -> change.consume(); tilt.dragBy(delta, bounds) },
+                            onDrag = { change, delta -> change.consume(); tilt.dragBy(delta, tiltBounds) },
                             onDragEnd = tilt::reset,
                             onDragCancel = tilt::reset
                         )
