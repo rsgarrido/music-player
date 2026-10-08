@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_track_information">Información de la pista</string>
+    <string name="player_open_track_information">Abrir información de la pista</string>
+    <string name="player_track_info_track">Pista</string>
+    <string name="player_track_info_file">Archivo</string>
+    <string name="player_track_info_audio">Audio (archivo de origen)</string>
+    <string name="player_track_info_filename">Nombre del archivo</string>
+    <string name="player_track_info_file_size">Tamaño del archivo</string>
+    <string name="player_track_info_location">Ubicación</string>
+    <string name="player_track_info_format">Formato / contenedor</string>
+    <string name="player_track_info_codec">Códec</string>
+    <string name="player_track_info_sample_rate">Frecuencia de muestreo</string>
+    <string name="player_track_info_bit_depth">Profundidad de bits</string>
+    <string name="player_track_info_bitrate">Tasa de bits</string>
+    <string name="player_track_info_channels">Canales</string>
+    <string name="player_track_info_bits">%1$d bits</string>
+    <string name="player_track_info_kbps">%1$d kbps</string>
+    <string name="player_track_info_mono">Mono / %1$d canal</string>
+    <string name="player_track_info_stereo">Estéreo / %1$d canales</string>
+    <string name="player_track_info_channel_count">%1$d canales</string>
+</resources>

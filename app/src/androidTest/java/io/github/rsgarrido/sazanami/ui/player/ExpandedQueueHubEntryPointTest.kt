@@ -305,6 +305,7 @@ class ExpandedQueueHubEntryPointTest {
             composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertExists()
             composeRule.onNodeWithText("Go to artist").assertExists()
             composeRule.onNodeWithText("Go to album").assertExists()
+            composeRule.onNodeWithText("Track information").assertExists()
             composeRule.onNodeWithText("Lyrics").assertExists()
             composeRule.runOnIdle {
                 assertEquals(index + 1, moreCount)

@@ -73,6 +73,7 @@ internal fun ModernExpandedPlayer(
     onCollapseClick: () -> Unit,
     onOpenAlbumClick: (() -> Unit)? = null,
     onOpenArtistClick: (() -> Unit)? = null,
+    onTrackInfoClick: (() -> Unit)? = null,
     playerMorphState: PlayerMorphState,
     lyricsTransitionState: PlayerLyricsTransitionState,
     onOpenUpNextClick: () -> Unit,
@@ -251,6 +252,15 @@ internal fun ModernExpandedPlayer(
                     },
                     hidePersistentContent = morphOwnsPersistentContent,
                     onOpenAlbumClick = onOpenAlbumClick,
+                    onTrackInfoClick = onTrackInfoClick.takeIf {
+                        canOpenModernMore(
+                            playerMorphState, lyricsTransitionState, carouselState.offsetX,
+                            hasExpandedContent = defaultMorphVisualState == null ||
+                                    defaultMorphVisualState.isReady && defaultMorphVisualState.metadataAlpha == 1f,
+                            isCurrentTrackDisplayed = displayedCarouselSongs.current.membershipKey() ==
+                                    currentSong.membershipKey()
+                        )
+                    },
                     onOpenArtistClick = modernArtistClickCallback(
                         onClick = onOpenArtistClick,
                         playerMorphState = playerMorphState,

@@ -11,7 +11,7 @@ import io.github.rsgarrido.sazanami.ui.library.buildLibraryAlbumGroups
 import io.github.rsgarrido.sazanami.ui.library.buildLibraryArtistGroups
 import io.github.rsgarrido.sazanami.ui.library.findLibraryAlbumGroupForSong
 
-enum class NowPlayingAction { FAVORITE, GO_TO_ARTIST, GO_TO_ALBUM, LYRICS }
+enum class NowPlayingAction { FAVORITE, GO_TO_ARTIST, GO_TO_ALBUM, TRACK_INFORMATION, LYRICS }
 
 internal enum class NowPlayingFavoriteFeedback { ADDED_TO_FAVORITES, REMOVED_FROM_FAVORITES }
 
@@ -77,6 +77,7 @@ internal fun nowPlayingActions(
     if (resolveNowPlayingAlbumKey(target, librarySongs) != null) {
         add(NowPlayingActionItem(NowPlayingAction.GO_TO_ALBUM, R.string.player_go_to_album))
     }
+    add(NowPlayingActionItem(NowPlayingAction.TRACK_INFORMATION, R.string.player_track_information))
     // Missing or unconfigured local lyrics are handled by the existing Lyrics screen.
     add(NowPlayingActionItem(NowPlayingAction.LYRICS, R.string.player_lyrics))
 }
@@ -96,7 +97,8 @@ internal fun performNowPlayingAction(
     onOpenLyrics: () -> Unit,
     isFavorite: Boolean = false,
     onFavoriteFeedback: (NowPlayingFavoriteFeedback) -> Unit = {},
-    onOpenArtist: (Song) -> Unit = {}
+    onOpenArtist: (Song) -> Unit = {},
+    onTrackInfoClick: (Song) -> Unit = {}
 ): Boolean {
     onDismiss()
     if (!isCurrentNowPlayingTarget(target, currentSong)) return false
@@ -118,6 +120,7 @@ internal fun performNowPlayingAction(
             if (resolveNowPlayingAlbumKey(target, librarySongs) == null) return false
             onOpenAlbum(target)
         }
+        NowPlayingAction.TRACK_INFORMATION -> onTrackInfoClick(target)
         NowPlayingAction.LYRICS -> onOpenLyrics()
     }
     return true

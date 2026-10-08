@@ -42,12 +42,13 @@ class NowPlayingActionsTest {
         val differentFile = song(2).copy(folderPath = "/other", filePath = "/other/2.flac")
         assertNull(resolveNowPlayingAlbumKey(target, listOf(differentFile)))
         assertEquals(
-            listOf(NowPlayingAction.FAVORITE, NowPlayingAction.GO_TO_ARTIST, NowPlayingAction.LYRICS),
+            listOf(NowPlayingAction.FAVORITE, NowPlayingAction.GO_TO_ARTIST,
+                NowPlayingAction.TRACK_INFORMATION, NowPlayingAction.LYRICS),
             nowPlayingActions(target, emptySet(), listOf(differentFile)).map { it.action }
         )
         assertEquals(
             listOf(NowPlayingAction.FAVORITE, NowPlayingAction.GO_TO_ARTIST,
-                NowPlayingAction.GO_TO_ALBUM, NowPlayingAction.LYRICS),
+                NowPlayingAction.GO_TO_ALBUM, NowPlayingAction.TRACK_INFORMATION, NowPlayingAction.LYRICS),
             nowPlayingActions(target, emptySet(), listOf(target, differentFile)).map { it.action }
         )
     }
@@ -63,13 +64,15 @@ class NowPlayingActionsTest {
                 onToggleFavorite = { assertSame(target, it); events += "favorite" },
                 onOpenAlbum = { assertSame(target, it); events += "album" },
                 onOpenLyrics = { events += "lyrics" },
-                onOpenArtist = { assertSame(target, it); events += "artist" }
+                onOpenArtist = { assertSame(target, it); events += "artist" },
+                onTrackInfoClick = { assertSame(target, it); events += "info" }
             )
             assertTrue(performed)
             assertEquals(listOf("dismiss", when (action) {
                 NowPlayingAction.FAVORITE -> "favorite"
                 NowPlayingAction.GO_TO_ARTIST -> "artist"
                 NowPlayingAction.GO_TO_ALBUM -> "album"
+                NowPlayingAction.TRACK_INFORMATION -> "info"
                 NowPlayingAction.LYRICS -> "lyrics"
             }), events)
         }
@@ -87,7 +90,8 @@ class NowPlayingActionsTest {
                     onToggleFavorite = { error("Stale favorite") },
                     onOpenAlbum = { error("Stale navigation") },
                     onOpenLyrics = { error("Stale lyrics") },
-                    onOpenArtist = { error("Stale artist") }
+                    onOpenArtist = { error("Stale artist") },
+                    onTrackInfoClick = { error("Stale information") }
                 )
                 assertFalse(performed)
                 assertEquals(1, dismissals)
@@ -153,7 +157,7 @@ class NowPlayingActionsTest {
     @Test
     fun detailAndLyricsActionsNeverEmitFavoriteFeedback() {
         val target = song(1)
-        listOf(NowPlayingAction.GO_TO_ARTIST, NowPlayingAction.GO_TO_ALBUM,
+        listOf(NowPlayingAction.GO_TO_ARTIST, NowPlayingAction.GO_TO_ALBUM, NowPlayingAction.TRACK_INFORMATION,
             NowPlayingAction.LYRICS).forEach { action ->
             val events = mutableListOf<String>()
             assertTrue(performNowPlayingAction(
@@ -164,11 +168,13 @@ class NowPlayingActionsTest {
                 onOpenLyrics = { events += "lyrics" },
                 isFavorite = true,
                 onFavoriteFeedback = { error("Only Favorite emits this feedback") },
-                onOpenArtist = { events += "artist" }
+                onOpenArtist = { events += "artist" },
+                onTrackInfoClick = { events += "info" }
             ))
             assertEquals(listOf("dismiss", when (action) {
                 NowPlayingAction.GO_TO_ARTIST -> "artist"
                 NowPlayingAction.GO_TO_ALBUM -> "album"
+                NowPlayingAction.TRACK_INFORMATION -> "info"
                 else -> "lyrics"
             }), events)
         }
@@ -268,6 +274,20 @@ class NowPlayingActionsTest {
         var opened: String? = null
         assertTrue(openCurrentNowPlayingArtist(target, updated, listOf(updated)) { opened = it })
         assertEquals("Updated Artist", opened)
+    }
+
+    @Test
+    fun trackInformationIsAvailableWithoutArtistAlbumOrTechnicalMetadata() {
+        val target = song(1).copy(artist = "", album = "")
+        assertEquals(listOf(NowPlayingAction.FAVORITE, NowPlayingAction.TRACK_INFORMATION,
+            NowPlayingAction.LYRICS), nowPlayingActions(target, emptySet(), emptyList()).map { it.action })
+        val events = mutableListOf<String>()
+        assertTrue(performNowPlayingAction(
+            NowPlayingAction.TRACK_INFORMATION, target, target, emptyList(),
+            onDismiss = { events += "dismiss" }, onToggleFavorite = {}, onOpenAlbum = {}, onOpenLyrics = {},
+            onTrackInfoClick = { assertSame(target, it); events += "info" }
+        ))
+        assertEquals(listOf("dismiss", "info"), events)
     }
 
     private fun song(id: Long) = Song(

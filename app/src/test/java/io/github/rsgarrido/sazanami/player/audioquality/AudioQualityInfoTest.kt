@@ -89,6 +89,17 @@ class AudioQualityInfoTest {
         assertNull(normalizeAudioFormat(""))
     }
 
+    @Test
+    fun sourceCodecAndChannelsMergeWithoutChangingThePillText() {
+        val source = AudioQualityInfo("ogg", null, 48_000, 192, "audio/vorbis", 2)
+        val invalid = AudioQualityInfo(null, 0, -1, 0, "", -1)
+        val merged = mergeAudioQualityInfo(invalid, source)
+        assertEquals("audio/vorbis", merged.codecMimeType)
+        assertEquals(2, merged.channelCount)
+        assertNull(merged.bitDepth)
+        assertEquals("48 kHz  192 kbps  OGG", merged.toDisplayText())
+    }
+
     private fun infoWithSampleRate(sampleRateHz: Int): AudioQualityInfo {
         return AudioQualityInfo(
             format = null,

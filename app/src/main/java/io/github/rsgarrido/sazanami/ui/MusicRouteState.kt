@@ -27,6 +27,7 @@ import io.github.rsgarrido.sazanami.ui.navigation.PlaybackLaunchContext
 import io.github.rsgarrido.sazanami.ui.navigation.playbackLaunchContextSaver
 import io.github.rsgarrido.sazanami.ui.player.PlayerMorphState
 import io.github.rsgarrido.sazanami.ui.player.isCurrentNowPlayingTarget
+import io.github.rsgarrido.sazanami.ui.player.NowPlayingTrackInfoRequest
 import io.github.rsgarrido.sazanami.ui.player.rememberPlayerMorphState
 
 internal enum class DetailEntryOrigin {
@@ -273,7 +274,7 @@ enum class MusicPrimaryDestination {
     LISTENING_HISTORY_IMPORT,
     LISTENING_HISTORY_RECONCILIATION
 }
-enum class MusicOverlayDestination { UP_NEXT, QUEUE_HUB, CREATE_PLAYLIST, SLEEP_TIMER, NOW_PLAYING_MORE }
+enum class MusicOverlayDestination { UP_NEXT, QUEUE_HUB, CREATE_PLAYLIST, SLEEP_TIMER, NOW_PLAYING_MORE, TRACK_INFORMATION }
 
 @Stable
 class MusicOverlayState internal constructor(
@@ -287,14 +288,37 @@ class MusicOverlayState internal constructor(
     val isNowPlayingMoreVisible =
         destinationState(transientDestination, MusicOverlayDestination.NOW_PLAYING_MORE)
 
-    // A new destination clears the captured More target without changing other overlay behavior.
+    internal var trackInfoRequest by mutableStateOf<NowPlayingTrackInfoRequest?>(null)
+        private set
+
+    val isTrackInformationVisible =
+        destinationState(transientDestination, MusicOverlayDestination.TRACK_INFORMATION)
+
+    private fun dismissNowPlayingDetails() {
+        dismissNowPlayingMore()
+        dismissTrackInformation()
+    }
+
+    fun openTrackInformation(song: Song) {
+        dismissNowPlayingMore()
+        trackInfoRequest = NowPlayingTrackInfoRequest(song)
+        isTrackInformationVisible.value = true
+    }
+
+    fun dismissTrackInformation() {
+        isTrackInformationVisible.value = false
+        trackInfoRequest = null
+    }
+
+    // A new destination clears captured Now Playing targets without changing player presentation.
     private fun primaryState(target: MusicPrimaryDestination) =
-        destinationState(primaryDestination, target, ::dismissNowPlayingMore)
+        destinationState(primaryDestination, target, ::dismissNowPlayingDetails)
 
     private fun transientState(target: MusicOverlayDestination) =
-        destinationState(transientDestination, target, ::dismissNowPlayingMore)
+        destinationState(transientDestination, target, ::dismissNowPlayingDetails)
 
     fun openNowPlayingMore(song: Song) {
+        dismissTrackInformation()
         nowPlayingMoreTarget = song
         isNowPlayingMoreVisible.value = true
     }

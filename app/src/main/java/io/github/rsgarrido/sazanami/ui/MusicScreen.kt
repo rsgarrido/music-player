@@ -73,6 +73,8 @@ import io.github.rsgarrido.sazanami.ui.player.performNowPlayingAction
 import io.github.rsgarrido.sazanami.ui.player.supportsNowPlayingMore
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackQueue
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackEffect
+import io.github.rsgarrido.sazanami.ui.player.NowPlayingTrackInfoOverlay
+import io.github.rsgarrido.sazanami.ui.player.rememberNowPlayingTrackInfoOpener
 import io.github.rsgarrido.sazanami.ui.player.resolveNowPlayingAlbumKey
 import io.github.rsgarrido.sazanami.ui.library.FolderBrowseScrollStateHolder
 import io.github.rsgarrido.sazanami.ui.library.folderBrowseBackDestination
@@ -403,6 +405,7 @@ internal fun MusicScreen(
     var isExpandedUpNextSheetVisible by overlayState.isExpandedUpNextSheetVisible
     var isQueueHubVisible by overlayState.isQueueHubVisible
     val isNowPlayingMoreVisible by overlayState.isNowPlayingMoreVisible
+    val isTrackInformationVisible by overlayState.isTrackInformationVisible
     var isCreatePlaylistDialogVisible by overlayState.isCreatePlaylistDialogVisible
     var playlistCreationFolderId by rememberSaveable { mutableStateOf<Long?>(null) }
     var isSleepTimerDialogVisible by overlayState.isSleepTimerDialogVisible
@@ -428,6 +431,8 @@ internal fun MusicScreen(
             !isLyricsVisible && !lyricsTransitionState.lyricsOwnsInput &&
             songPendingTagEdit == null && batchMetadataEditorState == null &&
             songPendingPlaylistAdd == null && songsPendingPlaylistAdd.isEmpty()
+    val onTrackInfoClick = rememberNowPlayingTrackInfoOpener(currentSong, overlayState, canPresentNowPlayingMore)
+    NowPlayingTrackInfoOverlay(overlayState, canPresentNowPlayingMore)
     val nowPlayingMoreTarget = overlayState.currentNowPlayingMoreTarget(currentSong)
         ?.takeIf { canPresentNowPlayingMore }
     LaunchedEffect(
@@ -735,6 +740,7 @@ internal fun MusicScreen(
                 isExpandedUpNextSheetVisible ||
                 isQueueHubVisible ||
                 isNowPlayingMoreVisible ||
+                isTrackInformationVisible ||
                 playerMorphState.shouldConsumeBack ||
                 isFolderScreenVisible ||
                 isDiagnosticsScreenVisible ||
@@ -775,6 +781,10 @@ internal fun MusicScreen(
 
             songPendingTagEdit != null -> {
                 requestCloseTagEditor()
+            }
+
+            isTrackInformationVisible -> {
+                overlayState.dismissTrackInformation()
             }
 
             isNowPlayingMoreVisible -> {
@@ -1791,7 +1801,8 @@ internal fun MusicScreen(
                                 onOpenLyrics = lyricsTransitionState::openLyrics,
                                 isFavorite = target.membershipKey() in favoriteMembershipKeys,
                                 onFavoriteFeedback = favoriteFeedbackQueue::emit,
-                                onOpenArtist = onOpenCurrentArtistClick
+                                onOpenArtist = onOpenCurrentArtistClick,
+                                onTrackInfoClick = onTrackInfoClick
                             )
                         } else {
                             overlayState.dismissNowPlayingMore()
@@ -1902,7 +1913,8 @@ internal fun MusicScreen(
                     songs = songs,
                     onSongClick = onSongClick,
                     onOpenCurrentAlbumClick = ::openCurrentAlbum,
-                    onOpenCurrentArtistClick = onOpenCurrentArtistClick
+                    onOpenCurrentArtistClick = onOpenCurrentArtistClick,
+                    onTrackInfoClick = onTrackInfoClick
                 )
             }
         }

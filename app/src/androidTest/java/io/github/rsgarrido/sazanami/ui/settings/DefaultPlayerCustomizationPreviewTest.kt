@@ -28,5 +28,6 @@ class DefaultPlayerCustomizationPreviewTest {
 
         composeRule.onAllNodesWithContentDescription("Open queues").assertCountEquals(1)
         composeRule.onNodeWithText("Sazanami").assertHasNoClickAction()
+        composeRule.onNodeWithText("FLAC / 24-bit").assertHasNoClickAction()
     }
 }

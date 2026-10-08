@@ -49,6 +49,7 @@ internal fun ModernPlayerMetadataCarousel(
     hidePersistentContent: Boolean = false,
     onOpenAlbumClick: (() -> Unit)? = null,
     onOpenArtistClick: (() -> Unit)? = null,
+    onTrackInfoClick: (() -> Unit)? = null,
     expandedContentAlpha: Float = 1f,
     loadExpandedMetadata: Boolean = true
 ) {
@@ -127,6 +128,9 @@ internal fun ModernPlayerMetadataCarousel(
                         },
                         hidePersistentContent = hidePersistentContent,
                         onOpenAlbumClick = if (item.isCurrent) onOpenAlbumClick else null,
+                        onTrackInfoClick = onTrackInfoClick.takeIf {
+                            item.isCurrent && carouselState.offsetX == 0f && expandedContentAlpha == 1f
+                        },
                         onOpenArtistClick = if (item.isCurrent && !hidePersistentContent &&
                             carouselState.offsetX == 0f
                         ) onOpenArtistClick else null,
@@ -149,6 +153,7 @@ private fun ModernPlayerMetadataPage(
     hidePersistentContent: Boolean,
     onOpenAlbumClick: (() -> Unit)?,
     onOpenArtistClick: (() -> Unit)?,
+    onTrackInfoClick: (() -> Unit)?,
     expandedContentAlpha: Float,
     loadExpandedMetadata: Boolean
 ) {
@@ -187,6 +192,7 @@ private fun ModernPlayerMetadataPage(
             ModernPlayerAudioQualityBadge(
                 audioQualityInfo = audioQualityInfo,
                 style = style,
+                onTrackInfoClick = onTrackInfoClick,
                 modifier = Modifier
                     .align(
                         if (layoutAppearance.metadataAlignment == ModernMetadataAlignment.CENTER) {

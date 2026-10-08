@@ -136,6 +136,48 @@ class MusicRouteStateTest {
         assertFalse(state.isNowPlayingMoreVisible.value)
     }
 
+    @Test
+    fun trackInformationReplacesMoreAndStaysPinnedWhenPlaybackAdvances() {
+        val state = expandedOverlayState()
+        val target = song(1)
+        state.openNowPlayingMore(target)
+        state.openTrackInformation(target)
+        assertFalse(state.isNowPlayingMoreVisible.value)
+        assertNull(state.nowPlayingMoreTarget)
+        assertTrue(state.isTrackInformationVisible.value)
+        assertSame(target, state.trackInfoRequest?.song)
+        state.reconcileNowPlayingMore(song(2), true)
+        assertSame(target, state.trackInfoRequest?.song)
+        assertEquals(PlayerPresentation.Expanded, state.playerMorphState.targetPresentation)
+        state.dismissTrackInformation()
+        assertNull(state.trackInfoRequest)
+        assertEquals(PlayerPresentation.Expanded, state.playerMorphState.targetPresentation)
+    }
+
+    @Test
+    fun everyInformationOpeningGetsANewRequestAndCompetingOverlaysClearIt() {
+        val state = expandedOverlayState()
+        val target = song(1)
+        state.isQueueHubVisible.value = true
+        state.openTrackInformation(target)
+        assertFalse(state.isQueueHubVisible.value)
+        val first = state.trackInfoRequest
+        state.openTrackInformation(target)
+        assertTrue(first !== state.trackInfoRequest)
+        listOf(state.isQueueHubVisible, state.isSleepTimerDialogVisible,
+            state.isExpandedUpNextSheetVisible, state.isCreatePlaylistDialogVisible,
+            state.isSettingsScreenVisible).forEach {
+            state.openTrackInformation(target)
+            it.value = true
+            assertNull(state.trackInfoRequest)
+            assertFalse(state.isTrackInformationVisible.value)
+        }
+        state.openTrackInformation(target)
+        state.openNowPlayingMore(target)
+        assertNull(state.trackInfoRequest)
+        assertFalse(state.isTrackInformationVisible.value)
+    }
+
     private fun expandedOverlayState() = MusicOverlayState(
         playerMorphState(PlayerPresentation.Expanded), mutableStateOf(null), mutableStateOf(null)
     )

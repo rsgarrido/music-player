@@ -138,6 +138,7 @@ fun ExpandedPlayerThemeHost(
     onSongClick: (Song, List<Song>) -> Unit,
     onOpenCurrentAlbumClick: (Song) -> Unit,
     onOpenCurrentArtistClick: (Song) -> Unit,
+    onTrackInfoClick: ((Song) -> Unit)? = null,
     endpointBounds: PlayerEndpointBounds,
     defaultMorphBounds: DefaultPlayerMorphBounds,
     classicMorphBounds: ClassicWheelMorphBounds,
@@ -326,6 +327,7 @@ fun ExpandedPlayerThemeHost(
                             onRepeatClick = onRepeatClick,
                             onCollapseClick = onCollapseClick,
                             onOpenArtistClick = onOpenArtistClick,
+                            onTrackInfoClick = onTrackInfoClick?.let { open -> { open(currentSong) } },
                             onOpenAlbumClick = if (
                                 playerMorphState.settledPresentation == PlayerPresentation.Expanded &&
                                 playerMorphState.progress == 1f &&

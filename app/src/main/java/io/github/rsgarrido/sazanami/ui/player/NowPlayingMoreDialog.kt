@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Subject
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -119,6 +120,7 @@ internal fun NowPlayingMoreDialog(
                                     } else Icons.Filled.FavoriteBorder
                                     NowPlayingAction.GO_TO_ARTIST -> Icons.Filled.Person
                                     NowPlayingAction.GO_TO_ALBUM -> Icons.Filled.Album
+                                    NowPlayingAction.TRACK_INFORMATION -> Icons.Filled.Info
                                     NowPlayingAction.LYRICS -> Icons.Filled.Subject
                                 },
                                 contentDescription = null,
