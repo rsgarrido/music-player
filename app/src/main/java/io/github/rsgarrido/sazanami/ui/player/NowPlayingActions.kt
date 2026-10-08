@@ -11,7 +11,11 @@ import io.github.rsgarrido.sazanami.ui.library.buildLibraryAlbumGroups
 import io.github.rsgarrido.sazanami.ui.library.buildLibraryArtistGroups
 import io.github.rsgarrido.sazanami.ui.library.findLibraryAlbumGroupForSong
 
-enum class NowPlayingAction { FAVORITE, GO_TO_ARTIST, GO_TO_ALBUM, TRACK_INFORMATION, LYRICS }
+enum class NowPlayingAction { FAVORITE, GO_TO_ARTIST, GO_TO_ALBUM, ADD_TO_PLAYLIST, RATE_SONG, TRACK_INFORMATION, LYRICS }
+
+internal val NowPlayingAction.isQuickAction: Boolean
+    get() = this == NowPlayingAction.FAVORITE || this == NowPlayingAction.RATE_SONG ||
+            this == NowPlayingAction.LYRICS || this == NowPlayingAction.TRACK_INFORMATION
 
 internal enum class NowPlayingFavoriteFeedback { ADDED_TO_FAVORITES, REMOVED_FROM_FAVORITES }
 
@@ -63,23 +67,26 @@ internal fun openCurrentNowPlayingArtist(
 internal fun nowPlayingActions(
     target: Song,
     favoriteMembershipKeys: Set<String>,
-    librarySongs: List<Song>
+    librarySongs: List<Song>,
+    isRated: Boolean = false
 ): List<NowPlayingActionItem> = buildList {
-    val isFavorite = target.membershipKey() in favoriteMembershipKeys
-    add(NowPlayingActionItem(
-        action = NowPlayingAction.FAVORITE,
-        labelRes = if (isFavorite) R.string.player_remove_favorite else R.string.player_add_favorite,
-        isActive = isFavorite
-    ))
     if (resolveNowPlayingArtistName(target, librarySongs) != null) {
         add(NowPlayingActionItem(NowPlayingAction.GO_TO_ARTIST, R.string.library_search_go_artist))
     }
     if (resolveNowPlayingAlbumKey(target, librarySongs) != null) {
         add(NowPlayingActionItem(NowPlayingAction.GO_TO_ALBUM, R.string.player_go_to_album))
     }
-    add(NowPlayingActionItem(NowPlayingAction.TRACK_INFORMATION, R.string.player_track_information))
+    add(NowPlayingActionItem(NowPlayingAction.ADD_TO_PLAYLIST, R.string.library_song_add_to_playlist))
+    val isFavorite = target.membershipKey() in favoriteMembershipKeys
+    add(NowPlayingActionItem(
+        action = NowPlayingAction.FAVORITE,
+        labelRes = if (isFavorite) R.string.player_remove_favorite else R.string.player_add_favorite,
+        isActive = isFavorite
+    ))
+    add(NowPlayingActionItem(NowPlayingAction.RATE_SONG, R.string.rate_song, isActive = isRated))
     // Missing or unconfigured local lyrics are handled by the existing Lyrics screen.
     add(NowPlayingActionItem(NowPlayingAction.LYRICS, R.string.player_lyrics))
+    add(NowPlayingActionItem(NowPlayingAction.TRACK_INFORMATION, R.string.player_track_information))
 }
 
 /**
@@ -98,7 +105,9 @@ internal fun performNowPlayingAction(
     isFavorite: Boolean = false,
     onFavoriteFeedback: (NowPlayingFavoriteFeedback) -> Unit = {},
     onOpenArtist: (Song) -> Unit = {},
-    onTrackInfoClick: (Song) -> Unit = {}
+    onTrackInfoClick: (Song) -> Unit = {},
+    onAddToPlaylist: (Song) -> Unit = {},
+    onRateSong: (Song) -> Unit = {}
 ): Boolean {
     onDismiss()
     if (!isCurrentNowPlayingTarget(target, currentSong)) return false
@@ -121,6 +130,8 @@ internal fun performNowPlayingAction(
             onOpenAlbum(target)
         }
         NowPlayingAction.TRACK_INFORMATION -> onTrackInfoClick(target)
+        NowPlayingAction.ADD_TO_PLAYLIST -> onAddToPlaylist(target)
+        NowPlayingAction.RATE_SONG -> onRateSong(target)
         NowPlayingAction.LYRICS -> onOpenLyrics()
     }
     return true

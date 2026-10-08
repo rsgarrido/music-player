@@ -8,12 +8,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertDoesNotExist
 import androidx.compose.ui.test.assertExists
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -29,6 +34,13 @@ import androidx.test.espresso.action.Tap
 import androidx.test.espresso.matcher.RootMatchers.isDialog
 import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import io.github.rsgarrido.sazanami.data.Song
+import io.github.rsgarrido.sazanami.R
+import io.github.rsgarrido.sazanami.controller.SongRatingDialogState
+import io.github.rsgarrido.sazanami.controller.SongRatingUiState
+import io.github.rsgarrido.sazanami.ui.ratings.LocalSongRatingUi
+import io.github.rsgarrido.sazanami.ui.ratings.SongRatingUiEnvironment
+import io.github.rsgarrido.sazanami.ui.ratings.SongRatingDialog
+import io.github.rsgarrido.sazanami.ui.playlist.AddToPlaylistDialog
 import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernExpandedPlayer
@@ -36,6 +48,9 @@ import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkCarouselPresentation
 import io.github.rsgarrido.sazanami.ui.player.modern.rememberModernArtworkCarouselPresentation
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -56,13 +71,13 @@ class NowPlayingMoreDialogTest {
         }
         composeRule.onNodeWithText("Song 1").assertExists()
         composeRule.onNodeWithText("Unknown Artist · Unknown Album").assertExists()
-        composeRule.onNodeWithText("Add to favorites").assertExists()
+        composeRule.onNodeWithContentDescription("Add to favorites").assertExists()
         composeRule.onNodeWithText("Go to album").assertExists()
         composeRule.onNodeWithText("Go to artist").assertDoesNotExist()
-        composeRule.onNodeWithText("Lyrics").assertExists()
+        composeRule.onNodeWithContentDescription("Lyrics").assertExists()
         composeRule.runOnIdle { favorites.value = setOf(target.membershipKey()) }
-        composeRule.onNodeWithText("Add to favorites").assertDoesNotExist()
-        composeRule.onNodeWithText("Remove from favorites").assertExists()
+        composeRule.onNodeWithContentDescription("Add to favorites").assertDoesNotExist()
+        composeRule.onNodeWithContentDescription("Remove from favorites").assertExists()
     }
 
     @Test
@@ -137,7 +152,7 @@ class NowPlayingMoreDialogTest {
                 }
             }
         }
-        composeRule.onNodeWithText("Add to favorites").performTouchInput { click(center) }
+        composeRule.onNodeWithContentDescription("Add to favorites").performTouchInput { click(center) }
         composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertDoesNotExist()
         composeRule.runOnIdle {
             assertEquals(1, actionCount)
@@ -169,7 +184,7 @@ class NowPlayingMoreDialogTest {
                 }
             }
         }
-        composeRule.onNodeWithText("Lyrics").performClick()
+        composeRule.onNodeWithContentDescription("Lyrics").performClick()
         composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertDoesNotExist()
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.runOnIdle { assertEquals(PlayerSurfaceState.LYRICS, lyrics.settledSurface) }
@@ -241,6 +256,135 @@ class NowPlayingMoreDialogTest {
         composeRule.onNodeWithText("Go to artist").performClick()
         composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertDoesNotExist()
         composeRule.runOnIdle { assertEquals(listOf("dismiss", "artist"), events) }
+    }
+
+    @Test
+    fun workflowsAreRowsAndFourEqualQuickActionsHaveLabelsWithoutVisibleCaptions() {
+        val target = song(1)
+        composeRule.setContent {
+            MaterialTheme {
+                NowPlayingMoreDialog(target,
+                    nowPlayingActions(target, setOf(target.membershipKey()), listOf(target), isRated = true), {}, {})
+            }
+        }
+        composeRule.onNodeWithTag(NowPlayingMoreWorkflowRowsTag).onChildren().assertCountEquals(3)
+        composeRule.onNodeWithTag(NowPlayingMoreQuickActionsTag).onChildren().assertCountEquals(4)
+        val workflowLabels = listOf("Go to artist", "Go to album", "Add to playlist")
+        val workflowTops = workflowLabels.map { composeRule.onNodeWithText(it).fetchSemanticsNode().boundsInRoot.top }
+        assertTrue(workflowTops.zipWithNext().all { (first, second) -> first < second })
+        val quickLabels = listOf("Remove from favorites", "Rate song", "Lyrics", "Track information")
+        val quickNodes = quickLabels.map { composeRule.onNodeWithContentDescription(it).fetchSemanticsNode() }
+        val quickBounds = quickNodes.map { it.boundsInRoot }
+        val density = composeRule.activity.resources.displayMetrics.density
+        quickBounds.forEach {
+            assertEquals(quickBounds.first().width, it.width, 1f)
+            assertTrue(it.width >= 48f * density)
+            assertTrue(it.height >= 48f * density)
+        }
+        assertTrue(quickBounds.zipWithNext().all { (first, second) -> first.left < second.left })
+        quickNodes.forEach { assertEquals(Role.Button, it.config[SemanticsProperties.Role]) }
+        quickLabels.forEach { composeRule.onNodeWithText(it).assertDoesNotExist() }
+        composeRule.onNodeWithContentDescription("Rate song").assertIsSelected()
+        composeRule.onNodeWithContentDescription("Remove from favorites").assertIsSelected()
+        composeRule.onNodeWithTag("star_rating_control").assertDoesNotExist()
+    }
+
+    @Test
+    fun rateQuickActionUsesTheExistingRatingDialogAndKeepsItsCapturedSong() {
+        val target = song(1)
+        val current = mutableStateOf(target)
+        val visible = mutableStateOf(true)
+        val rating = mutableStateOf<SongRatingDialogState?>(null)
+        composeRule.setContent {
+            MaterialTheme {
+                CompositionLocalProvider(LocalSongRatingUi provides SongRatingUiEnvironment(
+                    state = SongRatingUiState(dialog = rating.value),
+                    onOpen = {
+                        assertFalse(visible.value)
+                        rating.value = SongRatingDialogState(it, isLoading = false)
+                    }
+                )) {
+                    val openers = rememberNowPlayingWorkflowOpeners(current.value, true) {}
+                    if (visible.value) NowPlayingMoreDialog(target,
+                        nowPlayingActions(target, emptySet(), listOf(target)), {}, onAction = { action ->
+                            performNowPlayingAction(action, target, current.value, listOf(target),
+                                onDismiss = { visible.value = false }, onToggleFavorite = {}, onOpenAlbum = {},
+                                onOpenLyrics = {}, onRateSong = openers.rateSong)
+                        })
+                    rating.value?.let {
+                        SongRatingDialog(it, onDismiss = { rating.value = null }, onRatingSelected = {}, onSave = {}, onClear = {})
+                    }
+                }
+            }
+        }
+        composeRule.onNodeWithContentDescription("Rate song").performClick()
+        composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertDoesNotExist()
+        composeRule.onNodeWithTag("star_rating_control").assertExists()
+        composeRule.runOnIdle { assertSame(target, rating.value?.song); current.value = song(2) }
+        composeRule.runOnIdle { assertSame(target, rating.value?.song) }
+    }
+
+    @Test
+    fun playlistRowUsesTheExistingPickerWithCreationAndCapturedTarget() {
+        val target = song(1)
+        val current = mutableStateOf(target)
+        val visible = mutableStateOf(true)
+        val pending = mutableStateOf<Song?>(null)
+        composeRule.setContent {
+            MaterialTheme {
+                val openers = rememberNowPlayingWorkflowOpeners(current.value, true) {
+                    assertFalse(visible.value)
+                    pending.value = it
+                }
+                if (visible.value) NowPlayingMoreDialog(target,
+                    nowPlayingActions(target, emptySet(), listOf(target)), {}, onAction = { action ->
+                        performNowPlayingAction(action, target, current.value, listOf(target),
+                            onDismiss = { visible.value = false }, onToggleFavorite = {}, onOpenAlbum = {},
+                            onOpenLyrics = {}, onAddToPlaylist = openers.addToPlaylist)
+                    })
+                pending.value?.let {
+                    AddToPlaylistDialog(emptyList(), listOf(it), onDismiss = { pending.value = null },
+                        onPlaylistSelected = { _, _ -> }, onCreatePlaylist = { _, _ -> })
+                }
+            }
+        }
+        composeRule.onNodeWithText("Add to playlist").performClick()
+        composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertDoesNotExist()
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.playlist_add_to_title)).assertExists()
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.playlist_create_new)).assertExists()
+        composeRule.runOnIdle { assertSame(target, pending.value); current.value = song(2) }
+        composeRule.runOnIdle { assertSame(target, pending.value) }
+        composeRule.onNodeWithText(composeRule.activity.getString(R.string.settings_cancel)).performClick()
+        composeRule.runOnIdle { assertEquals(null, pending.value) }
+    }
+
+    @Test
+    fun workflowCallbacksRemainStableAndRejectLateTargetsOrUnavailablePlayer() {
+        val target = song(1)
+        val current = mutableStateOf(target)
+        val available = mutableStateOf(true)
+        val playlists = mutableListOf<Song>()
+        val ratings = mutableListOf<Song>()
+        lateinit var openers: NowPlayingWorkflowOpeners
+        composeRule.setContent {
+            CompositionLocalProvider(LocalSongRatingUi provides SongRatingUiEnvironment(onOpen = { ratings += it })) {
+                openers = rememberNowPlayingWorkflowOpeners(current.value, available.value) { playlists += it }
+            }
+        }
+        lateinit var initial: NowPlayingWorkflowOpeners
+        composeRule.runOnIdle { initial = openers; openers.addToPlaylist(target); openers.rateSong(target); current.value = song(2) }
+        composeRule.runOnIdle {
+            assertSame(initial, openers)
+            openers.addToPlaylist(target)
+            openers.rateSong(target)
+            available.value = false
+        }
+        composeRule.runOnIdle {
+            openers.addToPlaylist(current.value)
+            openers.rateSong(current.value)
+            assertEquals(listOf(target), playlists)
+            assertEquals(listOf(target), ratings)
+        }
     }
 
     private fun song(id: Long) = Song(

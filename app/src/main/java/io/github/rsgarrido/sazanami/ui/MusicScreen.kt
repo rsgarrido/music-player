@@ -75,6 +75,7 @@ import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackQueue
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingFavoriteFeedbackEffect
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingTrackInfoOverlay
 import io.github.rsgarrido.sazanami.ui.player.rememberNowPlayingTrackInfoOpener
+import io.github.rsgarrido.sazanami.ui.player.rememberNowPlayingWorkflowOpeners
 import io.github.rsgarrido.sazanami.ui.player.resolveNowPlayingAlbumKey
 import io.github.rsgarrido.sazanami.ui.library.FolderBrowseScrollStateHolder
 import io.github.rsgarrido.sazanami.ui.library.folderBrowseBackDestination
@@ -432,6 +433,9 @@ internal fun MusicScreen(
             songPendingTagEdit == null && batchMetadataEditorState == null &&
             songPendingPlaylistAdd == null && songsPendingPlaylistAdd.isEmpty()
     val onTrackInfoClick = rememberNowPlayingTrackInfoOpener(currentSong, overlayState, canPresentNowPlayingMore)
+    val workflowOpeners = rememberNowPlayingWorkflowOpeners(currentSong, canPresentNowPlayingMore) { target ->
+        songPendingPlaylistAdd = target
+    }
     NowPlayingTrackInfoOverlay(overlayState, canPresentNowPlayingMore)
     val nowPlayingMoreTarget = overlayState.currentNowPlayingMoreTarget(currentSong)
         ?.takeIf { canPresentNowPlayingMore }
@@ -1802,7 +1806,9 @@ internal fun MusicScreen(
                                 isFavorite = target.membershipKey() in favoriteMembershipKeys,
                                 onFavoriteFeedback = favoriteFeedbackQueue::emit,
                                 onOpenArtist = onOpenCurrentArtistClick,
-                                onTrackInfoClick = onTrackInfoClick
+                                onTrackInfoClick = onTrackInfoClick,
+                                onAddToPlaylist = workflowOpeners.addToPlaylist,
+                                onRateSong = workflowOpeners.rateSong
                             )
                         } else {
                             overlayState.dismissNowPlayingMore()

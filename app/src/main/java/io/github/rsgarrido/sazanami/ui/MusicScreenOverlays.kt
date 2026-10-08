@@ -27,6 +27,7 @@ import io.github.rsgarrido.sazanami.ui.player.ExpandedPlayerThemeHost
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingAction
 import io.github.rsgarrido.sazanami.ui.player.NowPlayingMoreDialog
 import io.github.rsgarrido.sazanami.ui.player.nowPlayingActions
+import io.github.rsgarrido.sazanami.ui.ratings.LocalSongRatingUi
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsTransitionState
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsGestureRegion
 import io.github.rsgarrido.sazanami.ui.player.PlayerMorphState
@@ -296,8 +297,10 @@ fun MusicScreenOverlays(
     }
 
     if (nowPlayingMoreTarget != null) {
-        val actions = remember(nowPlayingMoreTarget, favoriteMembershipKeys, songs) {
-            nowPlayingActions(nowPlayingMoreTarget, favoriteMembershipKeys, songs)
+        val ratings = LocalSongRatingUi.current.state.ratingsByReferenceKey
+        val isRated = (ratings[nowPlayingMoreTarget.membershipKey()] ?: 0) in 1..5
+        val actions = remember(nowPlayingMoreTarget, favoriteMembershipKeys, songs, isRated) {
+            nowPlayingActions(nowPlayingMoreTarget, favoriteMembershipKeys, songs, isRated)
         }
         NowPlayingMoreDialog(
             target = nowPlayingMoreTarget,

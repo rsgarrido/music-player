@@ -305,14 +305,16 @@ class ExpandedQueueHubEntryPointTest {
             composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertExists()
             composeRule.onNodeWithText("Go to artist").assertExists()
             composeRule.onNodeWithText("Go to album").assertExists()
-            composeRule.onNodeWithText("Track information").assertExists()
-            composeRule.onNodeWithText("Lyrics").assertExists()
+            composeRule.onNodeWithText("Add to playlist").assertExists()
+            composeRule.onNodeWithContentDescription("Rate song").assertExists()
+            composeRule.onNodeWithContentDescription("Track information").assertExists()
+            composeRule.onNodeWithContentDescription("Lyrics").assertExists()
             composeRule.runOnIdle {
                 assertEquals(index + 1, moreCount)
                 assertEquals(index, queueCount)
                 assertEquals(index, favoriteCount)
             }
-            composeRule.onNodeWithText("Add to favorites").performClick()
+            composeRule.onNodeWithContentDescription("Add to favorites").performClick()
             composeRule.onNodeWithTag(NowPlayingMoreDialogTag).assertDoesNotExist()
             assertSingleQueueHubActionAndClick()
             composeRule.runOnIdle {
