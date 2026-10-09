@@ -1,12 +1,9 @@
 package io.github.rsgarrido.sazanami.ui
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
@@ -19,15 +16,10 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import io.github.rsgarrido.sazanami.R
 import io.github.rsgarrido.sazanami.data.PlayerTheme
-import io.github.rsgarrido.sazanami.data.Playlist
 import io.github.rsgarrido.sazanami.data.Song
 import io.github.rsgarrido.sazanami.data.membershipKey
 import io.github.rsgarrido.sazanami.player.RepeatMode
 import io.github.rsgarrido.sazanami.ui.player.ExpandedPlayerThemeHost
-import io.github.rsgarrido.sazanami.ui.player.NowPlayingAction
-import io.github.rsgarrido.sazanami.ui.player.NowPlayingMoreDialog
-import io.github.rsgarrido.sazanami.ui.player.nowPlayingActions
-import io.github.rsgarrido.sazanami.ui.ratings.LocalSongRatingUi
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsTransitionState
 import io.github.rsgarrido.sazanami.ui.player.PlayerLyricsGestureRegion
 import io.github.rsgarrido.sazanami.ui.player.PlayerMorphState
@@ -47,19 +39,13 @@ import io.github.rsgarrido.sazanami.ui.player.ImmersiveSystemBarsEffect
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernArtworkTransitionStyle
 import io.github.rsgarrido.sazanami.ui.player.modern.ModernPlayerAppearance
 import io.github.rsgarrido.sazanami.ui.player.theme.PlayerThemeTokens
-import io.github.rsgarrido.sazanami.ui.playlist.AddToPlaylistDialog
-import io.github.rsgarrido.sazanami.ui.playlist.PlaylistNameDialog
-import io.github.rsgarrido.sazanami.ui.queue.QueueScreen
-import io.github.rsgarrido.sazanami.ui.queue.QueueHubSheet
 import io.github.rsgarrido.sazanami.controller.PlaybackQueueHubUiState
-import io.github.rsgarrido.sazanami.ui.settings.SleepTimerDialog
 import io.github.rsgarrido.sazanami.ui.state.PlaybackProgress
 import io.github.rsgarrido.sazanami.ui.state.PlaybackProgressUiState
 import io.github.rsgarrido.sazanami.lyrics.LyricsPlaybackUiState
 import io.github.rsgarrido.sazanami.ui.lyrics.LyricsScreen
 import kotlinx.coroutines.flow.StateFlow
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicScreenOverlays(
     playerMorphState: PlayerMorphState,
@@ -82,16 +68,12 @@ fun MusicScreenOverlays(
     favoriteMembershipKeys: Set<String>,
     isExpandedUpNextSheetVisible: Boolean,
     isQueueHubVisible: Boolean,
-    nowPlayingMoreTarget: Song?,
-    onDismissNowPlayingMore: () -> Unit,
-    onNowPlayingMoreAction: (NowPlayingAction, Song) -> Unit,
+    isNowPlayingMorePresented: Boolean,
     playbackQueueHubUiState: PlaybackQueueHubUiState,
     queuedSongs: List<Song>,
     upcomingSongs: List<Song>,
     isCreatePlaylistDialogVisible: Boolean,
-    createPlaylistFolderId: Long?,
-    songPendingPlaylistAdd: Song?,
-    playlists: List<Playlist>,
+    hasPendingPlaylistAdd: Boolean,
     onPlayPauseClick: () -> Unit,
     onPreviousClick: () -> Unit,
     onNextClick: () -> Unit,
@@ -105,40 +87,10 @@ fun MusicScreenOverlays(
     onRepeatClick: () -> Unit,
     onCollapseExpandedPlayer: () -> Unit,
     onShowQueueHub: () -> Unit,
-    onShowExpandedSleepTimer: () -> Unit,
     onShowExpandedMore: () -> Unit,
-    onDismissExpandedUpNextSheet: () -> Unit,
-    onDismissQueueHub: () -> Unit,
-    onPlaybackQueueSelected: (String) -> Unit,
-    onSwitchSelectedPlaybackQueue: () -> Unit,
-    onCreatePlaybackQueueFromCurrent: () -> Unit,
-    onRenamePlaybackQueue: (String, String) -> Unit,
-    onDeletePlaybackQueue: (String) -> Unit,
-    onRemovePlaybackQueueEntry: (String, String) -> Unit,
-    onPlayPlaybackQueueEntry: (String, String) -> Unit,
-    onUndoPlaybackQueueEntryRemoval: () -> Unit,
-    onClearPlaybackQueueEntryRemovalUndo: () -> Unit,
-    onReorderPlaybackQueueEntry: (String, String, Int) -> Unit,
-    onClearPlaybackQueueMessage: () -> Unit,
-    onRemoveFromQueueClick: (Int) -> Unit,
-    onMoveQueueItemUpClick: (Int) -> Unit,
-    onMoveQueueItemDownClick: (Int) -> Unit,
-    onClearQueueClick: () -> Unit,
     onToggleFavoriteClick: (Song) -> Unit,
-    onDismissCreatePlaylistDialog: () -> Unit,
-    onCreatePlaylistClick: (String, Long?) -> Unit,
-    onCreatePlaylistWithSongsClick: (String, List<Song>) -> Unit,
-    onDismissAddToPlaylistDialog: () -> Unit,
-    onAddSongToPlaylistClick: (Playlist, Song) -> Unit,
-    onAddSongsToPlaylistClick: (Playlist, List<Song>) -> Unit,
-    songsPendingPlaylistAdd: List<Song>,
-    onDismissBulkAddToPlaylistDialog: () -> Unit,
+    hasPendingBulkPlaylistAdd: Boolean,
     isSleepTimerDialogVisible: Boolean,
-    isSleepTimerActive: Boolean,
-    sleepTimerDisplayText: String,
-    onStartSleepTimerClick: (Int) -> Unit,
-    onCancelSleepTimerClick: () -> Unit,
-    onDismissSleepTimerDialog: () -> Unit,
     selectedPlayerTheme: PlayerTheme,
     selectedPlayerThemeTokens: PlayerThemeTokens,
     selectedModernArtworkTransitionStyle: ModernArtworkTransitionStyle,
@@ -214,7 +166,11 @@ fun MusicScreenOverlays(
                     indication = null,
                     onClick = {}
                 )
-                .blockPlayerInput(lyricsTransitionState.lyricsOwnsInput || nowPlayingMoreTarget != null || isArtworkViewerVisible)
+                .blockPlayerInput(shouldBlockExpandedPlayerInput(
+                    lyricsOwnsInput = lyricsTransitionState.lyricsOwnsInput,
+                    isNowPlayingMorePresented = isNowPlayingMorePresented,
+                    isArtworkViewerVisible = isArtworkViewerVisible
+                ))
         ) {
             PlaybackProgress(playbackProgressUiState) { progress ->
                 ExpandedPlayerThemeHost(
@@ -222,15 +178,17 @@ fun MusicScreenOverlays(
                     tokens = selectedPlayerThemeTokens,
                     modernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
                     modernPlayerAppearance = selectedModernPlayerAppearance,
-                    isVisualizerWorkAllowed = !isLyricsVisible &&
-                            !isExpandedUpNextSheetVisible &&
-                            !isQueueHubVisible &&
-                            nowPlayingMoreTarget == null &&
-                            !isArtworkViewerVisible &&
-                            !isSleepTimerDialogVisible &&
-                            !isCreatePlaylistDialogVisible &&
-                            songPendingPlaylistAdd == null &&
-                            songsPendingPlaylistAdd.isEmpty(),
+                    isVisualizerWorkAllowed = shouldAllowExpandedPlayerVisualizerWork(
+                        isLyricsVisible = isLyricsVisible,
+                        isExpandedUpNextSheetVisible = isExpandedUpNextSheetVisible,
+                        isQueueHubVisible = isQueueHubVisible,
+                        isNowPlayingMorePresented = isNowPlayingMorePresented,
+                        isArtworkViewerVisible = isArtworkViewerVisible,
+                        isSleepTimerDialogVisible = isSleepTimerDialogVisible,
+                        isCreatePlaylistDialogVisible = isCreatePlaylistDialogVisible,
+                        hasPendingPlaylistAdd = hasPendingPlaylistAdd,
+                        hasPendingBulkPlaylistAdd = hasPendingBulkPlaylistAdd
+                    ),
                     currentSong = currentSong,
                     previousPreviewSong = previousPreviewSong,
                     nextPreviewSong = nextPreviewSong,
@@ -251,7 +209,6 @@ fun MusicScreenOverlays(
                     lyricsTransitionState = lyricsTransitionState,
                     lyricsGestureRegion = lyricsGestureRegion,
                     onOpenQueueHubClick = onShowQueueHub,
-                    onOpenSleepTimerClick = onShowExpandedSleepTimer,
                     onOpenMoreClick = onShowExpandedMore,
                     onToggleFavoriteClick = onToggleFavoriteClick,
                     songs = songs,
@@ -299,108 +256,34 @@ fun MusicScreenOverlays(
             }
         )
     }
-
-    if (nowPlayingMoreTarget != null) {
-        val ratings = LocalSongRatingUi.current.state.ratingsByReferenceKey
-        val isRated = (ratings[nowPlayingMoreTarget.membershipKey()] ?: 0) in 1..5
-        val actions = remember(nowPlayingMoreTarget, favoriteMembershipKeys, songs, isRated, isSleepTimerActive) {
-            nowPlayingActions(nowPlayingMoreTarget, favoriteMembershipKeys, songs, isRated, isSleepTimerActive)
-        }
-        NowPlayingMoreDialog(
-            target = nowPlayingMoreTarget,
-            actions = actions,
-            onDismiss = onDismissNowPlayingMore,
-            onAction = { action -> onNowPlayingMoreAction(action, nowPlayingMoreTarget) }
-        )
-    }
-
-    if (isExpandedUpNextSheetVisible) {
-        ModalBottomSheet(
-            onDismissRequest = onDismissExpandedUpNextSheet
-        ) {
-            QueueScreen(
-                queuedSongs = queuedSongs,
-                upcomingSongs = upcomingSongs,
-                isShuffleEnabled = isShuffleEnabled,
-                onBackClick = onDismissExpandedUpNextSheet,
-                onRemoveFromQueueClick = onRemoveFromQueueClick,
-                onMoveQueueItemUpClick = onMoveQueueItemUpClick,
-                onMoveQueueItemDownClick = onMoveQueueItemDownClick,
-                onClearQueueClick = onClearQueueClick,
-                modifier = Modifier.fillMaxHeight(0.86f)
-            )
-        }
-    }
-
-    if (isQueueHubVisible) {
-        QueueHubSheet(
-            state = playbackQueueHubUiState,
-            onDismiss = onDismissQueueHub,
-            onQueueSelected = onPlaybackQueueSelected,
-            onSwitchSelected = onSwitchSelectedPlaybackQueue,
-            onCreateFromCurrent = onCreatePlaybackQueueFromCurrent,
-            onRename = onRenamePlaybackQueue,
-            onDelete = onDeletePlaybackQueue,
-            onRemoveEntry = onRemovePlaybackQueueEntry,
-            onPlayEntry = onPlayPlaybackQueueEntry,
-            onUndoRemove = onUndoPlaybackQueueEntryRemoval,
-            onUndoDismissed = onClearPlaybackQueueEntryRemovalUndo,
-            onReorderEntry = onReorderPlaybackQueueEntry,
-            onMessageDismissed = onClearPlaybackQueueMessage
-        )
-    }
-
-    if (isCreatePlaylistDialogVisible) {
-        PlaylistNameDialog(
-            title = stringResource(R.string.playlist_create_title),
-            confirmButtonText = stringResource(R.string.playlist_create_action),
-            existingPlaylistNames = playlists.map { playlist ->
-                playlist.name
-            },
-            onDismiss = onDismissCreatePlaylistDialog,
-            onConfirmClick = { playlistName ->
-                onCreatePlaylistClick(playlistName, createPlaylistFolderId)
-                onDismissCreatePlaylistDialog()
-            }
-        )
-    }
-
-    if (isSleepTimerDialogVisible) {
-        SleepTimerDialog(
-            isTimerActive = isSleepTimerActive,
-            sleepTimerDisplayText = sleepTimerDisplayText,
-            onStartTimerClick = onStartSleepTimerClick,
-            onCancelTimerClick = onCancelSleepTimerClick,
-            onDismiss = onDismissSleepTimerDialog
-        )
-    }
-
-    if (songPendingPlaylistAdd != null) {
-        AddToPlaylistDialog(
-            playlists = playlists,
-            songsToAdd = listOf(songPendingPlaylistAdd),
-            onDismiss = onDismissAddToPlaylistDialog,
-            onPlaylistSelected = { playlist, songs ->
-                songs.singleOrNull()?.let { onAddSongToPlaylistClick(playlist, it) }
-                onDismissAddToPlaylistDialog()
-            },
-            onCreatePlaylist = onCreatePlaylistWithSongsClick
-        )
-    }
-
-    if (songsPendingPlaylistAdd.isNotEmpty()) {
-        AddToPlaylistDialog(
-            playlists = playlists,
-            songsToAdd = songsPendingPlaylistAdd,
-            onDismiss = onDismissBulkAddToPlaylistDialog,
-            onPlaylistSelected = { playlist, songs ->
-                onAddSongsToPlaylistClick(playlist, songs)
-                onDismissBulkAddToPlaylistDialog()
-            },
-            onCreatePlaylist = onCreatePlaylistWithSongsClick
-        )
-    }
 }
+
+internal fun shouldBlockExpandedPlayerInput(
+    lyricsOwnsInput: Boolean,
+    isNowPlayingMorePresented: Boolean,
+    isArtworkViewerVisible: Boolean
+): Boolean = lyricsOwnsInput || isNowPlayingMorePresented || isArtworkViewerVisible
+
+// Preserve the existing work gate here with player presentation, independently of modal rendering.
+internal fun shouldAllowExpandedPlayerVisualizerWork(
+    isLyricsVisible: Boolean,
+    isExpandedUpNextSheetVisible: Boolean,
+    isQueueHubVisible: Boolean,
+    isNowPlayingMorePresented: Boolean,
+    isArtworkViewerVisible: Boolean,
+    isSleepTimerDialogVisible: Boolean,
+    isCreatePlaylistDialogVisible: Boolean,
+    hasPendingPlaylistAdd: Boolean,
+    hasPendingBulkPlaylistAdd: Boolean
+): Boolean = !isLyricsVisible &&
+        !isExpandedUpNextSheetVisible &&
+        !isQueueHubVisible &&
+        !isNowPlayingMorePresented &&
+        !isArtworkViewerVisible &&
+        !isSleepTimerDialogVisible &&
+        !isCreatePlaylistDialogVisible &&
+        !hasPendingPlaylistAdd &&
+        !hasPendingBulkPlaylistAdd
 
 internal fun shouldUseImmersivePlayerSystemBars(
     theme: PlayerTheme,

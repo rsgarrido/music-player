@@ -421,7 +421,7 @@ class ExpandedQueueHubEntryPointTest {
                 onNextClick = {}, onSeekChange = {}, onShuffleClick = {}, onRepeatClick = {},
                 onCollapseClick = {}, playerMorphState = player, lyricsTransitionState = lyrics,
                 lyricsGestureRegion = remember { PlayerLyricsGestureRegion() },
-                onOpenQueueHubClick = onQueue, onOpenSleepTimerClick = {}, onOpenMoreClick = onMore,
+                onOpenQueueHubClick = onQueue, onOpenMoreClick = onMore,
                 onToggleFavoriteClick = onFavorite, songs = listOf(target), upcomingSongs = emptyList(),
                 activeQueueSongs = listOf(target), activeQueueName = "Queue", activeQueuePosition = 1,
                 activeQueueCount = 1, onSongClick = { _, _ -> }, onOpenCurrentAlbumClick = {},
