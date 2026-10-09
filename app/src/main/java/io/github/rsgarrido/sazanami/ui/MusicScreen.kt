@@ -752,6 +752,81 @@ internal fun MusicScreen(
         onOpenSleepTimer = onOpenSleepTimer
     )
 
+    val onShowAddToPlaylist: (Song) -> Unit = remember {
+        { song -> songPendingPlaylistAdd = song }
+    }
+    val onShowBulkAddToPlaylist: (List<Song>) -> Unit = remember {
+        { targets -> songsPendingPlaylistAdd = targets }
+    }
+    val onShowCreatePlaylist: (Long?) -> Unit = remember {
+        { folderId ->
+            playlistCreationFolderId = folderId
+            isCreatePlaylistDialogVisible = true
+        }
+    }
+    // Player policy uses the effective More target and playlist presence, not their presentation details.
+    val isNowPlayingMorePresented = nowPlayingMoreTarget != null
+    val hasPendingPlaylistAdd = songPendingPlaylistAdd != null
+    val hasPendingBulkPlaylistAdd = songsPendingPlaylistAdd.isNotEmpty()
+    val transientOverlayContent: @Composable () -> Unit = {
+        MusicTransientOverlays(
+            nowPlayingMoreTarget = nowPlayingMoreTarget,
+            favoriteMembershipKeys = favoriteMembershipKeys,
+            songs = songs,
+            onDismissNowPlayingMore = overlayState::dismissNowPlayingMore,
+            onNowPlayingMoreAction = onNowPlayingMoreAction,
+            isExpandedUpNextSheetVisible = isExpandedUpNextSheetVisible,
+            queuedSongs = queuedSongs,
+            upcomingSongs = upcomingSongs,
+            isShuffleEnabled = isShuffleEnabled,
+            onDismissExpandedUpNextSheet = { isExpandedUpNextSheetVisible = false },
+            onRemoveFromQueueClick = onRemoveFromQueueClick,
+            onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+            onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+            onClearQueueClick = onClearQueueClick,
+            isQueueHubVisible = isQueueHubVisible,
+            playbackQueueHubUiState = playbackQueueHubUiState,
+            onDismissQueueHub = { isQueueHubVisible = false },
+            onPlaybackQueueSelected = onPlaybackQueueSelected,
+            onSwitchSelectedPlaybackQueue = onSwitchSelectedPlaybackQueue,
+            onCreatePlaybackQueueFromCurrent = onCreatePlaybackQueueFromCurrent,
+            onRenamePlaybackQueue = onRenamePlaybackQueue,
+            onDeletePlaybackQueue = onDeletePlaybackQueue,
+            onRemovePlaybackQueueEntry = onRemovePlaybackQueueEntry,
+            onPlayPlaybackQueueEntry = onPlayPlaybackQueueEntry,
+            onUndoPlaybackQueueEntryRemoval = onUndoPlaybackQueueEntryRemoval,
+            onClearPlaybackQueueEntryRemovalUndo = onClearPlaybackQueueEntryRemovalUndo,
+            onReorderPlaybackQueueEntry = onReorderPlaybackQueueEntry,
+            onClearPlaybackQueueMessage = onClearPlaybackQueueMessage,
+            isCreatePlaylistDialogVisible = isCreatePlaylistDialogVisible,
+            createPlaylistFolderId = playlistCreationFolderId,
+            playlists = playlists,
+            onDismissCreatePlaylistDialog = {
+                isCreatePlaylistDialogVisible = false
+                playlistCreationFolderId = null
+            },
+            onCreatePlaylistClick = onCreatePlaylistClick,
+            onCreatePlaylistWithSongsClick = onCreatePlaylistWithSongsClick,
+            songPendingPlaylistAdd = songPendingPlaylistAdd,
+            onDismissAddToPlaylistDialog = { songPendingPlaylistAdd = null },
+            onAddSongToPlaylistClick = { playlist, song ->
+                playlistSnackbarActions.addSongToPlaylist(playlist, song)
+            },
+            songsPendingPlaylistAdd = songsPendingPlaylistAdd,
+            onDismissBulkAddToPlaylistDialog = { songsPendingPlaylistAdd = emptyList() },
+            onAddSongsToPlaylistClick = { playlist, targets ->
+                playlistSnackbarActions.addSongsToPlaylist(playlist, targets)
+                librarySelectionUi.onClear()
+            },
+            isSleepTimerDialogVisible = isSleepTimerDialogVisible,
+            isSleepTimerActive = isSleepTimerActive,
+            sleepTimerDisplayText = sleepTimerDisplayText,
+            onStartSleepTimerClick = onStartSleepTimerClick,
+            onCancelSleepTimerClick = onCancelSleepTimerClick,
+            onDismissSleepTimerDialog = { isSleepTimerDialogVisible = false }
+        )
+    }
+
     fun restorePlaybackLaunchContext() {
         val validContext = playbackLaunchContext.withValidDetails(
             albumKeys = buildLibraryAlbumGroups(songs).mapTo(mutableSetOf()) { album -> album.key },
@@ -1505,12 +1580,8 @@ internal fun MusicScreen(
                     onShuffleClick = onShuffleClick,
                     onRepeatClick = onRepeatClick,
                     onToggleFavoriteClick = onToggleFavoriteClick,
-                    onAddToPlaylistClick = { song ->
-                        songPendingPlaylistAdd = song
-                    },
-                    onAddSongsToPlaylistClick = { songs ->
-                        songsPendingPlaylistAdd = songs
-                    },
+                    onAddToPlaylistClick = onShowAddToPlaylist,
+                    onAddSongsToPlaylistClick = onShowBulkAddToPlaylist,
                     onFolderSelected = { folderId ->
                         librarySelectionUi.onClear()
                         navigationState.openFolder(folderId)
@@ -1551,10 +1622,7 @@ internal fun MusicScreen(
                     onMoveQueueItemUpClick = onMoveQueueItemUpClick,
                     onMoveQueueItemDownClick = onMoveQueueItemDownClick,
                     onClearQueueClick = onClearQueueClick,
-                    onCreatePlaylistClick = { folderId ->
-                        playlistCreationFolderId = folderId
-                        isCreatePlaylistDialogVisible = true
-                    },
+                    onCreatePlaylistClick = onShowCreatePlaylist,
                     onCreatePlaylistFolderClick = onCreatePlaylistFolderClick,
                     onRenamePlaylistFolderClick = onRenamePlaylistFolderClick,
                     onDeletePlaylistFolderClick = onDeletePlaylistFolderClick,
@@ -1769,16 +1837,13 @@ internal fun MusicScreen(
                     favoriteMembershipKeys = favoriteMembershipKeys,
                     isExpandedUpNextSheetVisible = isExpandedUpNextSheetVisible,
                     isQueueHubVisible = isQueueHubVisible,
-                    nowPlayingMoreTarget = nowPlayingMoreTarget,
-                    onDismissNowPlayingMore = overlayState::dismissNowPlayingMore,
-                    onNowPlayingMoreAction = onNowPlayingMoreAction,
+                    isNowPlayingMorePresented = isNowPlayingMorePresented,
                     playbackQueueHubUiState = playbackQueueHubUiState,
                     queuedSongs = queuedSongs,
                     upcomingSongs = upcomingSongs,
                     isCreatePlaylistDialogVisible = isCreatePlaylistDialogVisible,
-                    createPlaylistFolderId = playlistCreationFolderId,
-                    songPendingPlaylistAdd = songPendingPlaylistAdd,
-                    playlists = playlists,
+                    hasPendingPlaylistAdd = hasPendingPlaylistAdd,
+                    hasPendingBulkPlaylistAdd = hasPendingBulkPlaylistAdd,
                     onPlayPauseClick = onPlayPauseClick,
                     onPreviousClick = onPreviousClick,
                     onNextClick = onNextClick,
@@ -1808,57 +1873,8 @@ internal fun MusicScreen(
                             currentSong?.let(overlayState::openNowPlayingMore)
                         }
                     },
-                    onDismissExpandedUpNextSheet = {
-                        isExpandedUpNextSheetVisible = false
-                    },
-                    onDismissQueueHub = {
-                        isQueueHubVisible = false
-                    },
-                    onPlaybackQueueSelected = onPlaybackQueueSelected,
-                    onSwitchSelectedPlaybackQueue = onSwitchSelectedPlaybackQueue,
-                    onCreatePlaybackQueueFromCurrent = onCreatePlaybackQueueFromCurrent,
-                    onRenamePlaybackQueue = onRenamePlaybackQueue,
-                    onDeletePlaybackQueue = onDeletePlaybackQueue,
-                    onRemovePlaybackQueueEntry = onRemovePlaybackQueueEntry,
-                    onPlayPlaybackQueueEntry = onPlayPlaybackQueueEntry,
-                    onUndoPlaybackQueueEntryRemoval = onUndoPlaybackQueueEntryRemoval,
-                    onClearPlaybackQueueEntryRemovalUndo =
-                        onClearPlaybackQueueEntryRemovalUndo,
-                    onReorderPlaybackQueueEntry = onReorderPlaybackQueueEntry,
-                    onClearPlaybackQueueMessage = onClearPlaybackQueueMessage,
-                    onRemoveFromQueueClick = onRemoveFromQueueClick,
-                    onMoveQueueItemUpClick = onMoveQueueItemUpClick,
-                    onMoveQueueItemDownClick = onMoveQueueItemDownClick,
-                    onClearQueueClick = onClearQueueClick,
                     onToggleFavoriteClick = onToggleFavoriteClick,
-                    onDismissCreatePlaylistDialog = {
-                        isCreatePlaylistDialogVisible = false
-                        playlistCreationFolderId = null
-                    },
-                    onCreatePlaylistClick = onCreatePlaylistClick,
-                    onCreatePlaylistWithSongsClick = onCreatePlaylistWithSongsClick,
-                    onDismissAddToPlaylistDialog = {
-                        songPendingPlaylistAdd = null
-                    },
-                    songsPendingPlaylistAdd = songsPendingPlaylistAdd,
-                    onDismissBulkAddToPlaylistDialog = {
-                        songsPendingPlaylistAdd = emptyList()
-                    },
-                    onAddSongToPlaylistClick = { playlist, song ->
-                        playlistSnackbarActions.addSongToPlaylist(playlist, song)
-                    },
-                    onAddSongsToPlaylistClick = { playlist, songs ->
-                        playlistSnackbarActions.addSongsToPlaylist(playlist, songs)
-                        librarySelectionUi.onClear()
-                    },
                     isSleepTimerDialogVisible = isSleepTimerDialogVisible,
-                    isSleepTimerActive = isSleepTimerActive,
-                    sleepTimerDisplayText = sleepTimerDisplayText,
-                    onStartSleepTimerClick = onStartSleepTimerClick,
-                    onCancelSleepTimerClick = onCancelSleepTimerClick,
-                    onDismissSleepTimerDialog = {
-                        isSleepTimerDialogVisible = false
-                    },
                     selectedPlayerTheme = selectedPlayerTheme,
                     selectedPlayerThemeTokens = selectedPlayerThemeTokens,
                     selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
@@ -1879,6 +1895,7 @@ internal fun MusicScreen(
                     onViewArtwork = onViewArtwork,
                     isArtworkViewerVisible = overlayState.isArtworkViewerVisible.value
                 )
+                transientOverlayContent()
             }
         }
     }
