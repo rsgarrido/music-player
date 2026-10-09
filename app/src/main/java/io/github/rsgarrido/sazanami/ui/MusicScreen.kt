@@ -9,27 +9,26 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -98,40 +97,6 @@ import io.github.rsgarrido.sazanami.ui.player.modern.ModernAppearanceChoice
 import io.github.rsgarrido.sazanami.ui.theme.SazanamiAccent
 import io.github.rsgarrido.sazanami.ui.player.rememberPlayerLyricsTransitionState
 import io.github.rsgarrido.sazanami.ui.player.PlayerMorphHost
-import io.github.rsgarrido.sazanami.ui.player.playerEndpointInput
-import io.github.rsgarrido.sazanami.ui.player.PlayerBoundsMeasurement
-import io.github.rsgarrido.sazanami.ui.player.mini.DefaultMiniPlayerMorphCallbacks
-import io.github.rsgarrido.sazanami.ui.player.modern.DefaultMorphMinimumDragRangePx
-import io.github.rsgarrido.sazanami.ui.player.modern.DefaultMorphMetadataOwner
-import io.github.rsgarrido.sazanami.ui.player.modern.DefaultPlayerMorphBounds
-import io.github.rsgarrido.sazanami.ui.player.modern.defaultMorphMetadataOwner
-import io.github.rsgarrido.sazanami.ui.player.modern.resolveDefaultPlayerMorphGeometry
-import io.github.rsgarrido.sazanami.ui.player.classicwheel.classicWheelMorphTravelDistance
-import io.github.rsgarrido.sazanami.ui.player.classicwheel.classicWheelMiniVisualOwner
-import io.github.rsgarrido.sazanami.ui.player.classicwheel.ClassicWheelMenuState
-import io.github.rsgarrido.sazanami.ui.player.classicwheel.ClassicWheelMiniVisualOwner
-import io.github.rsgarrido.sazanami.ui.player.classicwheel.resolveClassicWheelMorphGeometry
-import io.github.rsgarrido.sazanami.ui.player.classicwheel.resolveClassicWheelMiniChromeGeometry
-import io.github.rsgarrido.sazanami.ui.player.classicwheel.ClassicWheelMorphBounds
-import io.github.rsgarrido.sazanami.ui.player.classicwheel.ownsNowPlayingMorphContent
-import io.github.rsgarrido.sazanami.ui.player.retrorack.resolveRetroRackMorphGeometry
-import io.github.rsgarrido.sazanami.ui.player.retrorack.retroRackMorphOwnsVisuals
-import io.github.rsgarrido.sazanami.ui.player.retrorack.retroRackMorphTravelDistance
-import io.github.rsgarrido.sazanami.ui.player.retrorack.RetroRackMorphBounds
-import io.github.rsgarrido.sazanami.ui.player.pocketflip.PocketFlipMorphBounds
-import io.github.rsgarrido.sazanami.ui.player.pocketflip.resolvePocketFlipMorphGeometry
-import io.github.rsgarrido.sazanami.ui.player.pocketflip.resolvePocketFlipSharedGeometry
-import io.github.rsgarrido.sazanami.ui.player.pocketflip.pocketFlipMorphTravelDistance
-import io.github.rsgarrido.sazanami.ui.player.pocketcassette.PocketCassetteMorphBounds
-import io.github.rsgarrido.sazanami.ui.player.pocketdisc.PocketDiscMorphBounds
-import io.github.rsgarrido.sazanami.ui.player.pocketdisc.resolvePocketDiscMorphGeometry
-import io.github.rsgarrido.sazanami.ui.player.pocketdisc.resolvePocketDiscSharedGeometry
-import io.github.rsgarrido.sazanami.ui.player.pocketdisc.pocketDiscMorphTravelDistance
-import io.github.rsgarrido.sazanami.ui.player.pocketcassette.resolvePocketCassetteMorphGeometry
-import io.github.rsgarrido.sazanami.ui.player.pocketcassette.resolvePocketCassetteSharedGeometry
-import io.github.rsgarrido.sazanami.ui.player.pocketcassette.pocketCassetteMorphTravelDistance
-import io.github.rsgarrido.sazanami.ui.player.classicwheel.resolveClassicWheelSharedGeometry
-import io.github.rsgarrido.sazanami.ui.state.PlaybackProgress
 import io.github.rsgarrido.sazanami.ui.state.PlaybackProgressUiState
 import io.github.rsgarrido.sazanami.ui.state.LibraryAppearanceUiState
 import io.github.rsgarrido.sazanami.ui.state.LibraryRefreshSummary
@@ -162,7 +127,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import io.github.rsgarrido.sazanami.mediaaccess.MediaAccessState
 import io.github.rsgarrido.sazanami.lyrics.LyricsPlaybackUiState
-import kotlin.math.abs
 import java.time.LocalDate
 
 
@@ -1227,6 +1191,172 @@ internal fun MusicScreen(
         listeningHistoryReconciliationVisible = overlayState.isListeningHistoryReconciliationVisible
     )
 
+    val selectedSongForTagEdit = songPendingTagEdit
+    val selectedBatchEditorState = batchMetadataEditorState
+    val selectedBatchExecutionState = batchMetadataOperationState
+    val isLibrarySelectionActive = librarySelectionUi.state.isActive
+    val shouldShowBottomMiniPlayer = currentSong != null &&
+            !isLibrarySelectionActive &&
+            !isFolderScreenVisible &&
+            !isDiagnosticsScreenVisible &&
+            !isEqualizerScreenVisible &&
+            !isStatisticsScreenVisible &&
+            !isListeningHistoryImportVisible &&
+            !isListeningHistoryReconciliationVisible &&
+            !isSettingsScreenVisible &&
+            !isTipsHelpScreenVisible &&
+            !isAboutScreenVisible &&
+            selectedSongForTagEdit == null &&
+            selectedBatchEditorState == null &&
+            selectedBatchExecutionState == null
+    val shouldShowBottomNavigation = shouldShowPrimaryBottomNavigation(
+        isPlayerExpanded = isPlayerExpanded,
+        isFolderScreenVisible = isFolderScreenVisible,
+        isDiagnosticsScreenVisible = isDiagnosticsScreenVisible,
+        isEqualizerScreenVisible = isEqualizerScreenVisible,
+        isStatisticsScreenVisible = isStatisticsScreenVisible,
+        isListeningHistoryImportVisible = isListeningHistoryImportVisible,
+        isListeningHistoryReconciliationVisible =
+            isListeningHistoryReconciliationVisible,
+        isSettingsScreenVisible = isSettingsScreenVisible ||
+            isTipsHelpScreenVisible || isAboutScreenVisible,
+        isTagEditorVisible = selectedSongForTagEdit != null ||
+                selectedBatchEditorState != null ||
+                selectedBatchExecutionState != null,
+        isLibrarySelectionActive = isLibrarySelectionActive
+    )
+    val shouldShowMetadataEditor = selectedBatchExecutionState != null ||
+        selectedBatchEditorState != null || selectedSongForTagEdit != null
+    val shouldComposePlayerOverlays = selectedSongForTagEdit == null && selectedBatchEditorState == null
+    val navigationBarInset = WindowInsets.navigationBars
+        .asPaddingValues()
+        .calculateBottomPadding()
+    val targetBottomContentPadding = navigationBarInset +
+            (if (shouldShowBottomNavigation) AppBottomNavigationHeight else 0.dp) +
+            when {
+                isLibrarySelectionActive -> 8.dp
+                !shouldShowBottomMiniPlayer -> 24.dp
+                isSleepTimerActive -> 176.dp
+                else -> 96.dp
+            }
+    val onOpenMiniUpNext: () -> Unit = {
+        selectedLibraryTab = LibraryTab.QUEUE
+        navigationState.clearArtist()
+        navigationState.clearAlbum()
+        clearPlaylistSelection()
+        mainDestination = MainDestination.LIBRARY
+    }
+    val onShowQueueHub: () -> Unit = { isQueueHubVisible = true }
+    val onOpenLyricsSettings: () -> Unit = {
+        lyricsTransitionState.snapToExpanded()
+        playerMorphState.collapse()
+        isSettingsScreenVisible = true
+    }
+    val onShowExpandedMore: () -> Unit = {
+        if (canPresentNowPlayingMore) {
+            currentSong?.let(overlayState::openNowPlayingMore)
+        }
+    }
+    val bottomNavigationContent: @Composable BoxScope.() -> Unit = {
+        AnimatedVisibility(
+            visible = shouldShowBottomNavigation,
+            enter = slideInVertically(tween(220)) { height -> height } +
+                fadeIn(tween(160)),
+            exit = slideOutVertically(tween(200)) { height -> height } +
+                fadeOut(tween(140)),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+        ) {
+            AppBottomNavigation(
+                selectedDestination = mainDestination,
+                onDestinationSelected = { destination ->
+                    val targetEntity = when (destination) {
+                        MainDestination.SEARCH -> LibrarySelectionEntity.SONG
+                        MainDestination.LIBRARY -> selectedLibraryTab.selectionEntity()
+                        else -> null
+                    }
+                    if (librarySelectionUi.state.entity != targetEntity) {
+                        librarySelectionUi.onClear()
+                    }
+                    navigationState.clearArtist()
+                    navigationState.clearAlbum()
+                    selectedGenreKey = null
+                    clearPlaylistSelection()
+                    if (destination == MainDestination.SEARCH) {
+                        selectedLibraryTab = LibraryTab.SONGS
+                    }
+                    if (destination != MainDestination.SEARCH) {
+                        searchQuery = ""
+                    }
+                    mainDestination = destination
+                },
+                modifier = Modifier
+            )
+        }
+    }
+    val playerPresentation = prepareMusicPlayerPresentation(
+        songs = songs,
+        currentSong = currentSong,
+        previousPreviewSong = previousPreviewSong,
+        nextPreviewSong = nextPreviewSong,
+        isPlaying = isPlaying,
+        isShuffleEnabled = isShuffleEnabled,
+        repeatMode = repeatMode,
+        playbackProgressUiState = playbackProgressUiState,
+        lyricsPlaybackUiState = lyricsPlaybackUiState,
+        onSongClick = onSongClick,
+        onPlayPauseClick = onPlayPauseClick,
+        onPreviousClick = onPreviousClick,
+        onNextClick = onNextClick,
+        onSeekChange = onSeekChange,
+        onSuspendLyricsAutoFollow = onSuspendLyricsAutoFollow,
+        onReturnLyricsToCurrentLine = onReturnLyricsToCurrentLine,
+        onRescanLyrics = onRescanLyrics,
+        onShuffleClick = onShuffleClick,
+        onRepeatClick = onRepeatClick,
+        queuedSongs = queuedSongs,
+        upcomingSongs = upcomingSongs,
+        playbackQueueHubUiState = playbackQueueHubUiState,
+        favoriteMembershipKeys = favoriteMembershipKeys,
+        onToggleFavoriteClick = onToggleFavoriteClick,
+        isSleepTimerActive = isSleepTimerActive,
+        sleepTimerDisplayText = sleepTimerDisplayText,
+        selectedPlayerTheme = selectedPlayerTheme,
+        selectedPlayerThemeTokens = selectedPlayerThemeTokens,
+        selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
+        selectedModernPlayerAppearance = selectedModernPlayerAppearance,
+        playerMorphState = playerMorphState,
+        lyricsTransitionState = lyricsTransitionState,
+        isLyricsVisible = isLyricsVisible,
+        isExpandedUpNextSheetVisible = isExpandedUpNextSheetVisible,
+        isQueueHubVisible = isQueueHubVisible,
+        isNowPlayingMorePresented = isNowPlayingMorePresented,
+        isCreatePlaylistDialogVisible = isCreatePlaylistDialogVisible,
+        hasPendingPlaylistAdd = hasPendingPlaylistAdd,
+        hasPendingBulkPlaylistAdd = hasPendingBulkPlaylistAdd,
+        isSleepTimerDialogVisible = isSleepTimerDialogVisible,
+        isArtworkViewerVisible = overlayState.isArtworkViewerVisible.value,
+        shouldShowBottomMiniPlayer = shouldShowBottomMiniPlayer,
+        shouldShowMetadataEditor = shouldShowMetadataEditor,
+        shouldComposePlayerOverlays = shouldComposePlayerOverlays,
+        targetBottomContentPadding = targetBottomContentPadding,
+        bodyPresentation = bodyPresentation,
+        metadataEditorContent = metadataEditorContent,
+        metadataDialogContent = metadataDialogContent,
+        transientOverlayContent = transientOverlayContent,
+        bottomNavigationContent = bottomNavigationContent,
+        onOpenMiniUpNext = onOpenMiniUpNext,
+        onShowQueueHub = onShowQueueHub,
+        onOpenSleepTimer = onOpenSleepTimer,
+        onOpenLyricsSettings = onOpenLyricsSettings,
+        onShowExpandedMore = onShowExpandedMore,
+        onOpenCurrentAlbumClick = ::openCurrentAlbum,
+        onOpenCurrentArtistClick = onOpenCurrentArtistClick,
+        onTrackInfoClick = onTrackInfoClick,
+        onViewArtwork = onViewArtwork,
+    )
+
     CompositionLocalProvider(
         LocalAppShellAccent provides appShellAccent,
         LocalAppShellChartAccent provides appShellChartAccent,
@@ -1246,445 +1376,7 @@ internal fun MusicScreen(
                 .fillMaxSize()
                 .appShellBackground()
         ) { playerEndpointBounds ->
-            val defaultMorphBounds = remember { DefaultPlayerMorphBounds() }
-            val classicMorphBounds = remember { ClassicWheelMorphBounds() }
-            val classicWheelMenuState = remember(
-                selectedPlayerTheme,
-                playerMorphState.shouldComposeExpanded
-            ) {
-                ClassicWheelMenuState()
-            }
-            val retroRackMorphBounds = remember { RetroRackMorphBounds() }
-            val pocketFlipMorphBounds = remember { PocketFlipMorphBounds() }
-            val pocketCassetteMorphBounds = remember { PocketCassetteMorphBounds() }
-            val pocketDiscMorphBounds = remember { PocketDiscMorphBounds() }
-            val defaultMorphGeometry = resolveDefaultPlayerMorphGeometry(
-                progress = playerMorphState.progress,
-                endpointBounds = playerEndpointBounds,
-                elementBounds = defaultMorphBounds
-            )
-            val defaultMorphOwnsVisuals =
-                selectedPlayerTheme == PlayerTheme.DEFAULT &&
-                        defaultMorphMetadataOwner(
-                            isMorphActive = !playerMorphState.isCollapsedAndIdle,
-                            geometryReady = defaultMorphGeometry != null
-                        ) == DefaultMorphMetadataOwner.Morph
-            val classicWheelShellGeometry = resolveClassicWheelMorphGeometry(
-                playerMorphState.progress,
-                playerEndpointBounds,
-                classicMorphBounds
-            )
-            val classicWheelSharedGeometry = resolveClassicWheelSharedGeometry(
-                playerMorphState.progress,
-                classicMorphBounds
-            )
-            val classicWheelMiniChromeGeometry = resolveClassicWheelMiniChromeGeometry(
-                classicMorphBounds
-            )
-            val classicWheelMorphOwnsVisuals =
-                selectedPlayerTheme == PlayerTheme.CLASSIC_WHEEL &&
-                        classicWheelMiniVisualOwner(
-                            progress = playerMorphState.progress,
-                            shellGeometryReady = classicWheelShellGeometry != null,
-                            sharedGeometryReady = classicWheelSharedGeometry != null,
-                            miniChromeGeometryReady = classicWheelMiniChromeGeometry != null,
-                            ownsNowPlayingContent = classicWheelMenuState.currentScreen
-                                .ownsNowPlayingMorphContent()
-                        ) == ClassicWheelMiniVisualOwner.TRANSITION
-            val retroRackMorphOwnsVisuals = selectedPlayerTheme == PlayerTheme.RETRO_RACK &&
-                    retroRackMorphOwnsVisuals(
-                        progress = playerMorphState.progress,
-                        geometryReady = resolveRetroRackMorphGeometry(
-                            playerMorphState.progress,
-                            playerEndpointBounds
-                        ) != null
-                    )
-            val pocketFlipMorphOwnsVisuals =
-                selectedPlayerTheme == PlayerTheme.POCKET_FLIP &&
-                        !playerMorphState.isCollapsedAndIdle &&
-                        resolvePocketFlipMorphGeometry(
-                            playerMorphState.progress,
-                            playerEndpointBounds
-                        ) != null &&
-                        resolvePocketFlipSharedGeometry(
-                            playerMorphState.progress,
-                            pocketFlipMorphBounds
-                        ) != null
-            val pocketCassetteMorphOwnsVisuals =
-                selectedPlayerTheme == PlayerTheme.POCKET_CASSETTE &&
-                        !playerMorphState.isCollapsedAndIdle &&
-                        resolvePocketCassetteMorphGeometry(
-                            playerMorphState.progress,
-                            playerEndpointBounds
-                        ) != null &&
-                        resolvePocketCassetteSharedGeometry(
-                            playerMorphState.progress,
-                            pocketCassetteMorphBounds
-                        ) != null
-            val pocketDiscMorphOwnsVisuals =
-                selectedPlayerTheme == PlayerTheme.POCKET_DISC &&
-                        !playerMorphState.isCollapsedAndIdle &&
-                        resolvePocketDiscMorphGeometry(
-                            playerMorphState.progress,
-                            playerEndpointBounds
-                        ) != null &&
-                        resolvePocketDiscSharedGeometry(
-                            playerMorphState.progress,
-                            pocketDiscMorphBounds
-                        ) != null
-            val classicMiniMorphCallbacks = remember(
-                playerMorphState,
-                playerEndpointBounds,
-                classicMorphBounds
-            ) {
-                DefaultMiniPlayerMorphCallbacks(
-                    onDragStart = {
-                        playerMorphState.beginDragWithRange(
-                            classicWheelMorphTravelDistance(
-                                playerEndpointBounds,
-                                classicMorphBounds
-                            )
-                        )
-                    },
-                    onDragBy = playerMorphState::dragBy,
-                    onDragEnd = playerMorphState::endDrag,
-                    onDragCancel = playerMorphState::cancelDrag
-                )
-            }
-            val retroRackMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
-                DefaultMiniPlayerMorphCallbacks(
-                    onDragStart = { playerMorphState.beginDragWithRange(retroRackMorphTravelDistance(playerEndpointBounds)) },
-                    onDragBy = playerMorphState::dragBy,
-                    onDragEnd = playerMorphState::endDrag,
-                    onDragCancel = playerMorphState::cancelDrag
-                )
-            }
-            val pocketFlipMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
-                DefaultMiniPlayerMorphCallbacks(
-                    onDragStart = {
-                        playerMorphState.beginDragWithRange(
-                            pocketFlipMorphTravelDistance(playerEndpointBounds)
-                        )
-                    },
-                    onDragBy = playerMorphState::dragBy,
-                    onDragEnd = playerMorphState::endDrag,
-                    onDragCancel = playerMorphState::cancelDrag
-                )
-            }
-            val pocketCassetteMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
-                DefaultMiniPlayerMorphCallbacks(
-                    onDragStart = {
-                        playerMorphState.beginDragWithRange(
-                            pocketCassetteMorphTravelDistance(playerEndpointBounds)
-                        )
-                    },
-                    onDragBy = playerMorphState::dragBy,
-                    onDragEnd = playerMorphState::endDrag,
-                    onDragCancel = playerMorphState::cancelDrag
-                )
-            }
-            val pocketDiscMiniMorphCallbacks = remember(playerMorphState, playerEndpointBounds) {
-                DefaultMiniPlayerMorphCallbacks(
-                    onDragStart = {
-                        playerMorphState.beginDragWithRange(
-                            pocketDiscMorphTravelDistance(playerEndpointBounds)
-                        )
-                    },
-                    onDragBy = playerMorphState::dragBy,
-                    onDragEnd = playerMorphState::endDrag,
-                    onDragCancel = playerMorphState::cancelDrag
-                )
-            }
-            val defaultMiniMorphCallbacks = remember(
-                playerMorphState,
-                playerEndpointBounds
-            ) {
-                DefaultMiniPlayerMorphCallbacks(
-                    onDragStart = {
-                        val miniBounds = defaultMorphBounds.miniSurface ?: (
-                                playerEndpointBounds.mini as?
-                                        PlayerBoundsMeasurement.Measured
-                                )?.bounds
-                        val expandedBounds = (
-                                playerEndpointBounds.expanded as?
-                                        PlayerBoundsMeasurement.Measured
-                                )?.bounds
-                        val travelDistance = if (miniBounds != null &&
-                            expandedBounds != null
-                        ) {
-                            abs(miniBounds.top - expandedBounds.top)
-                        } else {
-                            DefaultMorphMinimumDragRangePx
-                        }
-                        playerMorphState.beginDragWithRange(
-                            progressRangePx = travelDistance.coerceAtLeast(
-                                DefaultMorphMinimumDragRangePx
-                            )
-                        )
-                    },
-                    onDragBy = playerMorphState::dragBy,
-                    onDragEnd = playerMorphState::endDrag,
-                    onDragCancel = playerMorphState::cancelDrag
-                )
-            }
-            val selectedSongForTagEdit = songPendingTagEdit
-            val selectedBatchEditorState = batchMetadataEditorState
-            val selectedBatchExecutionState = batchMetadataOperationState
-            val isLibrarySelectionActive = librarySelectionUi.state.isActive
-            val shouldShowBottomMiniPlayer = currentSong != null &&
-                    !isLibrarySelectionActive &&
-                    !isFolderScreenVisible &&
-                    !isDiagnosticsScreenVisible &&
-                    !isEqualizerScreenVisible &&
-                    !isStatisticsScreenVisible &&
-                    !isListeningHistoryImportVisible &&
-                    !isListeningHistoryReconciliationVisible &&
-                    !isSettingsScreenVisible &&
-                    !isTipsHelpScreenVisible &&
-                    !isAboutScreenVisible &&
-                    selectedSongForTagEdit == null &&
-                    selectedBatchEditorState == null &&
-                    selectedBatchExecutionState == null
-            val shouldShowBottomNavigation = shouldShowPrimaryBottomNavigation(
-                isPlayerExpanded = isPlayerExpanded,
-                isFolderScreenVisible = isFolderScreenVisible,
-                isDiagnosticsScreenVisible = isDiagnosticsScreenVisible,
-                isEqualizerScreenVisible = isEqualizerScreenVisible,
-                isStatisticsScreenVisible = isStatisticsScreenVisible,
-                isListeningHistoryImportVisible = isListeningHistoryImportVisible,
-                isListeningHistoryReconciliationVisible =
-                    isListeningHistoryReconciliationVisible,
-                isSettingsScreenVisible = isSettingsScreenVisible ||
-                    isTipsHelpScreenVisible || isAboutScreenVisible,
-                isTagEditorVisible = selectedSongForTagEdit != null ||
-                        selectedBatchEditorState != null ||
-                        selectedBatchExecutionState != null,
-                isLibrarySelectionActive = isLibrarySelectionActive
-            )
-            LaunchedEffect(shouldShowBottomMiniPlayer) {
-                if (!shouldShowBottomMiniPlayer) {
-                    playerEndpointBounds.markMiniStale()
-                }
-            }
-            LaunchedEffect(selectedPlayerTheme) {
-                playerEndpointBounds.markMiniStale()
-                defaultMorphBounds.clearExpanded()
-            }
-            val navigationBarInset = WindowInsets.navigationBars
-                .asPaddingValues()
-                .calculateBottomPadding()
-            val targetBottomContentPadding = navigationBarInset +
-                    (if (shouldShowBottomNavigation) AppBottomNavigationHeight else 0.dp) +
-                    when {
-                        isLibrarySelectionActive -> 8.dp
-                        !shouldShowBottomMiniPlayer -> 24.dp
-                        isSleepTimerActive -> 176.dp
-                        else -> 96.dp
-                    }
-            val bottomContentPadding by animateDpAsState(
-                targetValue = targetBottomContentPadding,
-                animationSpec = tween(220),
-                label = "libraryChromeBottomPadding"
-            )
-
-            if (selectedBatchExecutionState != null || selectedBatchEditorState != null ||
-                selectedSongForTagEdit != null
-            ) {
-                metadataEditorContent()
-            } else {
-                bodyPresentation(bottomContentPadding)
-            }
-
-            AnimatedVisibility(
-                visible = shouldShowBottomMiniPlayer,
-                enter = slideInVertically(tween(220)) { height -> height } +
-                    fadeIn(tween(160)),
-                exit = slideOutVertically(tween(200)) { height -> height } +
-                    fadeOut(tween(140)),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = AppBottomNavigationHeight)
-            ) {
-                PlaybackProgress(playbackProgressUiState) { progress ->
-                    MiniPlayerSection(
-                        currentSong = currentSong,
-                        isPlaying = isPlaying,
-                        isShuffleEnabled = isShuffleEnabled,
-                        repeatMode = repeatMode,
-                        currentPosition = progress.currentPosition,
-                        duration = progress.duration,
-                        selectedPlayerTheme = selectedPlayerTheme,
-                        selectedPlayerThemeTokens = selectedPlayerThemeTokens,
-                        playerMorphState = playerMorphState,
-                        favoriteMembershipKeys = favoriteMembershipKeys,
-                        onPlayPauseClick = onPlayPauseClick,
-                        onPreviousClick = onPreviousClick,
-                        onNextClick = onNextClick,
-                        onSeekChange = onSeekChange,
-                        onShuffleClick = onShuffleClick,
-                        onRepeatClick = onRepeatClick,
-                        onExpandClick = {
-                            playerMorphState.expand()
-                        },
-                        onOpenUpNextClick = {
-                            selectedLibraryTab = LibraryTab.QUEUE
-                            navigationState.clearArtist()
-                            navigationState.clearAlbum()
-                            clearPlaylistSelection()
-                            mainDestination = MainDestination.LIBRARY
-                        },
-                        onOpenQueueHubClick = {
-                            isQueueHubVisible = true
-                        },
-                        onToggleFavoriteClick = onToggleFavoriteClick,
-                        isSleepTimerActive = isSleepTimerActive,
-                        sleepTimerDisplayText = sleepTimerDisplayText,
-                        onSleepTimerClick = {
-                            isSleepTimerDialogVisible = true
-                        },
-                        onMiniPlayerBoundsChanged = playerEndpointBounds::updateMini,
-                        defaultMorphBounds = defaultMorphBounds,
-                        classicMorphBounds = classicMorphBounds,
-                        retroRackMorphBounds = retroRackMorphBounds,
-                        pocketFlipMorphBounds = pocketFlipMorphBounds,
-                        pocketCassetteMorphBounds = pocketCassetteMorphBounds,
-                        pocketDiscMorphBounds = pocketDiscMorphBounds,
-                        defaultMorphCallbacks = when (selectedPlayerTheme) {
-                            PlayerTheme.DEFAULT -> defaultMiniMorphCallbacks
-                            PlayerTheme.CLASSIC_WHEEL -> classicMiniMorphCallbacks
-                            PlayerTheme.RETRO_RACK -> retroRackMiniMorphCallbacks
-                            PlayerTheme.POCKET_FLIP -> pocketFlipMiniMorphCallbacks
-                            PlayerTheme.POCKET_CASSETTE -> pocketCassetteMiniMorphCallbacks
-                            PlayerTheme.POCKET_DISC -> pocketDiscMiniMorphCallbacks
-                        },
-                        morphOwnsVisuals = defaultMorphOwnsVisuals ||
-                                classicWheelMorphOwnsVisuals ||
-                                retroRackMorphOwnsVisuals ||
-                                pocketFlipMorphOwnsVisuals ||
-                                pocketCassetteMorphOwnsVisuals ||
-                                pocketDiscMorphOwnsVisuals,
-                        modifier = Modifier.playerEndpointInput(
-                            playerMorphState.isCollapsedAndIdle
-                        )
-                    )
-                }
-            }
-
-            AnimatedVisibility(
-                visible = shouldShowBottomNavigation,
-                enter = slideInVertically(tween(220)) { height -> height } +
-                    fadeIn(tween(160)),
-                exit = slideOutVertically(tween(200)) { height -> height } +
-                    fadeOut(tween(140)),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-            ) {
-                AppBottomNavigation(
-                    selectedDestination = mainDestination,
-                    onDestinationSelected = { destination ->
-                        val targetEntity = when (destination) {
-                            MainDestination.SEARCH -> LibrarySelectionEntity.SONG
-                            MainDestination.LIBRARY -> selectedLibraryTab.selectionEntity()
-                            else -> null
-                        }
-                        if (librarySelectionUi.state.entity != targetEntity) {
-                            librarySelectionUi.onClear()
-                        }
-                        navigationState.clearArtist()
-                        navigationState.clearAlbum()
-                        selectedGenreKey = null
-                        clearPlaylistSelection()
-                        if (destination == MainDestination.SEARCH) {
-                            selectedLibraryTab = LibraryTab.SONGS
-                        }
-                        if (destination != MainDestination.SEARCH) {
-                            searchQuery = ""
-                        }
-                        mainDestination = destination
-                    },
-                    modifier = Modifier
-                )
-            }
-
-            metadataDialogContent()
-
-            if (selectedSongForTagEdit == null && selectedBatchEditorState == null) {
-                MusicScreenOverlays(
-                    playerMorphState = playerMorphState,
-                    isLyricsVisible = isLyricsVisible,
-                    lyricsTransitionState = lyricsTransitionState,
-                    currentSong = currentSong,
-                    previousPreviewSong = previousPreviewSong,
-                    nextPreviewSong = nextPreviewSong,
-                    isPlaying = isPlaying,
-                    isShuffleEnabled = isShuffleEnabled,
-                    repeatMode = repeatMode,
-                    playbackProgressUiState = playbackProgressUiState,
-                    favoriteMembershipKeys = favoriteMembershipKeys,
-                    isExpandedUpNextSheetVisible = isExpandedUpNextSheetVisible,
-                    isQueueHubVisible = isQueueHubVisible,
-                    isNowPlayingMorePresented = isNowPlayingMorePresented,
-                    playbackQueueHubUiState = playbackQueueHubUiState,
-                    queuedSongs = queuedSongs,
-                    upcomingSongs = upcomingSongs,
-                    isCreatePlaylistDialogVisible = isCreatePlaylistDialogVisible,
-                    hasPendingPlaylistAdd = hasPendingPlaylistAdd,
-                    hasPendingBulkPlaylistAdd = hasPendingBulkPlaylistAdd,
-                    onPlayPauseClick = onPlayPauseClick,
-                    onPreviousClick = onPreviousClick,
-                    onNextClick = onNextClick,
-                    onSeekChange = onSeekChange,
-                    lyricsPlaybackUiState = lyricsPlaybackUiState,
-                    onSuspendLyricsAutoFollow = onSuspendLyricsAutoFollow,
-                    onReturnLyricsToCurrentLine = onReturnLyricsToCurrentLine,
-                    onRescanLyrics = onRescanLyrics,
-                    onOpenLyricsSettings = {
-                        lyricsTransitionState.snapToExpanded()
-                        playerMorphState.collapse()
-                        isSettingsScreenVisible = true
-                    },
-                    onShuffleClick = onShuffleClick,
-                    onRepeatClick = onRepeatClick,
-                    onCollapseExpandedPlayer = {
-                        dismissExpandedPlayerPresentation(
-                            resetLyricsPresentation = lyricsTransitionState::snapToExpanded,
-                            collapsePlayer = playerMorphState::collapse
-                        )
-                    },
-                    onShowQueueHub = {
-                        isQueueHubVisible = true
-                    },
-                    onShowExpandedMore = {
-                        if (canPresentNowPlayingMore) {
-                            currentSong?.let(overlayState::openNowPlayingMore)
-                        }
-                    },
-                    onToggleFavoriteClick = onToggleFavoriteClick,
-                    isSleepTimerDialogVisible = isSleepTimerDialogVisible,
-                    selectedPlayerTheme = selectedPlayerTheme,
-                    selectedPlayerThemeTokens = selectedPlayerThemeTokens,
-                    selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
-                    selectedModernPlayerAppearance = selectedModernPlayerAppearance,
-                    playerEndpointBounds = playerEndpointBounds,
-                    defaultMorphBounds = defaultMorphBounds,
-                    classicMorphBounds = classicMorphBounds,
-                    classicWheelMenuState = classicWheelMenuState,
-                    retroRackMorphBounds = retroRackMorphBounds,
-                    pocketFlipMorphBounds = pocketFlipMorphBounds,
-                    pocketCassetteMorphBounds = pocketCassetteMorphBounds,
-                    pocketDiscMorphBounds = pocketDiscMorphBounds,
-                    songs = songs,
-                    onSongClick = onSongClick,
-                    onOpenCurrentAlbumClick = ::openCurrentAlbum,
-                    onOpenCurrentArtistClick = onOpenCurrentArtistClick,
-                    onTrackInfoClick = onTrackInfoClick,
-                    onViewArtwork = onViewArtwork,
-                    isArtworkViewerVisible = overlayState.isArtworkViewerVisible.value
-                )
-                transientOverlayContent()
-            }
+            playerPresentation(playerEndpointBounds)
         }
     }
 }
