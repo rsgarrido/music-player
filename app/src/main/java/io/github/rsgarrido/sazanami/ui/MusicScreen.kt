@@ -1076,6 +1076,157 @@ internal fun MusicScreen(
     } else {
         appShellAccent
     }
+    val bodyPresentation = prepareMusicBodyPresentation(
+        songs = songs,
+        mediaAccessState = mediaAccessState,
+        isLibraryLoading = isLibraryLoading,
+        isLibraryRefreshing = isLibraryRefreshing,
+        lastLibraryRefreshSummary = lastLibraryRefreshSummary,
+        libraryErrorMessage = libraryErrorMessage,
+        onRequestAudioAccess = onRequestAudioAccess,
+        onRequestArtworkAccess = onRequestArtworkAccess,
+        onOpenAppSettings = onOpenAppSettings,
+        currentSong = currentSong,
+        isPlayerConnected = isPlayerConnected,
+        previousHistoryCount = previousHistoryCount,
+        forwardHistoryCount = forwardHistoryCount,
+        isPlaying = isPlaying,
+        isShuffleEnabled = isShuffleEnabled,
+        repeatMode = repeatMode,
+        playbackProgressUiState = playbackProgressUiState,
+        onSongClick = onSongClick,
+        onPlaySongsClick = onPlaySongsClick,
+        onPlayPauseClick = onPlayPauseClick,
+        onPreviousClick = onPreviousClick,
+        onNextClick = onNextClick,
+        onSeekChange = onSeekChange,
+        onShuffleClick = onShuffleClick,
+        onRepeatClick = onRepeatClick,
+        queuedSongs = queuedSongs,
+        upcomingSongs = upcomingSongs,
+        onRemoveFromQueueClick = onRemoveFromQueueClick,
+        onMoveQueueItemUpClick = onMoveQueueItemUpClick,
+        onMoveQueueItemDownClick = onMoveQueueItemDownClick,
+        onClearQueueClick = onClearQueueClick,
+        libraryFolders = libraryFolders,
+        folderSelectionMode = folderSelectionMode,
+        selectedLibraryFolders = selectedLibraryFolders,
+        excludedLibraryFolders = excludedLibraryFolders,
+        onScanLibraryClick = onScanLibraryClick,
+        onLibraryFolderToggle = onLibraryFolderToggle,
+        onSelectAllLibraryFolders = onSelectAllLibraryFolders,
+        onClearSelectedLibraryFolders = onClearSelectedLibraryFolders,
+        favoriteMembershipKeys = favoriteMembershipKeys,
+        unresolvedFavoriteCount = unresolvedFavoriteCount,
+        unresolvedPlaylistRowCount = unresolvedPlaylistRowCount,
+        unresolvedListeningHistoryCount = unresolvedListeningHistoryCount,
+        onToggleFavoriteClick = onToggleFavoriteClick,
+        playlists = playlists,
+        playlistFolders = playlistFolders,
+        selectedPlaylistStateId = selectedPlaylistStateId,
+        selectedPlaylistName = selectedPlaylistName,
+        selectedPlaylistSongs = selectedPlaylistSongs,
+        isSelectedPlaylistLoading = isSelectedPlaylistLoading,
+        onCreatePlaylistFolderClick = onCreatePlaylistFolderClick,
+        onRenamePlaylistFolderClick = onRenamePlaylistFolderClick,
+        onDeletePlaylistFolderClick = onDeletePlaylistFolderClick,
+        onMovePlaylistToFolderClick = onMovePlaylistToFolderClick,
+        onRenamePlaylistClick = onRenamePlaylistClick,
+        onDeletePlaylistClick = onDeletePlaylistClick,
+        onExportPlaylistClick = onExportPlaylistClick,
+        onImportPlaylistClick = onImportPlaylistClick,
+        onChangePlaylistArtwork = onChangePlaylistArtwork,
+        onResetPlaylistArtwork = onResetPlaylistArtwork,
+        onExportBackupClick = onExportBackupClick,
+        onRestoreBackupClick = onRestoreBackupClick,
+        onPlaylistSelected = onPlaylistSelected,
+        onReorderPlaylistSongs = onReorderPlaylistSongs,
+        isSleepTimerActive = isSleepTimerActive,
+        sleepTimerDisplayText = sleepTimerDisplayText,
+        recentlyPlayedSongs = recentlyPlayedSongs,
+        recentlyAddedLibrarySongs = recentlyAddedLibrarySongs,
+        selectedPlayerTheme = selectedPlayerTheme,
+        selectedAppFont = selectedAppFont,
+        onAppFontSelected = onAppFontSelected,
+        selectedAppAppearance = selectedAppAppearance,
+        onAppAppearanceSelected = onAppAppearanceSelected,
+        selectedPlayerThemeTokens = selectedPlayerThemeTokens,
+        onPlayerThemeSelected = onPlayerThemeSelected,
+        onUpdatePlayerThemeTokenOverride = onUpdatePlayerThemeTokenOverride,
+        onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
+        selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
+        onModernArtworkTransitionStyleSelected = onModernArtworkTransitionStyleSelected,
+        selectedModernPlayerAppearance = selectedModernPlayerAppearance,
+        activeModernAppearanceChoice = activeModernAppearanceChoice,
+        onModernAppearanceChoiceSelected = onModernAppearanceChoiceSelected,
+        onModernPlayerAppearanceEdited = onModernPlayerAppearanceEdited,
+        onResetModernPlayerAppearance = onResetModernPlayerAppearance,
+        selectedReplayGainMode = selectedReplayGainMode,
+        onReplayGainModeSelected = onReplayGainModeSelected,
+        selectedAudioOffloadPreference = selectedAudioOffloadPreference,
+        onAudioOffloadPreferenceSelected = onAudioOffloadPreferenceSelected,
+        smoothPlayPauseEnabled = smoothPlayPauseEnabled,
+        onSmoothPlayPauseEnabledChanged = onSmoothPlayPauseEnabledChanged,
+        crossfadeEnabled = crossfadeEnabled,
+        onCrossfadeEnabledChanged = onCrossfadeEnabledChanged,
+        crossfadeDurationMs = crossfadeDurationMs,
+        onCrossfadeDurationMsChanged = onCrossfadeDurationMsChanged,
+        preserveAlbumTransitions = preserveAlbumTransitions,
+        onPreserveAlbumTransitionsChanged = onPreserveAlbumTransitionsChanged,
+        audioOutputUiState = audioOutputUiState,
+        equalizerScreenState = equalizerScreenState,
+        equalizerActions = equalizerActions,
+        libraryAppearanceUiState = libraryAppearanceUiState,
+        onLibraryViewOptionSelected = onLibraryViewOptionSelected,
+        mostPlayedSongs = mostPlayedSongs,
+        listeningAnalyticsUiState = listeningAnalyticsUiState,
+        showNotCountedPlays = showNotCountedPlays,
+        onShowNotCountedPlaysChanged = onShowNotCountedPlaysChanged,
+        onListeningAnalyticsPresetSelected = onListeningAnalyticsPresetSelected,
+        onListeningAnalyticsCustomRangeSelected = onListeningAnalyticsCustomRangeSelected,
+        onRetryListeningAnalytics = onRetryListeningAnalytics,
+        onListeningAnalyticsTrendMetricSelected = onListeningAnalyticsTrendMetricSelected,
+        onListeningAnalyticsRankingCategorySelected = onListeningAnalyticsRankingCategorySelected,
+        spotifyImportUiState = spotifyImportUiState,
+        reconciliationUiState = reconciliationUiState,
+        reconciliationActions = reconciliationActions,
+        spotifyImportActions = spotifyImportActions,
+        navigationState = navigationState,
+        librarySelectionUi = librarySelectionUi,
+        isPlayerExpanded = isPlayerExpanded,
+        folderBrowseIndex = folderBrowseIndex,
+        folderBrowseScrollStateHolder = folderBrowseScrollStateHolder,
+        resolvedFolderId = resolvedFolderId,
+        recentlyAddedSongIds = recentlyAddedSongIds,
+        settingsHelpNavigation = settingsHelpNavigation,
+        settingsScrollState = settingsScrollState,
+        homeListState = homeListState,
+        statisticsListState = statisticsListState,
+        queueSnackbarActions = queueSnackbarActions,
+        playlistSnackbarActions = playlistSnackbarActions,
+        addPlaylistToQueue = addPlaylistToQueue,
+        onCloseSettings = ::closeSettings,
+        clearPlaylistSelection = ::clearPlaylistSelection,
+        onRecordPlaybackLaunchContext = ::recordPlaybackLaunchContext,
+        onExpandPlayer = playerMorphState::expand,
+        onShowSleepTimer = onOpenSleepTimer,
+        onShowAddToPlaylist = onShowAddToPlaylist,
+        onShowBulkAddToPlaylist = onShowBulkAddToPlaylist,
+        onShowCreatePlaylist = onShowCreatePlaylist,
+        onEditSongTagsClick = onEditSongTagsClick,
+        onEditAlbumMetadataClick = onEditAlbumMetadataClick,
+        onBatchMetadataClick = onBatchMetadataClick,
+        folderScreenVisible = overlayState.isFolderScreenVisible,
+        settingsScreenVisible = overlayState.isSettingsScreenVisible,
+        tipsHelpScreenVisible = overlayState.isTipsHelpScreenVisible,
+        aboutScreenVisible = overlayState.isAboutScreenVisible,
+        diagnosticsScreenVisible = overlayState.isDiagnosticsScreenVisible,
+        equalizerScreenVisible = overlayState.isEqualizerScreenVisible,
+        statisticsScreenVisible = overlayState.isStatisticsScreenVisible,
+        listeningHistoryImportVisible = overlayState.isListeningHistoryImportVisible,
+        listeningHistoryReconciliationVisible = overlayState.isListeningHistoryReconciliationVisible
+    )
+
     CompositionLocalProvider(
         LocalAppShellAccent provides appShellAccent,
         LocalAppShellChartAccent provides appShellChartAccent,
@@ -1341,370 +1492,7 @@ internal fun MusicScreen(
             ) {
                 metadataEditorContent()
             } else {
-                MusicScreenBody(
-                    songs = songs,
-                    mediaAccessState = mediaAccessState,
-                    isLibraryLoading = isLibraryLoading,
-                    isLibraryRefreshing = isLibraryRefreshing,
-                    lastLibraryRefreshSummary = lastLibraryRefreshSummary,
-                    libraryErrorMessage = libraryErrorMessage,
-                    onRequestAudioAccess = onRequestAudioAccess,
-                    onRequestArtworkAccess = onRequestArtworkAccess,
-                    onOpenAppSettings = onOpenAppSettings,
-                    currentSong = currentSong,
-                    isPlayerConnected = isPlayerConnected,
-                    previousHistoryCount = previousHistoryCount,
-                    forwardHistoryCount = forwardHistoryCount,
-                    isPlaying = isPlaying,
-                    isShuffleEnabled = isShuffleEnabled,
-                    repeatMode = repeatMode,
-                    playbackProgressUiState = playbackProgressUiState,
-                    queuedSongs = queuedSongs,
-                    upcomingSongs = upcomingSongs,
-                    libraryFolders = libraryFolders,
-                    folderSelectionMode = folderSelectionMode,
-                    selectedLibraryFolders = selectedLibraryFolders,
-                    excludedLibraryFolders = excludedLibraryFolders,
-                    favoriteMembershipKeys = favoriteMembershipKeys,
-                    unresolvedFavoriteCount = unresolvedFavoriteCount,
-                    unresolvedPlaylistRowCount = unresolvedPlaylistRowCount,
-                    unresolvedListeningHistoryCount = unresolvedListeningHistoryCount,
-                    playlists = playlists,
-                    playlistFolders = playlistFolders,
-                    selectedPlaylistStateId = selectedPlaylistStateId,
-                    selectedPlaylistName = selectedPlaylistName,
-                    selectedPlaylistSongs = selectedPlaylistSongs,
-                    isSelectedPlaylistLoading = isSelectedPlaylistLoading,
-                    mainDestination = mainDestination,
-                    selectedLibraryTab = selectedLibraryTab,
-                    folderBrowseIndex = folderBrowseIndex,
-                    folderBrowseScrollStateHolder = folderBrowseScrollStateHolder,
-                    selectedFolderId = resolvedFolderId,
-                    selectedArtistName = selectedArtistName,
-                    selectedAlbumKey = selectedAlbumKey,
-                    selectedGenreKey = selectedGenreKey,
-                    selectedPlaylistId = selectedPlaylistId,
-                    albumSharedArtworkSourceScope =
-                        navigationState.albumDetailOrigin.value.sharedArtworkSourceScope(),
-                    artistSharedArtworkSourceScope =
-                        navigationState.artistDetailOrigin.value.sharedArtworkSourceScope(),
-                    playlistSharedArtworkSourceScope =
-                        navigationState.playlistDetailOrigin.value.sharedArtworkSourceScope(),
-                    searchQuery = searchQuery,
-                    searchCategory = navigationState.searchCategory.value,
-                    onSearchCategoryChange = { navigationState.searchCategory.value = it },
-                    selectedSongFilterState = selectedSongFilterState,
-                    selectedSongSortState = selectedSongSortState,
-                    selectedArtistSortState = selectedArtistSortState,
-                    selectedAlbumSortState = selectedAlbumSortState,
-                    selectedFavoriteSortState = selectedFavoriteSortState,
-                    recentlyAddedSongIds = recentlyAddedSongIds,
-                    isPlayerExpanded = isPlayerExpanded,
-                    isFolderScreenVisible = isFolderScreenVisible,
-                    isSettingsScreenVisible = isSettingsScreenVisible,
-                    isTipsHelpScreenVisible = isTipsHelpScreenVisible,
-                    isAboutScreenVisible = isAboutScreenVisible,
-                    settingsHelpNavigation = settingsHelpNavigation,
-                    isDiagnosticsScreenVisible = isDiagnosticsScreenVisible,
-                    isEqualizerScreenVisible =
-                        isEqualizerScreenVisible,
-                    isStatisticsScreenVisible = isStatisticsScreenVisible,
-                    isListeningHistoryImportVisible = isListeningHistoryImportVisible,
-                    isListeningHistoryReconciliationVisible =
-                        isListeningHistoryReconciliationVisible,
-                    spotifyImportUiState = spotifyImportUiState,
-                    reconciliationUiState = reconciliationUiState,
-                    reconciliationActions = reconciliationActions.copy(
-                        onBack = {
-                            isListeningHistoryReconciliationVisible = false
-                            isSettingsScreenVisible = true
-                        }
-                    ),
-                    spotifyImportActions = spotifyImportActions.copy(
-                        onDone = {
-                            spotifyImportActions.onDone()
-                            isListeningHistoryImportVisible = false
-                            isSettingsScreenVisible = true
-                        },
-                        onBack = {
-                            isListeningHistoryImportVisible = false
-                            isSettingsScreenVisible = true
-                        }
-                    ),
-                    listeningAnalyticsUiState = listeningAnalyticsUiState,
-                    showNotCountedPlays = showNotCountedPlays,
-                    onShowNotCountedPlaysChanged = onShowNotCountedPlaysChanged,
-                    onStatisticsClick = { isStatisticsScreenVisible = true },
-                    onStatisticsBackClick = { isStatisticsScreenVisible = false },
-                    onListeningAnalyticsPresetSelected = onListeningAnalyticsPresetSelected,
-                    onListeningAnalyticsCustomRangeSelected =
-                        onListeningAnalyticsCustomRangeSelected,
-                    onRetryListeningAnalytics = onRetryListeningAnalytics,
-                    onListeningAnalyticsTrendMetricSelected =
-                        onListeningAnalyticsTrendMetricSelected,
-                    onListeningAnalyticsRankingCategorySelected =
-                        onListeningAnalyticsRankingCategorySelected,
-                    statisticsListState = statisticsListState,
-                    homeListState = homeListState,
-                    queueSnackbarActions = queueSnackbarActions,
-                    onSettingsClick = {
-                        librarySelectionUi.onClear()
-                        isSettingsScreenVisible = true
-                    },
-                    onOpenLibrary = { tab ->
-                        if (librarySelectionUi.state.entity != tab.selectionEntity()) {
-                            librarySelectionUi.onClear()
-                        }
-                        selectedLibraryTab = tab
-                        if (tab != LibraryTab.FOLDERS) navigationState.clearFolder()
-                        navigationState.clearArtist()
-                        navigationState.clearAlbum()
-                        selectedGenreKey = null
-                        clearPlaylistSelection()
-                        searchQuery = ""
-                        mainDestination = MainDestination.LIBRARY
-                    },
-                    onPinnedAlbumSelected = { albumKey ->
-                        librarySelectionUi.onClear()
-                        navigationState.clearArtist()
-                        selectedGenreKey = null
-                        clearPlaylistSelection()
-                        searchQuery = ""
-                        navigationState.openPinnedAlbum(albumKey)
-                    },
-                    onPinnedArtistSelected = { artistName ->
-                        librarySelectionUi.onClear()
-                        navigationState.clearAlbum()
-                        selectedGenreKey = null
-                        clearPlaylistSelection()
-                        searchQuery = ""
-                        navigationState.openPinnedArtist(artistName)
-                    },
-                    onPinnedPlaylistSelected = { playlist ->
-                        librarySelectionUi.onClear()
-                        navigationState.clearArtist()
-                        navigationState.clearAlbum()
-                        selectedGenreKey = null
-                        clearPlaylistSelection()
-                        searchQuery = ""
-                        navigationState.openPinnedPlaylist(playlist.playlistId)
-                        onPlaylistSelected(playlist)
-                    },
-                    onFolderBackClick = {
-                        isFolderScreenVisible = false
-                        isSettingsScreenVisible = true
-                    },
-                    onSettingsBackClick = {
-                        closeSettings()
-                    },
-                    onDiagnosticsClick = {
-                        isSettingsScreenVisible = false
-                        isDiagnosticsScreenVisible = true
-                    },
-                    onListeningHistoryImportClick = {
-                        spotifyImportActions.onEnter()
-                        isSettingsScreenVisible = false
-                        isListeningHistoryImportVisible = true
-                    },
-                    onListeningHistoryReconciliationClick = {
-                        reconciliationActions.onEnter()
-                        isSettingsScreenVisible = false
-                        isListeningHistoryReconciliationVisible = true
-                    },
-                    onDiagnosticsBackClick = {
-                        isDiagnosticsScreenVisible = false
-                        isSettingsScreenVisible = true
-                    },
-                    onEqualizerClick = {
-                        isSettingsScreenVisible = false
-                        isEqualizerScreenVisible = true
-                    },
-                    onEqualizerBackClick = {
-                        equalizerActions.onBack()
-                        isEqualizerScreenVisible = false
-                        isSettingsScreenVisible = true
-                    },
-                    onLibraryFoldersClick = {
-                        isSettingsScreenVisible = false
-                        isFolderScreenVisible = true
-                    },
-                    onExportBackupClick = onExportBackupClick,
-                    onRestoreBackupClick = onRestoreBackupClick,
-                    onScanLibraryClick = onScanLibraryClick,
-                    onLibraryFolderToggle = onLibraryFolderToggle,
-                    onSelectAllLibraryFolders = onSelectAllLibraryFolders,
-                    onClearSelectedLibraryFolders = onClearSelectedLibraryFolders,
-                    onSearchQueryChange = { query ->
-                        searchQuery = query
-                    },
-                    onSongFilterStateChanged = { state ->
-                        selectedSongFilterState = state
-                    },
-                    onSongSortStateChanged = { state ->
-                        selectedSongSortState = state
-                    },
-                    onArtistSortStateChanged = { state ->
-                        selectedArtistSortState = state
-                    },
-                    onAlbumSortStateChanged = { state ->
-                        selectedAlbumSortState = state
-                    },
-                    onFavoriteSortStateChanged = { state ->
-                        selectedFavoriteSortState = state
-                    },
-                    onExpandPlayerClick = {
-                        librarySelectionUi.onClear()
-                        playerMorphState.expand()
-                    },
-                    onMiniPlayerUpNextClick = {
-                        librarySelectionUi.onClear()
-                        selectedLibraryTab = LibraryTab.QUEUE
-                        navigationState.clearArtist()
-                        navigationState.clearAlbum()
-                        selectedGenreKey = null
-                        clearPlaylistSelection()
-                        mainDestination = MainDestination.LIBRARY
-                    },
-                    onSongClick = { song, playbackContext ->
-                        recordPlaybackLaunchContext()
-                        onSongClick(song, playbackContext)
-                    },
-                    onPlaySongsClick = { playbackContext, shuffleMode ->
-                        recordPlaybackLaunchContext()
-                        onPlaySongsClick(playbackContext, shuffleMode)
-                    },
-                    onPlayPauseClick = onPlayPauseClick,
-                    onPreviousClick = onPreviousClick,
-                    onNextClick = onNextClick,
-                    onSeekChange = onSeekChange,
-                    onShuffleClick = onShuffleClick,
-                    onRepeatClick = onRepeatClick,
-                    onToggleFavoriteClick = onToggleFavoriteClick,
-                    onAddToPlaylistClick = onShowAddToPlaylist,
-                    onAddSongsToPlaylistClick = onShowBulkAddToPlaylist,
-                    onFolderSelected = { folderId ->
-                        librarySelectionUi.onClear()
-                        navigationState.openFolder(folderId)
-                    },
-                    onBackFromFolder = {
-                        librarySelectionUi.onClear()
-                        selectedFolderId = folderBrowseBackDestination(
-                            folderBrowseIndex,
-                            selectedFolderId
-                        )
-                    },
-                    onArtistSelected = { artistName ->
-                        librarySelectionUi.onClear()
-                        navigationState.openArtist(artistName)
-                    },
-                    onBackFromArtist = {
-                        navigationState.closeArtist()
-                    },
-                    onAlbumSelected = { albumKey ->
-                        librarySelectionUi.onClear()
-                        navigationState.openAlbum(albumKey)
-                    },
-                    onBackFromAlbum = {
-                        navigationState.closeAlbum()
-                    },
-                    onGenreSelected = { genreKey ->
-                        librarySelectionUi.onClear()
-                        selectedGenreKey = genreKey
-                    },
-                    onBackFromGenre = {
-                        selectedGenreKey = null
-                    },
-                    onBackFromQueue = {
-                        selectedLibraryTab = LibraryTab.SONGS
-                        mainDestination = MainDestination.LIBRARY
-                    },
-                    onRemoveFromQueueClick = onRemoveFromQueueClick,
-                    onMoveQueueItemUpClick = onMoveQueueItemUpClick,
-                    onMoveQueueItemDownClick = onMoveQueueItemDownClick,
-                    onClearQueueClick = onClearQueueClick,
-                    onCreatePlaylistClick = onShowCreatePlaylist,
-                    onCreatePlaylistFolderClick = onCreatePlaylistFolderClick,
-                    onRenamePlaylistFolderClick = onRenamePlaylistFolderClick,
-                    onDeletePlaylistFolderClick = onDeletePlaylistFolderClick,
-                    onMovePlaylistToFolderClick = onMovePlaylistToFolderClick,
-                    onRenamePlaylistClick = onRenamePlaylistClick,
-                    onPlaylistClick = { playlist ->
-                        librarySelectionUi.onClear()
-                        navigationState.openPlaylist(playlist.playlistId)
-                        onPlaylistSelected(playlist)
-                    },
-                    onDeletePlaylistClick = onDeletePlaylistClick,
-                    onExportPlaylistClick = onExportPlaylistClick,
-                    onAddPlaylistToQueueClick = addPlaylistToQueue,
-                    onImportPlaylistClick = onImportPlaylistClick,
-                    onChangePlaylistArtwork = onChangePlaylistArtwork,
-                    onResetPlaylistArtwork = onResetPlaylistArtwork,
-                    onBackFromPlaylist = {
-                        clearPlaylistSelection(returnToOrigin = true)
-                    },
-                    onRemovePlaylistSongClick = { playlistSong ->
-                        playlistSnackbarActions.removePlaylistSong(playlistSong)
-                    },
-                    onReorderPlaylistSongs = onReorderPlaylistSongs,
-                    onAddSongsToCurrentPlaylistClick = { playlist, songs ->
-                        playlistSnackbarActions.addSongsToPlaylist(playlist, songs)
-                    },
-                    onEditSongTagsClick = onEditSongTagsClick,
-                    onEditAlbumMetadataClick = onEditAlbumMetadataClick,
-                    onBatchMetadataClick = onBatchMetadataClick,
-                    isSleepTimerActive = isSleepTimerActive,
-                    sleepTimerDisplayText = sleepTimerDisplayText,
-                    onSleepTimerClick = {
-                        isSleepTimerDialogVisible = true
-                    },
-                    recentlyPlayedSongs = recentlyPlayedSongs,
-                    recentlyAddedLibrarySongs = recentlyAddedLibrarySongs,
-                    mostPlayedSongs = mostPlayedSongs,
-                    selectedPlayerTheme = selectedPlayerTheme,
-                    selectedAppFont = selectedAppFont,
-                    onAppFontSelected = onAppFontSelected,
-                    selectedAppAppearance = selectedAppAppearance,
-                    onAppAppearanceSelected = onAppAppearanceSelected,
-                    selectedPlayerThemeTokens = selectedPlayerThemeTokens,
-                    onPlayerThemeSelected = onPlayerThemeSelected,
-                    onUpdatePlayerThemeTokenOverride = onUpdatePlayerThemeTokenOverride,
-                    onResetPlayerThemeTokenOverrides = onResetPlayerThemeTokenOverrides,
-                    selectedModernArtworkTransitionStyle = selectedModernArtworkTransitionStyle,
-                    onModernArtworkTransitionStyleSelected = onModernArtworkTransitionStyleSelected,
-                    selectedModernPlayerAppearance = selectedModernPlayerAppearance,
-                    activeModernAppearanceChoice = activeModernAppearanceChoice,
-                    onModernAppearanceChoiceSelected = onModernAppearanceChoiceSelected,
-                    onModernPlayerAppearanceEdited = onModernPlayerAppearanceEdited,
-                    onResetModernPlayerAppearance = onResetModernPlayerAppearance,
-                    selectedReplayGainMode = selectedReplayGainMode,
-                    onReplayGainModeSelected = onReplayGainModeSelected,
-                    selectedAudioOffloadPreference = selectedAudioOffloadPreference,
-                    onAudioOffloadPreferenceSelected = onAudioOffloadPreferenceSelected,
-                    smoothPlayPauseEnabled = smoothPlayPauseEnabled,
-                    onSmoothPlayPauseEnabledChanged = onSmoothPlayPauseEnabledChanged,
-                    crossfadeEnabled = crossfadeEnabled,
-                    onCrossfadeEnabledChanged = onCrossfadeEnabledChanged,
-                    crossfadeDurationMs = crossfadeDurationMs,
-                    onCrossfadeDurationMsChanged = onCrossfadeDurationMsChanged,
-                    preserveAlbumTransitions = preserveAlbumTransitions,
-                    onPreserveAlbumTransitionsChanged =
-                        onPreserveAlbumTransitionsChanged,
-                    audioOutputUiState = audioOutputUiState,
-                    equalizerScreenState =
-                        equalizerScreenState,
-                    equalizerActions = equalizerActions.copy(
-                        onBack = {
-                            equalizerActions.onBack()
-                            isEqualizerScreenVisible = false
-                            isSettingsScreenVisible = true
-                        }
-                    ),
-                    libraryAppearanceUiState = libraryAppearanceUiState,
-                    onLibraryViewOptionSelected = onLibraryViewOptionSelected,
-                    settingsScrollState = settingsScrollState,
-                    bottomContentPadding = bottomContentPadding,
-                    modifier = Modifier.fillMaxSize()
-                )
+                bodyPresentation(bottomContentPadding)
             }
 
             AnimatedVisibility(
@@ -1909,7 +1697,7 @@ internal fun dismissExpandedPlayerPresentation(
     collapsePlayer()
 }
 
-private fun LibraryTab.selectionEntity(): LibrarySelectionEntity? = when (this) {
+internal fun LibraryTab.selectionEntity(): LibrarySelectionEntity? = when (this) {
     LibraryTab.SONGS,
     LibraryTab.FAVORITES,
     LibraryTab.RATED,
